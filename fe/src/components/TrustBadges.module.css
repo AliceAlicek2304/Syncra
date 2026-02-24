@@ -1,0 +1,133 @@
+.section {
+  padding: 80px 0 0;
+}
+
+.badgesRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 60px;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: var(--radius-md) !important;
+  transition: transform 0.2s;
+}
+
+.badge:hover { transform: translateY(-2px); }
+
+.badgeIcon {
+  color: var(--purple-400);
+  display: flex;
+}
+
+.badgeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.platformStrip {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.stripLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.platformList {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.platformChip {
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  background: rgba(255,255,255,0.03);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.platformChip:hover {
+  border-color: var(--purple-500);
+  color: var(--text-primary);
+}
+
+.ctaBanner {
+  position: relative;
+  overflow: hidden;
+  padding: 64px 48px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  border-radius: var(--radius-xl) !important;
+  border-color: rgba(139,92,246,0.25) !important;
+  background: rgba(139,92,246,0.05) !important;
+  margin-bottom: 0;
+}
+
+.ctaGlow {
+  position: absolute;
+  width: 500px;
+  height: 300px;
+  background: rgba(139,92,246,0.15);
+  border-radius: 50%;
+  filter: blur(100px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.ctaContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 620px;
+}
+
+.ctaTitle {
+  font-size: clamp(24px, 4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.ctaSub {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.ctaActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .ctaBanner { padding: 40px 24px; }
+  .ctaActions { flex-direction: column; width: 100%; }
+  .ctaActions a { width: 100%; justify-content: center; }
+}

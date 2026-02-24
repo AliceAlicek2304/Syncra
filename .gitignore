@@ -1,0 +1,73 @@
+# ===========================
+# Node / npm
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.yarn/
+
+# ===========================
+# Vite / Build outputs
+# ===========================
+dist/
+dist-ssr/
+*.local
+
+# ===========================
+# Environment variables
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===========================
+# Editor / IDE
+# ===========================
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.DS_Store
+Thumbs.db
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+.nyc_output/
+
+# ===========================
+# Backend specific
+# ===========================
+be/target/
+be/*.class
+be/*.jar
+be/*.war
+be/.mvn/
+be/mvnw
+be/mvnw.cmd
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+ehthumbs.db
+Desktop.ini

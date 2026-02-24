@@ -1,0 +1,124 @@
+.section {
+  padding: 100px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.glow {
+  position: absolute;
+  width: 700px;
+  height: 400px;
+  background: rgba(139, 92, 246, 0.10);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+.header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 64px;
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  justify-content: center;
+}
+
+.stepWrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 320px;
+}
+
+.card {
+  padding: 36px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  transition: transform 0.25s;
+}
+
+.card:hover { transform: translateY(-4px); }
+
+.stepNum {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--purple-400);
+  text-transform: uppercase;
+}
+
+.iconBox {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(236,72,153,0.15));
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple-400);
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.connector {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+}
+
+.line {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(139,92,246,0.5), rgba(236,72,153,0.5));
+}
+
+.arrow {
+  font-size: 20px;
+  color: var(--purple-400);
+  margin-top: -14px;
+}
+
+@media (max-width: 900px) {
+  .steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .stepWrapper {
+    flex-direction: column;
+    max-width: 400px;
+    width: 100%;
+  }
+  .connector {
+    width: auto;
+    flex-direction: row;
+    transform: rotate(90deg);
+    height: 40px;
+    width: 40px;
+  }
+}
