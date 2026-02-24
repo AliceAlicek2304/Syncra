@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import type { ReactNode } from 'react'
 
 // Homepage components
 import Navbar from './components/Navbar'
@@ -36,7 +37,7 @@ function Homepage() {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   return user ? <>{children}</> : <Navigate to="/" replace />
 }
