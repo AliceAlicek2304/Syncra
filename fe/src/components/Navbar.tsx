@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Zap, Menu, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Zap, Menu, X, LayoutDashboard, Sparkles, Calendar, BarChart2, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import styles from './Navbar.module.css'
 
 const NAV_LINKS = [
@@ -9,15 +11,47 @@ const NAV_LINKS = [
   { label: 'Testimonials', href: '#testimonials' },
 ]
 
+const USER_MENU = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
+  { label: 'AI Assistant', icon: Sparkles, path: '/app/ai' },
+  { label: 'Calendar', icon: Calendar, path: '/app/calendar' },
+  { label: 'Analytics', icon: BarChart2, path: '/app/analytics' },
+]
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const { user, login, logout } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLogin = () => {
+    login()
+    navigate('/app/dashboard')
+  }
+
+  const handleLogout = () => {
+    logout()
+    setDropdownOpen(false)
+    navigate('/')
+  }
 
   return (
     <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
@@ -37,10 +71,56 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* CTA */}
+        {/* CTA / Avatar */}
         <div className={styles.cta}>
-          <a href="#" className="btn-secondary" style={{ padding: '10px 20px', fontSize: '14px' }}>Sign in</a>
-          <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Start free</a>
+          {user ? (
+            <div className={styles.avatarWrapper} ref={dropdownRef}>
+              <button
+                className={styles.avatarBtn}
+                onClick={() => setDropdownOpen(o => !o)}
+                aria-label="User menu"
+              >
+                <span className={styles.avatarCircle}>{user.avatar}</span>
+                <div className={styles.avatarInfo}>
+                  <span className={styles.avatarName}>{user.name}</span>
+                  <span className={styles.avatarPlan}>{user.plan}</span>
+                </div>
+              </button>
+              {dropdownOpen && (
+                <div className={styles.dropdown}>
+                  <div className={styles.dropdownHeader}>
+                    <span className={styles.dropdownHandle}>{user.handle}</span>
+                  </div>
+                  {USER_MENU.map(item => (
+                    <button
+                      key={item.path}
+                      className={styles.dropdownItem}
+                      onClick={() => { navigate(item.path); setDropdownOpen(false) }}
+                    >
+                      <item.icon size={15} />
+                      {item.label}
+                    </button>
+                  ))}
+                  <div className={styles.dropdownDivider} />
+                  <button className={`${styles.dropdownItem} ${styles.dropdownLogout}`} onClick={handleLogout}>
+                    <LogOut size={15} />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <button
+                className="btn-secondary"
+                style={{ padding: '10px 20px', fontSize: '14px' }}
+                onClick={handleLogin}
+              >
+                Sign in
+              </button>
+              <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Start free</a>
+            </>
+          )}
         </div>
 
         {/* Mobile burger */}
@@ -58,8 +138,26 @@ export default function Navbar() {
             </a>
           ))}
           <div className={styles.drawerCta}>
-            <a href="#" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>Sign in</a>
-            <a href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</a>
+            {user ? (
+              <button
+                className="btn-secondary"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => { navigate('/app/dashboard'); setMenuOpen(false) }}
+              >
+                Dashboard
+              </button>
+            ) : (
+              <>
+                <button
+                  className="btn-secondary"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => { handleLogin(); setMenuOpen(false) }}
+                >
+                  Sign in
+                </button>
+                <a href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</a>
+              </>
+            )}
           </div>
         </div>
       )}

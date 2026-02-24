@@ -66,6 +66,12 @@ be/mvnw
 be/mvnw.cmd
 
 # ===========================
+# Local notes (do not commit)
+# ===========================
+Continuity.md
+AGENTS.md
+
+# ===========================
 # OS
 # ===========================
 .DS_Store

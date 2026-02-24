@@ -1,0 +1,232 @@
+.page {
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100vh;
+}
+
+.welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.statCard {
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s;
+}
+
+.statCard:hover { transform: translateY(-2px); }
+
+.statIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statValue {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.statDelta {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.section {
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.seeAll {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--purple-400);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+
+.seeAll:hover { opacity: 0.7; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 0 12px 12px 0;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.table td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.table tr:last-child td { border-bottom: none; }
+
+.postTitle {
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platformTag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(139,92,246,0.1);
+  border: 1px solid rgba(139,92,246,0.2);
+  color: var(--purple-400);
+}
+
+.status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 100px;
+}
+
+.status_published {
+  background: rgba(34,197,94,0.1);
+  color: #22c55e;
+}
+
+.status_scheduled {
+  background: rgba(234,179,8,0.1);
+  color: #eab308;
+}
+
+.status_draft {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+}
+
+.reach {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.date {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* AI Tip */
+.aiTip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-color: rgba(139,92,246,0.25) !important;
+  background: rgba(139,92,246,0.05) !important;
+  flex-wrap: wrap;
+}
+
+.aiTipIcon {
+  width: 38px;
+  height: 38px;
+  background: rgba(139,92,246,0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple-400);
+  flex-shrink: 0;
+}
+
+.aiTipTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--purple-400);
+  margin-bottom: 4px;
+}
+
+.aiTipText {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex: 1;
+  line-height: 1.6;
+}
+
+.aiTipText strong { color: var(--text-primary); }
+
+@media (max-width: 1024px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .page { padding: 20px 16px; }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}
