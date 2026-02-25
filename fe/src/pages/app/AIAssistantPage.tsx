@@ -360,7 +360,7 @@ export default function AIAssistantPage() {
                           <textarea
                             ref={textareaRef}
                             className={styles.captionText}
-                            value={(idea as any).platformCaptions?.[previewPlatform] || idea.caption}
+                            value={idea.platformCaptions?.[previewPlatform] || idea.caption}
                             onChange={(e) => {
                               const newVal = e.target.value
                               const newIdeas = ideas.map(i => {
@@ -380,8 +380,8 @@ export default function AIAssistantPage() {
                             onKeyUp={handleSelection}
                             rows={6}
                           />
-                          <div className={`${styles.charCounter} ${( (idea as any).platformCaptions?.[previewPlatform] || idea.caption).length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
-                            {( (idea as any).platformCaptions?.[previewPlatform] || idea.caption).length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
+                          <div className={`${styles.charCounter} ${(idea.platformCaptions?.[previewPlatform] || idea.caption).length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
+                            {(idea.platformCaptions?.[previewPlatform] || idea.caption).length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
                           </div>
                         </div>
                         {selection && expandedId === idea.id && (
