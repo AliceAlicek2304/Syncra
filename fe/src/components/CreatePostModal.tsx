@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getMockResults } from '../data/mockAI'
+import { shortId } from '../utils/shortId'
 import type { ToastItem } from './Toast'
 import styles from './CreatePostModal.module.css'
 
@@ -48,8 +49,6 @@ const PLATFORM_BADGE_CLASS: Record<Platform, string> = {
 const COMMON_EMOJIS = ['😊','🔥','💡','🚀','✅','💬','👇','❤️','🎯','💪','📊','🌟','😂','👏','🙌','💼','🎉','✨','📱','💰']
 const HASH_TAGS = ['#contentcreator','#viral','#trending','#socialmedia','#growth','#marketing']
 
-// ── Helper ─────────────────────────────────────────────
-function shortId() { return Math.random().toString(36).slice(2, 9) }
 
 // ── Crop presets ───────────────────────────────────────
 const CROP_PRESETS = [
@@ -235,7 +234,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   const [caption, setCaption]             = useState('')
   const [showAI,   setShowAI]             = useState(false)
   const [showPreview, setShowPreview]     = useState(true)
-  const [tone,     setTone]               = useState<Tone>('default')
+  const tone: Tone = 'default'
   const [showEmoji, setShowEmoji]         = useState(false)
   const [media,    setMedia]              = useState<MediaFile[]>([])
   const [dragOver, setDragOver]           = useState(false)
@@ -287,19 +286,15 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
     return () => window.removeEventListener('mousedown', handler)
   }, [showEmoji])
 
-  // Make sure activeTab is always a selected platform
-  useEffect(() => {
-    if (!activePlatforms.includes(activeTab) && activePlatforms.length > 0) {
-      setActiveTab(activePlatforms[0])
-    }
-  }, [activePlatforms, activeTab])
-
   const togglePlatform = (p: Platform) => {
-    setActivePlatforms(prev =>
-      prev.includes(p)
-        ? prev.filter(x => x !== p)
-        : [...prev, p]
-    )
+    setActivePlatforms(prev => {
+      const next = prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
+      // Keep activeTab in sync — move to first available if current is removed
+      if (!next.includes(activeTab) && next.length > 0) {
+        setActiveTab(next[0])
+      }
+      return next
+    })
   }
 
   // ── Media handling ─────────────────────────────────
@@ -994,5 +989,4 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   )
 }
 
-// Re-export shortId so AppLayout can use it for toast IDs
-export { shortId }
+
