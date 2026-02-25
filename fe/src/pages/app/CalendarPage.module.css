@@ -36,17 +36,60 @@
 /* Calendar card */
 .calCard { padding: 24px; }
 
-.monthNav {
+.navLeft {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 12px;
 }
 
-.monthLabel {
-  font-size: 16px;
-  font-weight: 700;
+.selectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-glass);
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+
+.dateSelect {
+  background: transparent;
+  border: none;
   color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  padding: 4px;
+}
+
+.dateSelect option {
+  background: #13162a;
+  color: #fff;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+}
+
+.todayBtn {
+  background: rgba(139,92,246,0.1);
+  border: 1px solid rgba(139,92,246,0.25);
+  color: var(--purple-400);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.todayBtn:hover {
+  background: var(--purple-500);
+  color: #fff;
 }
 
 .navBtn {

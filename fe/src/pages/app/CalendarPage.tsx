@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Clock, MoreHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import GlassUpload from '../../components/GlassUpload'
 import styles from './CalendarPage.module.css'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -79,9 +80,47 @@ export default function CalendarPage() {
         <div className={`glass-card ${styles.calCard}`}>
           {/* Month nav */}
           <div className={styles.monthNav}>
-            <button className={styles.navBtn} onClick={prevMonth}><ChevronLeft size={16} /></button>
-            <span className={styles.monthLabel}>{MONTHS[month]} {year}</span>
-            <button className={styles.navBtn} onClick={nextMonth}><ChevronRight size={16} /></button>
+            <div className={styles.navLeft}>
+              <button className={styles.navBtn} onClick={prevMonth}><ChevronLeft size={16} /></button>
+              
+              <div className={styles.selectors}>
+                <select 
+                  className={styles.dateSelect} 
+                  value={month} 
+                  onChange={(e) => { setMonth(parseInt(e.target.value)); setSelectedDay(null) }}
+                >
+                  {MONTHS.map((m, i) => (
+                    <option key={m} value={i}>{m}</option>
+                  ))}
+                </select>
+
+                <select 
+                  className={styles.dateSelect} 
+                  value={year} 
+                  onChange={(e) => { setYear(parseInt(e.target.value)); setSelectedDay(null) }}
+                >
+                  {Array.from({ length: 11 }).map((_, i) => {
+                    const y = today.getFullYear() - 5 + i
+                    return <option key={y} value={y}>{y}</option>
+                  })}
+                </select>
+              </div>
+
+              <button className={styles.navBtn} onClick={nextMonth}><ChevronRight size={16} /></button>
+            </div>
+
+            <div className={styles.navRight}>
+              <button 
+                className={styles.todayBtn} 
+                onClick={() => {
+                  setYear(today.getFullYear())
+                  setMonth(today.getMonth())
+                  setSelectedDay(today.getDate())
+                }}
+              >
+                Today
+              </button>
+            </div>
           </div>
 
           {/* Day headers */}
@@ -181,6 +220,7 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+      <GlassUpload />
     </div>
   )
 }

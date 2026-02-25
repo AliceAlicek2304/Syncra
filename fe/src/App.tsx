@@ -12,6 +12,7 @@ import Pricing from './components/Pricing'
 import Testimonials from './components/Testimonials'
 import TrustBadges from './components/TrustBadges'
 import Footer from './components/Footer'
+import HeroDemo from './components/HeroDemo'
 
 // App pages
 import AppLayout from './pages/app/AppLayout'
@@ -19,6 +20,7 @@ import DashboardPage from './pages/app/DashboardPage'
 import AIAssistantPage from './pages/app/AIAssistantPage'
 import CalendarPage from './pages/app/CalendarPage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
+import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
 
 function Homepage() {
@@ -26,6 +28,7 @@ function Homepage() {
     <div style={{ position: 'relative' }}>
       <Navbar />
       <Hero />
+      <HeroDemo />
       <Stats />
       <Features />
       <HowItWorks />
@@ -61,6 +64,7 @@ const router = createBrowserRouter(
         { path: 'ai', element: <AIAssistantPage /> },
         { path: 'calendar', element: <CalendarPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
+        { path: 'trends', element: <TrendRadarPage /> },
         { path: 'settings', element: <SettingsPage /> },
       ],
     },

@@ -1,13 +1,15 @@
 import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import OnboardingTour from '../../components/OnboardingTour'
+import CountingNumber from '../../components/CountingNumber'
 import styles from './DashboardPage.module.css'
 
 const QUICK_STATS = [
-  { label: 'Tổng lượt reach', value: '128.4K', delta: '+24%', icon: <TrendingUp size={18} />, color: '#8b5cf6' },
-  { label: 'Engagement rate', value: '8.4%', delta: '+11%', icon: <BarChart3 size={18} />, color: '#ec4899' },
-  { label: 'Platforms kết nối', value: '6', delta: 'active', icon: <Globe2 size={18} />, color: '#22d3ee' },
-  { label: 'Posts đã schedule', value: '12', delta: 'tháng này', icon: <CalendarClock size={18} />, color: '#f59e0b' },
+  { label: 'Tổng lượt reach', value: 128400, delta: '+24%', icon: <TrendingUp size={18} />, color: '#8b5cf6', isK: true },
+  { label: 'Engagement rate', value: 8, delta: '+11%', icon: <BarChart3 size={18} />, color: '#ec4899', isPercent: true },
+  { label: 'Platforms kết nối', value: 6, delta: 'active', icon: <Globe2 size={18} />, color: '#22d3ee' },
+  { label: 'Posts đã schedule', value: 12, delta: 'tháng này', icon: <CalendarClock size={18} />, color: '#f59e0b' },
 ]
 
 const RECENT_POSTS = [
@@ -41,7 +43,16 @@ export default function DashboardPage() {
             <div className={styles.statIcon} style={{ color: s.color, background: `${s.color}18` }}>
               {s.icon}
             </div>
-            <div className={styles.statValue}>{s.value}</div>
+            <div className={styles.statValue}>
+              <CountingNumber 
+                value={s.value} 
+                format={(v) => {
+                  if (s.isK) return `${(v/1000).toFixed(1)}K`
+                  if (s.isPercent) return `${v}.4%`
+                  return v.toString()
+                }}
+              />
+            </div>
             <div className={styles.statLabel}>{s.label}</div>
             <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
               {s.delta}
@@ -100,6 +111,9 @@ export default function DashboardPage() {
           Tạo ngay →
         </button>
       </div>
+
+      {/* Onboarding */}
+      <OnboardingTour />
     </div>
   )
 }

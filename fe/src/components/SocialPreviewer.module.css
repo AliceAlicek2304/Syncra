@@ -1,0 +1,431 @@
+.previewContainer {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 40px;
+  border: 8px solid #1a1a1a;
+  aspect-ratio: 9 / 19;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TikTok Style */
+.tiktokPreview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8));
+  color: #fff;
+}
+
+.tiktokOverlay {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tiktokUser {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.tiktokCaption {
+  font-size: 14px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tiktokTags {
+  color: #fff;
+  font-weight: 700;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.tiktokMusic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+/* Instagram Style */
+.instagramPreview {
+  background: #fff;
+  color: #000;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.instaHeader {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 0.5px solid #efefef;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #dbdbdb;
+  border-radius: 50%;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.instaMedia {
+  aspect-ratio: 1;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8e8e8e;
+  font-size: 14px;
+}
+
+.instaActions {
+  padding: 12px;
+  display: flex;
+  gap: 16px;
+}
+
+.instaAction {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #262626;
+  border-radius: 4px;
+}
+
+.instaContent {
+  padding: 0 12px 12px;
+}
+
+.instaCaption {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.instaCaption b {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* Platform Switcher inside Preview */
+.platformBadge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  z-index: 10;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* YouTube Style */
+.youtubePreview {
+  background: #fff;
+  color: #000;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ytVideo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+}
+
+.ytInfo {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ytTitle {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ytMeta {
+  font-size: 12px;
+  color: #606060;
+}
+
+.ytChannel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 0.5px solid #e5e5e5;
+  border-bottom: 0.5px solid #e5e5e5;
+  margin-top: 4px;
+}
+
+.ytAvatar {
+  width: 32px;
+  height: 32px;
+  background: #dbdbdb;
+  border-radius: 50%;
+}
+
+.ytChannelName {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+}
+
+.ytSubscribe {
+  color: #cc0000;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+/* X (Twitter) Style */
+.xPreview {
+  background: #000;
+  color: #fff;
+  height: 100%;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+}
+
+.xAvatar {
+  width: 40px;
+  height: 40px;
+  background: #333;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.xBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xUserRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.xName {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.xHandle {
+  color: #71767b;
+  font-size: 14px;
+}
+
+.xText {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.xMedia {
+  margin-top: 10px;
+  border-radius: 16px;
+  border: 1px solid #333;
+  aspect-ratio: 16 / 9;
+  background: #16181c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71767b;
+}
+
+.xActions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  color: #71767b;
+  padding-right: 20px;
+}
+
+/* LinkedIn Style */
+.linkedinPreview {
+  background: #fff;
+  color: rgba(0,0,0,0.9);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.liHeader {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.liAvatar {
+  width: 48px;
+  height: 48px;
+  background: #e1e9ee;
+  border-radius: 4px;
+}
+
+.liUser {
+  display: flex;
+  flex-direction: column;
+}
+
+.liName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.liTitle {
+  font-size: 12px;
+  color: rgba(0,0,0,0.6);
+}
+
+.liMeta {
+  font-size: 11px;
+  color: rgba(0,0,0,0.6);
+  margin-top: 2px;
+}
+
+.liText {
+  padding: 0 12px 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.liMedia {
+  background: #f3f6f8;
+  aspect-ratio: 1.91 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0,0,0,0.6);
+  border-top: 1px solid #e1e9ee;
+  border-bottom: 1px solid #e1e9ee;
+}
+
+.liActions {
+  padding: 8px 12px;
+  display: flex;
+  gap: 16px;
+  border-top: 1px solid #e1e9ee;
+  color: rgba(0,0,0,0.6);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Facebook Style */
+.facebookPreview {
+  background: #f0f2f5;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fbPost {
+  background: #fff;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fbHeader {
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.fbAvatar {
+  width: 40px;
+  height: 40px;
+  background: #e4e6eb;
+  border-radius: 50%;
+}
+
+.fbUser {
+  display: flex;
+  flex-direction: column;
+}
+
+.fbName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #050505;
+}
+
+.fbMeta {
+  font-size: 12px;
+  color: #65676b;
+}
+
+.fbText {
+  padding: 4px 12px 12px;
+  font-size: 14px;
+  color: #050505;
+  line-height: 1.4;
+}
+
+.fbMedia {
+  background: #f0f2f5;
+  aspect-ratio: 1.91 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #65676b;
+}
+
+.fbActions {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #e4e6eb;
+  color: #65676b;
+  font-size: 13px;
+  font-weight: 600;
+}

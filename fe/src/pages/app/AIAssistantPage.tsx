@@ -5,7 +5,18 @@ import {
 } from 'lucide-react'
 import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
+import SocialPreviewer from '../../components/SocialPreviewer'
+import AIToolbar from '../../components/AIToolbar'
 import styles from './AIAssistantPage.module.css'
+
+const PLATFORM_LIMITS: Record<string, number> = {
+  TikTok: 4000,
+  Instagram: 2200,
+  YouTube: 5000,
+  X: 280,
+  LinkedIn: 3000,
+  Facebook: 63206,
+}
 
 interface SelectOption { value: string; label: string }
 function CustomSelect({ options, value, onChange }: {
@@ -80,6 +91,11 @@ export default function AIAssistantPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [addedId, setAddedId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [previewIdea, setPreviewIdea] = useState<ContentIdea | null>(null)
+  const [previewPlatform, setPreviewPlatform] = useState<string>('TikTok')
+  const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
+  const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const togglePlatform = (p: string) => {
     setSelectedPlatforms(prev =>
@@ -91,7 +107,10 @@ export default function AIAssistantPage() {
     if (!topic.trim()) return
     setStep('loading')
     setTimeout(() => {
-      setIdeas(getMockResults(tone))
+      const results = getMockResults(tone)
+      setIdeas(results)
+      setPreviewIdea(results[0])
+      setPreviewPlatform(results[0].platforms[0])
       setStep('results')
     }, 1800)
   }
@@ -100,6 +119,36 @@ export default function AIAssistantPage() {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleSelection = () => {
+    if (!textareaRef.current) return
+    const { selectionStart, selectionEnd, value } = textareaRef.current
+    const selectedText = value.substring(selectionStart, selectionEnd)
+
+    if (selectedText.trim().length > 0) {
+      const rect = textareaRef.current.getBoundingClientRect()
+      // Approximate position: center of textarea, slightly above
+      setSelection({ text: selectedText, start: selectionStart, end: selectionEnd })
+      setToolbarPos({ 
+        top: rect.top - 10, 
+        left: rect.left + rect.width / 2 
+      })
+    } else {
+      setSelection(null)
+    }
+  }
+
+  const handleToolbarAction = (transformed: string) => {
+    if (!selection || !textareaRef.current) return
+    const { start, end } = selection
+    const idea = ideas.find(i => i.id === expandedId)
+    if (!idea) return
+
+    const newCaption = idea.caption.substring(0, start) + transformed + idea.caption.substring(end)
+    const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: newCaption } : i)
+    setIdeas(newIdeas)
+    if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: newCaption })
   }
 
   const handleAddToCalendar = (id: string) => {
@@ -225,85 +274,166 @@ export default function AIAssistantPage() {
 
         {/* ── RESULTS ── */}
         {step === 'results' && (
-          <div className={styles.results}>
-            <div className={styles.resultsMeta}>
-              <span className={styles.resultsCount}>{ideas.length} ý tưởng được tạo</span>
-              <span className={styles.resultsTopic}>cho chủ đề "{topic}"</span>
+          <div className={styles.resultsContainer}>
+            <div className={styles.results}>
+              <div className={styles.resultsMeta}>
+                <span className={styles.resultsCount}>{ideas.length} ý tưởng được tạo</span>
+                <span className={styles.resultsTopic}>cho chủ đề "{topic}"</span>
+              </div>
+
+              <div className={styles.ideaList}>
+                {ideas.map(idea => (
+                  <div
+                    key={idea.id}
+                    className={`glass-card ${styles.ideaCard} ${previewIdea?.id === idea.id ? styles.ideaCardActive : ''}`}
+                    onClick={() => {
+                      setPreviewIdea(idea)
+                      if (!idea.platforms.includes(previewPlatform)) {
+                        setPreviewPlatform(idea.platforms[0])
+                      }
+                    }}
+                  >
+                    {/* Card header */}
+                    <div className={styles.ideaHeader}>
+                      <span className={styles.ideaType}>{idea.type}</span>
+                      <div className={styles.ideaMeta}>
+                        <span className={styles.ideaMetaItem}>
+                          <Clock size={12} /> {idea.bestTime}
+                        </span>
+                        <span className={styles.ideaMetaItem}>
+                          <TrendingUp size={12} /> {idea.estimatedReach} reach
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Hook */}
+                    <div className={styles.hookBox}>
+                      <span className={styles.hookLabel}>🪝 Hook</span>
+                      <p className={styles.hookText}>{idea.hook}</p>
+                    </div>
+
+                    {/* Expandable caption */}
+                    <button
+                      className={styles.captionToggle}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setExpandedId(expandedId === idea.id ? null : idea.id)
+                      }}
+                    >
+                      <span>Caption đầy đủ</span>
+                      <ChevronDown
+                        size={14}
+                        style={{ transform: expandedId === idea.id ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
+                      />
+                    </button>
+
+                    {expandedId === idea.id && (
+                      <div className={styles.captionBox}>
+                        <div className={styles.editArea}>
+                          <textarea
+                            ref={textareaRef}
+                            className={styles.captionText}
+                            value={idea.caption}
+                            onChange={(e) => {
+                              const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: e.target.value } : i)
+                              setIdeas(newIdeas)
+                              if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: e.target.value })
+                            }}
+                            onMouseUp={handleSelection}
+                            onKeyUp={handleSelection}
+                            rows={6}
+                          />
+                          <div className={`${styles.charCounter} ${idea.caption.length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
+                            {idea.caption.length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
+                          </div>
+                        </div>
+                        {selection && expandedId === idea.id && (
+                          <AIToolbar 
+                            selection={selection}
+                            position={toolbarPos}
+                            onAction={handleToolbarAction}
+                            onClose={() => setSelection(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Hashtags */}
+                    <div className={styles.hashtagRow}>
+                      {idea.hashtags.map(h => (
+                        <span key={h} className={styles.hashtag}>{h}</span>
+                      ))}
+                    </div>
+
+                    {/* Platforms */}
+                    <div className={styles.platformRow}>
+                      {idea.platforms.map(p => (
+                        <button
+                          key={p}
+                          className={`${styles.platformTag} ${previewIdea?.id === idea.id && previewPlatform === p ? styles.platformTagActive : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewIdea(idea)
+                            setPreviewPlatform(p)
+                          }}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className={styles.ideaActions}>
+                      <button
+                        className={styles.copyBtn}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCopy(idea.id, `${idea.hook}\n\n${idea.caption}\n\n${idea.hashtags.join(' ')}`)
+                        }}
+                      >
+                        {copiedId === idea.id ? <><Check size={13} /> Đã copy</> : <><Copy size={13} /> Copy caption</>}
+                      </button>
+                      <button
+                        className={`btn-primary ${styles.addBtn}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddToCalendar(idea.id)
+                        }}
+                      >
+                        {addedId === idea.id
+                          ? <><Check size={13} /> Đã thêm!</>
+                          : <><Plus size={13} /> Thêm vào Calendar</>}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className={styles.ideaList}>
-              {ideas.map(idea => (
-                <div key={idea.id} className={`glass-card ${styles.ideaCard}`}>
-                  {/* Card header */}
-                  <div className={styles.ideaHeader}>
-                    <span className={styles.ideaType}>{idea.type}</span>
-                    <div className={styles.ideaMeta}>
-                      <span className={styles.ideaMetaItem}>
-                        <Clock size={12} /> {idea.bestTime}
-                      </span>
-                      <span className={styles.ideaMetaItem}>
-                        <TrendingUp size={12} /> {idea.estimatedReach} reach
-                      </span>
-                    </div>
+            {/* ── PREVIEW PANEL ── */}
+            <div className={styles.previewPanel}>
+              <div className={styles.previewPanelHeader}>
+                <h3 className={styles.previewTitle}>Live Preview</h3>
+                <p className={styles.previewSubtitle}>Xem trước bài đăng trên giao diện mobile</p>
+              </div>
+              <div className={styles.previewContent}>
+                {previewIdea ? (
+                  <SocialPreviewer
+                    platform={previewPlatform}
+                    type={previewIdea.type}
+                    content={{
+                      hook: previewIdea.hook,
+                      caption: previewIdea.caption,
+                      hashtags: previewIdea.hashtags,
+                    }}
+                  />
+                ) : (
+                  <div className={styles.previewEmpty}>
+                    <div className={styles.previewEmptyIcon}>📱</div>
+                    <p>Chọn một ý tưởng để xem trước bài đăng</p>
                   </div>
-
-                  {/* Hook */}
-                  <div className={styles.hookBox}>
-                    <span className={styles.hookLabel}>🪝 Hook</span>
-                    <p className={styles.hookText}>{idea.hook}</p>
-                  </div>
-
-                  {/* Expandable caption */}
-                  <button
-                    className={styles.captionToggle}
-                    onClick={() => setExpandedId(expandedId === idea.id ? null : idea.id)}
-                  >
-                    <span>Caption đầy đủ</span>
-                    <ChevronDown
-                      size={14}
-                      style={{ transform: expandedId === idea.id ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
-                    />
-                  </button>
-
-                  {expandedId === idea.id && (
-                    <div className={styles.captionBox}>
-                      <pre className={styles.captionText}>{idea.caption}</pre>
-                    </div>
-                  )}
-
-                  {/* Hashtags */}
-                  <div className={styles.hashtagRow}>
-                    {idea.hashtags.map(h => (
-                      <span key={h} className={styles.hashtag}>{h}</span>
-                    ))}
-                  </div>
-
-                  {/* Platforms */}
-                  <div className={styles.platformRow}>
-                    {idea.platforms.map(p => (
-                      <span key={p} className={styles.platformTag}>{p}</span>
-                    ))}
-                  </div>
-
-                  {/* Actions */}
-                  <div className={styles.ideaActions}>
-                    <button
-                      className={styles.copyBtn}
-                      onClick={() => handleCopy(idea.id, `${idea.hook}\n\n${idea.caption}\n\n${idea.hashtags.join(' ')}`)}
-                    >
-                      {copiedId === idea.id ? <><Check size={13} /> Đã copy</> : <><Copy size={13} /> Copy caption</>}
-                    </button>
-                    <button
-                      className={`btn-primary ${styles.addBtn}`}
-                      onClick={() => handleAddToCalendar(idea.id)}
-                    >
-                      {addedId === idea.id
-                        ? <><Check size={13} /> Đã thêm!</>
-                        : <><Plus size={13} /> Thêm vào Calendar</>}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -1,0 +1,66 @@
+.heatmap {
+  display: flex;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 24px; /* Space for xAxis */
+  height: 180px;
+}
+
+.axisLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gridContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 180px;
+}
+
+.row {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+}
+
+.cell {
+  flex: 1;
+  border-radius: 4px;
+  transition: all 0.25s;
+  cursor: pointer;
+  position: relative;
+}
+
+.cell:hover {
+  transform: scale(1.1);
+  z-index: 10;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+}
+
+.xAxis {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+@media (max-width: 640px) {
+  .yAxis { height: 140px; }
+  .grid { height: 140px; }
+}
