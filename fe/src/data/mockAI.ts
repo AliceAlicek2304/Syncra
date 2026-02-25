@@ -8,6 +8,7 @@ export interface ContentIdea {
   platforms: string[]
   bestTime: string
   estimatedReach: string
+  platformCaptions?: Record<string, string>
 }
 
 export interface MockAIResponse {

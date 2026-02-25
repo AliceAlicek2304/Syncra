@@ -28,22 +28,24 @@ const PLATFORM_LIMITS: Record<string, number> = {
 }
 
 export default function MultiPlatformEditor({ initialContent, platforms, onClose, onSave }: MultiPlatformEditorProps) {
-  if (!platforms || platforms.length === 0) return null
-
-  const [activeTab, setActiveTab] = useState(platforms[0])
+  const [activeTab, setActiveTab] = useState(platforms ? platforms[0] : '')
   const [contents, setContents] = useState<Record<string, PlatformContent>>(() => {
     const initial: Record<string, PlatformContent> = {}
-    platforms.forEach(p => {
-      initial[p] = {
-        caption: initialContent?.caption || '',
-        hashtags: initialContent?.hashtags ? [...initialContent.hashtags] : []
-      }
-    })
+    if (platforms) {
+      platforms.forEach(p => {
+        initial[p] = {
+          caption: initialContent?.caption || '',
+          hashtags: initialContent?.hashtags ? [...initialContent.hashtags] : []
+        }
+      })
+    }
     return initial
   })
   const [isSaving, setIsSaving] = useState(false)
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0])
   const [scheduledTime, setScheduledTime] = useState('10:00')
+
+  if (!platforms || platforms.length === 0) return null
 
   const handleCaptionChange = (platform: string, newCaption: string) => {
     setContents(prev => ({

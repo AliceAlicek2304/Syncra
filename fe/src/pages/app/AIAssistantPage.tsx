@@ -115,8 +115,8 @@ export default function AIAssistantPage() {
         ...idea,
         platformCaptions: idea.platforms.reduce((acc, p) => ({ ...acc, [p]: idea.caption }), {} as Record<string, string>)
       }))
-      setIdeas(enhancedResults as any)
-      setPreviewIdea(enhancedResults[0] as any)
+      setIdeas(enhancedResults)
+      setPreviewIdea(enhancedResults[0])
       setPreviewPlatform(enhancedResults[0].platforms[0])
       setStep('results')
     }, 1800)
@@ -149,7 +149,7 @@ export default function AIAssistantPage() {
   const handleToolbarAction = (transformed: string) => {
     if (!selection || !textareaRef.current) return
     const { start, end } = selection
-    const idea = ideas.find(i => i.id === expandedId) as any
+    const idea = ideas.find(i => i.id === expandedId)
     if (!idea) return
 
     const currentCaption = idea.platformCaptions?.[previewPlatform] || idea.caption
@@ -374,7 +374,7 @@ export default function AIAssistantPage() {
                                 }
                               })
                               setIdeas(newIdeas)
-                              if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) as any)
+                              if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) || null)
                             }}
                             onMouseUp={handleSelection}
                             onKeyUp={handleSelection}
@@ -480,7 +480,7 @@ export default function AIAssistantPage() {
         <MultiPlatformEditor
           initialContent={{
             hook: editingIdea.hook,
-            caption: (editingIdea as any).platformCaptions?.[previewPlatform] || editingIdea.caption,
+            caption: editingIdea.platformCaptions?.[previewPlatform] || editingIdea.caption,
             hashtags: editingIdea.hashtags
           }}
           platforms={editingIdea.platforms}
