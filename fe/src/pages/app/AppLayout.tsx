@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import AICoach from '../../components/AICoach'
 import styles from './AppLayout.module.css'
 
 const NAV_ITEMS = [
@@ -98,6 +99,9 @@ export default function AppLayout() {
       <main className={styles.main}>
         <Outlet />
       </main>
+
+      {/* Floating AI Coach */}
+      <AICoach />
     </div>
   )
 }
