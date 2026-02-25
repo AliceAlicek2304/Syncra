@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Zap, LayoutDashboard, Sparkles, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu,
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import CreatePostModal, { shortId } from '../../components/CreatePostModal'
+import Toast, { type ToastItem } from '../../components/Toast'
 import styles from './AppLayout.module.css'
 
 const NAV_ITEMS = [
@@ -17,7 +19,17 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed]         = useState(false)
+  const [showCreatePost, setShowCreatePost] = useState(false)
+  const [toasts, setToasts]               = useState<ToastItem[]>([])
+
+  const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
+    setToasts(prev => [...prev, { ...t, id: shortId() }])
+  }, [])
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -40,6 +52,17 @@ export default function AppLayout() {
             aria-label="Toggle sidebar"
           >
             {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
+
+        {/* New Post button */}
+        <div className={styles.newPostWrap}>
+          <button
+            className={`${styles.newPostBtn} ${collapsed ? styles.newPostBtnCollapsed : ''}`}
+            onClick={() => setShowCreatePost(true)}
+          >
+            <PenSquare size={16} />
+            {!collapsed && <span>New Post</span>}
           </button>
         </div>
 
@@ -97,6 +120,14 @@ export default function AppLayout() {
       <main className={styles.main}>
         <Outlet />
       </main>
+
+      {/* Modals / Toasts */}
+      <CreatePostModal
+        isOpen={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
+        onToast={addToast}
+      />
+      <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
