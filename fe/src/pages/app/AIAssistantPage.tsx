@@ -160,20 +160,20 @@ export default function AIAssistantPage() {
       return {
         ...i,
         platformCaptions: {
-          ...(i as any).platformCaptions,
+          ...i.platformCaptions,
           [previewPlatform]: newCaption
         }
       }
     })
     setIdeas(newIdeas)
-    if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) as any)
+    if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) || null)
   }
 
   const handleAddToCalendar = (idea: ContentIdea) => {
     setEditingIdea(idea)
   }
 
-  const handleFinishMultiEdit = (contents: any) => {
+  const handleFinishMultiEdit = (contents: Record<string, { caption: string; hashtags: string[] }>) => {
     const ideaId = editingIdea?.id
     if (!ideaId) return
     
@@ -368,7 +368,7 @@ export default function AIAssistantPage() {
                                 return {
                                   ...i,
                                   platformCaptions: {
-                                    ...(i as any).platformCaptions,
+                                    ...i.platformCaptions,
                                     [previewPlatform]: newVal
                                   }
                                 }
@@ -460,7 +460,7 @@ export default function AIAssistantPage() {
                     type={previewIdea.type}
                     content={{
                       hook: previewIdea.hook,
-                      caption: (previewIdea as any).platformCaptions?.[previewPlatform] || previewIdea.caption,
+                      caption: previewIdea.platformCaptions?.[previewPlatform] || previewIdea.caption,
                       hashtags: previewIdea.hashtags,
                     }}
                   />
