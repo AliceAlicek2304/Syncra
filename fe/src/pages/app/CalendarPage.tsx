@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Clock, MoreHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import GlassUpload from '../../components/GlassUpload'
 import styles from './CalendarPage.module.css'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -219,6 +220,7 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+      <GlassUpload />
     </div>
   )
 }

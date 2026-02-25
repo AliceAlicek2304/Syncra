@@ -6,6 +6,7 @@ import {
 import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
 import SocialPreviewer from '../../components/SocialPreviewer'
+import AIToolbar from '../../components/AIToolbar'
 import styles from './AIAssistantPage.module.css'
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -92,6 +93,9 @@ export default function AIAssistantPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [previewIdea, setPreviewIdea] = useState<ContentIdea | null>(null)
   const [previewPlatform, setPreviewPlatform] = useState<string>('TikTok')
+  const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
+  const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const togglePlatform = (p: string) => {
     setSelectedPlatforms(prev =>
@@ -115,6 +119,36 @@ export default function AIAssistantPage() {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleSelection = () => {
+    if (!textareaRef.current) return
+    const { selectionStart, selectionEnd, value } = textareaRef.current
+    const selectedText = value.substring(selectionStart, selectionEnd)
+
+    if (selectedText.trim().length > 0) {
+      const rect = textareaRef.current.getBoundingClientRect()
+      // Approximate position: center of textarea, slightly above
+      setSelection({ text: selectedText, start: selectionStart, end: selectionEnd })
+      setToolbarPos({ 
+        top: rect.top - 10, 
+        left: rect.left + rect.width / 2 
+      })
+    } else {
+      setSelection(null)
+    }
+  }
+
+  const handleToolbarAction = (transformed: string) => {
+    if (!selection || !textareaRef.current) return
+    const { start, end } = selection
+    const idea = ideas.find(i => i.id === expandedId)
+    if (!idea) return
+
+    const newCaption = idea.caption.substring(0, start) + transformed + idea.caption.substring(end)
+    const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: newCaption } : i)
+    setIdeas(newIdeas)
+    if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: newCaption })
   }
 
   const handleAddToCalendar = (id: string) => {
@@ -297,6 +331,7 @@ export default function AIAssistantPage() {
                       <div className={styles.captionBox}>
                         <div className={styles.editArea}>
                           <textarea
+                            ref={textareaRef}
                             className={styles.captionText}
                             value={idea.caption}
                             onChange={(e) => {
@@ -304,12 +339,22 @@ export default function AIAssistantPage() {
                               setIdeas(newIdeas)
                               if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: e.target.value })
                             }}
+                            onMouseUp={handleSelection}
+                            onKeyUp={handleSelection}
                             rows={6}
                           />
                           <div className={`${styles.charCounter} ${idea.caption.length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
                             {idea.caption.length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
                           </div>
                         </div>
+                        {selection && expandedId === idea.id && (
+                          <AIToolbar 
+                            selection={selection}
+                            position={toolbarPos}
+                            onAction={handleToolbarAction}
+                            onClose={() => setSelection(null)}
+                          />
+                        )}
                       </div>
                     )}
 

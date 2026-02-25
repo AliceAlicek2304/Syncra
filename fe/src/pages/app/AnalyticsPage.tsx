@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, BarChart3, Users, Eye, Heart } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
+import Heatmap from '../../components/Heatmap'
 import styles from './AnalyticsPage.module.css'
 
 const PLATFORMS_DATA = [
@@ -92,6 +93,20 @@ export default function AnalyticsPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Best Time to Post Heatmap */}
+      <div className={`glass-card ${styles.heatmapCard}`}>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
+          <span className={styles.cardSub}>Phân tích dựa trên tương tác của audience</span>
+        </div>
+        <Heatmap />
+        <div className={styles.heatmapLegend}>
+          <span>Less active</span>
+          <div className={styles.legendBar} />
+          <span>Most active</span>
         </div>
       </div>
 
