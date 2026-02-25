@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, X } from 'lucide-react'
 import styles from './OnboardingTour.module.css'
 
 interface Step {

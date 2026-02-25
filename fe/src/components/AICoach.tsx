@@ -41,7 +41,7 @@ const TIPS: CoachTip[] = [
 export default function AICoach() {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const [currentTip, setCurrentTip] = useState<CoachTip>(TIPS[0])
+  const [currentTip] = useState<CoachTip>(TIPS[0])
 
   useEffect(() => {
     // Simulate a notification popping up after 3 seconds

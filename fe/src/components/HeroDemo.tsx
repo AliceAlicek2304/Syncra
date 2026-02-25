@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles, Send, Check, Copy } from 'lucide-react'
+import { Sparkles, Copy } from 'lucide-react'
 import styles from './HeroDemo.module.css'
 
 export default function HeroDemo() {

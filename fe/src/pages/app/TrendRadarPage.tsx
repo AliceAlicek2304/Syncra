@@ -1,4 +1,4 @@
-import { TrendingUp, BarChart2, Hash, Zap, Sparkles, Filter } from 'lucide-react'
+import { TrendingUp, Hash, Zap, Sparkles, Filter } from 'lucide-react'
 import styles from './TrendRadarPage.module.css'
 
 const TRENDING_TOPICS = [

@@ -1,6 +1,6 @@
 import { 
   Music, Heart, MessageCircle, Send, Bookmark, 
-  Repeat2, MessageSquare, Share, ThumbsUp 
+  Repeat2, MessageSquare, Share 
 } from 'lucide-react'
 import styles from './SocialPreviewer.module.css'
 
