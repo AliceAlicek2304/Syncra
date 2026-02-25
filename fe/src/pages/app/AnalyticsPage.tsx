@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, BarChart3, Users, Eye, Heart } from 'lucide-react'
+import CountingNumber from '../../components/CountingNumber'
 import styles from './AnalyticsPage.module.css'
 
 const PLATFORMS_DATA = [
@@ -33,14 +34,24 @@ export default function AnalyticsPage() {
       {/* Top metrics */}
       <div className={styles.metricsRow}>
         {[
-          { icon: <Eye size={18} />, label: 'Total Reach', value: '128.4K', delta: '+24%', color: '#8b5cf6' },
-          { icon: <Heart size={18} />, label: 'Avg. Engagement', value: '8.4%', delta: '+11%', color: '#ec4899' },
-          { icon: <Users size={18} />, label: 'Follower Growth', value: '+1,240', delta: 'this month', color: '#22d3ee' },
-          { icon: <BarChart3 size={18} />, label: 'Total Posts', value: '70', delta: 'across 6 platforms', color: '#f59e0b' },
+          { icon: <Eye size={18} />, label: 'Total Reach', value: 128400, delta: '+24%', color: '#8b5cf6', isK: true },
+          { icon: <Heart size={18} />, label: 'Avg. Engagement', value: 8, delta: '+11%', color: '#ec4899', isPercent: true },
+          { icon: <Users size={18} />, label: 'Follower Growth', value: 1240, delta: 'this month', color: '#22d3ee' },
+          { icon: <BarChart3 size={18} />, label: 'Total Posts', value: 70, delta: 'across 6 platforms', color: '#f59e0b' },
         ].map(m => (
           <div key={m.label} className={`glass-card ${styles.metricCard}`}>
             <div className={styles.metricIcon} style={{ color: m.color, background: `${m.color}18` }}>{m.icon}</div>
-            <div className={styles.metricValue}>{m.value}</div>
+            <div className={styles.metricValue}>
+              <CountingNumber 
+                value={m.value} 
+                format={(v) => {
+                  if (m.isK) return `${(v/1000).toFixed(1)}K`
+                  if (m.isPercent) return `${v}.4%`
+                  if (m.label === 'Follower Growth') return `+${v.toLocaleString()}`
+                  return v.toString()
+                }}
+              />
+            </div>
             <div className={styles.metricLabel}>{m.label}</div>
             <div className={styles.metricDelta} style={{ color: m.delta.startsWith('+') ? '#22c55e' : m.color }}>{m.delta}</div>
           </div>
