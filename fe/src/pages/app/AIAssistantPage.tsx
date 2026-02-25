@@ -7,6 +7,7 @@ import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
 import SocialPreviewer from '../../components/SocialPreviewer'
 import AIToolbar from '../../components/AIToolbar'
+import MultiPlatformEditor from '../../components/MultiPlatformEditor'
 import styles from './AIAssistantPage.module.css'
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -93,6 +94,7 @@ export default function AIAssistantPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [previewIdea, setPreviewIdea] = useState<ContentIdea | null>(null)
   const [previewPlatform, setPreviewPlatform] = useState<string>('TikTok')
+  const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null)
   const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
   const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -108,9 +110,14 @@ export default function AIAssistantPage() {
     setStep('loading')
     setTimeout(() => {
       const results = getMockResults(tone)
-      setIdeas(results)
-      setPreviewIdea(results[0])
-      setPreviewPlatform(results[0].platforms[0])
+      // Initialize platform-specific captions for each idea
+      const enhancedResults = results.map(idea => ({
+        ...idea,
+        platformCaptions: idea.platforms.reduce((acc, p) => ({ ...acc, [p]: idea.caption }), {} as Record<string, string>)
+      }))
+      setIdeas(enhancedResults as any)
+      setPreviewIdea(enhancedResults[0] as any)
+      setPreviewPlatform(enhancedResults[0].platforms[0])
       setStep('results')
     }, 1800)
   }
@@ -142,18 +149,38 @@ export default function AIAssistantPage() {
   const handleToolbarAction = (transformed: string) => {
     if (!selection || !textareaRef.current) return
     const { start, end } = selection
-    const idea = ideas.find(i => i.id === expandedId)
+    const idea = ideas.find(i => i.id === expandedId) as any
     if (!idea) return
 
-    const newCaption = idea.caption.substring(0, start) + transformed + idea.caption.substring(end)
-    const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: newCaption } : i)
+    const currentCaption = idea.platformCaptions?.[previewPlatform] || idea.caption
+    const newCaption = currentCaption.substring(0, start) + transformed + currentCaption.substring(end)
+    
+    const newIdeas = ideas.map(i => {
+      if (i.id !== idea.id) return i
+      return {
+        ...i,
+        platformCaptions: {
+          ...(i as any).platformCaptions,
+          [previewPlatform]: newCaption
+        }
+      }
+    })
     setIdeas(newIdeas)
-    if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: newCaption })
+    if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) as any)
   }
 
-  const handleAddToCalendar = (id: string) => {
-    setAddedId(id)
-    setTimeout(() => setAddedId(null), 2500)
+  const handleAddToCalendar = (idea: ContentIdea) => {
+    setEditingIdea(idea)
+  }
+
+  const handleFinishMultiEdit = (contents: any) => {
+    const ideaId = editingIdea?.id
+    if (!ideaId) return
+    
+    console.log('Saved multi-platform content for idea:', ideaId, contents)
+    setAddedId(ideaId)
+    setEditingIdea(null)
+    setTimeout(() => setAddedId(null), 3000)
   }
 
   const handleReset = () => {
@@ -333,18 +360,28 @@ export default function AIAssistantPage() {
                           <textarea
                             ref={textareaRef}
                             className={styles.captionText}
-                            value={idea.caption}
+                            value={(idea as any).platformCaptions?.[previewPlatform] || idea.caption}
                             onChange={(e) => {
-                              const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: e.target.value } : i)
+                              const newVal = e.target.value
+                              const newIdeas = ideas.map(i => {
+                                if (i.id !== idea.id) return i
+                                return {
+                                  ...i,
+                                  platformCaptions: {
+                                    ...(i as any).platformCaptions,
+                                    [previewPlatform]: newVal
+                                  }
+                                }
+                              })
                               setIdeas(newIdeas)
-                              if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: e.target.value })
+                              if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) as any)
                             }}
                             onMouseUp={handleSelection}
                             onKeyUp={handleSelection}
                             rows={6}
                           />
-                          <div className={`${styles.charCounter} ${idea.caption.length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
-                            {idea.caption.length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
+                          <div className={`${styles.charCounter} ${( (idea as any).platformCaptions?.[previewPlatform] || idea.caption).length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
+                            {( (idea as any).platformCaptions?.[previewPlatform] || idea.caption).length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
                           </div>
                         </div>
                         {selection && expandedId === idea.id && (
@@ -397,7 +434,7 @@ export default function AIAssistantPage() {
                         className={`btn-primary ${styles.addBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleAddToCalendar(idea.id)
+                          handleAddToCalendar(idea)
                         }}
                       >
                         {addedId === idea.id
@@ -423,7 +460,7 @@ export default function AIAssistantPage() {
                     type={previewIdea.type}
                     content={{
                       hook: previewIdea.hook,
-                      caption: previewIdea.caption,
+                      caption: (previewIdea as any).platformCaptions?.[previewPlatform] || previewIdea.caption,
                       hashtags: previewIdea.hashtags,
                     }}
                   />
@@ -438,6 +475,19 @@ export default function AIAssistantPage() {
           </div>
         )}
       </div>
+
+      {editingIdea && (
+        <MultiPlatformEditor
+          initialContent={{
+            hook: editingIdea.hook,
+            caption: (editingIdea as any).platformCaptions?.[previewPlatform] || editingIdea.caption,
+            hashtags: editingIdea.hashtags
+          }}
+          platforms={editingIdea.platforms}
+          onClose={() => setEditingIdea(null)}
+          onSave={handleFinishMultiEdit}
+        />
+      )}
     </div>
   )
 }
