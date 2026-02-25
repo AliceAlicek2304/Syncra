@@ -111,6 +111,77 @@
   gap: 16px;
 }
 
+/* ── Custom Select ── */
+.customSelect { position: relative; width: 100%; }
+
+.customSelectTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: left;
+}
+.customSelectTrigger:hover { border-color: rgba(139,92,246,0.4); }
+.customSelectOpen { border-color: rgba(139,92,246,0.6) !important; }
+
+.customSelectChevron {
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.customSelectChevronOpen { transform: rotate(180deg); }
+
+.customSelectDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #13162a;
+  border: 1px solid rgba(139,92,246,0.3);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  backdrop-filter: blur(20px);
+  animation: dropIn .12s ease;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.customSelectOption {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.75);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.customSelectOption:hover { background: rgba(139,92,246,0.15); color: #fff; }
+.customSelectOptionActive {
+  background: rgba(139,92,246,0.2) !important;
+  color: #c4b5fd !important;
+  font-weight: 600;
+}
+
 .selectWrap {
   position: relative;
 }

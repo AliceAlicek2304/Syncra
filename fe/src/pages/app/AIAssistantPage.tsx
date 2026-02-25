@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Sparkles, Send, Clock, TrendingUp, Plus,
   Copy, Check, ChevronDown,
@@ -6,6 +6,52 @@ import {
 import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
 import styles from './AIAssistantPage.module.css'
+
+interface SelectOption { value: string; label: string }
+function CustomSelect({ options, value, onChange }: {
+  options: SelectOption[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const selected = options.find(o => o.value === value)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className={styles.customSelect}>
+      <button
+        type="button"
+        className={`${styles.customSelectTrigger} ${open ? styles.customSelectOpen : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span>{selected?.label ?? value}</span>
+        <ChevronDown size={14} className={`${styles.customSelectChevron} ${open ? styles.customSelectChevronOpen : ''}`} />
+      </button>
+      {open && (
+        <div className={styles.customSelectDropdown}>
+          {options.map(o => (
+            <button
+              key={o.value}
+              type="button"
+              className={`${styles.customSelectOption} ${o.value === value ? styles.customSelectOptionActive : ''}`}
+              onClick={() => { onChange(o.value); setOpen(false) }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const PLATFORMS = ['TikTok', 'Instagram', 'YouTube', 'LinkedIn', 'X', 'Facebook']
 const TONES = [
@@ -118,34 +164,16 @@ export default function AIAssistantPage() {
               <div className={styles.row2}>
                 <div className={styles.field}>
                   <label className={styles.label}>Tone giọng văn</label>
-                  <div className={styles.selectWrap}>
-                    <select
-                      className={styles.select}
-                      value={tone}
-                      onChange={e => setTone(e.target.value)}
-                    >
-                      {TONES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className={styles.selectIcon} />
-                  </div>
+                  <CustomSelect options={TONES} value={tone} onChange={setTone} />
                 </div>
 
                 <div className={styles.field}>
                   <label className={styles.label}>Mục tiêu</label>
-                  <div className={styles.selectWrap}>
-                    <select
-                      className={styles.select}
-                      value={goal}
-                      onChange={e => setGoal(e.target.value)}
-                    >
-                      {GOALS.map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className={styles.selectIcon} />
-                  </div>
+                  <CustomSelect
+                    options={GOALS.map(g => ({ value: g, label: g }))}
+                    value={goal}
+                    onChange={setGoal}
+                  />
                 </div>
               </div>
 
