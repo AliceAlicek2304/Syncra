@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   FileText, Wand2, Copy, Trash2, 
@@ -11,7 +12,7 @@ interface RepurposeResult {
   id: string
   platform: string
   content: string
-  icon: any
+  icon: ReactNode
 }
 
 export default function RepurposePage() {
