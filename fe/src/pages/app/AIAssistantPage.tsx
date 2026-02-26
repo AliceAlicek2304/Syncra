@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, Send, Clock, TrendingUp, Plus,
-  Copy, Check, ChevronDown,
+  Copy, Check, ChevronDown, X,
 } from 'lucide-react'
 import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
 import SocialPreviewer from '../../components/SocialPreviewer'
 import AIToolbar from '../../components/AIToolbar'
+import { useCalendar } from '../../context/CalendarContext'
 import styles from './AIAssistantPage.module.css'
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -80,7 +82,18 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
+const PLATFORM_COLORS: Record<string, string> = {
+  TikTok: '#8b5cf6',
+  Instagram: '#ec4899',
+  YouTube: '#ef4444',
+  LinkedIn: '#22d3ee',
+  X: '#f59e0b',
+  Facebook: '#3b82f6',
+}
+
 export default function AIAssistantPage() {
+  const navigate = useNavigate()
+  const { addPost } = useCalendar()
   const [step, setStep] = useState<Step>('form')
   const [topic, setTopic] = useState('')
   const [niche, setNiche] = useState('')
@@ -89,8 +102,12 @@ export default function AIAssistantPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['TikTok', 'Instagram'])
   const [ideas, setIdeas] = useState<ContentIdea[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [addedId, setAddedId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // Add-to-calendar modal
+  const [modalIdea, setModalIdea] = useState<ContentIdea | null>(null)
+  const [modalDate, setModalDate] = useState('')
+  const [modalTime, setModalTime] = useState('')
+  const [modalStatus, setModalStatus] = useState<'scheduled' | 'draft'>('scheduled')
   const [previewIdea, setPreviewIdea] = useState<ContentIdea | null>(null)
   const [previewPlatform, setPreviewPlatform] = useState<string>('TikTok')
   const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
@@ -151,9 +168,36 @@ export default function AIAssistantPage() {
     if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: newCaption })
   }
 
-  const handleAddToCalendar = (id: string) => {
-    setAddedId(id)
-    setTimeout(() => setAddedId(null), 2500)
+  const handleAddToCalendar = (idea: ContentIdea) => {
+    const today = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    setModalDate(
+      `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+    )
+    const timeMatch = idea.bestTime.match(/\d{2}:\d{2}/)
+    setModalTime(timeMatch ? timeMatch[0] : '19:00')
+    setModalStatus('scheduled')
+    setModalIdea(idea)
+  }
+
+  const handleModalConfirm = () => {
+    if (!modalIdea || !modalDate) return
+    const [year, month, day] = modalDate.split('-').map(Number)
+    const platform = modalIdea.platforms[0]
+    addPost({
+      year,
+      month: month - 1, // convert to 0-indexed
+      day,
+      title: modalIdea.hook.slice(0, 50),
+      platform,
+      status: modalStatus,
+      time: modalTime,
+      color: PLATFORM_COLORS[platform] ?? '#8b5cf6',
+      caption: modalIdea.caption,
+      hashtags: modalIdea.hashtags,
+    })
+    setModalIdea(null)
+    navigate('/app/calendar')
   }
 
   const handleReset = () => {
@@ -397,12 +441,10 @@ export default function AIAssistantPage() {
                         className={`btn-primary ${styles.addBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleAddToCalendar(idea.id)
+                          handleAddToCalendar(idea)
                         }}
                       >
-                        {addedId === idea.id
-                          ? <><Check size={13} /> Đã thêm!</>
-                          : <><Plus size={13} /> Thêm vào Calendar</>}
+                        <Plus size={13} /> Thêm vào Calendar
                       </button>
                     </div>
                   </div>
@@ -438,6 +480,94 @@ export default function AIAssistantPage() {
           </div>
         )}
       </div>
+
+      {/* ── ADD TO CALENDAR MODAL ── */}
+      {modalIdea && (
+        <div className={styles.modalOverlay} onClick={() => setModalIdea(null)}>
+          <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>📅 Lên lịch đăng bài</h3>
+              <button className={styles.modalClose} onClick={() => setModalIdea(null)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className={styles.modalIdeaTitle}>
+              "{modalIdea.hook.length > 60 ? modalIdea.hook.slice(0, 60) + '…' : modalIdea.hook}"
+            </p>
+
+            <div className={styles.modalFields}>
+              <div className={styles.modalRow2}>
+                <div className={styles.modalField}>
+                  <label className={styles.modalLabel}>Ngày đăng</label>
+                  <input
+                    type="date"
+                    className={styles.modalInput}
+                    value={modalDate}
+                    onChange={e => setModalDate(e.target.value)}
+                    min={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                <div className={styles.modalField}>
+                  <label className={styles.modalLabel}>Giờ đăng</label>
+                  <input
+                    type="time"
+                    className={styles.modalInput}
+                    value={modalTime}
+                    onChange={e => setModalTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.modalField}>
+                <label className={styles.modalLabel}>Trạng thái</label>
+                <div className={styles.modalStatusRow}>
+                  {(['scheduled', 'draft'] as const).map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`${styles.modalStatusBtn} ${
+                        modalStatus === s ? styles.modalStatusBtnActive : ''
+                      }`}
+                      onClick={() => setModalStatus(s)}
+                    >
+                      {s === 'scheduled' ? '📅 Scheduled' : '📝 Draft'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.modalField}>
+                <label className={styles.modalLabel}>Nền tảng</label>
+                <div className={styles.modalPlatformRow}>
+                  {modalIdea.platforms.map(p => (
+                    <span
+                      key={p}
+                      className={styles.modalPlatformTag}
+                      style={{ background: PLATFORM_COLORS[p] + '22', borderColor: PLATFORM_COLORS[p] + '55', color: PLATFORM_COLORS[p] }}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className="btn-secondary" onClick={() => setModalIdea(null)}>
+                Huỷ
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleModalConfirm}
+                disabled={!modalDate || !modalTime}
+              >
+                <Check size={14} /> Xác nhận & Xem Calendar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

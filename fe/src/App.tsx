@@ -15,6 +15,7 @@ import Footer from './components/Footer'
 import HeroDemo from './components/HeroDemo'
 
 // App pages
+import { CalendarProvider } from './context/CalendarContext'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import AIAssistantPage from './pages/app/AIAssistantPage'
@@ -55,7 +56,9 @@ const router = createBrowserRouter(
       path: '/app',
       element: (
         <ProtectedRoute>
-          <AppLayout />
+          <CalendarProvider>
+            <AppLayout />
+          </CalendarProvider>
         </ProtectedRoute>
       ),
       children: [
