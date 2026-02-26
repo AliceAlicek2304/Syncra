@@ -68,7 +68,7 @@ export default function SettingsPage() {
                       max="1" 
                       step="0.05" 
                       value={value} 
-                      onChange={(e) => handleSliderChange(key as any, e.target.value)}
+                      onChange={(e) => handleSliderChange(key as keyof typeof brandTone, e.target.value)}
                       className={styles.slider}
                     />
                   </div>

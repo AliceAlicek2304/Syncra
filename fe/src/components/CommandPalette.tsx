@@ -42,7 +42,13 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setIsOpen(prev => !prev)
+        setIsOpen(prev => {
+          if (!prev) {
+            setSearch('')
+            setSelectedIndex(0)
+          }
+          return !prev
+        })
       }
       if (e.key === 'Escape') setIsOpen(false)
     }
@@ -52,9 +58,8 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
 
   useEffect(() => {
     if (isOpen) {
-      setSearch('')
-      setSelectedIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 50)
+      const timer = setTimeout(() => inputRef.current?.focus(), 50)
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
 
