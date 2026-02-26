@@ -9,6 +9,8 @@ import CreatePostModal from '../../components/CreatePostModal'
 import { shortId } from '../../utils/shortId'
 import Toast, { type ToastItem } from '../../components/Toast'
 import AICoach from '../../components/AICoach'
+import MeshBackground from '../../components/MeshBackground'
+import CommandPalette from '../../components/CommandPalette'
 import styles from './AppLayout.module.css'
 
 const NAV_ITEMS = [
@@ -134,6 +136,10 @@ export default function AppLayout() {
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {/* Floating AI Coach */}
       <AICoach />
+      {/* Premium Background Layer */}
+      <MeshBackground />
+      {/* Search & Actions Palette */}
+      <CommandPalette onNewPost={() => setShowCreatePost(true)} />
     </div>
   )
 }

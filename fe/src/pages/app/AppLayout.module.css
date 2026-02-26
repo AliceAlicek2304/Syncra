@@ -1,22 +1,25 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-dark);
+  background: transparent;
 }
 
 /* ── Sidebar ── */
 .sidebar {
-  width: 240px;
+  width: 250px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(13, 17, 28, 0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border-right: 1px solid var(--border-glass);
   position: sticky;
   top: 0;
   height: 100vh;
-  transition: width 0.25s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  z-index: 10;
 }
 
 .collapsed .sidebar {
@@ -133,27 +136,30 @@
 .navItem {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 10px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   overflow: hidden;
+  border: 1px solid transparent;
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  transform: translateX(4px);
 }
 
 .navItemActive {
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(139, 92, 246, 0.08);
   color: var(--purple-400);
   border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .navIcon {
