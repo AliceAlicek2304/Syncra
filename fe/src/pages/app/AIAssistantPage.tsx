@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Sparkles, Send, Clock, TrendingUp, Plus,
   Copy, Check, ChevronDown,
@@ -98,6 +99,35 @@ export default function AIAssistantPage() {
   const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
   const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const location = useLocation()
+
+  useEffect(() => {
+    const state = location.state as { repurposedContent?: string }
+    if (state?.repurposedContent) {
+      const content = state.repurposedContent
+      const newIdea: ContentIdea = {
+        id: 'repurposed-' + Date.now(),
+        type: 'Photo',
+        hook: 'Nội dung tái bản từ "Source" của bạn',
+        title: 'Tái bản đa kênh',
+        caption: content,
+        hashtags: ['#repurposed', '#ai', '#technest'],
+        platforms: ['LinkedIn', 'X', 'Instagram'],
+        bestTime: 'Giờ vàng (Phân tích từ source)',
+        estimatedReach: 'Tối ưu cho Platform',
+        platformCaptions: {
+          LinkedIn: content,
+          X: content.substring(0, 280),
+          Instagram: content
+        }
+      }
+      setIdeas([newIdea])
+      setPreviewIdea(newIdea)
+      setPreviewPlatform('LinkedIn')
+      setStep('results')
+      setExpandedId(newIdea.id)
+    }
+  }, [location])
 
   const togglePlatform = (p: string) => {
     setSelectedPlatforms(prev =>
@@ -167,6 +197,24 @@ export default function AIAssistantPage() {
     })
     setIdeas(newIdeas)
     if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) || null)
+  }
+
+
+  const handleSelectVariation = (ideaId: string, variation: string) => {
+    const newIdeas = ideas.map(i => {
+      if (i.id !== ideaId) return i
+      return {
+        ...i,
+        platformCaptions: {
+          ...i.platformCaptions,
+          [previewPlatform]: variation
+        }
+      }
+    })
+    setIdeas(newIdeas)
+    if (previewIdea?.id === ideaId) {
+      setPreviewIdea(newIdeas.find(i => i.id === ideaId) || null)
+    }
   }
 
   const handleAddToCalendar = (idea: ContentIdea) => {
@@ -356,6 +404,25 @@ export default function AIAssistantPage() {
 
                     {expandedId === idea.id && (
                       <div className={styles.captionBox}>
+                        {idea.variations && idea.variations.length > 0 && (
+                          <div className={styles.variationSection}>
+                            <span className={styles.variationLabel}>✨ Bản biến thể (Variations)</span>
+                            <div className={styles.variationList}>
+                              {idea.variations.map((v, idx) => {
+                                const isSelected = (idea.platformCaptions?.[previewPlatform] || idea.caption) === v
+                                return (
+                                  <button 
+                                    key={idx}
+                                    className={`${styles.variationBtn} ${isSelected ? styles.variationBtnActive : ''}`}
+                                    onClick={() => handleSelectVariation(idea.id, v)}
+                                  >
+                                    Bản #{idx + 1}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <div className={styles.editArea}>
                           <textarea
                             ref={textareaRef}
