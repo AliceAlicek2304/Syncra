@@ -16,13 +16,14 @@ import HeroDemo from './components/HeroDemo'
 
 // App pages
 import { CalendarProvider } from './context/CalendarContext'
+import { RepurposeProvider } from './context/RepurposeContext'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
 import CalendarPage from './pages/app/CalendarPage'
+import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
-import RepurposePage from './pages/app/RepurposePage'
 import SettingsPage from './pages/app/SettingsPage'
 
 function Homepage() {
@@ -58,7 +59,9 @@ const router = createBrowserRouter(
       element: (
         <ProtectedRoute>
           <CalendarProvider>
-            <AppLayout />
+            <RepurposeProvider>
+              <AppLayout />
+            </RepurposeProvider>
           </CalendarProvider>
         </ProtectedRoute>
       ),

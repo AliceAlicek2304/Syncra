@@ -23,6 +23,7 @@ interface Props {
   isOpen: boolean
   onClose: () => void
   onToast?: (t: Omit<ToastItem, 'id'>) => void
+  initialContent?: string | null
 }
 
 // ── Constants ──────────────────────────────────────────
@@ -224,7 +225,7 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
 }
 
 // getMockResults is imported; it accepts tone param
-export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
+export default function CreatePostModal({ isOpen, onClose, onToast, initialContent }: Props) {
   const { user } = useAuth()
 
   // Platform selection
@@ -232,7 +233,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   const [activeTab, setActiveTab] = useState<Platform>('TikTok')
 
   // Composer state
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState(initialContent || '')
   const [showAI, setShowAI] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
   const tone: Tone = 'default'
@@ -261,6 +262,13 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   const charLimit = activeP.maxChars
   const overLimit = caption.length > charLimit
   const hasPlatforms = activePlatforms.length > 0
+
+  // Sync initial content
+  useEffect(() => {
+    if (isOpen) {
+      setCaption(initialContent || '')
+    }
+  }, [isOpen, initialContent])
 
   // Close on Escape
   useEffect(() => {

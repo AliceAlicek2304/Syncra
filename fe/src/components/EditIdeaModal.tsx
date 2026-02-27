@@ -3,6 +3,7 @@ import {
     X, Sparkles, Smile, Hash,
     RotateCcw, RotateCw, Crop, Check, FlipHorizontal,
 } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
 import { shortId } from '../utils/shortId'
 import IdeaAIAssistantPanel from './IdeaAIAssistantPanel'
 import styles from './EditIdeaModal.module.css'
@@ -181,6 +182,8 @@ export default function EditIdeaModal({ idea, groups, onSave, onDelete, onClose 
     const [dragId, setDragId] = useState<string | null>(null)
     const [dragOverId, setDragOverId] = useState<string | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
+
+    const { openCreatePost } = useOutletContext<{ openCreatePost: (content?: string) => void }>() || {}
 
     const fileInputRef = useRef<HTMLInputElement>(null)
     const replaceInputRef = useRef<HTMLInputElement>(null)
@@ -443,14 +446,18 @@ export default function EditIdeaModal({ idea, groups, onSave, onDelete, onClose 
 
                         {/* Footer */}
                         <div className={styles.footer}>
-                            <button
-                                className={styles.deleteBtn}
-                                onClick={() => { onDelete(idea.id); onClose() }}
-                            >
-                                Delete Idea
-                            </button>
                             <div className={styles.footerSpacer} />
-                            <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
+                            <button
+                                className={styles.cancelBtn}
+                                style={{ marginRight: 8 }}
+                                onClick={() => {
+                                    const fullContent = title.trim() ? `${title.trim()}\n\n${content}` : content;
+                                    openCreatePost?.(fullContent);
+                                    onClose();
+                                }}
+                            >
+                                Create Post
+                            </button>
                             <button className={styles.saveBtn} onClick={handleSave}>Save Changes</button>
                         </div>
                     </div>
