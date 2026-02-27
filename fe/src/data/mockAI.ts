@@ -17,6 +17,14 @@ export interface MockAIResponse {
   ideas: ContentIdea[]
 }
 
+export interface AIGenerateInput {
+  topic: string
+  niche: string
+  audience: string
+  goal: string
+  tone: string
+}
+
 // Mock responses keyed by tone
 export const MOCK_AI_RESULTS: Record<string, ContentIdea[]> = {
   default: [
@@ -163,7 +171,8 @@ export const MOCK_AI_RESULTS: Record<string, ContentIdea[]> = {
   ],
 }
 
-export function getMockResults(tone: string): ContentIdea[] {
+export function getMockResults(input: AIGenerateInput): ContentIdea[] {
+  const { tone } = input
   if (tone === 'professional') return MOCK_AI_RESULTS.professional
   if (tone === 'casual') return MOCK_AI_RESULTS.casual
   return MOCK_AI_RESULTS.default

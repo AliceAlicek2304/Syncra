@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Search, LayoutDashboard, Sparkles, Repeat, 
-  TrendingUp, CalendarDays, BarChart3, Settings, 
+import {
+  Search, LayoutDashboard, Sparkles, Repeat,
+  TrendingUp, CalendarDays, BarChart3, Settings,
   PlusSquare, Command
 } from 'lucide-react'
 import styles from './CommandPalette.module.css'
@@ -25,7 +25,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
 
   const commands: CommandItem[] = [
     { id: 'dash', label: 'Go to Dashboard', icon: <LayoutDashboard size={18} />, action: () => navigate('/app/dashboard'), category: 'Navigation' },
-    { id: 'ai', label: 'AI Assistant', icon: <Sparkles size={18} />, action: () => navigate('/app/ai'), category: 'Navigation' },
+    { id: 'ideas', label: 'Ideas', icon: <Sparkles size={18} />, action: () => navigate('/app/ideas'), category: 'Navigation' },
     { id: 'repurpose', label: 'AI Repurpose Engine', icon: <Repeat size={18} />, action: () => navigate('/app/repurpose'), category: 'Navigation' },
     { id: 'trends', label: 'Trend Radar', icon: <TrendingUp size={18} />, action: () => navigate('/app/trends'), category: 'Navigation' },
     { id: 'calendar', label: 'Content Calendar', icon: <CalendarDays size={18} />, action: () => navigate('/app/calendar'), category: 'Navigation' },
@@ -34,7 +34,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
     { id: 'new-post', label: 'Create New Post', icon: <PlusSquare size={18} />, action: () => onNewPost(), category: 'Actions', shortcut: 'N' },
   ]
 
-  const filteredCommands = commands.filter(cmd => 
+  const filteredCommands = commands.filter(cmd =>
     cmd.label.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -87,10 +87,10 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
       <div className={styles.container} onClick={e => e.stopPropagation()} onKeyDown={onKeyDown}>
         <div className={styles.searchWrap}>
           <Search size={20} className={styles.searchIcon} />
-          <input 
+          <input
             ref={inputRef}
-            type="text" 
-            placeholder="Type a command or search..." 
+            type="text"
+            placeholder="Type a command or search..."
             className={styles.input}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -115,8 +115,8 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
                       const globalIndex = filteredCommands.indexOf(cmd)
                       const isActive = globalIndex === selectedIndex
                       return (
-                        <div 
-                          key={cmd.id} 
+                        <div
+                          key={cmd.id}
                           className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
                           onClick={() => handleAction(cmd)}
                           onMouseEnter={() => setSelectedIndex(globalIndex)}
