@@ -20,7 +20,7 @@ export default function InputSection() {
                 extractAtoms: config.extractAtoms
             })
             setResults(response.atoms)
-        } catch (err) {
+        } catch {
             setError('An error occurred while generating content.')
         } finally {
             setIsGenerating(false)

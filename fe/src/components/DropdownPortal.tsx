@@ -18,7 +18,7 @@ export default function DropdownPortal({ anchorRef, isOpen, children, width = 16
     const frameRef = useRef<number | null>(null)
 
     useEffect(() => {
-        if (!isOpen) { setPos(null); return }
+        if (!isOpen) return
 
         const compute = () => {
             if (!anchorRef.current) return
@@ -42,6 +42,7 @@ export default function DropdownPortal({ anchorRef, isOpen, children, width = 16
             window.removeEventListener('scroll', onScroll, true)
             window.removeEventListener('resize', onScroll)
             if (frameRef.current) cancelAnimationFrame(frameRef.current)
+            setPos(null)
         }
     }, [isOpen, anchorRef, width])
 

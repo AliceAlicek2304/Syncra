@@ -4,7 +4,6 @@ import { RepurposeContext } from './repurposeContextBase'
 import type { RepurposeConfig } from './repurposeContextBase'
 import type { RepurposeAtom } from '../data/mockAI'
 
-export * from './repurposeContextBase'
 
 export function RepurposeProvider({ children }: { children: ReactNode }) {
     const [config, setConfig] = useState<RepurposeConfig>({
