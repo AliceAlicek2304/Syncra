@@ -1,0 +1,230 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.textareaWrap {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    transition: border-color 0.2s;
+}
+
+.textareaWrap:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+    /* Purple 500 */
+}
+
+.textarea {
+    width: 100%;
+    min-height: 160px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+}
+
+.textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.actionRow {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.generateBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--purple-500);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.generateBtn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.generateBtn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.generateBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Config Bar */
+.configBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: center;
+}
+
+.configGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.configLabel {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.platformToggles {
+    display: flex;
+    gap: 8px;
+}
+
+.platformBtn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.platformBtn.active {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: var(--purple-400);
+    color: var(--purple-300);
+}
+
+/* Tone & Toggle */
+.selectInput {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Results Grid */
+.resultsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 16px;
+}
+
+/* Atom Card */
+.atomCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.atomCard:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.badgeGroup {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badgePlatform {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+}
+
+.badgeType {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--purple-300);
+}
+
+.cardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.cardContent {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cardFooter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.hashtag {
+    font-size: 12px;
+    color: var(--purple-400);
+    background: rgba(139, 92, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
     DndContext,
     DragOverlay,
@@ -16,10 +16,11 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check } from 'lucide-react'
+import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check, MoreHorizontal } from 'lucide-react'
 import AIIdeaGenerator from '../../components/AIIdeaGenerator'
 import type { GeneratedIdea } from '../../components/AIIdeaGenerator'
 import EditIdeaModal from '../../components/EditIdeaModal'
+import DropdownPortal from '../../components/DropdownPortal'
 import { shortId } from '../../utils/shortId'
 import styles from './IdeasPage.module.css'
 
@@ -48,10 +49,13 @@ const DEFAULT_GROUPS: Group[] = [
 // ─── Idea Card ──────────────────────────────────────────────────────────────
 interface IdeaCardProps {
     idea: Idea
+    groups: Group[]
     onEdit: (idea: Idea) => void
+    onDelete: (id: string) => void
+    onMove: (id: string, groupId: string) => void
 }
 
-function IdeaCard({ idea, onEdit }: IdeaCardProps) {
+function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
         useSortable({
             id: idea.id,
@@ -61,7 +65,29 @@ function IdeaCard({ idea, onEdit }: IdeaCardProps) {
             }
         })
 
+    const [openMenu, setOpenMenu] = useState(false)
+    const [showMoveMenu, setShowMoveMenu] = useState(false)
+    const btnRef = useRef<HTMLButtonElement>(null)
+    const moveItemRef = useRef<HTMLDivElement>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const subMenuRef = useRef<HTMLDivElement>(null)
 
+    // Close on outside click — must watch portal content too
+    useEffect(() => {
+        if (!openMenu) { setShowMoveMenu(false); return }
+        const handler = (e: MouseEvent) => {
+            const target = e.target as Node
+            if (
+                btnRef.current?.contains(target) ||
+                dropdownRef.current?.contains(target) ||
+                subMenuRef.current?.contains(target)
+            ) return
+            setOpenMenu(false)
+            setShowMoveMenu(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [openMenu])
 
     const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
@@ -71,10 +97,34 @@ function IdeaCard({ idea, onEdit }: IdeaCardProps) {
     }
 
     const handleClick = () => {
-        if (!isDragging) {
-            onEdit(idea)
-        }
+        if (!isDragging) onEdit(idea)
     }
+
+    const handleMenuBtn = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setOpenMenu(v => !v)
+        setShowMoveMenu(false)
+    }
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setOpenMenu(false)
+        onDelete(idea.id)
+    }
+
+    const handleMoveClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setShowMoveMenu(v => !v)
+    }
+
+    const handleMoveTo = (e: React.MouseEvent, groupId: string) => {
+        e.stopPropagation()
+        onMove(idea.id, groupId)
+        setOpenMenu(false)
+        setShowMoveMenu(false)
+    }
+
+    const otherGroups = groups.filter(g => g.id !== idea.status)
 
     return (
         <div
@@ -91,6 +141,56 @@ function IdeaCard({ idea, onEdit }: IdeaCardProps) {
                     <p className={styles.ideaCardDesc}>{idea.description}</p>
                 )}
             </div>
+
+            {/* 3-dot menu button — stays in card for hover detection */}
+            <div
+                className={styles.cardMenuWrapper}
+                onMouseDown={e => e.stopPropagation()}
+            >
+                <button
+                    ref={btnRef}
+                    className={styles.cardMenuBtn}
+                    onClick={handleMenuBtn}
+                    title="More options"
+                >
+                    <MoreHorizontal size={14} />
+                </button>
+            </div>
+
+            {/* Main dropdown — rendered via portal at body level */}
+            <DropdownPortal anchorRef={btnRef} isOpen={openMenu} width={160}>
+                <div ref={dropdownRef} className={styles.cardDropdown}>
+                    <div className={styles.cardDropdownItem} onClick={handleMoveClick} ref={moveItemRef}>
+                        <span>Move to group</span>
+                        <span className={styles.cardDropdownChevron}>›</span>
+                    </div>
+                    <div
+                        className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
+                        onClick={handleDelete}
+                    >
+                        Delete
+                    </div>
+                </div>
+            </DropdownPortal>
+
+            {/* Submenu — also via portal, anchored to move item */}
+            <DropdownPortal anchorRef={moveItemRef} isOpen={openMenu && showMoveMenu} width={150}>
+                <div ref={subMenuRef} className={styles.cardDropdown}>
+                    {otherGroups.length === 0 ? (
+                        <div className={`${styles.cardDropdownItem} ${styles.cardDropdownItemMuted}`}>
+                            No other groups
+                        </div>
+                    ) : otherGroups.map(g => (
+                        <div
+                            key={g.id}
+                            className={styles.cardDropdownItem}
+                            onClick={e => handleMoveTo(e, g.id)}
+                        >
+                            {g.name}
+                        </div>
+                    ))}
+                </div>
+            </DropdownPortal>
         </div>
     )
 }
@@ -113,14 +213,17 @@ function OverlayCard({ idea }: { idea: Idea }) {
 interface ColumnProps {
     group: Group
     ideas: Idea[]
+    groups: Group[]
     onAddIdea: (groupId: string) => void
     onEditIdea: (idea: Idea) => void
+    onDeleteIdea: (id: string) => void
+    onMoveIdea: (id: string, groupId: string) => void
     onRenameGroup: (groupId: string, name: string) => void
     onDeleteGroup: (groupId: string) => void
     isDefault: boolean
 }
 
-function Column({ group, ideas, onAddIdea, onEditIdea, onRenameGroup, onDeleteGroup, isDefault }: ColumnProps) {
+function Column({ group, ideas, groups, onAddIdea, onEditIdea, onDeleteIdea, onMoveIdea, onRenameGroup, onDeleteGroup, isDefault }: ColumnProps) {
     const [renaming, setRenaming] = useState(false)
     const [renameVal, setRenameVal] = useState(group.name)
 
@@ -181,7 +284,7 @@ function Column({ group, ideas, onAddIdea, onEditIdea, onRenameGroup, onDeleteGr
             <SortableContext items={ideaIds} strategy={verticalListSortingStrategy}>
                 <div className={styles.cardList}>
                     {ideas.map(idea => (
-                        <IdeaCard key={idea.id} idea={idea} onEdit={onEditIdea} />
+                        <IdeaCard key={idea.id} idea={idea} groups={groups} onEdit={onEditIdea} onDelete={onDeleteIdea} onMove={onMoveIdea} />
                     ))}
                 </div>
             </SortableContext>
@@ -345,6 +448,10 @@ export default function IdeasPage() {
         setIdeas(prev => prev.filter(i => i.id !== id))
     }
 
+    const moveIdea = (id: string, groupId: string) => {
+        setIdeas(prev => prev.map(i => i.id === id ? { ...i, status: groupId } : i))
+    }
+
     const addGroup = () => {
         if (!newGroupName.trim()) return
         setGroups(prev => [...prev, { id: shortId(), name: newGroupName.trim() }])
@@ -409,8 +516,11 @@ export default function IdeasPage() {
                                 key={group.id}
                                 group={group}
                                 ideas={groupIdeas}
+                                groups={groups}
                                 onAddIdea={id => setQuickAddGroupId(id)}
                                 onEditIdea={setEditingIdea}
+                                onDeleteIdea={deleteIdea}
+                                onMoveIdea={moveIdea}
                                 onRenameGroup={renameGroup}
                                 onDeleteGroup={deleteGroup}
                                 isDefault={defaultGroupIds.includes(group.id)}

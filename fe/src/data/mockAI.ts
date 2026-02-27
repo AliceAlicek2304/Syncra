@@ -177,3 +177,93 @@ export function getMockResults(input: AIGenerateInput): ContentIdea[] {
   if (tone === 'casual') return MOCK_AI_RESULTS.casual
   return MOCK_AI_RESULTS.default
 }
+
+// ─── Repurpose Engine Mock Data ─────────────────────────────────────────────
+
+export type RepurposePlatform = 'LinkedIn' | 'X' | 'Instagram' | 'Newsletter'
+export type AtomType = 'POST' | 'THREAD' | 'CAROUSEL' | 'INSIGHT' | 'TIP' | 'QUOTE'
+
+export interface RepurposeAtom {
+  id: string
+  type: AtomType
+  title?: string
+  content: string
+  platform: RepurposePlatform
+  suggestedHashtags: string[]
+  suggestedCTA?: string
+}
+
+export interface GenerateRepurposeRequest {
+  sourceText: string
+  platforms: RepurposePlatform[]
+  tone: string
+  extractAtoms: boolean
+}
+
+const MOCK_REPURPOSE_ATOMS: RepurposeAtom[] = [
+  {
+    id: 'r1',
+    type: 'POST',
+    title: 'LinkedIn: The 3 Pillars of Content Strategy',
+    content: 'Content strategy isn\'t just making posts.\n\nIt\'s about three pillars:\n1. Discovery: How do they find you?\n2. Trust: Why should they listen?\n3. Value: What\'s in it for them?\n\nIf you nail these 3, you\'re golden.\n\nWhat is the hardest pillar for you to build?',
+    platform: 'LinkedIn',
+    suggestedHashtags: ['#ContentStrategy', '#Marketing', '#Growth'],
+    suggestedCTA: 'What is the hardest pillar for you?',
+  },
+  {
+    id: 'r2',
+    type: 'THREAD',
+    title: 'X/Twitter: Thread on Strategy',
+    content: 'Content strategy broken down into 3 simple pillars 🧵👇\n\n1/3\nFirst is Discovery. If they can\'t find you, the best content in the world won\'t help. Optimize for search and shares.\n\n2/3\nSecond is Trust. You need to show authority in your niche. Case studies and personal stories work best.\n\n3/3\nThird is Value. Give away the secrets, sell the implementation. What\'s your strategy?',
+    platform: 'X',
+    suggestedHashtags: ['#ContentCreator', '#TwitterTips'],
+  },
+  {
+    id: 'r3',
+    type: 'CAROUSEL',
+    title: 'Instagram: Carousel Outline',
+    content: 'Slide 1: Stop posting aimlessly. Try these 3 pillars instead.\nSlide 2: Pillar 1 - Discovery (Search algorithms)\nSlide 3: Pillar 2 - Trust (Social Proof)\nSlide 4: Pillar 3 - Value (Actionable take-aways)\nSlide 5: Save this for your next brainstorm!',
+    platform: 'Instagram',
+    suggestedHashtags: ['#InstagramTips', '#ContentMarketing', '#Carousel'],
+    suggestedCTA: 'Save this post!',
+  },
+  {
+    id: 'r4',
+    type: 'INSIGHT',
+    content: 'The best content gives away the secret but sells the implementation.',
+    platform: 'LinkedIn',
+    suggestedHashtags: ['#Insight', '#MarketingTruths'],
+  },
+  {
+    id: 'r5',
+    type: 'TIP',
+    content: 'Review your analytics weekly. Discovery, Trust, and Value all have different metrics (Reach, Saves/Shares, Link Clicks).',
+    platform: 'X',
+    suggestedHashtags: ['#QuickTip', '#Analytics'],
+  },
+  {
+    id: 'r6',
+    type: 'QUOTE',
+    content: '"If you nail these 3 pillars, you\'re golden." - The Source Material',
+    platform: 'Instagram',
+    suggestedHashtags: ['#Quotes', '#Motivation'],
+  }
+]
+
+export const mockGenerateRepurpose = async (req: GenerateRepurposeRequest): Promise<{ atoms: RepurposeAtom[] }> => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      // Filter by platform requests
+      let results = MOCK_REPURPOSE_ATOMS.filter(atom => req.platforms.includes(atom.platform))
+
+      // If asking for atoms only, only show INSIGHT/TIP/QUOTE
+      if (req.extractAtoms) {
+        const atomTypes = ['INSIGHT', 'TIP', 'QUOTE']
+        results = results.filter(a => atomTypes.includes(a.type))
+      }
+
+      if (results.length === 0) results = MOCK_REPURPOSE_ATOMS // Fallback
+      resolve({ atoms: results })
+    }, 1500)
+  })
+}
