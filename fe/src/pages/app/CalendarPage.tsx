@@ -88,9 +88,6 @@ export default function CalendarPage() {
           <h1 className={styles.title}>Content Calendar</h1>
           <p className={styles.subtitle}>Lên lịch và quản lý tất cả bài đăng của bạn</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 13 }}>
-          <Plus size={14} /> Tạo post mới
-        </button>
       </div>
 
       <div className={styles.body}>

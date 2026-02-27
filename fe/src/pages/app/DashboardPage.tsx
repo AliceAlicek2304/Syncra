@@ -31,9 +31,6 @@ export default function DashboardPage() {
           <h1 className={styles.title}>Chào buổi tối, {user?.name?.split(' ')[0]} 👋</h1>
           <p className={styles.subtitle}>Đây là tổng quan hiệu suất content của bạn hôm nay.</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 13 }}>
-          <Sparkles size={14} /> Tạo content mới
-        </button>
       </div>
 
       {/* Stats */}
@@ -44,10 +41,10 @@ export default function DashboardPage() {
               {s.icon}
             </div>
             <div className={styles.statValue}>
-              <CountingNumber 
-                value={s.value} 
+              <CountingNumber
+                value={s.value}
                 format={(v) => {
-                  if (s.isK) return `${(v/1000).toFixed(1)}K`
+                  if (s.isK) return `${(v / 1000).toFixed(1)}K`
                   if (s.isPercent) return `${v}.4%`
                   return v.toString()
                 }}
