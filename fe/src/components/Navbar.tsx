@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Zap, Menu, X, LayoutDashboard, Sparkles, Calendar, BarChart2, LogOut } from 'lucide-react'
+import { Zap, Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import styles from './Navbar.module.css'
@@ -13,7 +13,7 @@ const NAV_LINKS = [
 
 const USER_MENU = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
-  { label: 'AI Assistant', icon: Sparkles, path: '/app/ai' },
+  { label: 'Ideas', icon: Lightbulb, path: '/app/ideas' }, 
   { label: 'Calendar', icon: Calendar, path: '/app/calendar' },
   { label: 'Analytics', icon: BarChart2, path: '/app/analytics' },
 ]

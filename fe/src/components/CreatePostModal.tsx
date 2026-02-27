@@ -8,53 +8,54 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getMockResults } from '../data/mockAI'
+import type { AIGenerateInput } from '../data/mockAI'
 import { shortId } from '../utils/shortId'
 import type { ToastItem } from './Toast'
 import styles from './CreatePostModal.module.css'
 
 // ── Types ──────────────────────────────────────────────
 type Platform = 'TikTok' | 'Instagram' | 'Facebook' | 'X'
-type Tone     = 'default' | 'professional' | 'casual'
+type Tone = 'default' | 'professional' | 'casual'
 
 interface MediaFile { id: string; url: string; type: 'image' | 'video'; name: string }
 
 interface Props {
-  isOpen   : boolean
-  onClose  : () => void
-  onToast? : (t: Omit<ToastItem, 'id'>) => void
+  isOpen: boolean
+  onClose: () => void
+  onToast?: (t: Omit<ToastItem, 'id'>) => void
 }
 
 // ── Constants ──────────────────────────────────────────
 const PLATFORMS: { id: Platform; label: string; className: string; maxChars: number }[] = [
-  { id: 'TikTok',    label: 'TikTok',    className: styles.chipTikTok, maxChars: 2200 },
-  { id: 'Instagram', label: 'Instagram', className: styles.chipIG,     maxChars: 2200 },
-  { id: 'Facebook',  label: 'Facebook',  className: styles.chipFB,     maxChars: 2200 },
-  { id: 'X',         label: 'Twitter/X', className: styles.chipX,      maxChars: 280  },
+  { id: 'TikTok', label: 'TikTok', className: styles.chipTikTok, maxChars: 2200 },
+  { id: 'Instagram', label: 'Instagram', className: styles.chipIG, maxChars: 2200 },
+  { id: 'Facebook', label: 'Facebook', className: styles.chipFB, maxChars: 2200 },
+  { id: 'X', label: 'Twitter/X', className: styles.chipX, maxChars: 280 },
 ]
 
 const PLATFORM_ICONS: Record<Platform, string> = {
-  TikTok:    '♪',
+  TikTok: '♪',
   Instagram: '📸',
-  Facebook:  'f',
-  X:         '𝕏',
+  Facebook: 'f',
+  X: '𝕏',
 }
 
 const PLATFORM_BADGE_CLASS: Record<Platform, string> = {
-  TikTok:    styles.badgeTikTok,
+  TikTok: styles.badgeTikTok,
   Instagram: styles.badgeIG,
-  Facebook:  styles.badgeFB,
-  X:         styles.badgeX,
+  Facebook: styles.badgeFB,
+  X: styles.badgeX,
 }
 
-const COMMON_EMOJIS = ['😊','🔥','💡','🚀','✅','💬','👇','❤️','🎯','💪','📊','🌟','😂','👏','🙌','💼','🎉','✨','📱','💰']
-const HASH_TAGS = ['#contentcreator','#viral','#trending','#socialmedia','#growth','#marketing']
+const COMMON_EMOJIS = ['😊', '🔥', '💡', '🚀', '✅', '💬', '👇', '❤️', '🎯', '💪', '📊', '🌟', '😂', '👏', '🙌', '💼', '🎉', '✨', '📱', '💰']
+const HASH_TAGS = ['#contentcreator', '#viral', '#trending', '#socialmedia', '#growth', '#marketing']
 
 
 // ── Crop presets ───────────────────────────────────────
 const CROP_PRESETS = [
   { label: 'Free', ratio: null },
-  { label: '1:1',  ratio: 1 },
-  { label: '4:3',  ratio: 4 / 3 },
+  { label: '1:1', ratio: 1 },
+  { label: '4:3', ratio: 4 / 3 },
   { label: '16:9', ratio: 16 / 9 },
   { label: '9:16', ratio: 9 / 16 },
 ]
@@ -62,16 +63,16 @@ const CROP_PRESETS = [
 // ── Image Editor Panel ────────────────────────────────
 interface EditorPanelProps { src: string; onSave: (blob: Blob) => void; onCancel: () => void }
 function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
-  const [rotation,   setRotation]  = useState(0)
-  const [flipH,      setFlipH]     = useState(false)
-  const [cropStart,  setCropStart] = useState<{ x: number; y: number } | null>(null)
-  const [cropEnd,    setCropEnd]   = useState<{ x: number; y: number } | null>(null)
-  const [dragging,   setDragging]  = useState(false)
+  const [rotation, setRotation] = useState(0)
+  const [flipH, setFlipH] = useState(false)
+  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(null)
+  const [cropEnd, setCropEnd] = useState<{ x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
   const [activeCrop, setActiveCrop] = useState<string>('Free')
-  const imgRef     = useRef<HTMLImageElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
 
-  const rotateBy  = (dir: 1 | -1) => setRotation(r => (r + dir * 90 + 360) % 360)
+  const rotateBy = (dir: 1 | -1) => setRotation(r => (r + dir * 90 + 360) % 360)
   const resetEditor = () => { setRotation(0); setFlipH(false); setCropStart(null); setCropEnd(null); setActiveCrop('Free') }
 
   const applyCropPreset = (label: string, ratio: number | null) => {
@@ -127,8 +128,8 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
     const cropRect = getRect()
     if (cropRect && overlayRef.current) {
       const or = overlayRef.current.getBoundingClientRect()
-      const sx = (cropRect.x / or.width)  * cw; const sy = (cropRect.y / or.height) * ch
-      const sw = (cropRect.w / or.width)  * cw; const sh = (cropRect.h / or.height) * ch
+      const sx = (cropRect.x / or.width) * cw; const sy = (cropRect.y / or.height) * ch
+      const sw = (cropRect.w / or.width) * cw; const sh = (cropRect.h / or.height) * ch
       const cc = document.createElement('canvas')
       cc.width = Math.max(1, sw); cc.height = Math.max(1, sh)
       cc.getContext('2d')!.drawImage(canvas, -sx, -sy)
@@ -228,33 +229,33 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
 
   // Platform selection
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
-  const [activeTab,       setActiveTab]       = useState<Platform>('TikTok')
+  const [activeTab, setActiveTab] = useState<Platform>('TikTok')
 
   // Composer state
-  const [caption, setCaption]             = useState('')
-  const [showAI,   setShowAI]             = useState(false)
-  const [showPreview, setShowPreview]     = useState(true)
+  const [caption, setCaption] = useState('')
+  const [showAI, setShowAI] = useState(false)
+  const [showPreview, setShowPreview] = useState(true)
   const tone: Tone = 'default'
-  const [showEmoji, setShowEmoji]         = useState(false)
-  const [media,    setMedia]              = useState<MediaFile[]>([])
-  const [dragOver, setDragOver]           = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [media, setMedia] = useState<MediaFile[]>([])
+  const [dragOver, setDragOver] = useState(false)
   const [createAnother, setCreateAnother] = useState(false)
-  const [scheduleMode,  setScheduleMode]  = useState(false)
-  const [scheduleTime,  setScheduleTime]  = useState('')
-  const [dragId,       setDragId]         = useState<string | null>(null)
-  const [dragOverId,   setDragOverId]     = useState<string | null>(null)
+  const [scheduleMode, setScheduleMode] = useState(false)
+  const [scheduleTime, setScheduleTime] = useState('')
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
 
   // AI panel state
-  const [aiPrompt,      setAiPrompt]      = useState('')
-  const [aiResults,     setAiResults]     = useState<Array<{ id: string; type: string; caption: string }>>([])
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiResults, setAiResults] = useState<Array<{ id: string; type: string; caption: string }>>([])
   const [aiIsGenerating, setAiIsGenerating] = useState(false)
-  const [editingId,    setEditingId]      = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
-  const fileInputRef       = useRef<HTMLInputElement>(null)
-  const replaceInputRef    = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const replaceInputRef = useRef<HTMLInputElement>(null)
   const replaceTargetIdRef = useRef<string | null>(null)
-  const textareaRef        = useRef<HTMLTextAreaElement>(null)
-  const emojiRef     = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiRef = useRef<HTMLDivElement>(null)
 
   const activeP = PLATFORMS.find(p => p.id === activeTab) ?? PLATFORMS[0]
   const charLimit = activeP.maxChars
@@ -334,7 +335,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
     if (!dragId || dragId === id) { setDragId(null); setDragOverId(null); return }
     setMedia(prev => {
       const from = prev.findIndex(m => m.id === dragId)
-      const to   = prev.findIndex(m => m.id === id)
+      const to = prev.findIndex(m => m.id === id)
       if (from < 0 || to < 0) return prev
       const next = [...prev]
       const [item] = next.splice(from, 1)
@@ -383,8 +384,8 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
     const el = textareaRef.current
     if (!el) { setCaption(c => c + text); return }
     const start = el.selectionStart ?? caption.length
-    const end   = el.selectionEnd   ?? caption.length
-    const next  = caption.slice(0, start) + text + caption.slice(end)
+    const end = el.selectionEnd ?? caption.length
+    const next = caption.slice(0, start) + text + caption.slice(end)
     setCaption(next)
     setTimeout(() => {
       el.selectionStart = el.selectionEnd = start + text.length
@@ -396,9 +397,18 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   const handleGenerateAI = () => {
     if (aiPrompt.trim() === '') return
     setAiIsGenerating(true)
+
+    const input: AIGenerateInput = {
+      topic: aiPrompt,
+      niche: '',
+      audience: '',
+      goal: '',
+      tone: tone
+    }
+
     // Simulate API call delay
     setTimeout(() => {
-      setAiResults(getMockResults(tone).slice(0, 4))
+      setAiResults(getMockResults(input).slice(0, 4))
       setAiIsGenerating(false)
     }, 800)
   }
@@ -418,7 +428,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(['TikTok','Instagram','Facebook','X'])
+    setActivePlatforms(['TikTok', 'Instagram', 'Facebook', 'X'])
     setActiveTab('TikTok')
     setAiPrompt('')
     setAiResults([])
@@ -496,7 +506,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
         <div className={styles.igImage}>
           {firstImage
             ? <img src={firstImage.url} alt="" className={styles.igImageActual} />
-            : <span><ImageIcon size={28} style={{color:'var(--text-muted)'}}/></span>
+            : <span><ImageIcon size={28} style={{ color: 'var(--text-muted)' }} /></span>
           }
         </div>
         <div className={styles.igActions}>
@@ -523,7 +533,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
           : null
         }
         <div className={styles.fbActions}>
-          {[{icon:<ThumbsUp size={14}/>,label:'Like'},{icon:<MessageCircle size={14}/>,label:'Comment'},{icon:<Share2 size={14}/>,label:'Share'}].map((a,i)=>(
+          {[{ icon: <ThumbsUp size={14} />, label: 'Like' }, { icon: <MessageCircle size={14} />, label: 'Comment' }, { icon: <Share2 size={14} />, label: 'Share' }].map((a, i) => (
             <div key={i} className={styles.fbActionBtn}>{a.icon}{a.label}</div>
           ))}
         </div>
@@ -541,9 +551,9 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
           </div>
         </div>
         {caption && <div className={styles.xBody}>{caption}</div>}
-        {firstImage && <img src={firstImage.url} alt="" style={{width:'100%',borderRadius:8,marginTop:8}} />}
+        {firstImage && <img src={firstImage.url} alt="" style={{ width: '100%', borderRadius: 8, marginTop: 8 }} />}
         <div className={styles.xActions}>
-          {[{icon:<MessageCircle size={14}/>},{icon:<Repeat2 size={14}/>},{icon:<Heart size={14}/>},{icon:<BarChart2 size={14}/>},{icon:<BookMarked size={14}/>}].map((a,i)=>(
+          {[{ icon: <MessageCircle size={14} /> }, { icon: <Repeat2 size={14} /> }, { icon: <Heart size={14} /> }, { icon: <BarChart2 size={14} /> }, { icon: <BookMarked size={14} /> }].map((a, i) => (
             <div key={i} className={styles.xActionBtn}>{a.icon}</div>
           ))}
         </div>
@@ -677,172 +687,173 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
 
                 {/* Post content area */}
                 <div className={styles.postArea}>
-              {/* Author row */}
-              <div className={styles.authorRow}>
-                <div className={styles.avatarWrap}>
-                  <div className={styles.avatarBubble}>{user?.avatar ?? 'U'}</div>
-                  <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[activeTab]}`}>
-                    {PLATFORM_ICONS[activeTab]}
-                  </div>
-                </div>
-                <span className={styles.authorName}>{user?.name ?? 'You'}</span>
-              </div>
-
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                className={styles.textarea}
-                placeholder="What would you like to share?"
-                value={caption}
-                onChange={e => setCaption(e.target.value)}
-              />
-
-              {/* Media upload */}
-              {media.length === 0 ? (
-                <div
-                  className={`${styles.mediaZone} ${dragOver ? styles.mediaZoneDragOver : ''}`}
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={onDrop}
-                >
-                  <div className={styles.mediaZoneText}>
-                    Drag & drop or <span>select a file</span>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className={styles.mediaPreviewRow}>
-                    {media.map(m => (
-                      <div
-                        key={m.id}
-                        className={`${styles.thumbWrap} ${dragId === m.id ? styles.thumbWrapDragging : ''} ${dragOverId === m.id ? styles.thumbWrapDragOver : ''}`}
-                        draggable
-                        onDragStart={() => handleDragStart(m.id)}
-                        onDragOver={e => handleDragOver(e, m.id)}
-                        onDrop={() => handleDropOnThumb(m.id)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        {m.type === 'image'
-                          ? <img src={m.url} alt={m.name} className={styles.mediaThumb} />
-                          : <div className={styles.mediaThumbVideo}>🎬 Video</div>
-                        }
-                        <div className={styles.thumbOverlay}>
-                          <button
-                            type="button"
-                            className={styles.thumbBtn}
-                            title={m.type === 'image' ? 'Chỉnh sửa' : 'Thay thế'}
-                            onClick={() => m.type === 'image' ? setEditingId(m.id) : handleReplaceVideo(m.id)}
-                          >✏️</button>
-                          <button
-                            type="button"
-                            className={`${styles.thumbBtn} ${styles.thumbBtnDelete}`}
-                            title="Xóa"
-                            onClick={() => removeMedia(m.id)}
-                          ><X size={11} /></button>
-                        </div>
-                        {media[0]?.id === m.id && <span className={styles.thumbCoverBadge}>Cover</span>}
+                  {/* Author row */}
+                  <div className={styles.authorRow}>
+                    <div className={styles.avatarWrap}>
+                      <div className={styles.avatarBubble}>{user?.avatar ?? 'U'}</div>
+                      <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[activeTab]}`}>
+                        {PLATFORM_ICONS[activeTab]}
                       </div>
-                    ))}
-                    <div
-                      className={styles.mediaZone}
-                      style={{ width: 72, height: 72, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <span className={styles.mediaZoneText}><span>+ Add</span></span>
                     </div>
+                    <span className={styles.authorName}>{user?.name ?? 'You'}</span>
                   </div>
-                </>
-              )}
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                style={{ display: 'none' }}
-                onChange={e => handleFiles(e.target.files)}
-              />
-              <input
-                ref={replaceInputRef}
-                type="file"
-                accept="image/*,video/*"
-                style={{ display: 'none' }}
-                onChange={handleReplaceFile}
-              />
-            </div>
+                  {/* Textarea */}
+                  <textarea
+                    ref={textareaRef}
+                    className={styles.textarea}
+                    placeholder="What would you like to share?"
+                    value={caption}
+                    onChange={e => setCaption(e.target.value)}
+                  />
 
-            {/* Toolbar */}
-            <div className={styles.toolbar} style={{ position: 'relative' }}>
-              <div ref={emojiRef} style={{ position: 'relative' }}>
-                <button className={styles.toolbarBtn} onClick={() => setShowEmoji(v => !v)} title="Emoji">
-                  <Smile size={18} />
-                </button>
-                {showEmoji && (
-                  <div className={styles.emojiPopover}>
-                    {COMMON_EMOJIS.map(e => (
-                      <button key={e} className={styles.emojiBtn} onClick={() => { insertAtCursor(e); setShowEmoji(false) }}>
-                        {e}
-                      </button>
-                    ))}
+                  {/* Media upload */}
+                  {media.length === 0 ? (
+                    <div
+                      className={`${styles.mediaZone} ${dragOver ? styles.mediaZoneDragOver : ''}`}
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={onDrop}
+                    >
+                      <div className={styles.mediaZoneIcon}>📁</div>
+                      <div className={styles.mediaZoneText}>
+                        Drag & drop or <span>select media</span>
+                      </div>
+                      <div className={styles.mediaZoneHint}>PNG, JPG, GIF, MP4 supported</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.mediaPreviewRow}>
+                        {media.map(m => (
+                          <div
+                            key={m.id}
+                            className={`${styles.thumbWrap} ${dragId === m.id ? styles.thumbWrapDragging : ''} ${dragOverId === m.id ? styles.thumbWrapDragOver : ''}`}
+                            draggable
+                            onDragStart={() => handleDragStart(m.id)}
+                            onDragOver={e => handleDragOver(e, m.id)}
+                            onDrop={() => handleDropOnThumb(m.id)}
+                            onDragEnd={handleDragEnd}
+                          >
+                            {m.type === 'image'
+                              ? <img src={m.url} alt={m.name} className={styles.mediaThumb} />
+                              : <div className={styles.mediaThumbVideo}>🎬 Video</div>
+                            }
+                            <div className={styles.thumbOverlay}>
+                              <button
+                                type="button"
+                                className={styles.thumbBtn}
+                                title={m.type === 'image' ? 'Chỉnh sửa' : 'Thay thế'}
+                                onClick={() => m.type === 'image' ? setEditingId(m.id) : handleReplaceVideo(m.id)}
+                              >✏️</button>
+                              <button
+                                type="button"
+                                className={`${styles.thumbBtn} ${styles.thumbBtnDelete}`}
+                                title="Xóa"
+                                onClick={() => removeMedia(m.id)}
+                              ><X size={11} /></button>
+                            </div>
+                            {media[0]?.id === m.id && <span className={styles.thumbCoverBadge}>Cover</span>}
+                          </div>
+                        ))}
+                        <div
+                          className={styles.mediaZone}
+                          style={{ width: 72, height: 72, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <span className={styles.mediaZoneText}><span>+ Add</span></span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => handleFiles(e.target.files)}
+                  />
+                  <input
+                    ref={replaceInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    style={{ display: 'none' }}
+                    onChange={handleReplaceFile}
+                  />
+                </div>
+
+                {/* Toolbar */}
+                <div className={styles.toolbar} style={{ position: 'relative' }}>
+                  <div ref={emojiRef} style={{ position: 'relative' }}>
+                    <button className={styles.toolbarBtn} onClick={() => setShowEmoji(v => !v)} title="Emoji">
+                      <Smile size={18} />
+                    </button>
+                    {showEmoji && (
+                      <div className={styles.emojiPopover}>
+                        {COMMON_EMOJIS.map(e => (
+                          <button key={e} className={styles.emojiBtn} onClick={() => { insertAtCursor(e); setShowEmoji(false) }}>
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <button className={styles.toolbarBtn} title="Hashtags"
-                onClick={() => insertAtCursor(' ' + HASH_TAGS[Math.floor(Math.random() * HASH_TAGS.length)])}>
-                <Hash size={18} />
-              </button>
+                  <button className={styles.toolbarBtn} title="Hashtags"
+                    onClick={() => insertAtCursor(' ' + HASH_TAGS[Math.floor(Math.random() * HASH_TAGS.length)])}>
+                    <Hash size={18} />
+                  </button>
 
-              <button className={styles.toolbarBtn} title="Settings"><Settings2 size={18} /></button>
+                  <button className={styles.toolbarBtn} title="Settings"><Settings2 size={18} /></button>
 
-              <div className={styles.toolbarSpacer} />
-              <span className={`${styles.charCount} ${
-                caption.length > charLimit ? styles.charCountOver
-                : caption.length > charLimit * 0.85 ? styles.charCountWarn
-                : ''
-              }`}>
-                {charLimit - caption.length}
-              </span>
-            </div>
+                  <div className={styles.toolbarSpacer} />
+                  <span className={`${styles.charCount} ${caption.length > charLimit ? styles.charCountOver
+                    : caption.length > charLimit * 0.85 ? styles.charCountWarn
+                      : ''
+                    }`}>
+                    {charLimit - caption.length}
+                  </span>
+                </div>
 
-            {/* Schedule row */}
-            <div className={styles.scheduleRow}>
-              <span className={styles.scheduleLabel}>Publish:</span>
-              <button
-                className={`${styles.scheduleChip} ${!scheduleMode ? styles.headerBtnActive : ''}`}
-                onClick={() => setScheduleMode(false)}
-              >
-                <Settings2 size={12} /> Automatic
-              </button>
-              <button
-                className={`${styles.scheduleChip} ${scheduleMode ? styles.headerBtnActive : ''}`}
-                onClick={() => setScheduleMode(true)}
-              >
-                Schedule
-              </button>
-              {scheduleMode && (
-                <input
-                  type="datetime-local"
-                  className={styles.dateInput}
-                  value={scheduleTime}
-                  onChange={e => setScheduleTime(e.target.value)}
-                />
-              )}
-            </div>
+                {/* Schedule row */}
+                <div className={styles.scheduleRow}>
+                  <span className={styles.scheduleLabel}>Publish:</span>
+                  <button
+                    className={`${styles.scheduleChip} ${!scheduleMode ? styles.headerBtnActive : ''}`}
+                    onClick={() => setScheduleMode(false)}
+                  >
+                    <Settings2 size={12} /> Automatic
+                  </button>
+                  <button
+                    className={`${styles.scheduleChip} ${scheduleMode ? styles.headerBtnActive : ''}`}
+                    onClick={() => setScheduleMode(true)}
+                  >
+                    Schedule
+                  </button>
+                  {scheduleMode && (
+                    <input
+                      type="datetime-local"
+                      className={styles.dateInput}
+                      value={scheduleTime}
+                      onChange={e => setScheduleTime(e.target.value)}
+                    />
+                  )}
+                </div>
 
-            {/* Footer */}
-            <div className={styles.footer}>
-              <label className={styles.createAnotherLabel}>
-                <input type="checkbox" checked={createAnother} onChange={e => setCreateAnother(e.target.checked)} />
-                Create Another
-              </label>
-              <div className={styles.footerSpacer} />
-              <button className={styles.draftBtn} onClick={handleDraft}>Save Draft</button>
-              <button className={styles.scheduleBtn} onClick={handleSchedule} disabled={caption.trim() === '' || overLimit}>
-                {scheduleMode ? 'Schedule Post' : 'Publish Now'}
-              </button>
-            </div>
+                {/* Footer */}
+                <div className={styles.footer}>
+                  <label className={styles.createAnotherLabel}>
+                    <input type="checkbox" checked={createAnother} onChange={e => setCreateAnother(e.target.checked)} />
+                    Create Another
+                  </label>
+                  <div className={styles.footerSpacer} />
+                  <button className={styles.draftBtn} onClick={handleDraft}>Save Draft</button>
+                  <button className={styles.scheduleBtn} onClick={handleSchedule} disabled={caption.trim() === '' || overLimit}>
+                    {scheduleMode ? 'Schedule Post' : 'Publish Now'}
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -865,47 +876,47 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
                   </div>
                 ) : (
                   <div className={styles.aiSidePanel}>
-                  <div className={styles.aiPromptSection}>
-                    <label className={styles.aiPromptLabel}>What do you want to write about?</label>
-                    <textarea
-                      className={styles.aiPromptTextarea}
-                      placeholder="Eg. Promote my photography course to get new signups. Registration closes in 3 days."
-                      value={aiPrompt}
-                      onChange={e => setAiPrompt(e.target.value)}
-                      rows={4}
-                    />
-                    <div className={styles.aiTipText}>
-                      <strong>Pro tip:</strong> Include key points, your target audience and your desired outcome for this post
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.aiGenerateBtn}
-                      onClick={handleGenerateAI}
-                      disabled={aiPrompt.trim() === '' || aiIsGenerating}
-                    >
-                      <Sparkles size={14} />
-                      {aiIsGenerating ? 'Generating...' : 'Generate'}
-                    </button>
-                  </div>
-
-                  {aiResults.length > 0 && (
-                    <div className={styles.aiResultsSection}>
-                      <div className={styles.aiResultsHeader}>Suggestions</div>
-                      <div className={styles.aiResultsList}>
-                        {aiResults.map(s => (
-                          <div
-                            key={s.id}
-                            className={styles.aiResultCard}
-                            onClick={() => applyAISuggestion(s.caption)}
-                          >
-                            <div className={styles.aiResultType}>{s.type}</div>
-                            <div className={styles.aiResultCaption}>{s.caption}</div>
-                          </div>
-                        ))}
+                    <div className={styles.aiPromptSection}>
+                      <label className={styles.aiPromptLabel}>What do you want to write about?</label>
+                      <textarea
+                        className={styles.aiPromptTextarea}
+                        placeholder="Eg. Promote my photography course to get new signups. Registration closes in 3 days."
+                        value={aiPrompt}
+                        onChange={e => setAiPrompt(e.target.value)}
+                        rows={4}
+                      />
+                      <div className={styles.aiTipText}>
+                        <strong>Pro tip:</strong> Include key points, your target audience and your desired outcome for this post
                       </div>
+                      <button
+                        type="button"
+                        className={styles.aiGenerateBtn}
+                        onClick={handleGenerateAI}
+                        disabled={aiPrompt.trim() === '' || aiIsGenerating}
+                      >
+                        <Sparkles size={14} />
+                        {aiIsGenerating ? 'Generating...' : 'Generate'}
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    {aiResults.length > 0 && (
+                      <div className={styles.aiResultsSection}>
+                        <div className={styles.aiResultsHeader}>Suggestions</div>
+                        <div className={styles.aiResultsList}>
+                          {aiResults.map(s => (
+                            <div
+                              key={s.id}
+                              className={styles.aiResultCard}
+                              onClick={() => applyAISuggestion(s.caption)}
+                            >
+                              <div className={styles.aiResultType}>{s.type}</div>
+                              <div className={styles.aiResultCaption}>{s.caption}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

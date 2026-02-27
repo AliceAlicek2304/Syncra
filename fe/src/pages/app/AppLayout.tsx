@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
-  Zap, LayoutDashboard, Sparkles, CalendarDays,
+  Zap, LayoutDashboard, Lightbulb, CalendarDays,
   BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
@@ -15,7 +15,7 @@ import styles from './AppLayout.module.css'
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
-  { to: '/app/ai', icon: <Sparkles size={18} />, label: 'AI Assistant' },
+  { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
@@ -25,9 +25,9 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed]         = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
-  const [toasts, setToasts]               = useState<ToastItem[]>([])
+  const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
     setToasts(prev => [...prev, { ...t, id: shortId() }])

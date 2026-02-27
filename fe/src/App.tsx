@@ -15,9 +15,10 @@ import Footer from './components/Footer'
 import HeroDemo from './components/HeroDemo'
 
 // App pages
+import { CalendarProvider } from './context/CalendarContext'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
-import AIAssistantPage from './pages/app/AIAssistantPage'
+import IdeasPage from './pages/app/IdeasPage'
 import CalendarPage from './pages/app/CalendarPage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
@@ -56,13 +57,15 @@ const router = createBrowserRouter(
       path: '/app',
       element: (
         <ProtectedRoute>
-          <AppLayout />
+          <CalendarProvider>
+            <AppLayout />
+          </CalendarProvider>
         </ProtectedRoute>
       ),
       children: [
         { index: true, element: <Navigate to="dashboard" replace /> },
         { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'ai', element: <AIAssistantPage /> },
+        { path: 'ideas', element: <IdeasPage /> },
         { path: 'calendar', element: <CalendarPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'trends', element: <TrendRadarPage /> },

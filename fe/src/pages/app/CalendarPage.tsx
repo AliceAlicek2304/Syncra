@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Clock, MoreHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import GlassUpload from '../../components/GlassUpload'
+import { useCalendar } from '../../context/calendarContextBase'
 import styles from './CalendarPage.module.css'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -38,6 +39,7 @@ const MOCK_POSTS: Record<number, CalPost[]> = {
 
 export default function CalendarPage() {
   const navigate = useNavigate()
+  const { posts: contextPosts } = useCalendar()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -45,6 +47,22 @@ export default function CalendarPage() {
 
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  // Merge mock posts with AI-scheduled posts from context
+  const allPosts = useMemo(() => {
+    const merged: Record<number, CalPost[]> = {}
+    Object.entries(MOCK_POSTS).forEach(([d, ps]) => { merged[Number(d)] = [...ps] })
+    contextPosts
+      .filter(p => p.year === year && p.month === month)
+      .forEach(p => {
+        const existing = merged[p.day] ?? []
+        merged[p.day] = [
+          ...existing,
+          { id: p.id, title: p.title, platform: p.platform, status: p.status, time: p.time, color: p.color },
+        ]
+      })
+    return merged
+  }, [contextPosts, year, month])
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -58,9 +76,9 @@ export default function CalendarPage() {
     setSelectedDay(null)
   }
 
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-  const selectedPosts = selectedDay ? (MOCK_POSTS[selectedDay] ?? []) : []
+  const selectedPosts = selectedDay ? (allPosts[selectedDay] ?? []) : []
 
   return (
     <div className={styles.page}>
@@ -82,11 +100,11 @@ export default function CalendarPage() {
           <div className={styles.monthNav}>
             <div className={styles.navLeft}>
               <button className={styles.navBtn} onClick={prevMonth}><ChevronLeft size={16} /></button>
-              
+
               <div className={styles.selectors}>
-                <select 
-                  className={styles.dateSelect} 
-                  value={month} 
+                <select
+                  className={styles.dateSelect}
+                  value={month}
                   onChange={(e) => { setMonth(parseInt(e.target.value)); setSelectedDay(null) }}
                 >
                   {MONTHS.map((m, i) => (
@@ -94,9 +112,9 @@ export default function CalendarPage() {
                   ))}
                 </select>
 
-                <select 
-                  className={styles.dateSelect} 
-                  value={year} 
+                <select
+                  className={styles.dateSelect}
+                  value={year}
                   onChange={(e) => { setYear(parseInt(e.target.value)); setSelectedDay(null) }}
                 >
                   {Array.from({ length: 11 }).map((_, i) => {
@@ -110,8 +128,8 @@ export default function CalendarPage() {
             </div>
 
             <div className={styles.navRight}>
-              <button 
-                className={styles.todayBtn} 
+              <button
+                className={styles.todayBtn}
                 onClick={() => {
                   setYear(today.getFullYear())
                   setMonth(today.getMonth())
@@ -138,7 +156,7 @@ export default function CalendarPage() {
             {/* Day cells */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1
-              const posts = MOCK_POSTS[day] ?? []
+              const posts = allPosts[day] ?? []
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
               const isSelected = day === selectedDay
 

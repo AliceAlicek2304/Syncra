@@ -13,8 +13,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Dialog ── */
@@ -35,8 +40,15 @@
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96) translateY(12px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* ── Header ── */
@@ -92,12 +104,33 @@
   color: var(--purple-400);
 }
 
-.chipTikTok.chipActive  { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.4); color: #fff; }
-.chipIG.chipActive      { border-color: rgba(228,64,95,0.5);  background: rgba(228,64,95,0.12); color: #f77ba8; }
-.chipFB.chipActive      { border-color: rgba(24,119,242,0.5); background: rgba(24,119,242,0.12); color: #60a5fa; }
-.chipX.chipActive       { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); color: #e2e8f0; }
+.chipTikTok.chipActive {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
 
-.headerSpacer { flex: 1; }
+.chipIG.chipActive {
+  border-color: rgba(228, 64, 95, 0.5);
+  background: rgba(228, 64, 95, 0.12);
+  color: #f77ba8;
+}
+
+.chipFB.chipActive {
+  border-color: rgba(24, 119, 242, 0.5);
+  background: rgba(24, 119, 242, 0.12);
+  color: #60a5fa;
+}
+
+.chipX.chipActive {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.headerSpacer {
+  flex: 1;
+}
 
 .headerBtn {
   display: flex;
@@ -108,7 +141,7 @@
   font-size: 13px;
   font-weight: 600;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.18s;
@@ -134,7 +167,7 @@
   height: 32px;
   border-radius: 8px;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.18s;
@@ -202,7 +235,9 @@
   border-right: none;
 }
 
-.platformTab:hover { color: var(--text-primary); }
+.platformTab:hover {
+  color: var(--text-primary);
+}
 
 .platformTabActive {
   color: var(--purple-400);
@@ -259,10 +294,25 @@
   border: 1.5px solid #0f1220;
 }
 
-.badgeTikTok { background: #000; color: #fff; }
-.badgeIG     { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; }
-.badgeFB     { background: #1877f2; color: #fff; }
-.badgeX      { background: #000; color: #fff; }
+.badgeTikTok {
+  background: #000;
+  color: #fff;
+}
+
+.badgeIG {
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  color: #fff;
+}
+
+.badgeFB {
+  background: #1877f2;
+  color: #fff;
+}
+
+.badgeX {
+  background: #000;
+  color: #fff;
+}
 
 .authorName {
   font-size: 13px;
@@ -284,7 +334,9 @@
   line-height: 1.6;
 }
 
-.textarea::placeholder { color: var(--text-muted); }
+.textarea::placeholder {
+  color: var(--text-muted);
+}
 
 /* AI Panel (old inline - kept for backward compat if needed) */
 .aiPanel {
@@ -318,7 +370,7 @@
   font-size: 12px;
   font-weight: 600;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.18s;
@@ -347,7 +399,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
   transition: all 0.18s;
 }
@@ -490,19 +542,28 @@
 
 /* Media upload */
 .mediaZone {
-  border: 1.5px dashed rgba(255,255,255,0.14);
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.18s;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .mediaZone:hover,
 .mediaZoneDragOver {
   border-color: rgba(139, 92, 246, 0.5);
   background: rgba(139, 92, 246, 0.05);
+}
+
+.mediaZoneIcon {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .mediaZoneText {
@@ -513,6 +574,12 @@
 .mediaZoneText span {
   color: var(--purple-400);
   font-weight: 600;
+}
+
+.mediaZoneHint {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .mediaPreviewRow {
@@ -551,7 +618,10 @@
   transition: opacity 0.18s, box-shadow 0.18s, transform 0.18s;
   flex-shrink: 0;
 }
-.thumbWrap:active { cursor: grabbing; }
+
+.thumbWrap:active {
+  cursor: grabbing;
+}
 
 .thumbWrapDragging {
   opacity: 0.30;
@@ -576,6 +646,7 @@
   transition: opacity 0.16s, background 0.16s;
   pointer-events: none;
 }
+
 .thumbWrap:hover .thumbOverlay {
   opacity: 1;
   background: rgba(0, 0, 0, 0.52);
@@ -597,10 +668,18 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.thumbBtn:hover { background: rgba(255, 255, 255, 0.32); }
 
-.thumbBtnDelete { background: rgba(239, 68, 68, 0.55); }
-.thumbBtnDelete:hover { background: rgba(239, 68, 68, 0.85); }
+.thumbBtn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.thumbBtnDelete {
+  background: rgba(239, 68, 68, 0.55);
+}
+
+.thumbBtnDelete:hover {
+  background: rgba(239, 68, 68, 0.85);
+}
 
 .thumbCoverBadge {
   position: absolute;
@@ -676,7 +755,7 @@
   height: 34px;
   border-radius: 10px;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.18s;
@@ -684,7 +763,7 @@
 }
 
 .editorModalClose:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
@@ -743,17 +822,19 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.16s;
   white-space: nowrap;
 }
+
 .editorCropBtn:hover {
   border-color: rgba(139, 92, 246, 0.45);
   color: var(--text-primary);
 }
+
 .editorCropBtnActive {
   background: var(--gradient-brand);
   border-color: transparent;
@@ -783,14 +864,15 @@
   height: 32px;
   padding: 0 8px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.16s;
 }
+
 .editorIconBtn:hover {
   background: rgba(139, 92, 246, 0.14);
   border-color: rgba(139, 92, 246, 0.38);
@@ -822,13 +904,14 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.18s;
   flex-shrink: 0;
 }
+
 .editorCancelBtn:hover {
   background: rgba(239, 68, 68, 0.14);
   border-color: rgba(239, 68, 68, 0.4);
@@ -850,6 +933,7 @@
   flex-shrink: 0;
   box-shadow: 0 2px 12px rgba(139, 92, 246, 0.45);
 }
+
 .editorApplyBtn:hover {
   opacity: 0.88;
   transform: scale(1.06);
@@ -889,11 +973,13 @@
 }
 
 .toolbarBtn:hover {
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--text-primary);
 }
 
-.toolbarSpacer { flex: 1; }
+.toolbarSpacer {
+  flex: 1;
+}
 
 .charCount {
   font-size: 12px;
@@ -901,8 +987,13 @@
   color: var(--text-muted);
 }
 
-.charCountWarn { color: #f59e0b; }
-.charCountOver { color: #ef4444; }
+.charCountWarn {
+  color: #f59e0b;
+}
+
+.charCountOver {
+  color: #ef4444;
+}
 
 /* Emoji popover */
 .emojiPopover {
@@ -918,7 +1009,7 @@
   gap: 6px;
   width: 240px;
   z-index: 10;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .emojiBtn {
@@ -931,7 +1022,9 @@
   transition: background 0.15s;
 }
 
-.emojiBtn:hover { background: rgba(255,255,255,0.08); }
+.emojiBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 /* Schedule row */
 .scheduleRow {
@@ -955,7 +1048,7 @@
   padding: 5px 12px;
   border-radius: 8px;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 12px;
@@ -969,7 +1062,7 @@
 }
 
 .dateInput {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-glass);
   border-radius: 8px;
   padding: 5px 10px;
@@ -1007,7 +1100,9 @@
   cursor: pointer;
 }
 
-.footerSpacer { flex: 1; }
+.footerSpacer {
+  flex: 1;
+}
 
 .draftBtn {
   padding: 9px 18px;
@@ -1015,14 +1110,14 @@
   font-size: 13px;
   font-weight: 600;
   border: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .draftBtn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
@@ -1039,8 +1134,16 @@
   opacity: 0.95;
 }
 
-.scheduleBtn:hover { opacity: 1; transform: translateY(-1px); }
-.scheduleBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.scheduleBtn:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.scheduleBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
 
 /* ── Preview (right) ── */
 .preview {
@@ -1049,7 +1152,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(255,255,255,0.01);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .previewHeader {
@@ -1094,9 +1197,9 @@
 .previewEmptyIcon {
   width: 80px;
   height: 100px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 12px;
-  border: 1px dashed rgba(255,255,255,0.1);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1121,11 +1224,11 @@
   aspect-ratio: 9 / 16;
   background: #0d0d16;
   border-radius: 36px;
-  border: 6px solid rgba(255,255,255,0.1);
+  border: 6px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.06),
-    0 24px 56px rgba(0,0,0,0.7),
-    inset 0 0 0 1px rgba(255,255,255,0.04);
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 24px 56px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
@@ -1175,13 +1278,15 @@
   scrollbar-width: none;
 }
 
-.deviceContent::-webkit-scrollbar { display: none; }
+.deviceContent::-webkit-scrollbar {
+  display: none;
+}
 
 /* TikTok bottom nav */
 .tiktokBottomNav {
   flex-shrink: 0;
-  background: rgba(10,10,18,0.95);
-  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(10, 10, 18, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -1196,7 +1301,7 @@
   gap: 2px;
   font-size: 8px;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   min-width: 36px;
 }
@@ -1228,6 +1333,7 @@
   padding: 0 8px;
   opacity: 0.7;
 }
+
 .tiktokCard {
   width: 100%;
   flex: 1;
@@ -1251,13 +1357,13 @@
   justify-content: center;
   gap: 20px;
   padding: 14px 16px 8px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
 }
 
 .tiktokTopBarItem {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   letter-spacing: 0.01em;
 }
 
@@ -1294,7 +1400,7 @@
 .tiktokOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, transparent 55%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -1311,7 +1417,7 @@
 
 .tiktokCaption {
   font-size: 13px;
-  color: rgba(255,255,255,0.92);
+  color: rgba(255, 255, 255, 0.92);
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1325,7 +1431,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .tiktokActions {
@@ -1406,7 +1512,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1424,7 +1530,7 @@
 .igImage {
   width: 100%;
   aspect-ratio: 1;
-  background: rgba(139,92,246,0.12);
+  background: rgba(139, 92, 246, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1447,13 +1553,13 @@
 }
 
 .igActionIcon {
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .igCaption {
   padding: 4px 12px 12px;
   font-size: 11px;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1490,9 +1596,21 @@
   color: #fff;
 }
 
-.fbMeta { display: flex; flex-direction: column; }
-.fbName { font-size: 13px; font-weight: 700; color: #e2e8f0; }
-.fbTime { font-size: 11px; color: rgba(255,255,255,0.4); }
+.fbMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.fbName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.fbTime {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
 
 .fbBody {
   padding: 0 14px 12px;
@@ -1508,7 +1626,7 @@
 .fbImage {
   width: 100%;
   aspect-ratio: 16/9;
-  background: rgba(24,119,242,0.1);
+  background: rgba(24, 119, 242, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1525,7 +1643,7 @@
 
 .fbActions {
   display: flex;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin: 4px 14px 0;
 }
 
@@ -1537,7 +1655,7 @@
   gap: 5px;
   padding: 8px;
   font-size: 12px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
 }
 
@@ -1572,9 +1690,21 @@
   flex-shrink: 0;
 }
 
-.xMeta { display: flex; flex-direction: column; }
-.xName { font-size: 13px; font-weight: 700; color: #f8fafc; }
-.xHandle { font-size: 12px; color: rgba(255,255,255,0.45); }
+.xMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.xName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.xHandle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
 
 .xBody {
   font-size: 14px;
@@ -1599,6 +1729,6 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
 }
