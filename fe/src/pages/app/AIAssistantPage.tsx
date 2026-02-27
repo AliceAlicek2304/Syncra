@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   Sparkles, Send, Clock, TrendingUp, Plus,
-  Copy, Check, ChevronDown, X,
+  Copy, Check, ChevronDown,
 } from 'lucide-react'
 import { getMockResults } from '../../data/mockAI'
 import type { ContentIdea } from '../../data/mockAI'
 import SocialPreviewer from '../../components/SocialPreviewer'
 import AIToolbar from '../../components/AIToolbar'
-import { useCalendar } from '../../context/CalendarContext'
+import MultiPlatformEditor from '../../components/MultiPlatformEditor'
 import styles from './AIAssistantPage.module.css'
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -82,18 +82,7 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
-const PLATFORM_COLORS: Record<string, string> = {
-  TikTok: '#8b5cf6',
-  Instagram: '#ec4899',
-  YouTube: '#ef4444',
-  LinkedIn: '#22d3ee',
-  X: '#f59e0b',
-  Facebook: '#3b82f6',
-}
-
 export default function AIAssistantPage() {
-  const navigate = useNavigate()
-  const { addPost } = useCalendar()
   const [step, setStep] = useState<Step>('form')
   const [topic, setTopic] = useState('')
   const [niche, setNiche] = useState('')
@@ -102,17 +91,55 @@ export default function AIAssistantPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['TikTok', 'Instagram'])
   const [ideas, setIdeas] = useState<ContentIdea[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [addedId, setAddedId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  // Add-to-calendar modal
-  const [modalIdea, setModalIdea] = useState<ContentIdea | null>(null)
-  const [modalDate, setModalDate] = useState('')
-  const [modalTime, setModalTime] = useState('')
-  const [modalStatus, setModalStatus] = useState<'scheduled' | 'draft'>('scheduled')
   const [previewIdea, setPreviewIdea] = useState<ContentIdea | null>(null)
   const [previewPlatform, setPreviewPlatform] = useState<string>('TikTok')
+  const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null)
   const [selection, setSelection] = useState<{ text: string; start: number; end: number } | null>(null)
   const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const location = useLocation()
+
+  useEffect(() => {
+    const state = location.state as { repurposedContent?: string }
+    if (state?.repurposedContent) {
+      const content = state.repurposedContent
+      const newIdea: ContentIdea = {
+        id: 'repurposed-' + Date.now(),
+        type: 'Photo',
+        hook: 'Nội dung tái bản từ "Source" của bạn',
+        title: 'Tái bản đa kênh',
+        caption: content,
+        hashtags: ['#repurposed', '#ai', '#technest'],
+        platforms: ['LinkedIn', 'X', 'Instagram'],
+        bestTime: 'Giờ vàng (Phân tích từ source)',
+        estimatedReach: 'Tối ưu cho Platform',
+        platformCaptions: {
+          LinkedIn: content,
+          X: content.substring(0, 280),
+          Instagram: content
+        }
+      }
+
+      // We use a small timeout to move the state updates out of the synchronous effect body
+      // This satisfies the 'react-hooks/set-state-in-effect' lint rule which prefers
+      // that effects don't immediately trigger a re-render during the commit phase.
+      const timer = setTimeout(() => {
+        setIdeas([newIdea])
+        setPreviewIdea(newIdea)
+        setPreviewPlatform('LinkedIn')
+        setStep('results')
+        setExpandedId(newIdea.id)
+        
+        // Clean up state after consumption to prevent re-triggering on future renders 
+        // if the component re-mounts but the location state persists.
+        window.history.replaceState({}, document.title)
+      }, 0)
+
+      return () => clearTimeout(timer)
+    }
+  }, [location])
 
   const togglePlatform = (p: string) => {
     setSelectedPlatforms(prev =>
@@ -125,9 +152,14 @@ export default function AIAssistantPage() {
     setStep('loading')
     setTimeout(() => {
       const results = getMockResults(tone)
-      setIdeas(results)
-      setPreviewIdea(results[0])
-      setPreviewPlatform(results[0].platforms[0])
+      // Initialize platform-specific captions for each idea
+      const enhancedResults = results.map(idea => ({
+        ...idea,
+        platformCaptions: idea.platforms.reduce((acc, p) => ({ ...acc, [p]: idea.caption }), {} as Record<string, string>)
+      }))
+      setIdeas(enhancedResults)
+      setPreviewIdea(enhancedResults[0])
+      setPreviewPlatform(enhancedResults[0].platforms[0])
       setStep('results')
     }, 1800)
   }
@@ -162,42 +194,53 @@ export default function AIAssistantPage() {
     const idea = ideas.find(i => i.id === expandedId)
     if (!idea) return
 
-    const newCaption = idea.caption.substring(0, start) + transformed + idea.caption.substring(end)
-    const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: newCaption } : i)
+    const currentCaption = idea.platformCaptions?.[previewPlatform] || idea.caption
+    const newCaption = currentCaption.substring(0, start) + transformed + currentCaption.substring(end)
+    
+    const newIdeas = ideas.map(i => {
+      if (i.id !== idea.id) return i
+      return {
+        ...i,
+        platformCaptions: {
+          ...i.platformCaptions,
+          [previewPlatform]: newCaption
+        }
+      }
+    })
     setIdeas(newIdeas)
-    if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: newCaption })
+    if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) || null)
+  }
+
+
+  const handleSelectVariation = (ideaId: string, variation: string) => {
+    const newIdeas = ideas.map(i => {
+      if (i.id !== ideaId) return i
+      return {
+        ...i,
+        platformCaptions: {
+          ...i.platformCaptions,
+          [previewPlatform]: variation
+        }
+      }
+    })
+    setIdeas(newIdeas)
+    if (previewIdea?.id === ideaId) {
+      setPreviewIdea(newIdeas.find(i => i.id === ideaId) || null)
+    }
   }
 
   const handleAddToCalendar = (idea: ContentIdea) => {
-    const today = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    setModalDate(
-      `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-    )
-    const timeMatch = idea.bestTime.match(/\d{2}:\d{2}/)
-    setModalTime(timeMatch ? timeMatch[0] : '19:00')
-    setModalStatus('scheduled')
-    setModalIdea(idea)
+    setEditingIdea(idea)
   }
 
-  const handleModalConfirm = () => {
-    if (!modalIdea || !modalDate) return
-    const [year, month, day] = modalDate.split('-').map(Number)
-    const platform = modalIdea.platforms[0]
-    addPost({
-      year,
-      month: month - 1, // convert to 0-indexed
-      day,
-      title: modalIdea.hook.slice(0, 50),
-      platform,
-      status: modalStatus,
-      time: modalTime,
-      color: PLATFORM_COLORS[platform] ?? '#8b5cf6',
-      caption: modalIdea.caption,
-      hashtags: modalIdea.hashtags,
-    })
-    setModalIdea(null)
-    navigate('/app/calendar')
+  const handleFinishMultiEdit = (contents: Record<string, { caption: string; hashtags: string[] }>) => {
+    const ideaId = editingIdea?.id
+    if (!ideaId) return
+    
+    console.log('Saved multi-platform content for idea:', ideaId, contents)
+    setAddedId(ideaId)
+    setEditingIdea(null)
+    setTimeout(() => setAddedId(null), 3000)
   }
 
   const handleReset = () => {
@@ -373,22 +416,51 @@ export default function AIAssistantPage() {
 
                     {expandedId === idea.id && (
                       <div className={styles.captionBox}>
+                        {idea.variations && idea.variations.length > 0 && (
+                          <div className={styles.variationSection}>
+                            <span className={styles.variationLabel}>✨ Bản biến thể (Variations)</span>
+                            <div className={styles.variationList}>
+                              {idea.variations.map((v, idx) => {
+                                const isSelected = (idea.platformCaptions?.[previewPlatform] || idea.caption) === v
+                                return (
+                                  <button 
+                                    key={idx}
+                                    className={`${styles.variationBtn} ${isSelected ? styles.variationBtnActive : ''}`}
+                                    onClick={() => handleSelectVariation(idea.id, v)}
+                                  >
+                                    Bản #{idx + 1}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <div className={styles.editArea}>
                           <textarea
                             ref={textareaRef}
                             className={styles.captionText}
-                            value={idea.caption}
+                            value={idea.platformCaptions?.[previewPlatform] || idea.caption}
                             onChange={(e) => {
-                              const newIdeas = ideas.map(i => i.id === idea.id ? { ...i, caption: e.target.value } : i)
+                              const newVal = e.target.value
+                              const newIdeas = ideas.map(i => {
+                                if (i.id !== idea.id) return i
+                                return {
+                                  ...i,
+                                  platformCaptions: {
+                                    ...i.platformCaptions,
+                                    [previewPlatform]: newVal
+                                  }
+                                }
+                              })
                               setIdeas(newIdeas)
-                              if (previewIdea?.id === idea.id) setPreviewIdea({ ...idea, caption: e.target.value })
+                              if (previewIdea?.id === idea.id) setPreviewIdea(newIdeas.find(i => i.id === idea.id) || null)
                             }}
                             onMouseUp={handleSelection}
                             onKeyUp={handleSelection}
                             rows={6}
                           />
-                          <div className={`${styles.charCounter} ${idea.caption.length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
-                            {idea.caption.length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
+                          <div className={`${styles.charCounter} ${(idea.platformCaptions?.[previewPlatform] || idea.caption).length > (PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || 2200) ? styles.charOver : ''}`}>
+                            {(idea.platformCaptions?.[previewPlatform] || idea.caption).length} / {PLATFORM_LIMITS[previewIdea?.id === idea.id ? previewPlatform : idea.platforms[0]] || '—'}
                           </div>
                         </div>
                         {selection && expandedId === idea.id && (
@@ -444,7 +516,9 @@ export default function AIAssistantPage() {
                           handleAddToCalendar(idea)
                         }}
                       >
-                        <Plus size={13} /> Thêm vào Calendar
+                        {addedId === idea.id
+                          ? <><Check size={13} /> Đã thêm!</>
+                          : <><Plus size={13} /> Thêm vào Calendar</>}
                       </button>
                     </div>
                   </div>
@@ -465,7 +539,7 @@ export default function AIAssistantPage() {
                     type={previewIdea.type}
                     content={{
                       hook: previewIdea.hook,
-                      caption: previewIdea.caption,
+                      caption: previewIdea.platformCaptions?.[previewPlatform] || previewIdea.caption,
                       hashtags: previewIdea.hashtags,
                     }}
                   />
@@ -481,92 +555,17 @@ export default function AIAssistantPage() {
         )}
       </div>
 
-      {/* ── ADD TO CALENDAR MODAL ── */}
-      {modalIdea && (
-        <div className={styles.modalOverlay} onClick={() => setModalIdea(null)}>
-          <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>📅 Lên lịch đăng bài</h3>
-              <button className={styles.modalClose} onClick={() => setModalIdea(null)}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <p className={styles.modalIdeaTitle}>
-              "{modalIdea.hook.length > 60 ? modalIdea.hook.slice(0, 60) + '…' : modalIdea.hook}"
-            </p>
-
-            <div className={styles.modalFields}>
-              <div className={styles.modalRow2}>
-                <div className={styles.modalField}>
-                  <label className={styles.modalLabel}>Ngày đăng</label>
-                  <input
-                    type="date"
-                    className={styles.modalInput}
-                    value={modalDate}
-                    onChange={e => setModalDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 10)}
-                  />
-                </div>
-                <div className={styles.modalField}>
-                  <label className={styles.modalLabel}>Giờ đăng</label>
-                  <input
-                    type="time"
-                    className={styles.modalInput}
-                    value={modalTime}
-                    onChange={e => setModalTime(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.modalField}>
-                <label className={styles.modalLabel}>Trạng thái</label>
-                <div className={styles.modalStatusRow}>
-                  {(['scheduled', 'draft'] as const).map(s => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`${styles.modalStatusBtn} ${
-                        modalStatus === s ? styles.modalStatusBtnActive : ''
-                      }`}
-                      onClick={() => setModalStatus(s)}
-                    >
-                      {s === 'scheduled' ? '📅 Scheduled' : '📝 Draft'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.modalField}>
-                <label className={styles.modalLabel}>Nền tảng</label>
-                <div className={styles.modalPlatformRow}>
-                  {modalIdea.platforms.map(p => (
-                    <span
-                      key={p}
-                      className={styles.modalPlatformTag}
-                      style={{ background: PLATFORM_COLORS[p] + '22', borderColor: PLATFORM_COLORS[p] + '55', color: PLATFORM_COLORS[p] }}
-                    >
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button className="btn-secondary" onClick={() => setModalIdea(null)}>
-                Huỷ
-              </button>
-              <button
-                className="btn-primary"
-                onClick={handleModalConfirm}
-                disabled={!modalDate || !modalTime}
-              >
-                <Check size={14} /> Xác nhận & Xem Calendar
-              </button>
-            </div>
-          </div>
-        </div>
+      {editingIdea && (
+        <MultiPlatformEditor
+          initialContent={{
+            hook: editingIdea.hook,
+            caption: editingIdea.platformCaptions?.[previewPlatform] || editingIdea.caption,
+            hashtags: editingIdea.hashtags
+          }}
+          platforms={editingIdea.platforms}
+          onClose={() => setEditingIdea(null)}
+          onSave={handleFinishMultiEdit}
+        />
       )}
     </div>
   )

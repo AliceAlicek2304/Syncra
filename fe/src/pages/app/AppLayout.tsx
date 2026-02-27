@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Zap, LayoutDashboard, Sparkles, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -9,11 +9,14 @@ import CreatePostModal from '../../components/CreatePostModal'
 import { shortId } from '../../utils/shortId'
 import Toast, { type ToastItem } from '../../components/Toast'
 import AICoach from '../../components/AICoach'
+import MeshBackground from '../../components/MeshBackground'
+import CommandPalette from '../../components/CommandPalette'
 import styles from './AppLayout.module.css'
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
-  { to: '/app/ai', icon: <Sparkles size={18} />, label: 'AI Assistant', badge: 'NEW' },
+  { to: '/app/ai', icon: <Sparkles size={18} />, label: 'AI Assistant' },
+  { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
@@ -133,6 +136,10 @@ export default function AppLayout() {
       <Toast toasts={toasts} onDismiss={dismissToast} />
       {/* Floating AI Coach */}
       <AICoach />
+      {/* Premium Background Layer */}
+      <MeshBackground />
+      {/* Search & Actions Palette */}
+      <CommandPalette onNewPost={() => setShowCreatePost(true)} />
     </div>
   )
 }

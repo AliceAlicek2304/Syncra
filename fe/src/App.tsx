@@ -22,6 +22,7 @@ import AIAssistantPage from './pages/app/AIAssistantPage'
 import CalendarPage from './pages/app/CalendarPage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
+import RepurposePage from './pages/app/RepurposePage'
 import SettingsPage from './pages/app/SettingsPage'
 
 function Homepage() {
@@ -68,6 +69,7 @@ const router = createBrowserRouter(
         { path: 'calendar', element: <CalendarPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'trends', element: <TrendRadarPage /> },
+        { path: 'repurpose', element: <RepurposePage /> },
         { path: 'settings', element: <SettingsPage /> },
       ],
     },

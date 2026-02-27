@@ -15,15 +15,21 @@
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--font-title);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
   color: var(--text-primary);
+  background: linear-gradient(to right, #fff, rgba(255,255,255,0.7));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  opacity: 0.8;
   margin-top: 4px;
 }
 
@@ -53,9 +59,10 @@
 }
 
 .statValue {
-  font-size: 30px;
+  font-family: var(--font-title);
+  font-size: 34px;
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   color: var(--text-primary);
   line-height: 1;
 }
@@ -185,11 +192,25 @@
 .aiTip {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  border-color: rgba(139,92,246,0.25) !important;
-  background: rgba(139,92,246,0.05) !important;
+  gap: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(217, 70, 239, 0.08)) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
   flex-wrap: wrap;
+}
+
+.aiTip::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 70%);
+  pointer-events: none;
 }
 
 .aiTipIcon {
