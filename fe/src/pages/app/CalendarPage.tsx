@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Clock, MoreHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import GlassUpload from '../../components/GlassUpload'
-import { useCalendar } from '../../context/CalendarContext'
+import { useCalendar } from '../../context/calendarContextBase'
 import styles from './CalendarPage.module.css'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -76,7 +76,7 @@ export default function CalendarPage() {
     setSelectedDay(null)
   }
 
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
   const selectedPosts = selectedDay ? (allPosts[selectedDay] ?? []) : []
 
@@ -100,11 +100,11 @@ export default function CalendarPage() {
           <div className={styles.monthNav}>
             <div className={styles.navLeft}>
               <button className={styles.navBtn} onClick={prevMonth}><ChevronLeft size={16} /></button>
-              
+
               <div className={styles.selectors}>
-                <select 
-                  className={styles.dateSelect} 
-                  value={month} 
+                <select
+                  className={styles.dateSelect}
+                  value={month}
                   onChange={(e) => { setMonth(parseInt(e.target.value)); setSelectedDay(null) }}
                 >
                   {MONTHS.map((m, i) => (
@@ -112,9 +112,9 @@ export default function CalendarPage() {
                   ))}
                 </select>
 
-                <select 
-                  className={styles.dateSelect} 
-                  value={year} 
+                <select
+                  className={styles.dateSelect}
+                  value={year}
                   onChange={(e) => { setYear(parseInt(e.target.value)); setSelectedDay(null) }}
                 >
                   {Array.from({ length: 11 }).map((_, i) => {
@@ -128,8 +128,8 @@ export default function CalendarPage() {
             </div>
 
             <div className={styles.navRight}>
-              <button 
-                className={styles.todayBtn} 
+              <button
+                className={styles.todayBtn}
                 onClick={() => {
                   setYear(today.getFullYear())
                   setMonth(today.getMonth())

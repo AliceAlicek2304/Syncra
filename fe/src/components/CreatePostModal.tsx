@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getMockResults } from '../data/mockAI'
+import type { AIGenerateInput } from '../data/mockAI'
 import { shortId } from '../utils/shortId'
 import type { ToastItem } from './Toast'
 import styles from './CreatePostModal.module.css'
@@ -396,9 +397,18 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
   const handleGenerateAI = () => {
     if (aiPrompt.trim() === '') return
     setAiIsGenerating(true)
+
+    const input: AIGenerateInput = {
+      topic: aiPrompt,
+      niche: '',
+      audience: '',
+      goal: '',
+      tone: tone
+    }
+
     // Simulate API call delay
     setTimeout(() => {
-      setAiResults(getMockResults(tone).slice(0, 4))
+      setAiResults(getMockResults(input).slice(0, 4))
       setAiIsGenerating(false)
     }, 800)
   }
@@ -800,8 +810,8 @@ export default function CreatePostModal({ isOpen, onClose, onToast }: Props) {
 
                   <div className={styles.toolbarSpacer} />
                   <span className={`${styles.charCount} ${caption.length > charLimit ? styles.charCountOver
-                      : caption.length > charLimit * 0.85 ? styles.charCountWarn
-                        : ''
+                    : caption.length > charLimit * 0.85 ? styles.charCountWarn
+                      : ''
                     }`}>
                     {charLimit - caption.length}
                   </span>
