@@ -171,7 +171,7 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────
-export default function EditIdeaModal({ idea, groups, onSave, onDelete, onClose }: Props) {
+export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Props, 'onDelete'> & { onDelete?: (id: string) => void }) {
     const [title, setTitle] = useState(idea.title)
     const [content, setContent] = useState(idea.description ?? '')
     const [status, setStatus] = useState(idea.status)

@@ -74,7 +74,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
 
     // Close on outside click — must watch portal content too
     useEffect(() => {
-        if (!openMenu) { setShowMoveMenu(false); return }
+        if (!openMenu) return
         const handler = (e: MouseEvent) => {
             const target = e.target as Node
             if (
@@ -102,8 +102,10 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
 
     const handleMenuBtn = (e: React.MouseEvent) => {
         e.stopPropagation()
-        setOpenMenu(v => !v)
-        setShowMoveMenu(false)
+        setOpenMenu(v => {
+            if (v) setShowMoveMenu(false)
+            return !v
+        })
     }
 
     const handleDelete = (e: React.MouseEvent) => {

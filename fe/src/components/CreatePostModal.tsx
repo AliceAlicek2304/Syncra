@@ -233,7 +233,7 @@ export default function CreatePostModal({ isOpen, onClose, onToast, initialConte
   const [activeTab, setActiveTab] = useState<Platform>('TikTok')
 
   // Composer state
-  const [caption, setCaption] = useState(initialContent || '')
+  const [caption, setCaption] = useState(() => initialContent || '')
   const [showAI, setShowAI] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
   const tone: Tone = 'default'
@@ -262,13 +262,6 @@ export default function CreatePostModal({ isOpen, onClose, onToast, initialConte
   const charLimit = activeP.maxChars
   const overLimit = caption.length > charLimit
   const hasPlatforms = activePlatforms.length > 0
-
-  // Sync initial content
-  useEffect(() => {
-    if (isOpen) {
-      setCaption(initialContent || '')
-    }
-  }, [isOpen, initialContent])
 
   // Close on Escape
   useEffect(() => {
