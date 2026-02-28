@@ -7,7 +7,7 @@ export interface ScheduledPost {
     day: number
     title: string
     platform: string
-    status: 'scheduled' | 'draft'
+    status: 'scheduled' | 'draft' | 'published'
     time: string    // "HH:MM"
     color: string
     caption: string
@@ -17,6 +17,7 @@ export interface ScheduledPost {
 export interface CalendarContextValue {
     posts: ScheduledPost[]
     addPost: (post: Omit<ScheduledPost, 'id'>) => void
+    updatePost: (id: string, changes: Partial<Omit<ScheduledPost, 'id'>>) => void
     removePost: (id: string) => void
 }
 

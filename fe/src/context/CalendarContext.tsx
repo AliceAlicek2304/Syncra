@@ -13,12 +13,16 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     setPosts(prev => [...prev, { ...post, id: shortId() }])
   }, [])
 
+  const updatePost = useCallback((id: string, changes: Partial<Omit<ScheduledPost, 'id'>>) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, ...changes } : p))
+  }, [])
+
   const removePost = useCallback((id: string) => {
     setPosts(prev => prev.filter(p => p.id !== id))
   }, [])
 
   return (
-    <CalendarContext.Provider value={{ posts, addPost, removePost }}>
+    <CalendarContext.Provider value={{ posts, addPost, updatePost, removePost }}>
       {children}
     </CalendarContext.Provider>
   )
