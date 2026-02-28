@@ -24,6 +24,7 @@ interface Props {
   onClose: () => void
   onToast?: (t: Omit<ToastItem, 'id'>) => void
   initialContent?: string | null
+  initialDate?: { year: number; month: number; day: number }
 }
 
 // ── Constants ──────────────────────────────────────────
@@ -225,7 +226,7 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
 }
 
 // getMockResults is imported; it accepts tone param
-export default function CreatePostModal({ isOpen, onClose, onToast, initialContent }: Props) {
+export default function CreatePostModal({ isOpen, onClose, onToast, initialContent, initialDate }: Props) {
   const { user } = useAuth()
 
   // Platform selection
@@ -242,7 +243,29 @@ export default function CreatePostModal({ isOpen, onClose, onToast, initialConte
   const [dragOver, setDragOver] = useState(false)
   const [createAnother, setCreateAnother] = useState(false)
   const [scheduleMode, setScheduleMode] = useState(false)
-  const [scheduleTime, setScheduleTime] = useState('')
+
+  // Pre-fill scheduleTime from initialDate if provided
+  const getInitialScheduleTime = () => {
+    if (!initialDate) return ''
+    const { year, month, day } = initialDate
+    const mm = String(month + 1).padStart(2, '0')
+    const dd = String(day).padStart(2, '0')
+    return `${year}-${mm}-${dd}T09:00`
+  }
+  const [scheduleTime, setScheduleTime] = useState(() => getInitialScheduleTime())
+
+  // Auto-enable schedule mode when date is pre-filled
+  useEffect(() => {
+    if (initialDate) {
+      setScheduleMode(true)
+      const { year, month, day } = initialDate
+      const mm = String(month + 1).padStart(2, '0')
+      const dd = String(day).padStart(2, '0')
+      setScheduleTime(`${year}-${mm}-${dd}T09:00`)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDate?.year, initialDate?.month, initialDate?.day])
+
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
 
