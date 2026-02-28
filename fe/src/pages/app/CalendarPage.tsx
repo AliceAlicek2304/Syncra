@@ -14,8 +14,8 @@ import styles from './CalendarPage.module.css'
 
 // ── Constants ─────────────────────────────────────────
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTHS = ['January','February','March','April','May','June',
-  'July','August','September','October','November','December']
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December']
 
 type ViewMode = 'month' | 'week' | 'day'
 type PostStatus = 'published' | 'scheduled' | 'draft'
@@ -222,8 +222,8 @@ export default function CalendarPage() {
 
   const weekDays = useMemo(() =>
     getWeekDays(year, month, selectedDay ?? today.getDate()),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [year, month, selectedDay])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [year, month, selectedDay])
 
   // ── Render post pill (used in week/day view) ───────
   const renderPostPill = (p: CalPost) => (
@@ -287,7 +287,10 @@ export default function CalendarPage() {
                     className={`${styles.cellPostChip} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
                     style={{ background: `${p.color}25`, borderLeft: `2px solid ${p.color}` }}
                     draggable={!p.isMock}
-                    onDragStart={e => { e.stopPropagation(); !p.isMock && handleDragStart(p.id) }}
+                    onDragStart={e => {
+                      e.stopPropagation()
+                      if (!p.isMock) handleDragStart(p.id)
+                    }}
                     onDragEnd={handleDragEnd}
                     onClick={e => { e.stopPropagation(); openEditPost(p) }}
                     title={`${p.time} · ${p.title}`}
@@ -487,7 +490,7 @@ export default function CalendarPage() {
   )
 
   // ── Nav title based on view ────────────────────────
-  const navTitle = useMemo(() => {
+  const navTitle = (() => {
     if (viewMode === 'month') return `${MONTHS[month]} ${year}`
     if (viewMode === 'week') {
       const first = weekDays[0], last = weekDays[6]
@@ -496,7 +499,7 @@ export default function CalendarPage() {
     }
     const d = selectedDay ?? today.getDate()
     return `${DAYS_SHORT[new Date(year, month, d).getDay()]}, ${MONTHS[month]} ${d}`
-  }, [viewMode, month, year, weekDays, selectedDay])
+  })()
 
   const onPrev = viewMode === 'month' ? prevMonth : viewMode === 'week' ? prevWeek : prevDay
   const onNext = viewMode === 'month' ? nextMonth : viewMode === 'week' ? nextWeek : nextDay

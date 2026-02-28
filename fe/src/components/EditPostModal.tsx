@@ -41,6 +41,7 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
 
   useEffect(() => {
     if (post) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setTitle(post.title)
       setCaption(post.caption)
       setPlatform(post.platform)
@@ -49,6 +50,7 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
       setDay(post.day)
       setMonth(post.month)
       setYear(post.year)
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [post])
 
