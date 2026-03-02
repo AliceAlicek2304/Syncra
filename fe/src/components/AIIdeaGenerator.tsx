@@ -33,6 +33,19 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
+// ─── API call to Python backend ───────────────────────────────────────────────
+async function fetchAIIdeas(input: AIGenerateInput): Promise<ContentIdea[]> {
+    const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    })
+    if (!response.ok) throw new Error(`Backend error: ${response.status} ${response.statusText}`)
+    const data = await response.json()
+    // Normalise: backend returns { ideas: [...] }
+    return (data.ideas as ContentIdea[]) ?? []
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
     const [step, setStep] = useState<Step>('form')
@@ -45,15 +58,19 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
     const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([])
     const [showAdvanced, setShowAdvanced] = useState(false)
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         if (!topic.trim()) return
         setStep('loading')
         setSelectedIdeaIds([])
         const input: AIGenerateInput = { topic, niche, audience, goal, tone }
-        setTimeout(() => {
+        try {
+            const ideas = await fetchAIIdeas(input)
+            setResults(ideas.length > 0 ? ideas : getMockResults(input))
+        } catch {
+            // Fall back to mock data if backend is unavailable
             setResults(getMockResults(input))
-            setStep('results')
-        }, 1600)
+        }
+        setStep('results')
     }
 
     const toggleSelect = (idea: ContentIdea) => {
