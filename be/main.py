@@ -16,22 +16,19 @@ import jwt
 import psycopg2
 import psycopg2.errors
 from authlib.integrations.flask_client import OAuth
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, session
 from flask_cors import CORS
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
 
 # Flask session secret (required by authlib for OAuth state)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-me-in-production")
 
 # Configure CORS:
 # - Use CORS_ORIGINS env var (comma-separated) if set.
 # - Otherwise, default to the Vite dev server origin.
-_cors_origins_env = os.getenv("CORS_ORIGINS")
+_cors_origins_env = os.environ.get("CORS_ORIGINS")
 if _cors_origins_env:
     _cors_origins = [
         origin.strip()
@@ -49,7 +46,7 @@ CORS(
 
 # ── OpenAI ──────────────────────────────────────────────────────────────────
 # Initialise OpenAI client – set OPENAI_API_KEY in your environment
-_api_key = os.getenv("OPENAI_API_KEY")
+_api_key = os.environ.get("OPENAI_API_KEY", "")
 if not _api_key:
     print(
         "WARNING: OPENAI_API_KEY is not set. AI generation will fail until it is provided.",
@@ -58,7 +55,7 @@ if not _api_key:
 client = OpenAI(api_key=_api_key)
 
 # ── Database ─────────────────────────────────────────────────────────────────
-_database_url = os.getenv("DATABASE_URL")
+_database_url = os.environ.get("DATABASE_URL", "")
 if not _database_url:
     print(
         "WARNING: DATABASE_URL is not set. Auth endpoints will fail until it is provided.",
@@ -68,17 +65,11 @@ if not _database_url:
 
 def get_db():
     """Open a new psycopg2 connection using DATABASE_URL."""
-    return psycopg2.connect(
-        user='postgres.qtzosjgnwpvmtnlcndkp', 
-        password='meomeosir0205', 
-        host='aws-1-ap-southeast-1.pooler.supabase.com', 
-        port=5432, 
-        database='postgres'
-    )
+    return psycopg2.connect(_database_url)
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
-_jwt_secret = os.getenv("JWT_SECRET")
+_jwt_secret = os.environ.get("JWT_SECRET", "change-me-in-production")
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_DAYS = 7
 
@@ -95,8 +86,8 @@ def make_token(email: str) -> str:
 oauth = OAuth(app)
 google = oauth.register(
     name="google",
-    client_id=os.getenv("GOOGLE_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
 )
@@ -144,10 +135,10 @@ def signup():
 
     if not email or not password:
         return jsonify({"error": "email and password are required"}), 400
-    # if len(password) < 8:
-    #     return jsonify({"error": "Password must be at least 8 characters"}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
 
-    # hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
     conn = get_db()
     try:
@@ -155,7 +146,7 @@ def signup():
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO user_data (email, password) VALUES (%s, %s)",
-                    (email, password),
+                    (email, hashed),
                 )
         return jsonify({"token": make_token(email), "email": email}), 201
     except psycopg2.errors.UniqueViolation:
@@ -211,7 +202,7 @@ def signin():
 @app.route("/api/auth/google")
 def google_login():
     """Redirect browser to Google's OAuth consent screen."""
-    frontend_url = os.getenv("FRONTEND_URL")
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
     # The callback must be routable through the same origin as this request so
     # that the session cookie (holding OAuth state) is sent back correctly.
     redirect_uri = f"{frontend_url}/api/auth/google/callback"
@@ -221,8 +212,8 @@ def google_login():
 @app.route("/api/auth/google/callback")
 def google_callback():
     """Handle Google OAuth callback, upsert user, return JWT to frontend."""
-    frontend_url = os.getenv("FRONTEND_URL")
-    frontend_base = os.getenv("FRONTEND_BASE")
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+    frontend_base = os.environ.get("FRONTEND_BASE", "/TechNest")
 
     if not _database_url:
         return redirect(f"{frontend_url}{frontend_base}/auth?error=db_not_configured")
@@ -291,28 +282,28 @@ def generate():
         return jsonify({"error": "OPENAI_API_KEY is not configured on the server"}), 503
 
     data = request.get_json(silent=True) or {}
-    jsonify(data), 503
-    # topic = (data.get("topic") or "").strip()
-    # if not topic:
-    #     return jsonify({"error": "topic is required"}), 400
 
-    # niche = data.get("niche", "")
-    # audience = data.get("audience", "")
-    # goal = data.get("goal", "")
-    # tone = data.get("tone", "default")
+    topic = (data.get("topic") or "").strip()
+    if not topic:
+        return jsonify({"error": "topic is required"}), 400
 
-    # # Build context string from optional fields
-    # context_parts = [f"Topic: {topic}"]
-    # if niche:
-    #     context_parts.append(f"Niche: {niche}")
-    # if audience:
-    #     context_parts.append(f"Target audience: {audience}")
-    # if goal:
-    #     context_parts.append(f"Goal: {goal}")
-    # if tone and tone != "default":
-    #     context_parts.append(f"Tone: {tone}")
+    niche = data.get("niche", "")
+    audience = data.get("audience", "")
+    goal = data.get("goal", "")
+    tone = data.get("tone", "default")
 
-    user_message = data
+    # Build context string from optional fields
+    context_parts = [f"Topic: {topic}"]
+    if niche:
+        context_parts.append(f"Niche: {niche}")
+    if audience:
+        context_parts.append(f"Target audience: {audience}")
+    if goal:
+        context_parts.append(f"Goal: {goal}")
+    if tone and tone != "default":
+        context_parts.append(f"Tone: {tone}")
+
+    user_message = "\n".join(context_parts)
 
     try:
         response = client.chat.completions.create(
@@ -355,7 +346,7 @@ def health():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT"))
-    debug = os.getenv("FLASK_DEBUG").lower() == "true"
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
     app.run(host="0.0.0.0", port=port, debug=debug)
 
