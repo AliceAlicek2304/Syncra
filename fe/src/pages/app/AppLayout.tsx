@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useCreatePostModal } from '../../context/createPostModalContext'
 import CreatePostModal from '../../components/CreatePostModal'
 import { shortId } from '../../utils/shortId'
 import Toast, { type ToastItem } from '../../components/Toast'
@@ -26,9 +27,9 @@ export default function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-  const [showCreatePost, setShowCreatePost] = useState(false)
-  const [prefillContent, setPrefillContent] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastItem[]>([])
+
+  const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 
   const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
     setToasts(prev => [...prev, { ...t, id: shortId() }])
@@ -42,11 +43,6 @@ export default function AppLayout() {
     logout()
     navigate('/')
   }
-
-  const handleOpenCreatePost = useCallback((content?: string) => {
-    if (content) setPrefillContent(content)
-    setShowCreatePost(true)
-  }, [])
 
   return (
     <div className={`${styles.layout} ${collapsed ? styles.collapsed : ''}`}>
@@ -71,7 +67,7 @@ export default function AppLayout() {
         <div className={styles.newPostWrap}>
           <button
             className={`${styles.newPostBtn} ${collapsed ? styles.newPostBtnCollapsed : ''}`}
-            onClick={() => handleOpenCreatePost()}
+            onClick={() => openCreatePost({ source: 'direct' })}
           >
             <PenSquare size={16} />
             {!collapsed && <span>New Post</span>}
@@ -130,26 +126,27 @@ export default function AppLayout() {
 
       {/* Main content */}
       <main className={styles.main}>
-        <Outlet context={{ openCreatePost: handleOpenCreatePost }} />
+        <Outlet />
       </main>
 
-      {/* Modals / Toasts */}
+      {/* Single Modal Mount */}
       <CreatePostModal
-        isOpen={showCreatePost}
-        onClose={() => {
-          setShowCreatePost(false)
-          setPrefillContent(null)
-        }}
+        isOpen={state.isOpen}
+        onClose={closeCreatePost}
         onToast={addToast}
-        initialContent={prefillContent}
+        initialContent={state.initialContent}
+        initialDate={state.initialDate}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
+      
       {/* Floating AI Coach */}
       <AICoach />
+      
       {/* Premium Background Layer */}
       <MeshBackground />
+      
       {/* Search & Actions Palette */}
-      <CommandPalette onNewPost={() => handleOpenCreatePost()} />
+      <CommandPalette onNewPost={() => openCreatePost({ source: 'command' })} />
     </div>
   )
 }

@@ -17,6 +17,7 @@ import HeroDemo from './components/HeroDemo'
 // App pages
 import { CalendarProvider } from './context/CalendarContext'
 import { RepurposeProvider } from './context/RepurposeContext'
+import { CreatePostModalProvider } from './context/createPostModalContext'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
@@ -60,7 +61,9 @@ const router = createBrowserRouter(
         <ProtectedRoute>
           <CalendarProvider>
             <RepurposeProvider>
-              <AppLayout />
+              <CreatePostModalProvider>
+                <AppLayout />
+              </CreatePostModalProvider>
             </RepurposeProvider>
           </CalendarProvider>
         </ProtectedRoute>
