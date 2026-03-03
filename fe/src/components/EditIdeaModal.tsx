@@ -3,8 +3,8 @@ import {
     X, Sparkles, Smile, Hash,
     RotateCcw, RotateCw, Crop, Check, FlipHorizontal,
 } from 'lucide-react'
-import { useOutletContext } from 'react-router-dom'
 import { shortId } from '../utils/shortId'
+import { useCreatePostModal } from '../context/createPostModalContext'
 import IdeaAIAssistantPanel from './IdeaAIAssistantPanel'
 import styles from './EditIdeaModal.module.css'
 
@@ -183,7 +183,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
     const [dragOverId, setDragOverId] = useState<string | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
 
-    const { openCreatePost } = useOutletContext<{ openCreatePost: (content?: string) => void }>() || {}
+    const { openCreatePost } = useCreatePostModal()
 
     const fileInputRef = useRef<HTMLInputElement>(null)
     const replaceInputRef = useRef<HTMLInputElement>(null)
@@ -452,7 +452,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                                 style={{ marginRight: 8 }}
                                 onClick={() => {
                                     const fullContent = title.trim() ? `${title.trim()}\n\n${content}` : content;
-                                    openCreatePost?.(fullContent);
+                                    openCreatePost({ initialContent: fullContent, source: 'idea' });
                                     onClose();
                                 }}
                             >
