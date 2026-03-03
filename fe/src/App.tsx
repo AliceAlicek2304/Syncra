@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 // Auth page
 import AuthPage from './pages/auth/AuthPage'
+import AuthCallbackPage from './pages/auth/AuthCallbackPage'
 
 // Homepage components
 import Navbar from './components/Navbar'
@@ -60,6 +61,10 @@ const router = createBrowserRouter(
     {
       path: '/auth',
       element: <AuthPage />,
+    },
+    {
+      path: '/auth/callback',
+      element: <AuthCallbackPage />,
     },
     {
       path: '/app',

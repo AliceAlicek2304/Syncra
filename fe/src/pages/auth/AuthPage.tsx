@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Zap, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import styles from './AuthPage.module.css'
 
 type AuthTab = 'signin' | 'signup'
@@ -9,7 +10,56 @@ export default function AuthPage() {
   const [tab, setTab] = useState<AuthTab>('signin')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [searchParams] = useSearchParams()
+  const [error, setError] = useState(searchParams.get('oauthError') || '')
+  const [loading, setLoading] = useState(false)
+  const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
+
+  const switchTab = (t: AuthTab) => {
+    setTab(t)
+    setError('')
+    setPassword('')
+    setConfirm('')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (tab === 'signup') {
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.')
+        return
+      }
+      if (password !== confirm) {
+        setError('Passwords do not match.')
+        return
+      }
+    }
+
+    setLoading(true)
+    try {
+      if (tab === 'signin') {
+        await signIn(email.trim().toLowerCase(), password)
+      } else {
+        await signUp(email.trim().toLowerCase(), password)
+      }
+      navigate('/app/dashboard')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleAuth = () => {
+    // Redirect to backend Google OAuth endpoint (proxied through Vite in dev)
+    window.location.href = '/api/auth/google'
+  }
 
   return (
     <div className={styles.page}>
@@ -31,7 +81,7 @@ export default function AuthPage() {
             aria-controls="auth-panel"
             id="tab-signin"
             className={`${styles.tab} ${tab === 'signin' ? styles.tabActive : ''}`}
-            onClick={() => setTab('signin')}
+            onClick={() => switchTab('signin')}
           >
             Sign In
           </button>
@@ -41,7 +91,7 @@ export default function AuthPage() {
             aria-controls="auth-panel"
             id="tab-signup"
             className={`${styles.tab} ${tab === 'signup' ? styles.tabActive : ''}`}
-            onClick={() => setTab('signup')}
+            onClick={() => switchTab('signup')}
           >
             Sign Up
           </button>
@@ -65,9 +115,7 @@ export default function AuthPage() {
           {/* Google OAuth button */}
           <button
             className={styles.googleBtn}
-            onClick={() => {
-              // Google OAuth — to be wired up
-            }}
+            onClick={handleGoogleAuth}
             type="button"
           >
             <svg className={styles.googleIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -97,14 +145,11 @@ export default function AuthPage() {
             <span className={styles.dividerLine} />
           </div>
 
+          {/* Error message */}
+          {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+
           {/* Email / Password form */}
-          <form
-            className={styles.form}
-            onSubmit={e => {
-              e.preventDefault()
-              // Form submission — to be wired up
-            }}
-          >
+          <form className={styles.form} onSubmit={handleSubmit}>
             {tab === 'signup' && (
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="auth-name">Full name</label>
@@ -131,6 +176,9 @@ export default function AuthPage() {
                   className={styles.input}
                   placeholder="you@example.com"
                   autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -145,6 +193,9 @@ export default function AuthPage() {
                   className={styles.input}
                   placeholder={tab === 'signup' ? 'Create a password' : 'Enter your password'}
                   autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
                 />
                 <button
                   type="button"
@@ -168,6 +219,9 @@ export default function AuthPage() {
                     className={styles.input}
                     placeholder="Repeat your password"
                     autoComplete="new-password"
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    required
                   />
                   <button
                     type="button"
@@ -187,7 +241,7 @@ export default function AuthPage() {
                   type="button"
                   className={styles.forgotBtn}
                   onClick={() => {
-                    // Forgot password — to be wired up
+                    // Forgot password — not in scope
                   }}
                 >
                   Forgot password?
@@ -195,8 +249,14 @@ export default function AuthPage() {
               </div>
             )}
 
-            <button type="submit" className={`btn-primary ${styles.submitBtn}`}>
-              {tab === 'signin' ? 'Sign In' : 'Create Account'}
+            <button
+              type="submit"
+              className={`btn-primary ${styles.submitBtn}`}
+              disabled={loading}
+            >
+              {loading
+                ? 'Please wait…'
+                : tab === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
@@ -204,14 +264,14 @@ export default function AuthPage() {
             {tab === 'signin' ? (
               <>
                 Don&apos;t have an account?{' '}
-                <button className={styles.switchBtn} onClick={() => setTab('signup')}>
+                <button className={styles.switchBtn} onClick={() => switchTab('signup')}>
                   Sign up free
                 </button>
               </>
             ) : (
               <>
                 Already have an account?{' '}
-                <button className={styles.switchBtn} onClick={() => setTab('signin')}>
+                <button className={styles.switchBtn} onClick={() => switchTab('signin')}>
                   Sign in
                 </button>
               </>
@@ -230,3 +290,4 @@ export default function AuthPage() {
     </div>
   )
 }
+

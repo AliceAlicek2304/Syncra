@@ -158,6 +158,17 @@
   white-space: nowrap;
 }
 
+/* Error message */
+.errorMsg {
+  font-size: 13px;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+
 /* Form */
 .form {
   display: flex;
