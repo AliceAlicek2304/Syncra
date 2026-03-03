@@ -24,14 +24,22 @@ export default function AuthPage() {
 
       <div className={styles.card}>
         {/* Tabs */}
-        <div className={styles.tabs}>
+        <div className={styles.tabs} role="tablist" aria-label="Authentication">
           <button
+            role="tab"
+            aria-selected={tab === 'signin'}
+            aria-controls="auth-panel"
+            id="tab-signin"
             className={`${styles.tab} ${tab === 'signin' ? styles.tabActive : ''}`}
             onClick={() => setTab('signin')}
           >
             Sign In
           </button>
           <button
+            role="tab"
+            aria-selected={tab === 'signup'}
+            aria-controls="auth-panel"
+            id="tab-signup"
             className={`${styles.tab} ${tab === 'signup' ? styles.tabActive : ''}`}
             onClick={() => setTab('signup')}
           >
@@ -39,7 +47,12 @@ export default function AuthPage() {
           </button>
         </div>
 
-        <div className={styles.cardBody}>
+        <div
+          id="auth-panel"
+          role="tabpanel"
+          aria-labelledby={tab === 'signin' ? 'tab-signin' : 'tab-signup'}
+          className={styles.cardBody}
+        >
           <h1 className={styles.title}>
             {tab === 'signin' ? 'Welcome back' : 'Create your account'}
           </h1>

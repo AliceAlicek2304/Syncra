@@ -66,7 +66,8 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
         try {
             const ideas = await fetchAIIdeas(input)
             setResults(ideas.length > 0 ? ideas : getMockResults(input))
-        } catch {
+        } catch (error) {
+            console.error('Failed to fetch AI ideas from backend, falling back to mock data.', error)
             // Fall back to mock data if backend is unavailable
             setResults(getMockResults(input))
         }

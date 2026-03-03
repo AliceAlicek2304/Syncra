@@ -13,7 +13,24 @@ from flask_cors import CORS
 from openai import OpenAI
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from the Vite dev server
+
+# Configure CORS:
+# - Use CORS_ORIGINS env var (comma-separated) if set.
+# - Otherwise, default to the Vite dev server origin.
+_cors_origins_env = os.environ.get("CORS_ORIGINS")
+if _cors_origins_env:
+    _cors_origins = [
+        origin.strip()
+        for origin in _cors_origins_env.split(",")
+        if origin.strip()
+    ]
+else:
+    _cors_origins = ["http://localhost:5173"]
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": _cors_origins}},
+)
 
 # Initialise OpenAI client – set OPENAI_API_KEY in your environment
 _api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -26,18 +43,20 @@ client = OpenAI(api_key=_api_key)
 
 SYSTEM_PROMPT = """You are TechNest's AI content strategist. Given a user's content topic and optional preferences, generate 4 creative content ideas optimised for social media.
 
-Return ONLY a valid JSON array (no markdown, no extra text) with this exact structure:
-[
-  {
-    "id": "unique-string",
-    "type": "Reel" | "Carousel" | "Photo" | "Thread" | "Short",
-    "title": "Catchy content title",
-    "hook": "One-sentence hook that grabs attention",
-    "platforms": ["TikTok", "Instagram"],
-    "bestTime": "Best posting time window",
-    "estimatedReach": "e.g. 10K – 30K"
-  }
-]
+Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
+{
+  "ideas": [
+    {
+      "id": "unique-string",
+      "type": "Reel" | "Carousel" | "Photo" | "Thread" | "Short",
+      "title": "Catchy content title",
+      "hook": "One-sentence hook that grabs attention",
+      "platforms": ["TikTok", "Instagram"],
+      "bestTime": "Best posting time window",
+      "estimatedReach": "e.g. 10K – 30K"
+    }
+  ]
+}
 
 Rules:
 - Make ideas specific to the topic provided
@@ -53,6 +72,9 @@ def generate():
     Body: { "topic": str, "niche": str, "audience": str, "goal": str, "tone": str }
     Returns: { "ideas": [...] }
     """
+    if not _api_key:
+        return jsonify({"error": "OPENAI_API_KEY is not configured on the server"}), 503
+
     data = request.get_json(silent=True) or {}
 
     topic = (data.get("topic") or "").strip()
@@ -86,10 +108,20 @@ def generate():
             ],
             temperature=0.8,
             max_tokens=1200,
+            response_format={"type": "json_object"},
         )
 
-        raw = response.choices[0].message.content or "[]"
-        ideas = json.loads(raw)
+        raw = response.choices[0].message.content or "{}"
+        payload = json.loads(raw)
+        ideas = payload.get("ideas", [])
+
+        # Validate shape: must be a list of dicts
+        if not isinstance(ideas, list) or any(not isinstance(item, dict) for item in ideas):
+            app.logger.warning("AI response JSON had unexpected shape: %r", ideas)
+            return (
+                jsonify({"error": "AI response was not a JSON array of idea objects"}),
+                502,
+            )
 
         return jsonify({"ideas": ideas})
 
