@@ -2,6 +2,10 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import type { ReactNode } from 'react'
 
+// Auth page
+import AuthPage from './pages/auth/AuthPage'
+import AuthCallbackPage from './pages/auth/AuthCallbackPage'
+
 // Homepage components
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
@@ -54,6 +58,14 @@ const router = createBrowserRouter(
     {
       path: '/',
       element: <Homepage />,
+    },
+    {
+      path: '/auth',
+      element: <AuthPage />,
+    },
+    {
+      path: '/auth/callback',
+      element: <AuthCallbackPage />,
     },
     {
       path: '/app',

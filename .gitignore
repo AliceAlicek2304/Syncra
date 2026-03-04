@@ -64,6 +64,9 @@ be/*.war
 be/.mvn/
 be/mvnw
 be/mvnw.cmd
+be/.env
+be/__pycache__/
+be/*.pyc
 
 # ===========================
 # Local notes (do not commit)

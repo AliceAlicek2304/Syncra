@@ -23,7 +23,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { user, login, logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -43,8 +43,7 @@ export default function Navbar() {
   }, [])
 
   const handleLogin = () => {
-    login()
-    navigate('/app/dashboard')
+    navigate('/auth')
   }
 
   const handleLogout = () => {
