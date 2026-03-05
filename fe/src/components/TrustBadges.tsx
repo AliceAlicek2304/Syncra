@@ -44,7 +44,7 @@ export default function TrustBadges() {
               Ready to grow your audience <span className="gradient-text">10x faster?</span>
             </h2>
             <p className={styles.ctaSub}>
-              Join 2,400+ creators who already trust TechNest. Free plan — no credit card required.
+              Join 2,400+ creators who already trust Syncra. Free plan — no credit card required.
             </p>
             <div className={styles.ctaActions}>
               <a href="#pricing" className="btn-primary">Start for free today</a>

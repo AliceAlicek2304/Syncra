@@ -8,7 +8,7 @@ const TESTIMONIALS = [
     platform: 'TikTok Creator · 280K followers',
     avatar: 'MA',
     color: '#ec4899',
-    text: 'TechNest changed how I work. I used to spend 3 hours a day copying content across platforms. Now it takes 20 minutes and my engagement actually went up.',
+    text: 'Syncra changed how I work. I used to spend 3 hours a day copying content across platforms. Now it takes 20 minutes and my engagement actually went up.',
     stars: 5,
   },
   {
@@ -26,7 +26,7 @@ const TESTIMONIALS = [
     platform: 'Food Creator · Multi-platform',
     avatar: 'LH',
     color: '#22d3ee',
-    text: 'I tried 4 other tools before TechNest. None of them felt made for solo creators. This one actually gets it — simple, fast, and genuinely useful.',
+    text: 'I tried 4 other tools before Syncra. None of them felt made for solo creators. This one actually gets it — simple, fast, and genuinely useful.',
     stars: 5,
   },
   {
@@ -35,7 +35,7 @@ const TESTIMONIALS = [
     platform: 'Tech Educator · 50K',
     avatar: 'TK',
     color: '#f59e0b',
-    text: 'As a developer I\'m picky about tools. TechNest\'s reliability is excellent — never missed a scheduled post. The unified analytics dashboard is Chef\'s kiss.',
+    text: 'As a developer I\'m picky about tools. Syncra\'s reliability is excellent — never missed a scheduled post. The unified analytics dashboard is Chef\'s kiss.',
     stars: 5,
   },
   {
@@ -65,7 +65,7 @@ export default function Testimonials() {
         <div className={styles.header}>
           <span className="section-label">Testimonials</span>
           <h2 className="section-title">
-            Creators love TechNest.<br />
+            Creators love Syncra.<br />
             <span className="gradient-text">See why.</span>
           </h2>
         </div>

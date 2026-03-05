@@ -81,7 +81,7 @@ const router = createBrowserRouter(
     },
     { path: '*', element: <Navigate to="/" replace /> },
   ],
-  { basename: '/TechNest' },
+  { basename: '/Syncra' },
 )
 
 function App() {

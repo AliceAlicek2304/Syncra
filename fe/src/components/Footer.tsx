@@ -17,7 +17,7 @@ export default function Footer() {
           <div className={styles.brand}>
             <a href="#" className={styles.logo}>
               <span className={styles.logoIcon}><Zap size={16} /></span>
-              <span className={styles.logoText}>TechNest</span>
+              <span className={styles.logoText}>Syncra</span>
             </a>
             <p className={styles.tagline}>
               The all-in-one platform for content creators to write, schedule, and publish everywhere — effortlessly.
@@ -47,7 +47,7 @@ export default function Footer() {
 
         <div className={styles.bottom}>
           <p className={styles.copy}>
-            © {new Date().getFullYear()} TechNest. All rights reserved.
+            © {new Date().getFullYear()} Syncra. All rights reserved.
           </p>
           <p className={styles.madeWith}>
             Made with ❤️ for creators everywhere

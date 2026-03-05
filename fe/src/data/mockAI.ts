@@ -68,14 +68,14 @@ export const MOCK_AI_RESULTS: Record<string, ContentIdea[]> = {
       hook: 'POV: Bạn vừa mất 3 tiếng để đăng 1 bài lên 6 nền tảng',
       title: 'Multi-platform posting — làm đúng cách',
       caption:
-        'Không cần copy-paste manual nữa đâu bạn ơi 😭\n\nMình đã thử TechNest và nó thay đổi hoàn toàn workflow:\n✅ Viết 1 lần\n✅ Tự adapt caption cho từng platform\n✅ Schedule tự động\n\nLink thử free trong bio! 🔗',
-      hashtags: ['#workflow', '#contentcreator', '#technest', '#scheduling', '#timesaving'],
+        'Không cần copy-paste manual nữa đâu bạn ơi 😭\n\nMình đã thử Syncra và nó thay đổi hoàn toàn workflow:\n✅ Viết 1 lần\n✅ Tự adapt caption cho từng platform\n✅ Schedule tự động\n\nLink thử free trong bio! 🔗',
+      hashtags: ['#workflow', '#contentcreator', '#syncra', '#scheduling', '#timesaving'],
       platforms: ['TikTok', 'YouTube'],
       bestTime: '12:00 – 13:00 Thứ 6',
       estimatedReach: '20K – 60K',
       variations: [
-        'Không cần copy-paste manual nữa đâu bạn ơi 😭\n\nMình đã thử TechNest và nó thay đổi hoàn toàn workflow:\n✅ Viết 1 lần\n✅ Tự adapt caption cho từng platform\n✅ Schedule tự động\n\nLink thử free trong bio! 🔗',
-        'Nỗi ám ảnh mang tên "Đăng bài đa kênh" đã chấm dứt! 🛑\n\nĐã từng tốn hàng giờ chỉ để copy nội dung sang từng nền tảng, giờ đây mình chỉ cần 5 phút với công cụ này.\n\nXem cách mình "xử lý" 6 nền tảng cùng lúc trong video nhé! 👇 #TechNest #ContentAutomation',
+        'Không cần copy-paste manual nữa đâu bạn ơi 😭\n\nMình đã thử Syncra và nó thay đổi hoàn toàn workflow:\n✅ Viết 1 lần\n✅ Tự adapt caption cho từng platform\n✅ Schedule tự động\n\nLink thử free trong bio! 🔗',
+        'Nỗi ám ảnh mang tên "Đăng bài đa kênh" đã chấm dứt! 🛑\n\nĐã từng tốn hàng giờ chỉ để copy nội dung sang từng nền tảng, giờ đây mình chỉ cần 5 phút với công cụ này.\n\nXem cách mình "xử lý" 6 nền tảng cùng lúc trong video nhé! 👇 #Syncra #ContentAutomation',
         'POV: Bạn là Content Creator hiện đại nhưng vẫn dùng cách thủ công để đăng bài... 👁️👄👁️\n\nDừng lại ngay và xem cách "automation" hóa cuộc đời tại đây. Workflow mới cực mượt, cực nhàn!\n\nBạn muốn mình review sâu hơn không?'
       ]
     },

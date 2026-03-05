@@ -28,7 +28,7 @@ export default function HeroDemo() {
           <div className={styles.header}>
             <span className="section-label">Live Demo</span>
             <h2 className={styles.title}>Thử sức mạnh của AI ngay bây giờ</h2>
-            <p className={styles.sub}>Không cần đăng ký, trải nghiệm thử cách TechNest biến ý tưởng của bạn thành nội dung chất lượng.</p>
+            <p className={styles.sub}>Không cần đăng ký, trải nghiệm thử cách Syncra biến ý tưởng của bạn thành nội dung chất lượng.</p>
           </div>
 
           <div className={`glass-card ${styles.demoBox}`}>
