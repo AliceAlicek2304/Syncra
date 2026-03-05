@@ -261,6 +261,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
           style={{ display: 'none' }}
           onChange={e => actions.handleFiles(e.target.files)}
         />
+        {/* eslint-disable-next-line react-hooks/refs */}
         <input
           ref={refs.replaceInputRef}
           type="file"
@@ -272,6 +273,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
 
       {/* Toolbar */}
       <div className={styles.toolbar} style={{ position: 'relative' }}>
+        {/* eslint-disable-next-line react-hooks/refs */}
         <div ref={refs.emojiRef} style={{ position: 'relative' }}>
           <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">
             <Smile size={18} />
