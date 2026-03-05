@@ -271,7 +271,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         />
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar*/}
       <div className={styles.toolbar} style={{ position: 'relative' }}>
         {/* eslint-disable-next-line react-hooks/refs */}
         <div ref={refs.emojiRef} style={{ position: 'relative' }}>
