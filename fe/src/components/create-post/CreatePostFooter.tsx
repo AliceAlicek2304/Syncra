@@ -1,7 +1,9 @@
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
-export default function CreatePostFooter({ state, actions }: UseCreatePostStateReturn) {
+type CreatePostFooterProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
+
+export default function CreatePostFooter({ state, actions }: CreatePostFooterProps) {
   return (
     <div className={styles.footer}>
       <label className={styles.createAnotherLabel}>

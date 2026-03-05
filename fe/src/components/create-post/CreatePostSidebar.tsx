@@ -5,7 +5,9 @@ import type { UseCreatePostStateReturn } from './useCreatePostState'
 import SchedulePicker from '../SchedulePicker'
 import styles from '../CreatePostModal.module.css'
 
-export function PlatformTabs({ state, actions }: UseCreatePostStateReturn) {
+type SidebarProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
+
+export function PlatformTabs({ state, actions }: SidebarProps) {
   return (
     <div className={styles.platformTabs}>
       {PLATFORMS.filter(p => state.activePlatforms.includes(p.id)).map(p => (
@@ -22,7 +24,7 @@ export function PlatformTabs({ state, actions }: UseCreatePostStateReturn) {
   )
 }
 
-export function ScheduleRow({ state, actions }: UseCreatePostStateReturn) {
+export function ScheduleRow({ state, actions }: SidebarProps) {
   return (
     <div className={styles.scheduleRow}>
       <span className={styles.scheduleLabel}>Publish:</span>
@@ -63,7 +65,7 @@ export function ScheduleRow({ state, actions }: UseCreatePostStateReturn) {
   )
 }
 
-export function RightPanel({ state, actions }: UseCreatePostStateReturn) {
+export function RightPanel({ state, actions }: SidebarProps) {
   const renderPreview = () => {
     const firstImage = state.media.find(m => m.type === 'image')
 

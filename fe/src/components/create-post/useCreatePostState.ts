@@ -5,7 +5,7 @@ import type { AIGenerateInput } from '../../data/mockAI'
 import { shortId } from '../../utils/shortId'
 import { PLATFORMS, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
-export function convertCaptionForPlatform(base: string, platform: Platform, maxChars: number): string {
+export function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
   const clean = base.trim()
   if (!clean) return ''
 

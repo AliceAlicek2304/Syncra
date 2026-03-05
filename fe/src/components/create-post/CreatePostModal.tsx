@@ -1,4 +1,3 @@
-import React from 'react'
 import { ImageIcon, X } from 'lucide-react'
 import { useCreatePostState } from './useCreatePostState'
 import CreatePostHeader from './CreatePostHeader'
@@ -112,7 +111,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
           )
         })()}
 
-        <CreatePostHeader state={state} actions={actions} />
+        <CreatePostHeader state={state} refs={hookData.refs} actions={actions} />
 
         <div className={styles.body}>
           <div className={styles.composer}>
@@ -127,15 +126,15 @@ export default function CreatePostModal(props: CreatePostModalProps) {
               </div>
             ) : (
               <>
-                {state.activePlatforms.length > 1 && <PlatformTabs state={state} actions={actions} />}
+                {state.activePlatforms.length > 1 && <PlatformTabs state={state} refs={hookData.refs} actions={actions} />}
                 <CreatePostEditor state={state} refs={hookData.refs} actions={actions} />
-                <ScheduleRow state={state} actions={actions} />
-                <CreatePostFooter state={state} actions={actions} />
+                <ScheduleRow state={state} refs={hookData.refs} actions={actions} />
+                <CreatePostFooter state={state} refs={hookData.refs} actions={actions} />
               </>
             )}
           </div>
 
-          <RightPanel state={state} actions={actions} />
+          <RightPanel state={state} refs={hookData.refs} actions={actions} />
         </div>
       </div>
     </div>

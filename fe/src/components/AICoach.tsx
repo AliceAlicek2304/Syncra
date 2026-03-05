@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Sparkles, X, TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './AICoach.module.css'
 import { TREND_TIPS } from '../data/mockCoachTrends'

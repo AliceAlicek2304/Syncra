@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { format } from 'date-fns'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
-import { CalendarDays, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, Clock } from 'lucide-react'
 import styles from './SchedulePicker.module.css'
 
 interface SchedulePickerProps {
@@ -106,10 +106,6 @@ export default function SchedulePicker({ value, onChange, onClear }: SchedulePic
             onSelect={handleDateSelect}
             showOutsideDays
             fixedWeeks /* Always render exactly 6 weeks (42 days) to prevent layout shifts */
-            components={{
-              IconLeft: () => <ChevronLeft size={16} />,
-              IconRight: () => <ChevronRight size={16} />
-            }}
           />
 
           <div className={styles.timeSection}>

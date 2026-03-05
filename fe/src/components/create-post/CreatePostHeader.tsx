@@ -10,7 +10,9 @@ const CHIP_CLASS: Record<Platform, string> = {
   X: styles.chipX,
 }
 
-export default function CreatePostHeader({ state, actions }: UseCreatePostStateReturn) {
+type CreatePostHeaderProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
+
+export default function CreatePostHeader({ state, actions }: CreatePostHeaderProps) {
   return (
     <div className={styles.header}>
       <span className={styles.headerTitle}>Create Post</span>
