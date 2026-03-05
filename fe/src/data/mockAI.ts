@@ -178,7 +178,7 @@ export function getMockResults(input: AIGenerateInput): ContentIdea[] {
   return MOCK_AI_RESULTS.default
 }
 
-// ─── Repurpose Engine Mock Data ─────────────────────────────────────────────
+// ─── Repurpose Engine Mock Data ────────────────────────────────────────────
 
 export type RepurposePlatform = 'LinkedIn' | 'X' | 'Instagram' | 'Newsletter'
 export type AtomType = 'POST' | 'THREAD' | 'CAROUSEL' | 'INSIGHT' | 'TIP' | 'QUOTE'
