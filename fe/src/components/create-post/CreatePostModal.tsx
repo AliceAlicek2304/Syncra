@@ -128,7 +128,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
             ) : (
               <>
                 {state.activePlatforms.length > 1 && <PlatformTabs state={state} actions={actions} />}
-                <CreatePostEditor state={state} actions={actions} />
+                <CreatePostEditor state={state} refs={hookData.refs} actions={actions} />
                 <ScheduleRow state={state} actions={actions} />
                 <CreatePostFooter state={state} actions={actions} />
               </>

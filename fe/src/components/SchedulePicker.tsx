@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { format, isValid } from 'date-fns'
+import { format } from 'date-fns'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
 import { CalendarDays, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -32,23 +32,11 @@ export default function SchedulePicker({ value, onChange, onClear }: SchedulePic
     }
   }
 
+  // derive state completely instead of syncing via useEffect
   const currentParsed = parseValue(value)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(value ? currentParsed.date : undefined)
-  const [hours, setHours] = useState(currentParsed.hours)
-  const [minutes, setMinutes] = useState(currentParsed.minutes)
-
-  useEffect(() => {
-    if (!value) {
-      setSelectedDate(undefined)
-      return
-    }
-    const parsed = parseValue(value)
-    if (isValid(parsed.date)) {
-      setSelectedDate(parsed.date)
-      setHours(parsed.hours)
-      setMinutes(parsed.minutes)
-    }
-  }, [value])
+  const selectedDate = value ? currentParsed.date : undefined
+  const hours = currentParsed.hours
+  const minutes = currentParsed.minutes
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -72,14 +60,11 @@ export default function SchedulePicker({ value, onChange, onClear }: SchedulePic
 
   const handleDateSelect = (d: Date | undefined) => {
     if (d) {
-      setSelectedDate(d)
       handleUpdate(d, hours, minutes)
     }
   }
 
   const handleTimeChange = (h: number, m: number) => {
-    setHours(h)
-    setMinutes(m)
     if (selectedDate) handleUpdate(selectedDate, h, m)
   }
 

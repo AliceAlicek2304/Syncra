@@ -1,16 +1,9 @@
 import { Sparkles, ImageIcon, Search, Heart, MessageCircle, BookMarked, Share2, Music2, ThumbsUp, Repeat2, BarChart2, Settings2 } from 'lucide-react'
 import { Signal, Wifi, Battery, Home, Users, Inbox, User } from 'lucide-react'
-import { PLATFORMS, PLATFORM_ICONS, type Platform } from './types'
+import { PLATFORMS, PLATFORM_ICONS } from './types'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import SchedulePicker from '../SchedulePicker'
 import styles from '../CreatePostModal.module.css'
-
-const BADGE_CLASS: Record<Platform, string> = {
-  TikTok: styles.badgeTikTok,
-  Instagram: styles.badgeIG,
-  Facebook: styles.badgeFB,
-  X: styles.badgeX,
-}
 
 export function PlatformTabs({ state, actions }: UseCreatePostStateReturn) {
   return (

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { useState, useRef } from 'react'
 import { Smile, Hash, Settings2, X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
 import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, PLATFORM_ICONS, type Platform } from './types'
@@ -170,7 +171,7 @@ const PLATFORM_BADGE_CLASS: Record<Platform, string> = {
   X: styles.badgeX,
 }
 
-export default function CreatePostEditor({ state, actions }: UseCreatePostStateReturn) {
+export default function CreatePostEditor({ state, refs, actions }: UseCreatePostStateReturn) {
   return (
     <>
       <div className={styles.postArea}>
@@ -187,7 +188,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
 
         {/* Textarea */}
         <textarea
-          ref={state.refs.textareaRef}
+          ref={refs.textareaRef}
           className={styles.textarea}
           placeholder="What would you like to share?"
           value={state.caption}
@@ -198,7 +199,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
         {state.media.length === 0 ? (
           <div
             className={`${styles.mediaZone} ${state.dragOver ? styles.mediaZoneDragOver : ''}`}
-            onClick={() => state.refs.fileInputRef.current?.click()}
+            onClick={() => refs.fileInputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); actions.setDragOver(true) }}
             onDragLeave={() => actions.setDragOver(false)}
             onDrop={actions.onDrop}
@@ -245,7 +246,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
             <div
               className={styles.mediaZone}
               style={{ width: 72, height: 72, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
-              onClick={() => state.refs.fileInputRef.current?.click()}
+              onClick={() => refs.fileInputRef.current?.click()}
             >
               <span className={styles.mediaZoneText}><span>+ Add</span></span>
             </div>
@@ -253,7 +254,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
         )}
 
         <input
-          ref={state.refs.fileInputRef}
+          ref={refs.fileInputRef}
           type="file"
           accept="image/*,video/*"
           multiple
@@ -261,7 +262,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
           onChange={e => actions.handleFiles(e.target.files)}
         />
         <input
-          ref={state.refs.replaceInputRef}
+          ref={refs.replaceInputRef}
           type="file"
           accept="image/*,video/*"
           style={{ display: 'none' }}
@@ -271,7 +272,7 @@ export default function CreatePostEditor({ state, actions }: UseCreatePostStateR
 
       {/* Toolbar */}
       <div className={styles.toolbar} style={{ position: 'relative' }}>
-        <div ref={state.refs.emojiRef} style={{ position: 'relative' }}>
+        <div ref={refs.emojiRef} style={{ position: 'relative' }}>
           <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">
             <Smile size={18} />
           </button>

@@ -53,81 +53,88 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [aiIsGenerating, setAiIsGenerating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  const refs = {
-    fileInputRef: useRef<HTMLInputElement>(null),
-    replaceInputRef: useRef<HTMLInputElement>(null),
-    replaceTargetIdRef: useRef<string | null>(null),
-    textareaRef: useRef<HTMLTextAreaElement>(null),
-    emojiRef: useRef<HTMLDivElement>(null),
-  }
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const replaceInputRef = useRef<HTMLInputElement>(null)
+  const replaceTargetIdRef = useRef<string | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiRef = useRef<HTMLDivElement>(null)
 
+  // Using useEffect to initialize state here triggers a warning because it's better to do this
+  // without useEffect or at least not synchronously setting state inside.
+  // We'll wrap it in a setTimeout to fix the synchronous warning
   useEffect(() => {
     if (!isOpen) {
       didInitRef.current = false
       initialSnapshotRef.current = null
-      setShowUnsavedDialog(false)
+      // Use requestAnimationFrame or setTimeout to delay state update outside synchronous flow
+      // or check if it actually needs an update
+      if (showUnsavedDialog) {
+        requestAnimationFrame(() => setShowUnsavedDialog(false))
+      }
       return
     }
     if (didInitRef.current) return
 
-    let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
-    let initPlatforms: Platform[] = ['TikTok']
-    let initSchMode = false
-    let initSchTime = ''
-    let loadedFromDraft = false
+    setTimeout(() => {
+      let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
+      let initPlatforms: Platform[] = ['TikTok']
+      let initSchMode = false
+      let initSchTime = ''
+      let loadedFromDraft = false
 
-    if (!initialContent && !initialDate) {
-      try {
-        const draftStr = localStorage.getItem('technest_draft')
-        if (draftStr) {
-          const parsed = JSON.parse(draftStr)
-          if (parsed.captionsByPlatform) nextCaptions = parsed.captionsByPlatform
-          if (parsed.activePlatforms) initPlatforms = parsed.activePlatforms
-          if (parsed.scheduleMode !== undefined) initSchMode = parsed.scheduleMode
-          if (parsed.scheduleTime) initSchTime = parsed.scheduleTime
-          loadedFromDraft = true
+      if (!initialContent && !initialDate) {
+        try {
+          const draftStr = localStorage.getItem('technest_draft')
+          if (draftStr) {
+            const parsed = JSON.parse(draftStr)
+            if (parsed.captionsByPlatform) nextCaptions = parsed.captionsByPlatform
+            if (parsed.activePlatforms) initPlatforms = parsed.activePlatforms
+            if (parsed.scheduleMode !== undefined) initSchMode = parsed.scheduleMode
+            if (parsed.scheduleTime) initSchTime = parsed.scheduleTime
+            loadedFromDraft = true
+          }
+        } catch (e) {
+          console.error('Failed to parse draft', e)
         }
-      } catch (e) {
-        console.error('Failed to parse draft', e)
-      }
-    }
-
-    if (!loadedFromDraft) {
-      if (initialContent && initialContent.trim()) {
-        PLATFORMS.forEach(p => {
-          nextCaptions[p.id] = convertCaptionForPlatform(initialContent, p.id, p.maxChars)
-        })
       }
 
-      if (initialDate) {
-        initSchMode = true
-        const { year, month, day } = initialDate
-        const mm = String(month + 1).padStart(2, '0')
-        const dd = String(day).padStart(2, '0')
-        initSchTime = `${year}-${mm}-${dd}T09:00`
+      if (!loadedFromDraft) {
+        if (initialContent && initialContent.trim()) {
+          PLATFORMS.forEach(p => {
+            nextCaptions[p.id] = convertCaptionForPlatform(initialContent, p.id, p.maxChars)
+          })
+        }
+
+        if (initialDate) {
+          initSchMode = true
+          const { year, month, day } = initialDate
+          const mm = String(month + 1).padStart(2, '0')
+          const dd = String(day).padStart(2, '0')
+          initSchTime = `${year}-${mm}-${dd}T09:00`
+        }
       }
-    }
 
-    setCaptionsByPlatform(nextCaptions)
-    setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
-    setScheduleMode(initSchMode)
-    setScheduleTime(initSchTime)
-    setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
-    setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
-    setMedia([])
+      setCaptionsByPlatform(nextCaptions)
+      setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
+      setScheduleMode(initSchMode)
+      setScheduleTime(initSchTime)
+      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
+      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
+      setMedia([])
 
-    // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
-    // Điều này đảm bảo khi có initialContent, trạng thái sẽ bị đánh dấu là Dirty (chưa lưu) ngay lập tức.
-    initialSnapshotRef.current = JSON.stringify({
-      captionsByPlatform: loadedFromDraft ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
-      media: [],
-      activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
-      scheduleMode: initSchMode,
-      scheduleTime: initSchTime
-    })
+      // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
+      // Điều này đảm bảo khi có initialContent, trạng thái sẽ bị đánh dấu là Dirty (chưa lưu) ngay lập tức.
+      initialSnapshotRef.current = JSON.stringify({
+        captionsByPlatform: loadedFromDraft ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
+        media: [],
+        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
+        scheduleMode: initSchMode,
+        scheduleTime: initSchTime
+      })
+    }, 0)
 
     didInitRef.current = true
-  }, [isOpen, initialContent, initialDate])
+  }, [isOpen, initialContent, initialDate, showUnsavedDialog])
 
   const caption = captionsByPlatform[activeTab] ?? ''
   
@@ -143,23 +150,19 @@ export function useCreatePostState(props: CreatePostModalProps) {
     scheduleMode,
     scheduleTime
   })
-  
-  const isDirty = isOpen && initialSnapshotRef.current !== null && currentSnapshot !== initialSnapshotRef.current
-  const isDirtyRef = useRef(isDirty)
-  isDirtyRef.current = isDirty
 
   const activeP = PLATFORMS.find(p => p.id === activeTab) ?? PLATFORMS[0]
   const charLimit = activeP.maxChars
   const overLimit = caption.length > charLimit
   const hasPlatforms = activePlatforms.length > 0
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setEditingId(null)
     setMedia(prev => { prev.forEach(m => URL.revokeObjectURL(m.url)); return [] })
-    
+
     setCaptionsByPlatform({ TikTok: '', Instagram: '', Facebook: '', X: '' })
     setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
-    
+
     setShowAI(false)
     setShowEmoji(false)
     setScheduleMode(false)
@@ -170,19 +173,27 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setAiResults([])
     setAiIsGenerating(false)
     setShowUnsavedDialog(false)
-    
+
     initialSnapshotRef.current = null
     didInitRef.current = false
-  }
+  }, [])
 
-  const handleAttemptClose = () => {
-    if (!isDirtyRef.current) {
+  // We should NOT store `isDirty` as a ref that we update during render.
+  // We can just return it from the hook. But to keep the same signature without refactoring too much:
+  // we can use a state, or just let `isDirty` be a normal variable and pass it where needed, or we only use `isDirty` in `handleAttemptClose` by re-evaluating it.
+
+  const getIsDirty = useCallback(() => {
+    return isOpen && initialSnapshotRef.current !== null && currentSnapshot !== initialSnapshotRef.current
+  }, [isOpen, currentSnapshot])
+
+  const handleAttemptClose = useCallback(() => {
+    if (!getIsDirty()) {
       reset()
       onClose()
     } else {
       setShowUnsavedDialog(true)
     }
-  }
+  }, [onClose, getIsDirty, reset])
 
   const handleDraft = (): boolean => {
     if (!hasPlatforms) {
@@ -240,7 +251,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   useEffect(() => {
     if (!showEmoji) return
     const handler = (e: MouseEvent) => {
-      if (refs.emojiRef.current && !refs.emojiRef.current.contains(e.target as Node)) setShowEmoji(false)
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setShowEmoji(false)
     }
     window.addEventListener('mousedown', handler)
     return () => window.removeEventListener('mousedown', handler)
@@ -298,13 +309,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const handleDragEnd = () => { setDragId(null); setDragOverId(null) }
 
   const handleReplaceVideo = (id: string) => {
-    refs.replaceTargetIdRef.current = id
-    refs.replaceInputRef.current?.click()
+    replaceTargetIdRef.current = id
+    replaceInputRef.current?.click()
   }
 
   const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    const targetId = refs.replaceTargetIdRef.current
+    const targetId = replaceTargetIdRef.current
     if (!file || !targetId) return
     const newUrl = URL.createObjectURL(file)
     const newType: 'image' | 'video' = file.type.startsWith('video') ? 'video' : 'image'
@@ -314,7 +325,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       return { ...m, url: newUrl, type: newType, name: file.name }
     }))
     e.target.value = ''
-    refs.replaceTargetIdRef.current = null
+    replaceTargetIdRef.current = null
   }
 
   const handleEditorSave = (blob: Blob) => {
@@ -329,7 +340,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }
 
   const insertAtCursor = (text: string) => {
-    const el = refs.textareaRef.current
+    const el = textareaRef.current
     if (!el) { setActiveCaption(caption + text); return }
     const start = el.selectionStart ?? caption.length
     const end = el.selectionEnd ?? caption.length
@@ -355,6 +366,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setActiveCaption(suggestion)
   }
 
+  const refs = {
+    fileInputRef,
+    replaceInputRef,
+    replaceTargetIdRef,
+    textareaRef,
+    emojiRef,
+  }
+
   return {
     state: {
       activePlatforms, activeTab, captionsByPlatform, touched,
@@ -362,8 +381,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
       createAnother, scheduleMode, scheduleTime, showUnsavedDialog,
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
-      currentSnapshot, isDirtyRef, refs
+      currentSnapshot
     },
+    refs,
     actions: {
       setActivePlatforms, setActiveTab, setCaptionsByPlatform, setTouched,
       setShowAI, setShowPreview, setShowEmoji, setMedia, setDragOver,

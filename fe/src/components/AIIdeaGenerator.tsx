@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Sparkles, X, Check, ChevronRight, ChevronDown } from 'lucide-react'
 import { getMockResults } from '../data/mockAI'
 import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
-import { shortId } from '../utils/shortId'
 import styles from './AIIdeaGenerator.module.css'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
