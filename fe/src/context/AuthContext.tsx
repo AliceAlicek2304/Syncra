@@ -14,7 +14,7 @@ const MOCK_USER: MockUser = {
   handle: '@minhanh.creates',
   avatar: 'MA',
   plan: 'Creator',
-  email: 'minhanh@technest.io',
+  email: 'minhanh@syncra.io',
 }
 
 interface AuthContextType {

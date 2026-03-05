@@ -6,7 +6,7 @@ const STEPS = [
     step: '01',
     icon: <PenSquare size={28} />,
     title: 'Create your content',
-    desc: 'Write your post once in the editor. TechNest auto-formats it for every platform automatically.',
+    desc: 'Write your post once in the editor. Syncra auto-formats it for every platform automatically.',
   },
   {
     step: '02',

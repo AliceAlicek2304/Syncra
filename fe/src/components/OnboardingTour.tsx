@@ -9,7 +9,7 @@ interface Step {
 
 const TOUR_STEPS: Step[] = [
   {
-    title: 'Chào mừng tới TechNest! 🚀',
+    title: 'Chào mừng tới Syncra! 🚀',
     description: 'Nền tảng giúp bạn làm chủ content đa kênh một cách chuyên nghiệp và tiết kiệm thời gian nhất.',
   },
   {
@@ -31,7 +31,7 @@ export default function OnboardingTour() {
   const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
-    const hasCompletedTour = localStorage.getItem('technest_onboarding_completed')
+    const hasCompletedTour = localStorage.getItem('syncra_onboarding_completed')
     if (!hasCompletedTour) {
       // Delay a bit to let dashboard load
       const timer = setTimeout(() => setShow(true), 1200)
@@ -48,7 +48,7 @@ export default function OnboardingTour() {
   }
 
   const handleComplete = () => {
-    localStorage.setItem('technest_onboarding_completed', 'true')
+    localStorage.setItem('syncra_onboarding_completed', 'true')
     setShow(false)
   }
 

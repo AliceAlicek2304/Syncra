@@ -84,7 +84,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       if (!initialContent && !initialDate) {
         try {
-          const draftStr = localStorage.getItem('technest_draft')
+          const draftStr = localStorage.getItem('syncra_draft')
           if (draftStr) {
             const parsed = JSON.parse(draftStr)
             if (parsed.captionsByPlatform) nextCaptions = parsed.captionsByPlatform
@@ -207,7 +207,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       scheduleMode,
       scheduleTime,
     }
-    localStorage.setItem('technest_draft', JSON.stringify(draftData))
+    localStorage.setItem('syncra_draft', JSON.stringify(draftData))
     
     initialSnapshotRef.current = currentSnapshot
     onToast?.({ message: 'Draft saved successfully.', type: 'success' })
@@ -220,7 +220,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       return
     }
     onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
-    localStorage.removeItem('technest_draft')
+    localStorage.removeItem('syncra_draft')
     
     if (createAnother) {
       reset()
