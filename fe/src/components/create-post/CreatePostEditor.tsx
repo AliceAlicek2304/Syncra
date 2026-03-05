@@ -270,7 +270,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         />
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar*/}
       <div className={styles.toolbar} style={{ position: 'relative' }}>
         <div ref={refs.emojiRef} style={{ position: 'relative' }}>
           <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">
