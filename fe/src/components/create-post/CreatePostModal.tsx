@@ -45,12 +45,12 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                 >
                   Cancel
                 </button>
-                <button 
-                  className="btn-secondary" 
+                <button
+                  className="btn-secondary"
                   style={{ fontSize: 13, padding: '8px 16px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', flex: 1 }}
                   onClick={() => {
                     actions.setShowUnsavedDialog(false)
-                    localStorage.removeItem('technest_draft')
+                    localStorage.removeItem('syncra_draft')
                     actions.reset()
                     props.onClose()
                   }}

@@ -112,7 +112,7 @@ export default function SocialPreviewer({ platform, type, content }: SocialPrevi
         <div className={styles.liAvatar} />
         <div className={styles.liUser}>
           <span className={styles.liName}>Minh Anh</span>
-          <span className={styles.liTitle}>Content Creator @ TechNest</span>
+          <span className={styles.liTitle}>Content Creator @ Syncra</span>
           <span className={styles.liMeta}>2h • Edited • 🌐</span>
         </div>
       </div>

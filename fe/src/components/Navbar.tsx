@@ -59,7 +59,7 @@ export default function Navbar() {
         {/* Logo */}
         <a href="#" className={styles.logo}>
           <span className={styles.logoIcon}><Zap size={18} /></span>
-          <span className={styles.logoText}>TechNest</span>
+          <span className={styles.logoText}>Syncra</span>
         </a>
 
         {/* Desktop links */}

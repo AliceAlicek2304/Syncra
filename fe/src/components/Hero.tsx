@@ -24,7 +24,7 @@ export default function Hero() {
           </h1>
 
           <p className={styles.sub}>
-            TechNest helps content creators write, schedule, and publish to
+            Syncra helps content creators write, schedule, and publish to
             every platform — all from one beautiful dashboard. No more
             copy-pasting. No more missed posts.
           </p>
@@ -47,7 +47,7 @@ export default function Hero() {
               ))}
             </div>
             <p className={styles.proofText}>
-              <strong>+2,400</strong> creators already growing with TechNest
+              <strong>+2,400</strong> creators already growing with Syncra
             </p>
           </div>
         </div>

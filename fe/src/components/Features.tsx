@@ -14,7 +14,7 @@ const FEATURES = [
   {
     icon: <CalendarClock size={22} />,
     title: 'Intelligent Scheduling',
-    desc: 'Pick the best time to post based on your audience activity. Set it and forget it — TechNest handles the rest.',
+    desc: 'Pick the best time to post based on your audience activity. Set it and forget it — Syncra handles the rest.',
     color: '#ec4899',
   },
   {

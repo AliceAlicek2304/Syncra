@@ -52,7 +52,7 @@ export default function AppLayout() {
         <div className={styles.sidebarTop}>
           <a href="/" className={styles.logo}>
             <span className={styles.logoIcon}><Zap size={16} /></span>
-            {!collapsed && <span className={styles.logoText}>TechNest</span>}
+            {!collapsed && <span className={styles.logoText}>Syncra</span>}
           </a>
           <button
             className={styles.collapseBtn}
