@@ -327,7 +327,7 @@ export const TREND_TIPS: CoachTrend[] = [
         hashtags: ['#Gratitude', '#CommunityLove', '#CreatorLife'],
         platforms: ['TikTok', 'YouTube'],
         bestTime: '20:30 Thứ 7',
-        estimatedReach: '30K - 80K'
+        estimatedReach: '30K - 90K'
       }
     ]
   }
