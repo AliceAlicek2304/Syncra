@@ -4,7 +4,6 @@ import { getMockResults } from '../data/mockAI'
 import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
 import styles from './AIIdeaGenerator.module.css'
 
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface GeneratedIdea {
     id: string
@@ -15,6 +14,7 @@ export interface GeneratedIdea {
 interface Props {
     onSelectIdea: (idea: GeneratedIdea) => void
     onClose: () => void
+    presetResults?: ContentIdea[]
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -34,14 +34,14 @@ const GOALS = [
 type Step = 'form' | 'loading' | 'results'
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
-    const [step, setStep] = useState<Step>('form')
+export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
+    const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
     const [topic, setTopic] = useState('')
     const [niche, setNiche] = useState('')
     const [audience, setAudience] = useState('')
     const [goal, setGoal] = useState('')
     const [tone, setTone] = useState('default')
-    const [results, setResults] = useState<ContentIdea[]>([])
+    const [results, setResults] = useState<ContentIdea[]>(presetResults || [])
     const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([])
     const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -65,6 +65,22 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
     }
 
     const handleBulkAdd = () => {
+        // If it's a preset result (e.g. from AI Coach), we join them into a single blob to feed the post editor.
+        if (presetResults && selectedIdeaIds.length > 0) {
+            const combinedContent = selectedIdeaIds.map(id => {
+                const r = results.find(x => x.id === id)
+                return r ? `[${r.title}]\n${r.hook}\n\n${r.caption}` : ''
+            }).join('\n\n---\n\n')
+            
+            onSelectIdea({
+                id: 'combined-' + Date.now(),
+                title: 'Combined Ideas',
+                description: combinedContent,
+            })
+            return
+        }
+
+        // For default mode (adding separated cards to Ideas board)
         selectedIdeaIds.forEach(id => {
             const idea = results.find(r => r.id === id)
             if (idea) {
@@ -79,6 +95,10 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
     }
 
     const handleReset = () => {
+        if (presetResults) {
+            onClose()
+            return
+        }
         setStep('form')
         setResults([])
         setSelectedIdeaIds([])
@@ -97,10 +117,10 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
                 <div className={styles.modalHeader}>
                     <div className={styles.modalTitle}>
                         <Sparkles size={18} className={styles.modalTitleIcon} />
-                        <span>Generate with AI</span>
+                        <span>{presetResults ? 'Trending Ideas' : 'Generate with AI'}</span>
                     </div>
                     <div className={styles.modalHeaderActions}>
-                        {step === 'results' && (
+                        {step === 'results' && !presetResults && (
                             <button className={styles.resetBtn} onClick={handleReset}>
                                 ← Tạo lại
                             </button>
@@ -229,7 +249,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
                         <>
                             <div className={styles.resultsList}>
                                 <p className={styles.resultsHint}>
-                                    Chọn các ý tưởng để thêm vào cột <strong>Unassigned</strong>
+                                    Chọn các ý tưởng để {presetResults ? <strong>Tạo bài viết mới</strong> : <strong>thêm vào cột Unassigned</strong>}
                                 </p>
                                 {results.map(idea => {
                                     const isSelected = selectedIdeaIds.includes(idea.id)
@@ -270,7 +290,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose }: Props) {
                                     onClick={handleBulkAdd}
                                     disabled={selectedIdeaIds.length === 0}
                                 >
-                                    Thêm vào board
+                                    {presetResults ? 'Tạo bài ngay' : 'Thêm vào board'}
                                 </button>
                             </div>
                         </>

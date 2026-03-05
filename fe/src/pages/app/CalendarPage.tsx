@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useCalendar } from '../../context/calendarContextBase'
 import type { ScheduledPost } from '../../context/calendarContextBase'
-import CreatePostModal from '../../components/CreatePostModal'
+import { useCreatePostModal } from '../../context/createPostModalContext'
 import EditPostModal from '../../components/EditPostModal'
 import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
@@ -95,6 +95,8 @@ function timeToSlot(time: string): number {
 // ── Main Component ────────────────────────────────────
 export default function CalendarPage() {
   const { posts: contextPosts, updatePost, removePost } = useCalendar()
+  const { openCreatePost } = useCreatePostModal()
+  
   const today = new Date()
 
   const [year, setYear] = useState(today.getFullYear())
@@ -108,8 +110,6 @@ export default function CalendarPage() {
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
 
   // Modals
-  const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [createInitialDate, setCreateInitialDate] = useState<{ year: number; month: number; day: number } | undefined>()
   const [editPost, setEditPost] = useState<ScheduledPost | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
 
@@ -200,8 +200,7 @@ export default function CalendarPage() {
 
   // ── Open create modal with date ────────────────────
   const openCreateForDay = (y: number, m: number, d: number) => {
-    setCreateInitialDate({ year: y, month: m, day: d })
-    setCreateModalOpen(true)
+    openCreatePost({ source: 'calendar', initialDate: { year: y, month: m, day: d } })
   }
 
   // ── Open edit modal ────────────────────────────────
@@ -515,7 +514,7 @@ export default function CalendarPage() {
         </div>
         <button
           className={styles.newPostBtn}
-          onClick={() => { setCreateInitialDate(undefined); setCreateModalOpen(true) }}
+          onClick={() => openCreatePost({ source: 'calendar' })}
         >
           <Plus size={15} /> New Post
         </button>
@@ -580,14 +579,6 @@ export default function CalendarPage() {
         {/* Side detail always visible in month view */}
         {viewMode === 'month' && renderDetailPanel()}
       </div>
-
-      {/* Modals */}
-      <CreatePostModal
-        isOpen={createModalOpen}
-        onClose={() => { setCreateModalOpen(false); setCreateInitialDate(undefined) }}
-        onToast={addToast}
-        initialDate={createInitialDate}
-      />
 
       <EditPostModal
         post={editPost}

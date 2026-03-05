@@ -79,3 +79,10 @@ ehthumbs.db
 Desktop.ini
 .allcode
 PRESENTATION_GUIDE.md
+
+# ===========================
+# AI / Code helpers (do not commit)
+# ===========================
+.aicodeprep-gui
+fe/.claude/
+fullcode.txt
