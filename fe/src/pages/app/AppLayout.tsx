@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
-  Zap, LayoutDashboard, Lightbulb, CalendarDays,
+  LayoutDashboard, Lightbulb, CalendarDays,
   BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
@@ -13,6 +13,7 @@ import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
 import styles from './AppLayout.module.css'
+import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
@@ -51,7 +52,7 @@ export default function AppLayout() {
         {/* Logo + collapse */}
         <div className={styles.sidebarTop}>
           <a href="/" className={styles.logo}>
-            <span className={styles.logoIcon}><Zap size={16} /></span>
+            <img src={logo} alt="Syncra" className={styles.logoImg} />
             {!collapsed && <span className={styles.logoText}>Syncra</span>}
           </a>
           <button

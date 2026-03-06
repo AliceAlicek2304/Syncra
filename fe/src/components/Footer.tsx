@@ -1,5 +1,6 @@
-import { Zap, Twitter, Youtube, Instagram, Linkedin } from 'lucide-react'
+import { Twitter, Youtube, Instagram, Linkedin } from 'lucide-react'
 import styles from './Footer.module.css'
+import logo from '../assets/syncra-logo.png'
 
 const LINKS = {
   Product: ['Features', 'Pricing', 'Changelog', 'Roadmap'],
@@ -16,7 +17,7 @@ export default function Footer() {
           {/* Brand */}
           <div className={styles.brand}>
             <a href="#" className={styles.logo}>
-              <span className={styles.logoIcon}><Zap size={16} /></span>
+              <img src={logo} alt="Syncra" className={styles.logoImg} />
               <span className={styles.logoText}>Syncra</span>
             </a>
             <p className={styles.tagline}>

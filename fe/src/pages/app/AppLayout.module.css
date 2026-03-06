@@ -38,28 +38,21 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
   text-decoration: none;
   overflow: hidden;
   white-space: nowrap;
 }
 
-.logoIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: var(--gradient-brand);
-  border-radius: 8px;
-  color: #fff;
+.logoImg {
+  height: 50px;
+  width: auto;
   flex-shrink: 0;
 }
 
 .logoText {
   font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 

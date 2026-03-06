@@ -21,25 +21,19 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
   width: fit-content;
+  text-decoration: none;
 }
 
-.logoIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: var(--gradient-brand);
-  border-radius: 8px;
-  color: #fff;
+.logoImg {
+  height: 40px;
+  width: auto;
 }
 
 .logoText {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 

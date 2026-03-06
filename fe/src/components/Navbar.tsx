@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Zap, Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
+import { Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import styles from './Navbar.module.css'
+import logo from '../assets/syncra-logo.png'
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -58,7 +59,7 @@ export default function Navbar() {
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <a href="#" className={styles.logo}>
-          <span className={styles.logoIcon}><Zap size={18} /></span>
+          <img src={logo} alt="Syncra" className={styles.logoImg} />
           <span className={styles.logoText}>Syncra</span>
         </a>
 
