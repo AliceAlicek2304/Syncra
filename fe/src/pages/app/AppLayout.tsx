@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+  { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
 ]
 
 export default function AppLayout() {

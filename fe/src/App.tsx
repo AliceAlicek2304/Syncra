@@ -26,6 +26,7 @@ import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
+import HelpPage from './pages/app/HelpPage'
 
 function Homepage() {
   return (
@@ -77,6 +78,7 @@ const router = createBrowserRouter(
         { path: 'trends', element: <TrendRadarPage /> },
         { path: 'repurpose', element: <RepurposePage /> },
         { path: 'settings', element: <SettingsPage /> },
+        { path: 'help', element: <HelpPage /> },
       ],
     },
     { path: '*', element: <Navigate to="/" replace /> },
