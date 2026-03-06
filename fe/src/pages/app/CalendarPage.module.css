@@ -126,6 +126,7 @@
   color: var(--text-primary);
   min-width: 180px;
   text-align: center;
+  display: none; /* Hidden now - using picker instead */
 }
 
 .todayBtn {
@@ -144,6 +145,94 @@
 .todayBtn:hover {
   background: var(--purple-500, #8b5cf6);
   color: #fff;
+}
+
+/* Month/Year Picker */
+.pickerContainer {
+  position: relative;
+}
+
+.pickerTrigger {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.monthPickerBtn,
+.yearPickerBtn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.monthPickerBtn:hover,
+.yearPickerBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.monthPickerBtn {
+  min-width: 45px;
+  justify-content: flex-end;
+}
+
+.yearPickerBtn {
+  min-width: 50px;
+  justify-content: flex-start;
+}
+
+.pickerDropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass, rgba(255,255,255,0.1));
+  border-radius: 10px;
+  padding: 4px;
+  min-width: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.pickerOption {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+
+.pickerOption:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+}
+
+.pickerOptionActive {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: var(--purple-400, #a78bfa) !important;
+  font-weight: 600;
 }
 
 /* Platform filter */
@@ -217,29 +306,39 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 4px;
 }
 
 .cellEmpty {
-  min-height: 90px;
+  min-height: 110px;
 }
 
 .cell {
-  min-height: 90px;
-  border-radius: 8px;
-  padding: 6px;
+  min-height: 110px;
+  border-radius: 10px;
+  padding: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   border: 1px solid transparent;
   position: relative;
   overflow: hidden;
 }
 
+.cell:focus {
+  outline: 2px solid rgba(139, 92, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.cell:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .cell:hover {
   background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
 }
 
 .cell:hover .cellAddBtn {
@@ -247,13 +346,39 @@
 }
 
 .cellToday {
-  background: rgba(139,92,246,0.08);
-  border-color: rgba(139,92,246,0.25);
+  background: rgba(139,92,256,0.12) !important;
+  border-color: rgba(139,92,246,0.35) !important;
+}
+
+.cellToday .dayNum {
+  background: var(--purple-500, #8b5cf6);
+  color: #fff !important;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.cellFuture {
+  opacity: 0.7;
+}
+
+.cellFuture:hover {
+  opacity: 1;
 }
 
 .cellSelected {
-  background: rgba(139,92,246,0.15) !important;
-  border-color: rgba(139,92,246,0.4) !important;
+  background: rgba(139,92,246,0.18) !important;
+  border-color: rgba(139,92,246,0.5) !important;
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.3);
+}
+
+.cellSelected .dayNum {
+  color: var(--purple-400, #a78bfa) !important;
+  font-weight: 800;
 }
 
 .cellDragOver {
@@ -467,10 +592,43 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-height: 100px;
+  min-height: 60px;
+  position: relative;
+}
+
+.weekCell:focus {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: -2px;
 }
 
 .weekCell:hover { background: rgba(255,255,255,0.025); }
+
+.weekCellCurrentHour {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+/* Current time indicator */
+.currentTimeLine {
+  position: absolute;
+  left: 52px;
+  right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.currentTimeDot {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
 
 /* ── Day view ────────────────────────────────────────── */
 .dayViewCard {
@@ -495,28 +653,43 @@
   display: grid;
   grid-template-columns: 64px 1fr;
   border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.04));
-  min-height: 64px;
+  min-height: 60px;
 }
 
 .dayTimeLabel {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 10px 12px 0;
+  padding: 6px 12px 0;
   text-align: right;
   border-right: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  align-self: flex-start;
 }
 
 .daySlot {
-  padding: 6px 8px;
+  padding: 4px 8px;
   cursor: pointer;
   transition: background 0.12s;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-direction: row;
+  gap: 6px;
+  /* Allow cards to flow horizontally */
+  flex-wrap: wrap;
+  align-items: flex-start;
+  min-height: 60px;
+  position: relative;
+}
+
+.daySlot:focus {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: -2px;
 }
 
 .daySlot:hover { background: rgba(255,255,255,0.025); }
+
+.daySlotCurrentHour {
+  background: rgba(139, 92, 246, 0.05);
+}
 
 /* ── Post pill (week & day view) ─────────────────────── */
 .postPill {
@@ -562,15 +735,19 @@
 /* ── Visual Content Card (week & day view) ───────────── */
 .visualCard {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   border-radius: 8px;
   overflow: hidden;
   cursor: grab;
   transition: transform 0.15s, box-shadow 0.15s;
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--border-glass, rgba(255,255,255,0.08));
-  height: 100%;
-  min-height: 100px;
+  /* Horizontal card: thumbnail left, content right */
+  max-width: 320px;
+  width: 100%;
+  /* Compact height - not filling full slot */
+  min-height: 56px;
+  height: auto;
 }
 
 .visualCard:hover {
@@ -580,18 +757,29 @@
 
 .visualCard:active { cursor: grabbing; }
 
+/* Thumbnail on the LEFT - fixed size */
 .cardThumbnail {
-  width: 100%;
-  height: 50px;
+  width: 56px;
+  height: 56px;
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
+  background: rgba(0,0,0,0.2);
 }
 
 .cardImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+/* Handle broken images */
+.cardImageError {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
 }
 
 .cardPlaceholder {
@@ -602,13 +790,24 @@
   justify-content: center;
 }
 
+/* Fallback placeholder when image fails */
+.cardPlaceholderBroken {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.3));
+}
+
 .cardPlatformIcon {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
   color: rgba(255,255,255,0.9);
   text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* Content on the RIGHT of thumbnail */
 .cardContent {
   padding: 6px 8px;
   display: flex;
@@ -616,6 +815,7 @@
   gap: 2px;
   flex: 1;
   overflow: hidden;
+  min-width: 0; /* Prevent text overflow */
 }
 
 .cardTime {
@@ -696,30 +896,6 @@
   font-size: 9px;
   font-weight: 700;
   color: var(--text-muted);
-}
-
-.cardTitle {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.cardPlatform {
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-.platformBadge {
-  display: inline-flex;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 700;
 }
 
 /* ── Detail panel (month view) ───────────────────────── */
@@ -900,4 +1076,79 @@
 
 @media (max-width: 640px) {
   .viewSwitcher .viewBtn span { display: none; }
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.15s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0);
+  }
+}
+
+.tooltipContent {
+  background: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.tooltipTime {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--purple-400, #a78bfa);
+  margin-bottom: 2px;
+}
+
+.tooltipTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.tooltipMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltipPlatform {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tooltipStatus {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.tooltipArrow {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(30, 41, 59, 0.98);
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
 }
