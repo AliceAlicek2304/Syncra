@@ -164,6 +164,29 @@ a { text-decoration: none; color: inherit; }
   transform: translateY(-2px);
 }
 
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 15px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
 .section-label {
   display: inline-block;
   font-size: 12px;

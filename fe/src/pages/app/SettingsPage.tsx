@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Facebook, Linkedin, Twitter, Sparkles, Save, ShieldCheck } from 'lucide-react'
+import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck } from 'lucide-react'
 import RadarChart from '../../components/RadarChart'
 import styles from './SettingsPage.module.css'
 
@@ -86,7 +86,7 @@ export default function SettingsPage() {
               {[
                 { name: 'LinkedIn', icon: <Linkedin size={20} />, color: '#0077b5', status: 'Connected' },
                 { name: 'X / Twitter', icon: <Twitter size={20} />, color: '#fff', status: 'Connected' },
-                { name: 'Instagram', icon: <Facebook size={20} />, color: '#e4405f', status: 'Disconnected' },
+                { name: 'Instagram', icon: <Instagram size={20} />, color: '#e4405f', status: 'Disconnected' },
               ].map(item => (
                 <div key={item.name} className={styles.socialCard}>
                   <div className={styles.socialIcon} style={{ background: item.color + '20', color: item.color }}>

@@ -73,7 +73,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+  padding-top: 20px;
 }
 
 .card {
@@ -83,6 +84,7 @@
   gap: 24px;
   position: relative;
   transition: transform 0.25s;
+  overflow: visible;
 }
 
 .card:hover { transform: translateY(-4px); }
@@ -107,6 +109,7 @@
   padding: 4px 14px;
   border-radius: 100px;
   white-space: nowrap;
+  z-index: 10;
 }
 
 .planHeader {
@@ -165,9 +168,10 @@
 }
 
 .period {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-muted);
-  padding-bottom: 10px;
+  vertical-align: super;
+  font-weight: 500;
 }
 
 .featureList {

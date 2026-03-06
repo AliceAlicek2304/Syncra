@@ -1,21 +1,27 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Plus, Clock,
-  MoreHorizontal, CalendarDays, List, LayoutGrid,
+  CalendarDays, List, LayoutGrid,
+  ChevronDown, CheckCircle, Play,
 } from 'lucide-react'
 import { useCalendar } from '../../context/calendarContextBase'
-import type { ScheduledPost } from '../../context/calendarContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
-import EditPostModal from '../../components/EditPostModal'
 import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
-import { shortId } from '../../utils/shortId'
+import { PlatformIcon as ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
 
 // ── Constants ─────────────────────────────────────────
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const CURRENT_YEAR = new Date().getFullYear()
+const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i)
 
 type ViewMode = 'month' | 'week' | 'day'
 type PostStatus = 'published' | 'scheduled' | 'draft'
@@ -29,6 +35,7 @@ interface CalPost {
   color: string
   caption: string
   hashtags: string[]
+  image?: string
   isMock?: boolean
 }
 
@@ -69,7 +76,7 @@ function getPostKey(year: number, month: number, day: number) {
 }
 
 function getStatusLabel(s: PostStatus) {
-  if (s === 'published') return 'Đã đăng'
+  if (s === 'published') return 'Posted'
   if (s === 'scheduled') return 'Scheduled'
   return 'Draft'
 }
@@ -94,8 +101,8 @@ function timeToSlot(time: string): number {
 
 // ── Main Component ────────────────────────────────────
 export default function CalendarPage() {
-  const { posts: contextPosts, updatePost, removePost } = useCalendar()
-  const { openCreatePost } = useCreatePostModal()
+  const { posts: contextPosts, updatePost } = useCalendar()
+  const { openCreatePost, openEditPost } = useCreatePostModal()
   
   const today = new Date()
 
@@ -104,22 +111,42 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate())
   const [viewMode, setViewMode] = useState<ViewMode>('month')
   const [platformFilter, setPlatformFilter] = useState('all')
+  
+  // Picker dropdown state
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  const [showYearPicker, setShowYearPicker] = useState(false)
+  const monthPickerRef = useRef<HTMLDivElement>(null)
+  const yearPickerRef = useRef<HTMLDivElement>(null)
+
+  // Tooltip state
+  const [tooltipData, setTooltipData] = useState<{
+    post: CalPost
+    x: number
+    y: number
+  } | null>(null)
 
   // Drag state
   const [dragPostId, setDragPostId] = useState<string | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
 
-  // Modals
-  const [editPost, setEditPost] = useState<ScheduledPost | null>(null)
-  const [editModalOpen, setEditModalOpen] = useState(false)
-
   // Toast
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
-    setToasts(prev => [...prev, { ...t, id: shortId() }])
-  }, [])
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (monthPickerRef.current && !monthPickerRef.current.contains(e.target as Node)) {
+        setShowMonthPicker(false)
+      }
+      if (yearPickerRef.current && !yearPickerRef.current.contains(e.target as Node)) {
+        setShowYearPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   // ── Merge mock + context posts ─────────────────────
@@ -135,7 +162,7 @@ export default function CalendarPage() {
       const cp: CalPost = {
         id: p.id, title: p.title, platform: p.platform,
         status: p.status, time: p.time, color: p.color,
-        caption: p.caption, hashtags: p.hashtags,
+        caption: p.caption, hashtags: p.hashtags, image: p.image,
       }
       merged[key] = [...(merged[key] ?? []), cp]
     })
@@ -184,6 +211,30 @@ export default function CalendarPage() {
     setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(today.getDate())
   }
 
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      if (viewMode === 'month') prevMonth()
+      else if (viewMode === 'week') prevWeek()
+      else prevDay()
+    } else if (e.key === 'ArrowRight') {
+      if (viewMode === 'month') nextMonth()
+      else if (viewMode === 'week') nextWeek()
+      else nextDay()
+    } else if (e.key === 't' || e.key === 'T') {
+      goToday()
+    }
+  }, [viewMode, month, year, selectedDay])
+
+  // Current time position for week/day view
+  const currentTimePosition = useMemo(() => {
+    const now = new Date()
+    const hours = now.getHours()
+    const minutes = now.getMinutes()
+    if (hours < 6 || hours >= 24) return null
+    return ((hours - 6) * 60 + minutes)
+  }, [])
+
   // ── Drag & drop handlers ───────────────────────────
   const handleDragStart = (postId: string) => setDragPostId(postId)
   const handleDragEnd = () => { setDragPostId(null); setDragOverKey(null) }
@@ -204,10 +255,10 @@ export default function CalendarPage() {
   }
 
   // ── Open edit modal ────────────────────────────────
-  const openEditPost = (post: CalPost) => {
+  const handleOpenEditPost = (post: CalPost) => {
     if (post.isMock) return // mock posts are read-only for now
     const sp = contextPosts.find(p => p.id === post.id)
-    if (sp) { setEditPost(sp); setEditModalOpen(true) }
+    if (sp) { openEditPost(sp) }
   }
 
   // ── Calendar grid data ─────────────────────────────
@@ -224,33 +275,105 @@ export default function CalendarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [year, month, selectedDay])
 
-  // ── Render post pill (used in week/day view) ───────
-  const renderPostPill = (p: CalPost) => (
-    <div
-      key={p.id}
-      className={`${styles.postPill} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
-      style={{ borderLeftColor: p.color, background: `${p.color}18` }}
-      draggable={!p.isMock}
-      onDragStart={() => !p.isMock && handleDragStart(p.id)}
-      onDragEnd={handleDragEnd}
-      onClick={e => { e.stopPropagation(); openEditPost(p) }}
-      title={p.title}
-    >
-      <span className={styles.pillTime}>{p.time}</span>
-      <span className={styles.pillTitle}>{p.title}</span>
-      <span className={styles.pillPlatform} style={{ color: p.color }}>{p.platform}</span>
-    </div>
-  )
+  // ── Visual content card component (handles broken image state) ───────
+  const VisualCard: React.FC<{
+    post: CalPost
+    onClick: (e: React.MouseEvent) => void
+    isDragging: boolean
+    onDragStart: () => void
+    onDragEnd: () => void
+  }> = ({ post, onClick, isDragging, onDragStart, onDragEnd }) => {
+    const platformGradients: Record<string, string> = {
+      TikTok: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+      Instagram: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #eab308 100%)',
+      Facebook: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      X: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      LinkedIn: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
+      YouTube: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    }
+    const gradient = platformGradients[post.platform] || platformGradients.TikTok
+
+    const [imageError, setImageError] = useState(false)
+
+    return (
+      <div
+        className={`${styles.visualCard} ${isDragging ? styles.postPillDragging : ''}`}
+        style={{ '--card-accent': post.color } as React.CSSProperties}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        title={post.title}
+      >
+        {/* Thumbnail on LEFT - fixed size 56x56 */}
+        <div className={styles.cardThumbnail}>
+          {post.image && !imageError ? (
+            <img 
+              src={post.image} 
+              alt={post.title} 
+              className={styles.cardImage}
+              onError={() => setImageError(true)}
+            />
+            ) : imageError ? (
+            // Fallback when image fails to load
+            <div className={styles.cardPlaceholderBroken}>
+              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
+            </div>
+          ) : (
+            <div className={styles.cardPlaceholder} style={{ background: gradient }}>
+              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
+            </div>
+          )}
+        </div>
+        {/* Content on RIGHT */}
+        <div className={styles.cardContent}>
+          <span className={styles.cardTime}>{post.time}</span>
+          <span className={styles.cardTitle}>{post.title}</span>
+          <div className={styles.cardPlatform}>
+            <span className={styles.platformBadge} style={{ background: `${post.color}20`, color: post.color }}>
+              {post.platform}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Render visual content card (used in week/day view) ───────
+  const renderPostPill = (p: CalPost) => {
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation()
+      // Open CreatePostModal with editPost to enable full editor with preview
+      if (p.isMock) return // mock posts are read-only for now
+      const sp = contextPosts.find(post => post.id === p.id)
+      if (sp) { 
+        openEditPost(sp) // This opens CreatePostModal in edit mode with full preview
+      }
+    }
+
+    return (
+      <VisualCard
+        key={p.id}
+        post={p}
+        onClick={handleClick}
+        isDragging={dragPostId === p.id}
+        onDragStart={() => !p.isMock && handleDragStart(p.id)}
+        onDragEnd={handleDragEnd}
+      />
+    )
+  }
 
   // ── Month View ─────────────────────────────────────
   const renderMonthView = () => (
-    <div className={`glass-card ${styles.calCard}`}>
-      <div className={styles.dayHeaders}>
-        {DAYS_SHORT.map(d => <span key={d} className={styles.dayHeader}>{d}</span>)}
+    <div className={`glass-card ${styles.calCard}`} role="grid" aria-label="Month calendar">
+      <div className={styles.dayHeaders} role="row">
+        {DAYS_FULL.map(d => (
+          <span key={d} className={styles.dayHeader} role="columnheader" aria-label={d}>{d.slice(0, 3)}</span>
+        ))}
       </div>
-      <div className={styles.grid}>
+      <div className={styles.grid} role="rowgroup">
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`e${i}`} className={styles.cellEmpty} />
+          <div key={`e${i}`} className={styles.cellEmpty} role="gridcell" aria-hidden="true" />
         ))}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1
@@ -259,28 +382,39 @@ export default function CalendarPage() {
           const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
           const isSelected = day === selectedDay
           const isDragOver = dragOverKey === key
+          const isFuture = new Date(year, month, day) > today
 
           return (
             <div
               key={day}
-              className={`${styles.cell} ${isToday ? styles.cellToday : ''} ${isSelected ? styles.cellSelected : ''} ${isDragOver ? styles.cellDragOver : ''}`}
+              className={`${styles.cell} ${isToday ? styles.cellToday : ''} ${isSelected ? styles.cellSelected : ''} ${isDragOver ? styles.cellDragOver : ''} ${isFuture ? styles.cellFuture : ''}`}
               onClick={() => setSelectedDay(day)}
               onDragOver={e => handleDragOver(e, key)}
               onDrop={e => handleDrop(e, year, month, day)}
               onDragLeave={() => setDragOverKey(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setSelectedDay(day)
+                }
+              }}
+              role="gridcell"
+              tabIndex={0}
+              aria-selected={isSelected}
+              aria-label={`${MONTHS[month]} ${day}, ${year}, ${posts.length} posts`}
             >
               <div className={styles.cellTop}>
-                <span className={styles.dayNum}>{day}</span>
+                <span className={`${styles.dayNum} ${isToday ? styles.dayNumToday : ''}`}>{day}</span>
                 <button
                   className={styles.cellAddBtn}
                   onClick={e => { e.stopPropagation(); openCreateForDay(year, month, day) }}
                   title="Add post"
+                  aria-label={`Add post on ${MONTHS[month]} ${day}`}
                 >
                   <Plus size={10} />
                 </button>
               </div>
               <div className={styles.cellPosts}>
-                {posts.slice(0, 3).map(p => (
+                {posts.slice(0, 2).map(p => (
                   <div
                     key={p.id}
                     className={`${styles.cellPostChip} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
@@ -291,15 +425,29 @@ export default function CalendarPage() {
                       if (!p.isMock) handleDragStart(p.id)
                     }}
                     onDragEnd={handleDragEnd}
-                    onClick={e => { e.stopPropagation(); openEditPost(p) }}
+                    onClick={e => { e.stopPropagation(); handleOpenEditPost(p) }}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setTooltipData({ post: p, x: rect.left + rect.width / 2, y: rect.top })
+                    }}
+                    onMouseLeave={() => setTooltipData(null)}
                     title={`${p.time} · ${p.title}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${p.title} at ${p.time}, ${p.platform}, ${p.status}`}
                   >
                     <span className={styles.chipTime}>{p.time}</span>
                     <span className={styles.chipTitle}>{p.title}</span>
                   </div>
                 ))}
-                {posts.length > 3 && (
-                  <span className={styles.moreCount}>+{posts.length - 3} more</span>
+                {posts.length > 2 && (
+                  <button 
+                    className={styles.moreCount}
+                    onClick={(e) => { e.stopPropagation(); setSelectedDay(day) }}
+                    aria-label={`Show ${posts.length - 2} more posts`}
+                  >
+                    +{posts.length - 2} more
+                  </button>
                 )}
               </div>
             </div>
@@ -323,10 +471,16 @@ export default function CalendarPage() {
   )
 
   // ── Week View ──────────────────────────────────────
-  const renderWeekView = () => (
-    <div className={`glass-card ${styles.calCard} ${styles.weekCard}`}>
+  const renderWeekView = () => {
+    const now = new Date()
+    const isCurrentWeek = weekDays.some(
+      ({ y, m, d }) => y === now.getFullYear() && m === now.getMonth() && d === now.getDate()
+    )
+    
+    return (
+    <div className={`glass-card ${styles.calCard} ${styles.weekCard}`} role="grid" aria-label="Week calendar">
       {/* Column headers */}
-      <div className={styles.weekHeader}>
+      <div className={styles.weekHeader} role="row">
         <div className={styles.weekTimeGutter} />
         {weekDays.map(({ y, m, d }) => {
           const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear()
@@ -336,6 +490,15 @@ export default function CalendarPage() {
               key={`${y}-${m}-${d}`}
               className={`${styles.weekColHeader} ${isToday ? styles.weekColToday : ''} ${isSelected ? styles.weekColSelected : ''}`}
               onClick={() => { setYear(y); setMonth(m); setSelectedDay(d) }}
+              role="gridcell"
+              aria-selected={isSelected}
+              aria-label={`${DAYS_FULL[new Date(y, m, d).getDay()]}, ${MONTHS[m]} ${d}`}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setYear(y); setMonth(m); setSelectedDay(d)
+                }
+              }}
             >
               <span className={styles.weekColDay}>{DAYS_SHORT[new Date(y, m, d).getDay()]}</span>
               <span className={styles.weekColNum}>{d}</span>
@@ -345,10 +508,10 @@ export default function CalendarPage() {
       </div>
 
       {/* Timeline */}
-      <div className={styles.weekBody}>
+      <div className={styles.weekBody} role="rowgroup">
         {HOURS.map(hour => (
-          <div key={hour} className={styles.weekRow}>
-            <div className={styles.weekTimeLabel}>{String(hour).padStart(2, '0')}:00</div>
+          <div key={hour} className={styles.weekRow} role="row">
+            <div className={styles.weekTimeLabel} aria-label={`${hour}:00`}>{String(hour).padStart(2, '0')}:00</div>
             {weekDays.map(({ y, m, d }) => {
               const key = getPostKey(y, m, d)
               const postsInSlot = (filteredPostsByKey[key] ?? []).filter(p => {
@@ -356,14 +519,20 @@ export default function CalendarPage() {
                 return slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
               })
               const isDragOver = dragOverKey === `${key}-${hour}`
+              const isTodayCell = y === today.getFullYear() && m === today.getMonth() && d === today.getDate()
+              const isCurrentHour = isTodayCell && hour === now.getHours()
+              
               return (
                 <div
                   key={`${key}-${hour}`}
-                  className={`${styles.weekCell} ${isDragOver ? styles.cellDragOver : ''}`}
+                  className={`${styles.weekCell} ${isDragOver ? styles.cellDragOver : ''} ${isCurrentHour ? styles.weekCellCurrentHour : ''}`}
                   onClick={() => openCreateForDay(y, m, d)}
                   onDragOver={e => handleDragOver(e, `${key}-${hour}`)}
                   onDrop={e => handleDrop(e, y, m, d)}
                   onDragLeave={() => setDragOverKey(null)}
+                  role="gridcell"
+                  tabIndex={0}
+                  aria-label={`${MONTHS[m]} ${d}, ${hour}:00 - ${postsInSlot.length} posts`}
                 >
                   {postsInSlot.map(p => renderPostPill(p))}
                 </div>
@@ -371,42 +540,71 @@ export default function CalendarPage() {
             })}
           </div>
         ))}
+        
+        {/* Current time indicator line */}
+        {isCurrentWeek && currentTimePosition !== null && (
+          <div 
+            className={styles.currentTimeLine}
+            style={{ top: `${(currentTimePosition / 60) * 60 + 8}px` }}
+            aria-label={`Current time: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`}
+          >
+            <span className={styles.currentTimeDot} />
+          </div>
+        )}
       </div>
     </div>
-  )
+  )}
 
   // ── Day View ───────────────────────────────────────
   const renderDayView = () => {
     const dayKey = getPostKey(year, month, selectedDay ?? today.getDate())
     const dayPosts = filteredPostsByKey[dayKey] ?? []
     const d = selectedDay ?? today.getDate()
+    const now = new Date()
+    const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear()
+    
     return (
-      <div className={`glass-card ${styles.calCard} ${styles.dayViewCard}`}>
+      <div className={`glass-card ${styles.calCard} ${styles.dayViewCard}`} role="grid" aria-label="Day calendar">
         <div className={styles.dayViewTitle}>
-          {DAYS_SHORT[new Date(year, month, d).getDay()]}, {MONTHS[month]} {d}
+          {DAYS_FULL[new Date(year, month, d).getDay()]}, {MONTHS[month]} {d}, {year}
         </div>
-        <div className={styles.dayBody}>
+        <div className={styles.dayBody} role="rowgroup">
           {HOURS.map(hour => {
             const postsInSlot = dayPosts.filter(p => {
               const slot = timeToSlot(p.time)
               return slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
             })
             const isDragOver = dragOverKey === `day-${hour}`
+            const isCurrentHour = isToday && hour === now.getHours()
             return (
-              <div key={hour} className={styles.dayRow}>
-                <div className={styles.dayTimeLabel}>{String(hour).padStart(2, '0')}:00</div>
+              <div key={hour} className={styles.dayRow} role="row">
+                <div className={styles.dayTimeLabel} aria-label={`${hour}:00`}>{String(hour).padStart(2, '0')}:00</div>
                 <div
-                  className={`${styles.daySlot} ${isDragOver ? styles.cellDragOver : ''}`}
+                  className={`${styles.daySlot} ${isDragOver ? styles.cellDragOver : ''} ${isCurrentHour ? styles.daySlotCurrentHour : ''}`}
                   onClick={() => openCreateForDay(year, month, d)}
                   onDragOver={e => handleDragOver(e, `day-${hour}`)}
                   onDrop={e => handleDrop(e, year, month, d)}
                   onDragLeave={() => setDragOverKey(null)}
+                  role="gridcell"
+                  tabIndex={0}
+                  aria-label={`${hour}:00 - ${postsInSlot.length} posts`}
                 >
                   {postsInSlot.map(p => renderPostPill(p))}
                 </div>
               </div>
             )
           })}
+          
+          {/* Current time indicator for day view */}
+          {isToday && currentTimePosition !== null && (
+            <div 
+              className={styles.currentTimeLine}
+              style={{ top: `${(currentTimePosition / 60) * 60 + 8}px` }}
+              aria-label={`Current time: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`}
+            >
+              <span className={styles.currentTimeDot} />
+            </div>
+          )}
         </div>
       </div>
     )
@@ -448,31 +646,57 @@ export default function CalendarPage() {
               {selectedPosts.map(p => (
                 <div
                   key={p.id}
-                  className={styles.postItem}
-                  style={{ borderLeftColor: p.color }}
+                  className={styles.postCard}
+                  onClick={() => handleOpenEditPost(p)}
                 >
-                  <div className={styles.postInfo}>
-                    <span className={styles.postTime}>{p.time}</span>
-                    <span className={styles.postName}>{p.title}</span>
-                    <span className={styles.postPlatform}>{p.platform}</span>
+                  {/* Header: Status + Time */}
+                  <div className={styles.postCardHeader}>
+                    <div className={styles.postCardStatus}>
+                      <CheckCircle size={14} className={styles.postCardStatusIcon} />
+                      <span className={`${styles.postCardStatusText} ${p.status === 'scheduled' ? styles.postCardStatusTextScheduled : ''}`}>
+                        {getStatusLabel(p.status)}
+                      </span>
+                    </div>
+                    <span className={styles.postCardTime}>{p.time}</span>
                   </div>
-                  <div className={styles.postRight}>
-                    <span className={`${styles.postStatus} ${styles[`s_${p.status}`]}`}>
-                      {getStatusLabel(p.status)}
-                    </span>
-                    {!p.isMock ? (
-                      <button
-                        className={styles.moreBtn}
-                        onClick={() => openEditPost(p)}
-                        title="Edit"
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                    ) : (
-                      <button className={styles.moreBtn} title="Mock post (read-only)" style={{ opacity: 0.3, cursor: 'default' }}>
-                        <MoreHorizontal size={14} />
-                      </button>
-                    )}
+
+                  {/* Body: Thumbnail + Content */}
+                  <div className={styles.postCardBody}>
+                    <div className={styles.postCardThumbnail}>
+                      {p.image ? (
+                        <img src={p.image} alt={p.title} />
+                      ) : (
+                        <div 
+                          className={styles.postCardThumbnailPlaceholder}
+                          style={{ background: p.color }}
+                        >
+                          <ExtendedPlatformIcon platform={p.platform as any} size={18} />
+                        </div>
+                      )}
+                      {/* Video indicator - show for posts that might be videos (YouTube, TikTok) */}
+                      {(p.platform === 'YouTube' || p.platform === 'TikTok') && (
+                        <div className={styles.postCardVideoOverlay}>
+                          <Play size={18} className={styles.postCardVideoIcon} />
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.postCardContent}>
+                      <span className={styles.postCardTitle}>{p.title}</span>
+                      {p.caption && (
+                        <span className={styles.postCardCaption}>{p.caption}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer: Platform icons */}
+                  <div className={styles.postCardFooter}>
+                    <div 
+                      className={styles.postCardPlatformIcon}
+                      style={{ background: p.color }}
+                      title={p.platform}
+                    >
+                      <ExtendedPlatformIcon platform={p.platform as any} size={10} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -488,24 +712,12 @@ export default function CalendarPage() {
     </div>
   )
 
-  // ── Nav title based on view ────────────────────────
-  const navTitle = (() => {
-    if (viewMode === 'month') return `${MONTHS[month]} ${year}`
-    if (viewMode === 'week') {
-      const first = weekDays[0], last = weekDays[6]
-      if (first.m === last.m) return `${MONTHS[first.m]} ${first.y}`
-      return `${MONTHS[first.m]} – ${MONTHS[last.m]} ${last.y}`
-    }
-    const d = selectedDay ?? today.getDate()
-    return `${DAYS_SHORT[new Date(year, month, d).getDay()]}, ${MONTHS[month]} ${d}`
-  })()
-
   const onPrev = viewMode === 'month' ? prevMonth : viewMode === 'week' ? prevWeek : prevDay
   const onNext = viewMode === 'month' ? nextMonth : viewMode === 'week' ? nextWeek : nextDay
 
   // ── Main render ────────────────────────────────────
   return (
-    <div className={styles.page}>
+    <div className={styles.page} onKeyDown={handleKeyDown} tabIndex={-1}>
       {/* Header */}
       <div className={styles.header}>
         <div>
@@ -547,11 +759,67 @@ export default function CalendarPage() {
           </button>
         </div>
 
-        {/* Nav controls */}
+        {/* Nav controls with month/year picker */}
         <div className={styles.navControls}>
-          <button className={styles.navBtn} onClick={onPrev}><ChevronLeft size={15} /></button>
-          <span className={styles.navTitle}>{navTitle}</span>
-          <button className={styles.navBtn} onClick={onNext}><ChevronRight size={15} /></button>
+          <button className={styles.navBtn} onClick={onPrev} aria-label="Previous"><ChevronLeft size={15} /></button>
+          
+          {/* Month/Year picker */}
+          <div className={styles.pickerContainer}>
+            <div className={styles.pickerTrigger}>
+              <button 
+                className={styles.monthPickerBtn}
+                onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false) }}
+                aria-label="Select month"
+              >
+                {MONTHS_SHORT[month]}
+                <ChevronDown size={12} />
+              </button>
+              <button 
+                className={styles.yearPickerBtn}
+                onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false) }}
+                aria-label="Select year"
+              >
+                {year}
+                <ChevronDown size={12} />
+              </button>
+            </div>
+            
+            {/* Month dropdown */}
+            {showMonthPicker && (
+              <div className={styles.pickerDropdown} ref={monthPickerRef} role="listbox" aria-label="Select month">
+                {MONTHS.map((m, i) => (
+                  <button
+                    key={m}
+                    className={`${styles.pickerOption} ${i === month ? styles.pickerOptionActive : ''}`}
+                    onClick={() => { setMonth(i); setShowMonthPicker(false); setSelectedDay(null) }}
+                    role="option"
+                    aria-selected={i === month}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Year dropdown */}
+            {showYearPicker && (
+              <div className={styles.pickerDropdown} ref={yearPickerRef} role="listbox" aria-label="Select year">
+                {YEARS.map(y => (
+                  <button
+                    key={y}
+                    className={`${styles.pickerOption} ${y === year ? styles.pickerOptionActive : ''}`}
+                    onClick={() => { setYear(y); setShowYearPicker(false); setSelectedDay(null) }}
+                    role="option"
+                    aria-selected={y === year}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <button className={styles.navBtn} onClick={onNext} aria-label="Next"><ChevronRight size={15} /></button>
           <button className={styles.todayBtn} onClick={goToday}>Today</button>
         </div>
 
@@ -580,19 +848,30 @@ export default function CalendarPage() {
         {viewMode === 'month' && renderDetailPanel()}
       </div>
 
-      <EditPostModal
-        post={editPost}
-        isOpen={editModalOpen}
-        onClose={() => { setEditModalOpen(false); setEditPost(null) }}
-        onSave={(id, changes) => {
-          updatePost(id, changes)
-          addToast({ message: 'Post updated!', type: 'success' })
-        }}
-        onDelete={(id) => {
-          removePost(id)
-          addToast({ message: 'Post deleted.', type: 'success' })
-        }}
-      />
+      {/* Tooltip for events */}
+      {tooltipData && (
+        <div 
+          className={styles.tooltip}
+          style={{ 
+            left: tooltipData.x, 
+            top: tooltipData.y - 8,
+            transform: 'translate(-50%, -100%)'
+          }}
+          role="tooltip"
+        >
+          <div className={styles.tooltipContent}>
+            <div className={styles.tooltipTime}>{tooltipData.post.time}</div>
+            <div className={styles.tooltipTitle}>{tooltipData.post.title}</div>
+            <div className={styles.tooltipMeta}>
+              <span className={styles.tooltipPlatform} style={{ color: tooltipData.post.color }}>
+                {tooltipData.post.platform}
+              </span>
+              <span className={styles.tooltipStatus}>{getStatusLabel(tooltipData.post.status)}</span>
+            </div>
+          </div>
+          <div className={styles.tooltipArrow} />
+        </div>
+      )}
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>

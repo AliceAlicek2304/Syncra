@@ -1,53 +1,54 @@
-import { Check, Sparkles, Zap } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import styles from './Pricing.module.css'
 
 const PLANS = [
   {
-    name: 'Starter',
-    icon: <Sparkles size={18} />,
-    price: { monthly: 0, yearly: 0 },
-    desc: 'Perfect for getting started.',
+    name: 'Basic',
+    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    price: { monthly: 99, yearly: 79 },
+    desc: 'Perfect for testing the platform.',
     features: [
       '3 connected platforms',
-      '10 scheduled posts/month',
+      '20 scheduled posts/month',
       'Basic analytics',
       'Content editor',
       'Community support',
     ],
-    cta: 'Get started free',
+    cta: 'Start 14-day trial',
     highlight: false,
   },
   {
-    name: 'Creator',
-    icon: <Zap size={18} />,
-    price: { monthly: 19, yearly: 15 },
+    name: 'Pro',
+    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    price: { monthly: 199, yearly: 159 },
     desc: 'For serious content creators.',
     features: [
-      '6 connected platforms',
+      'Up to 10 connected platforms',
       'Unlimited scheduled posts',
       'Advanced analytics',
       'Best-time scheduling',
       'Content recycling',
       'Priority support',
-      'AI suggestions (beta)',
+      'AI assistant features',
     ],
     cta: 'Start 14-day trial',
     highlight: true,
     badge: 'Most popular',
   },
   {
-    name: 'Pro',
-    icon: <Zap size={18} />,
-    price: { monthly: 49, yearly: 39 },
+    name: 'Max',
+    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    price: { monthly: 299, yearly: 249 },
     desc: 'For teams & power creators.',
     features: [
-      'Everything in Creator',
-      'Up to 5 team members',
+      'Everything in Pro',
+      'Up to 10 team members',
       'Custom brand kits',
       'White-label reports',
       'API access',
       'Dedicated support',
+      'Custom integrations',
     ],
     cta: 'Start 14-day trial',
     highlight: false,
@@ -67,7 +68,7 @@ export default function Pricing() {
             <span className="gradient-text">Scale when you're ready.</span>
           </h2>
           <p className="section-sub" style={{ marginTop: 16, textAlign: 'center' }}>
-            Start free. No credit card required. Upgrade anytime.
+            Start with a 14-day free trial. No credit card required. Cancel anytime.
           </p>
 
           {/* Toggle */}
@@ -104,17 +105,10 @@ export default function Pricing() {
               </div>
 
               <div className={styles.priceRow}>
-                <span className={styles.currency}>$</span>
                 <span className={styles.price}>
-                  {plan.price.monthly === 0
-                    ? '0'
-                    : yearly
-                    ? plan.price.yearly
-                    : plan.price.monthly}
+                  {yearly ? plan.price.yearly : plan.price.monthly}.000
                 </span>
-                <span className={styles.period}>
-                  {plan.price.monthly === 0 ? '/ forever' : '/ month'}
-                </span>
+                <span className={styles.period}> đ / tháng</span>
               </div>
 
               <ul className={styles.featureList}>
@@ -128,7 +122,7 @@ export default function Pricing() {
 
               <a
                 href="#"
-                className={plan.highlight ? 'btn-primary' : 'btn-secondary'}
+                className={plan.highlight ? 'btn-primary' : 'btn-ghost'}
                 style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
               >
                   {plan.cta}

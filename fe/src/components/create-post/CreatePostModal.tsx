@@ -75,6 +75,41 @@ export default function CreatePostModal(props: CreatePostModalProps) {
           </div>
         )}
 
+        {/* Publish/Schedule Confirmation Dialog */}
+        {state.showPublishConfirmDialog && (
+          <div className={styles.editorBackdrop} style={{ zIndex: 10000 }}>
+            <div className={`glass-card ${styles.editorModal}`} style={{ maxWidth: 400, padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+                  {state.scheduleMode ? 'Schedule Post' : 'Publish Post'}
+                </h3>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  {state.scheduleMode 
+                    ? `Your post will be scheduled for ${state.scheduleTime ? new Date(state.scheduleTime).toLocaleDateString() : 'today'}. Are you sure?`
+                    : 'Your post will be published immediately. Are you sure?'
+                  }
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button 
+                  className="btn-secondary" 
+                  style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
+                  onClick={() => actions.setShowPublishConfirmDialog(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  style={{ fontSize: 13, padding: '8px 16px', flex: 1, background: state.scheduleMode ? 'var(--gradient-brand)' : '#22c55e' }}
+                  onClick={() => actions.confirmSchedule()}
+                >
+                  {state.scheduleMode ? 'Schedule' : 'Publish'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Inline Image Editor Overlay */}
         {state.editingId && (() => {
           const item = state.media.find(m => m.id === state.editingId)
