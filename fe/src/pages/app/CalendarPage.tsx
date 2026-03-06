@@ -8,7 +8,7 @@ import { useCalendar } from '../../context/calendarContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
-import { PlatformIcon as ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
+import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
 
 // ── Constants ─────────────────────────────────────────
@@ -104,7 +104,7 @@ export default function CalendarPage() {
   const { posts: contextPosts, updatePost } = useCalendar()
   const { openCreatePost, openEditPost } = useCreatePostModal()
   
-  const today = new Date()
+  const today = useMemo(() => new Date(), [])
 
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -181,35 +181,41 @@ export default function CalendarPage() {
   }, [allPostsByKey, platformFilter])
 
   // ── Navigation ─────────────────────────────────────
-  const prevMonth = () => {
+  const prevMonth = useCallback(() => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
     setSelectedDay(null)
-  }
-  const nextMonth = () => {
+  }, [month])
+
+  const nextMonth = useCallback(() => {
     if (month === 11) { setMonth(0); setYear(y => y + 1) }
     else setMonth(m => m + 1)
     setSelectedDay(null)
-  }
-  const prevWeek = () => {
+  }, [month])
+
+  const prevWeek = useCallback(() => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) - 7)
     setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }
-  const nextWeek = () => {
+  }, [year, month, selectedDay, today])
+
+  const nextWeek = useCallback(() => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) + 7)
     setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }
-  const prevDay = () => {
+  }, [year, month, selectedDay, today])
+
+  const prevDay = useCallback(() => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) - 1)
     setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }
-  const nextDay = () => {
+  }, [year, month, selectedDay, today])
+
+  const nextDay = useCallback(() => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) + 1)
     setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }
-  const goToday = () => {
+  }, [year, month, selectedDay, today])
+
+  const goToday = useCallback(() => {
     setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(today.getDate())
-  }
+  }, [today])
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -224,7 +230,7 @@ export default function CalendarPage() {
     } else if (e.key === 't' || e.key === 'T') {
       goToday()
     }
-  }, [viewMode, month, year, selectedDay])
+  }, [viewMode, prevMonth, prevWeek, prevDay, nextMonth, nextWeek, nextDay, goToday])
 
   // Current time position for week/day view
   const currentTimePosition = useMemo(() => {
@@ -317,11 +323,11 @@ export default function CalendarPage() {
             ) : imageError ? (
             // Fallback when image fails to load
             <div className={styles.cardPlaceholderBroken}>
-              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
+              <ExtendedPlatformIcon platform={post.platform} size={20} />
             </div>
           ) : (
             <div className={styles.cardPlaceholder} style={{ background: gradient }}>
-              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
+              <ExtendedPlatformIcon platform={post.platform} size={20} />
             </div>
           )}
         </div>
@@ -670,7 +676,7 @@ export default function CalendarPage() {
                           className={styles.postCardThumbnailPlaceholder}
                           style={{ background: p.color }}
                         >
-                          <ExtendedPlatformIcon platform={p.platform as any} size={18} />
+                          <ExtendedPlatformIcon platform={p.platform} size={18} />
                         </div>
                       )}
                       {/* Video indicator - show for posts that might be videos (YouTube, TikTok) */}
@@ -695,7 +701,7 @@ export default function CalendarPage() {
                       style={{ background: p.color }}
                       title={p.platform}
                     >
-                      <ExtendedPlatformIcon platform={p.platform as any} size={10} />
+                      <ExtendedPlatformIcon platform={p.platform} size={10} />
                     </div>
                   </div>
                 </div>

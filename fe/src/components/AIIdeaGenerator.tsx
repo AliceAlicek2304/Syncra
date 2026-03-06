@@ -88,10 +88,6 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         })
     }
 
-    const updateCaption = (id: string, caption: string) => {
-        setUploadedFiles(prev => prev.map(f => f.id === id ? { ...f, caption } : f))
-    }
-
     const handleGenerate = () => {
         if (!topic.trim()) return
         setStep('loading')
