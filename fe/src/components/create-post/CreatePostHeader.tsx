@@ -15,7 +15,9 @@ type CreatePostHeaderProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | '
 export default function CreatePostHeader({ state, actions }: CreatePostHeaderProps) {
   return (
     <div className={styles.header}>
-      <span className={styles.headerTitle}>Create Post</span>
+      <span className={styles.headerTitle}>
+        {state.isEditMode ? 'Edit Post' : 'Create Post'}
+      </span>
 
       <div className={styles.platformChips}>
         {PLATFORMS.map(p => (

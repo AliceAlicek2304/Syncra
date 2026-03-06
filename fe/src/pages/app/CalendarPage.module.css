@@ -182,6 +182,7 @@
   grid-template-columns: 1fr 300px;
   gap: 20px;
   align-items: start;
+  min-width: 0;
 }
 
 .bodyFull {
@@ -191,6 +192,9 @@
 /* ── Calendar card (shared) ──────────────────────────── */
 .calCard {
   padding: 20px;
+  overflow: visible;
+  min-width: 0;
+  width: 100%;
 }
 
 /* ── Month view ──────────────────────────────────────── */
@@ -231,6 +235,7 @@
   gap: 3px;
   border: 1px solid transparent;
   position: relative;
+  overflow: hidden;
 }
 
 .cell:hover {
@@ -303,6 +308,7 @@
   gap: 2px;
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 }
 
 .cellPostChip {
@@ -318,6 +324,7 @@
   transition: opacity 0.15s;
   border-left-width: 2px;
   border-left-style: solid;
+  min-width: 0;
 }
 
 .cellPostChip:hover { opacity: 0.8; }
@@ -453,14 +460,14 @@
 }
 
 .weekCell {
-  padding: 4px 4px;
+  padding: 3px 3px;
   border-left: 1px solid var(--border-glass, rgba(255,255,255,0.04));
   cursor: pointer;
   transition: background 0.12s;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-height: 56px;
+  gap: 3px;
+  min-height: 100px;
 }
 
 .weekCell:hover { background: rgba(255,255,255,0.025); }
@@ -550,6 +557,169 @@
   font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* ── Visual Content Card (week & day view) ───────────── */
+.visualCard {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: grab;
+  transition: transform 0.15s, box-shadow 0.15s;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-glass, rgba(255,255,255,0.08));
+  height: 100%;
+  min-height: 100px;
+}
+
+.visualCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.visualCard:active { cursor: grabbing; }
+
+.cardThumbnail {
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardPlatformIcon {
+  font-size: 20px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cardContent {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.cardTime {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cardTitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardPlatform {
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.platformBadge {
+  display: inline-flex;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.visualCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.visualCard:active { cursor: grabbing; }
+
+.cardThumbnail {
+  width: 100%;
+  height: 70px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardPlatformIcon {
+  font-size: 24px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cardContent {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.cardTime {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cardTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardPlatform {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.platformBadge {
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 /* ── Detail panel (month view) ───────────────────────── */

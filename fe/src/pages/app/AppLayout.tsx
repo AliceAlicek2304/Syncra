@@ -137,6 +137,7 @@ export default function AppLayout() {
         onToast={addToast}
         initialContent={state.initialContent}
         initialDate={state.initialDate}
+        editPost={state.editPost}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
       

@@ -4,12 +4,9 @@ import {
   MoreHorizontal, CalendarDays, List, LayoutGrid,
 } from 'lucide-react'
 import { useCalendar } from '../../context/calendarContextBase'
-import type { ScheduledPost } from '../../context/calendarContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
-import EditPostModal from '../../components/EditPostModal'
 import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
-import { shortId } from '../../utils/shortId'
 import styles from './CalendarPage.module.css'
 
 // ── Constants ─────────────────────────────────────────
@@ -29,6 +26,7 @@ interface CalPost {
   color: string
   caption: string
   hashtags: string[]
+  image?: string
   isMock?: boolean
 }
 
@@ -94,8 +92,8 @@ function timeToSlot(time: string): number {
 
 // ── Main Component ────────────────────────────────────
 export default function CalendarPage() {
-  const { posts: contextPosts, updatePost, removePost } = useCalendar()
-  const { openCreatePost } = useCreatePostModal()
+  const { posts: contextPosts, updatePost } = useCalendar()
+  const { openCreatePost, openEditPost } = useCreatePostModal()
   
   const today = new Date()
 
@@ -109,15 +107,8 @@ export default function CalendarPage() {
   const [dragPostId, setDragPostId] = useState<string | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
 
-  // Modals
-  const [editPost, setEditPost] = useState<ScheduledPost | null>(null)
-  const [editModalOpen, setEditModalOpen] = useState(false)
-
   // Toast
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
-    setToasts(prev => [...prev, { ...t, id: shortId() }])
-  }, [])
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
@@ -135,7 +126,7 @@ export default function CalendarPage() {
       const cp: CalPost = {
         id: p.id, title: p.title, platform: p.platform,
         status: p.status, time: p.time, color: p.color,
-        caption: p.caption, hashtags: p.hashtags,
+        caption: p.caption, hashtags: p.hashtags, image: p.image,
       }
       merged[key] = [...(merged[key] ?? []), cp]
     })
@@ -204,10 +195,10 @@ export default function CalendarPage() {
   }
 
   // ── Open edit modal ────────────────────────────────
-  const openEditPost = (post: CalPost) => {
+  const handleOpenEditPost = (post: CalPost) => {
     if (post.isMock) return // mock posts are read-only for now
     const sp = contextPosts.find(p => p.id === post.id)
-    if (sp) { setEditPost(sp); setEditModalOpen(true) }
+    if (sp) { openEditPost(sp) }
   }
 
   // ── Calendar grid data ─────────────────────────────
@@ -224,23 +215,50 @@ export default function CalendarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [year, month, selectedDay])
 
-  // ── Render post pill (used in week/day view) ───────
-  const renderPostPill = (p: CalPost) => (
-    <div
-      key={p.id}
-      className={`${styles.postPill} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
-      style={{ borderLeftColor: p.color, background: `${p.color}18` }}
-      draggable={!p.isMock}
-      onDragStart={() => !p.isMock && handleDragStart(p.id)}
-      onDragEnd={handleDragEnd}
-      onClick={e => { e.stopPropagation(); openEditPost(p) }}
-      title={p.title}
-    >
-      <span className={styles.pillTime}>{p.time}</span>
-      <span className={styles.pillTitle}>{p.title}</span>
-      <span className={styles.pillPlatform} style={{ color: p.color }}>{p.platform}</span>
-    </div>
-  )
+  // ── Render visual content card (used in week/day view) ───────
+  const renderPostPill = (p: CalPost) => {
+    const platformGradients: Record<string, string> = {
+      TikTok: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+      Instagram: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #eab308 100%)',
+      Facebook: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      X: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      LinkedIn: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
+      YouTube: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    }
+    const gradient = platformGradients[p.platform] || platformGradients.TikTok
+
+    return (
+      <div
+        key={p.id}
+        className={`${styles.visualCard} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
+        style={{ '--card-accent': p.color } as React.CSSProperties}
+        draggable={!p.isMock}
+        onDragStart={() => !p.isMock && handleDragStart(p.id)}
+        onDragEnd={handleDragEnd}
+        onClick={e => { e.stopPropagation(); handleOpenEditPost(p) }}
+        title={p.title}
+      >
+        <div className={styles.cardThumbnail}>
+          {p.image ? (
+            <img src={p.image} alt={p.title} className={styles.cardImage} />
+          ) : (
+            <div className={styles.cardPlaceholder} style={{ background: gradient }}>
+              <span className={styles.cardPlatformIcon}>{p.platform[0]}</span>
+            </div>
+          )}
+        </div>
+        <div className={styles.cardContent}>
+          <span className={styles.cardTime}>{p.time}</span>
+          <span className={styles.cardTitle}>{p.title}</span>
+          <div className={styles.cardPlatform}>
+            <span className={styles.platformBadge} style={{ background: `${p.color}20`, color: p.color }}>
+              {p.platform}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Month View ─────────────────────────────────────
   const renderMonthView = () => (
@@ -291,7 +309,7 @@ export default function CalendarPage() {
                       if (!p.isMock) handleDragStart(p.id)
                     }}
                     onDragEnd={handleDragEnd}
-                    onClick={e => { e.stopPropagation(); openEditPost(p) }}
+                    onClick={e => { e.stopPropagation(); handleOpenEditPost(p) }}
                     title={`${p.time} · ${p.title}`}
                   >
                     <span className={styles.chipTime}>{p.time}</span>
@@ -463,7 +481,7 @@ export default function CalendarPage() {
                     {!p.isMock ? (
                       <button
                         className={styles.moreBtn}
-                        onClick={() => openEditPost(p)}
+                        onClick={() => handleOpenEditPost(p)}
                         title="Edit"
                       >
                         <MoreHorizontal size={14} />
@@ -579,20 +597,6 @@ export default function CalendarPage() {
         {/* Side detail always visible in month view */}
         {viewMode === 'month' && renderDetailPanel()}
       </div>
-
-      <EditPostModal
-        post={editPost}
-        isOpen={editModalOpen}
-        onClose={() => { setEditModalOpen(false); setEditPost(null) }}
-        onSave={(id, changes) => {
-          updatePost(id, changes)
-          addToast({ message: 'Post updated!', type: 'success' })
-        }}
-        onDelete={(id) => {
-          removePost(id)
-          addToast({ message: 'Post deleted.', type: 'success' })
-        }}
-      />
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>

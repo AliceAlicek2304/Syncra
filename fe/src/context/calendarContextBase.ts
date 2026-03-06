@@ -12,6 +12,7 @@ export interface ScheduledPost {
     color: string
     caption: string
     hashtags: string[]
+    image?: string
 }
 
 export interface CalendarContextValue {

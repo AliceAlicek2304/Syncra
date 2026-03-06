@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import type { ScheduledPost } from './calendarContextBase'
 
 export type CreatePostSource = 'direct' | 'idea' | 'coach' | 'repurpose' | 'command' | 'calendar'
 
@@ -6,6 +7,7 @@ export interface OpenCreatePostParams {
   initialContent?: string
   source?: CreatePostSource
   initialDate?: { year: number; month: number; day: number }
+  editPost?: ScheduledPost
 }
 
 export interface CreatePostModalState {
@@ -13,11 +15,13 @@ export interface CreatePostModalState {
   initialContent?: string
   source: CreatePostSource
   initialDate?: { year: number; month: number; day: number }
+  editPost?: ScheduledPost | null
 }
 
 export interface CreatePostModalContextValue {
   state: CreatePostModalState
   openCreatePost: (params?: OpenCreatePostParams) => void
+  openEditPost: (post: ScheduledPost) => void
   closeCreatePost: () => void
 }
 
@@ -34,7 +38,18 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
       isOpen: true,
       initialContent: params?.initialContent,
       source: params?.source ?? (params?.initialContent ? 'idea' : 'direct'),
-      initialDate: params?.initialDate
+      initialDate: params?.initialDate,
+      editPost: null
+    })
+  }
+
+  const openEditPost = (post: ScheduledPost) => {
+    setState({
+      isOpen: true,
+      initialContent: undefined,
+      source: 'direct',
+      initialDate: undefined,
+      editPost: post
     })
   }
 
@@ -44,12 +59,13 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
       isOpen: false,
       initialContent: undefined,
       source: 'direct',
-      initialDate: undefined
+      initialDate: undefined,
+      editPost: undefined
     }))
   }
 
   return (
-    <CreatePostModalContext.Provider value={{ state, openCreatePost, closeCreatePost }}>
+    <CreatePostModalContext.Provider value={{ state, openCreatePost, openEditPost, closeCreatePost }}>
       {children}
     </CreatePostModalContext.Provider>
   )

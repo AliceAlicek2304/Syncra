@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useCalendar } from '../../context/calendarContextBase'
 import { getMockResults } from '../../data/mockAI'
 import type { AIGenerateInput } from '../../data/mockAI'
 import { shortId } from '../../utils/shortId'
@@ -17,8 +18,11 @@ export function convertCaptionForPlatform(base: string, _platform: Platform, max
 }
 
 export function useCreatePostState(props: CreatePostModalProps) {
-  const { isOpen, onClose, onToast, initialContent, initialDate } = props
+  const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
   const { user } = useAuth()
+  const { addPost, updatePost } = useCalendar()
+
+  const isEditMode = !!editPost
 
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
   const [activeTab, setActiveTab] = useState<Platform>('TikTok')
@@ -41,6 +45,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [scheduleTime, setScheduleTime] = useState('')
 
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+  const [showPublishConfirmDialog, setShowPublishConfirmDialog] = useState(false)
 
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitRef = useRef(false)
@@ -81,8 +86,28 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
+      let initMedia: MediaFile[] = []
 
-      if (!initialContent && !initialDate) {
+      // Edit mode - load from existing post
+      if (editPost) {
+        nextCaptions = { 
+          TikTok: editPost.caption, 
+          Instagram: editPost.caption, 
+          Facebook: editPost.caption, 
+          X: editPost.caption 
+        }
+        initPlatforms = [editPost.platform as Platform]
+        
+        if (editPost.image) {
+          initMedia = [{ id: shortId(), url: editPost.image, type: 'image', name: 'image' }]
+        }
+        
+        initSchMode = true
+        const mm = String(editPost.month + 1).padStart(2, '0')
+        const dd = String(editPost.day).padStart(2, '0')
+        initSchTime = `${editPost.year}-${mm}-${dd}T${editPost.time}`
+      }
+      else if (!initialContent && !initialDate) {
         try {
           const draftStr = localStorage.getItem('syncra_draft')
           if (draftStr) {
@@ -120,13 +145,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setScheduleTime(initSchTime)
       setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
-      setMedia([])
+      setMedia(initMedia)
 
       // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
       // Điều này đảm bảo khi có initialContent, trạng thái sẽ bị đánh dấu là Dirty (chưa lưu) ngay lập tức.
       initialSnapshotRef.current = JSON.stringify({
-        captionsByPlatform: loadedFromDraft ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
-        media: [],
+        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
+        media: initMedia,
         activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
@@ -134,7 +159,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }, 0)
 
     didInitRef.current = true
-  }, [isOpen, initialContent, initialDate, showUnsavedDialog])
+  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost])
 
   const caption = captionsByPlatform[activeTab] ?? ''
   
@@ -200,17 +225,78 @@ export function useCreatePostState(props: CreatePostModalProps) {
       onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
       return false
     }
-    
-    const draftData = {
-      captionsByPlatform,
-      activePlatforms,
-      scheduleMode,
-      scheduleTime,
+
+    let year: number, month: number, day: number, time: string
+
+    if (scheduleTime && scheduleMode) {
+      const scheduleDate = new Date(scheduleTime)
+      year = scheduleDate.getFullYear()
+      month = scheduleDate.getMonth()
+      day = scheduleDate.getDate()
+      time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
+    } else {
+      const today = new Date()
+      year = today.getFullYear()
+      month = today.getMonth()
+      day = today.getDate()
+      time = '09:00'
     }
-    localStorage.setItem('syncra_draft', JSON.stringify(draftData))
+
+    const platformColors: Record<string, string> = {
+      TikTok: '#ff0050',
+      Instagram: '#e1306c',
+      Facebook: '#4267B2',
+      X: '#1DA1F2'
+    }
+
+    const firstImage = media.find(m => m.type === 'image')?.url
+    
+    if (isEditMode && editPost) {
+      // Update existing post as draft
+      const platform = activePlatforms[0] || editPost.platform
+      const caption = captionsByPlatform[platform] || editPost.caption
+      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+      
+      updatePost(editPost.id, {
+        title: caption.slice(0, 50) || `Draft on ${platform}`,
+        platform,
+        status: 'draft',
+        time,
+        day,
+        month,
+        year,
+        color: platformColors[platform] || editPost.color,
+        caption,
+        hashtags,
+        image: firstImage || editPost.image
+      })
+      onToast?.({ message: 'Draft updated successfully.', type: 'success' })
+    } else {
+      // Create new draft posts
+      activePlatforms.forEach(platform => {
+        const platformCaption = captionsByPlatform[platform] || ''
+        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
+        
+        addPost({
+          year,
+          month,
+          day,
+          title: platformCaption.slice(0, 50) || `Draft on ${platform}`,
+          platform,
+          status: 'draft',
+          time,
+          color: platformColors[platform] || '#888888',
+          caption: platformCaption,
+          hashtags: platformHashtags,
+          image: firstImage
+        })
+      })
+      onToast?.({ message: 'Draft saved successfully.', type: 'success' })
+    }
+
+    localStorage.removeItem('syncra_draft')
     
     initialSnapshotRef.current = currentSnapshot
-    onToast?.({ message: 'Draft saved successfully.', type: 'success' })
     return true
   }
 
@@ -219,9 +305,81 @@ export function useCreatePostState(props: CreatePostModalProps) {
       onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
       return
     }
-    onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
+    setShowPublishConfirmDialog(true)
+  }
+
+  const confirmSchedule = () => {
+    let year: number, month: number, day: number, time: string
+
+    if (scheduleTime && scheduleMode) {
+      const scheduleDate = new Date(scheduleTime)
+      year = scheduleDate.getFullYear()
+      month = scheduleDate.getMonth()
+      day = scheduleDate.getDate()
+      time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
+    } else {
+      const today = new Date()
+      year = today.getFullYear()
+      month = today.getMonth()
+      day = today.getDate()
+      time = '09:00'
+    }
+
+    const platformColors: Record<string, string> = {
+      TikTok: '#ff0050',
+      Instagram: '#e1306c',
+      Facebook: '#4267B2',
+      X: '#1DA1F2'
+    }
+
+    const firstImage = media.find(m => m.type === 'image')?.url
+    
+    if (isEditMode && editPost) {
+      // Update existing post
+      const platform = activePlatforms[0] || editPost.platform
+      const caption = captionsByPlatform[platform] || editPost.caption
+      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+      
+      updatePost(editPost.id, {
+        title: caption.slice(0, 50) || `Post on ${platform}`,
+        platform,
+        status: 'scheduled',
+        time,
+        day,
+        month,
+        year,
+        color: platformColors[platform] || editPost.color,
+        caption,
+        hashtags,
+        image: firstImage || editPost.image
+      })
+      onToast?.({ message: 'Post updated successfully!', type: 'success' })
+    } else {
+      // Create new posts
+      activePlatforms.forEach(platform => {
+        const platformCaption = captionsByPlatform[platform] || ''
+        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
+        
+        addPost({
+          year,
+          month,
+          day,
+          title: platformCaption.slice(0, 50) || `Post on ${platform}`,
+          platform,
+          status: 'scheduled',
+          time,
+          color: platformColors[platform] || '#888888',
+          caption: platformCaption,
+          hashtags: platformHashtags,
+          image: firstImage
+        })
+      })
+      onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
+    }
+
     localStorage.removeItem('syncra_draft')
     
+    setShowPublishConfirmDialog(false)
     if (createAnother) {
       reset()
     } else {
@@ -270,9 +428,24 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const handleFiles = useCallback((files: FileList | null) => {
     if (!files) return
     Array.from(files).forEach(file => {
-      const url = URL.createObjectURL(file)
       const type = file.type.startsWith('video') ? 'video' : 'image'
-      setMedia(prev => [...prev, { id: shortId(), url, type, name: file.name }])
+      
+      if (type === 'image') {
+        // Convert to base64 for persistence
+        const reader = new FileReader()
+        reader.onload = () => {
+          setMedia(prev => [...prev, { 
+            id: shortId(), 
+            url: reader.result as string, 
+            type, 
+            name: file.name 
+          }])
+        }
+        reader.readAsDataURL(file)
+      } else {
+        const url = URL.createObjectURL(file)
+        setMedia(prev => [...prev, { id: shortId(), url, type, name: file.name }])
+      }
     })
   }, [])
 
@@ -379,18 +552,20 @@ export function useCreatePostState(props: CreatePostModalProps) {
       activePlatforms, activeTab, captionsByPlatform, touched,
       showAI, showPreview, tone, showEmoji, media, dragOver,
       createAnother, scheduleMode, scheduleTime, showUnsavedDialog,
+      showPublishConfirmDialog,
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
-      currentSnapshot
+      currentSnapshot, isEditMode, editPost
     },
     refs,
     actions: {
       setActivePlatforms, setActiveTab, setCaptionsByPlatform, setTouched,
       setShowAI, setShowPreview, setShowEmoji, setMedia, setDragOver,
       setCreateAnother, setScheduleMode, setScheduleTime, setShowUnsavedDialog,
+      setShowPublishConfirmDialog,
       setDragId, setDragOverId, setAiPrompt, setAiResults, setAiIsGenerating,
       setEditingId, setActiveCaption, reset, handleAttemptClose, handleDraft,
-      handleSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
+      handleSchedule, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
       handleDragStart, handleDragOver, handleDropOnThumb, handleDragEnd,
       handleReplaceVideo, handleReplaceFile, handleEditorSave, insertAtCursor,
       handleGenerateAI, applyAISuggestion

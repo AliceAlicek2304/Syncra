@@ -1,4 +1,5 @@
 import type { ToastItem } from '../Toast'
+import type { ScheduledPost } from '../../context/calendarContextBase'
 
 export type Platform = 'TikTok' | 'Instagram' | 'Facebook' | 'X'
 export type Tone = 'default' | 'professional' | 'casual'
@@ -18,6 +19,7 @@ export interface CreatePostModalProps {
   onToast?: (t: Omit<ToastItem, 'id'>) => void
   initialContent?: string | null
   initialDate?: { year: number; month: number; day: number }
+  editPost?: ScheduledPost | null
 }
 
 export const PLATFORMS: { id: Platform; label: string; maxChars: number }[] = [
