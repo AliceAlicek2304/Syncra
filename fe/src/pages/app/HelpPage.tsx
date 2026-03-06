@@ -157,6 +157,7 @@ export default function HelpPage() {
   const [docSearch, setDocSearch] = useState('')
   const [issueForm, setIssueForm] = useState({ title: '', category: '', description: '', severity: 'medium', email: '' })
   const [issueSubmitted, setIssueSubmitted] = useState(false)
+  const [ticketId] = useState(() => Math.floor(Math.random() * 9000) + 1000)
   const [activeDoc, setActiveDoc] = useState<string | null>(null)
 
   const faqCategories = [...new Set(FAQ_ITEMS.map(f => f.category))]
@@ -329,7 +330,7 @@ export default function HelpPage() {
             <div className={styles.successCard}>
               <CheckCircle size={40} className={styles.successIcon} />
               <h2>Báo lỗi đã được gửi!</h2>
-              <p>Ticket ID: <strong>#SYN-{Math.floor(Math.random() * 9000) + 1000}</strong></p>
+               <p>Ticket ID: <strong>#SYN-{ticketId}</strong></p>
               <p>Đội ngũ kỹ thuật Syncra sẽ xem xét và phản hồi trong vòng <strong>24–48 giờ</strong> qua email của bạn.</p>
               <button
                 className={`btn-secondary ${styles.resetBtn}`}
