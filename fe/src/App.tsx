@@ -12,7 +12,6 @@ import Pricing from './components/Pricing'
 import Testimonials from './components/Testimonials'
 import TrustBadges from './components/TrustBadges'
 import Footer from './components/Footer'
-import HeroDemo from './components/HeroDemo'
 
 // App pages
 import { CalendarProvider } from './context/CalendarContext'
@@ -32,7 +31,6 @@ function Homepage() {
     <div style={{ position: 'relative' }}>
       <Navbar />
       <Hero />
-      <HeroDemo />
       <Stats />
       <Features />
       <HowItWorks />

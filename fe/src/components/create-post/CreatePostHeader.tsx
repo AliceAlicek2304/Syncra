@@ -1,5 +1,6 @@
 import { X, Sparkles, Eye } from 'lucide-react'
-import { PLATFORMS, PLATFORM_ICONS, type Platform } from './types'
+import { PLATFORMS, type Platform } from './types'
+import { PlatformIcon } from './platformIcons'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
@@ -26,7 +27,7 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
             className={`${styles.chip} ${CHIP_CLASS[p.id]} ${state.activePlatforms.includes(p.id) ? styles.chipActive : ''}`}
             onClick={() => actions.togglePlatform(p.id)}
           >
-            <span>{PLATFORM_ICONS[p.id]}</span>
+            <span><PlatformIcon platform={p.id} size={14} /></span>
             {p.label}
           </button>
         ))}

@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/refs */
 import { useState, useRef } from 'react'
 import { Smile, Hash, Settings2, X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
-import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, PLATFORM_ICONS, type Platform } from './types'
+import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, type Platform } from './types'
+import { PlatformIcon } from './platformIcons'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
@@ -180,7 +181,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
           <div className={styles.avatarWrap}>
             <div className={styles.avatarBubble}>{state.user?.avatar ?? 'U'}</div>
             <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[state.activeTab]}`}>
-              {PLATFORM_ICONS[state.activeTab]}
+              <PlatformIcon platform={state.activeTab} size={12} />
             </div>
           </div>
           <span className={styles.authorName}>{state.user?.name ?? 'You'}</span>

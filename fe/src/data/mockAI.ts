@@ -23,6 +23,11 @@ export interface AIGenerateInput {
   audience: string
   goal: string
   tone: string
+  files?: {
+    name: string
+    type: 'image' | 'document'
+    caption: string
+  }[]
 }
 
 // Mock responses keyed by tone

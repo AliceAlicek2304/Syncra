@@ -86,3 +86,12 @@ PRESENTATION_GUIDE.md
 .aicodeprep-gui
 fe/.claude/
 fullcode.txt
+CLAUDE.md
+GEMINI.md
+.agent
+.claude
+.github/copilot-instructions.md
+# knowns (ignore entire folder)
+.knowns/
+.mcp.json
+

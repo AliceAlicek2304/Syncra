@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Plus, Clock,
-  MoreHorizontal, CalendarDays, List, LayoutGrid,
-  ChevronDown, X,
+  CalendarDays, List, LayoutGrid,
+  ChevronDown, CheckCircle, Play,
 } from 'lucide-react'
 import { useCalendar } from '../../context/calendarContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
+import { PlatformIcon as ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
 
 // ── Constants ─────────────────────────────────────────
@@ -75,7 +76,7 @@ function getPostKey(year: number, month: number, day: number) {
 }
 
 function getStatusLabel(s: PostStatus) {
-  if (s === 'published') return 'Đã đăng'
+  if (s === 'published') return 'Posted'
   if (s === 'scheduled') return 'Scheduled'
   return 'Draft'
 }
@@ -313,14 +314,14 @@ export default function CalendarPage() {
               className={styles.cardImage}
               onError={() => setImageError(true)}
             />
-          ) : imageError ? (
+            ) : imageError ? (
             // Fallback when image fails to load
             <div className={styles.cardPlaceholderBroken}>
-              <span className={styles.cardPlatformIcon}>{post.platform[0]}</span>
+              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
             </div>
           ) : (
             <div className={styles.cardPlaceholder} style={{ background: gradient }}>
-              <span className={styles.cardPlatformIcon}>{post.platform[0]}</span>
+              <ExtendedPlatformIcon platform={post.platform as any} size={20} />
             </div>
           )}
         </div>
@@ -645,31 +646,57 @@ export default function CalendarPage() {
               {selectedPosts.map(p => (
                 <div
                   key={p.id}
-                  className={styles.postItem}
-                  style={{ borderLeftColor: p.color }}
+                  className={styles.postCard}
+                  onClick={() => handleOpenEditPost(p)}
                 >
-                  <div className={styles.postInfo}>
-                    <span className={styles.postTime}>{p.time}</span>
-                    <span className={styles.postName}>{p.title}</span>
-                    <span className={styles.postPlatform}>{p.platform}</span>
+                  {/* Header: Status + Time */}
+                  <div className={styles.postCardHeader}>
+                    <div className={styles.postCardStatus}>
+                      <CheckCircle size={14} className={styles.postCardStatusIcon} />
+                      <span className={`${styles.postCardStatusText} ${p.status === 'scheduled' ? styles.postCardStatusTextScheduled : ''}`}>
+                        {getStatusLabel(p.status)}
+                      </span>
+                    </div>
+                    <span className={styles.postCardTime}>{p.time}</span>
                   </div>
-                  <div className={styles.postRight}>
-                    <span className={`${styles.postStatus} ${styles[`s_${p.status}`]}`}>
-                      {getStatusLabel(p.status)}
-                    </span>
-                    {!p.isMock ? (
-                      <button
-                        className={styles.moreBtn}
-                        onClick={() => handleOpenEditPost(p)}
-                        title="Edit"
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                    ) : (
-                      <button className={styles.moreBtn} title="Mock post (read-only)" style={{ opacity: 0.3, cursor: 'default' }}>
-                        <MoreHorizontal size={14} />
-                      </button>
-                    )}
+
+                  {/* Body: Thumbnail + Content */}
+                  <div className={styles.postCardBody}>
+                    <div className={styles.postCardThumbnail}>
+                      {p.image ? (
+                        <img src={p.image} alt={p.title} />
+                      ) : (
+                        <div 
+                          className={styles.postCardThumbnailPlaceholder}
+                          style={{ background: p.color }}
+                        >
+                          <ExtendedPlatformIcon platform={p.platform as any} size={18} />
+                        </div>
+                      )}
+                      {/* Video indicator - show for posts that might be videos (YouTube, TikTok) */}
+                      {(p.platform === 'YouTube' || p.platform === 'TikTok') && (
+                        <div className={styles.postCardVideoOverlay}>
+                          <Play size={18} className={styles.postCardVideoIcon} />
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.postCardContent}>
+                      <span className={styles.postCardTitle}>{p.title}</span>
+                      {p.caption && (
+                        <span className={styles.postCardCaption}>{p.caption}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer: Platform icons */}
+                  <div className={styles.postCardFooter}>
+                    <div 
+                      className={styles.postCardPlatformIcon}
+                      style={{ background: p.color }}
+                      title={p.platform}
+                    >
+                      <ExtendedPlatformIcon platform={p.platform as any} size={10} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -684,18 +711,6 @@ export default function CalendarPage() {
       )}
     </div>
   )
-
-  // ── Nav title based on view ────────────────────────
-  const navTitle = (() => {
-    if (viewMode === 'month') return `${MONTHS[month]} ${year}`
-    if (viewMode === 'week') {
-      const first = weekDays[0], last = weekDays[6]
-      if (first.m === last.m) return `${MONTHS[first.m]} ${first.y}`
-      return `${MONTHS[first.m]} – ${MONTHS[last.m]} ${last.y}`
-    }
-    const d = selectedDay ?? today.getDate()
-    return `${DAYS_SHORT[new Date(year, month, d).getDay()]}, ${MONTHS[month]} ${d}`
-  })()
 
   const onPrev = viewMode === 'month' ? prevMonth : viewMode === 'week' ? prevWeek : prevDay
   const onNext = viewMode === 'month' ? nextMonth : viewMode === 'week' ? nextWeek : nextDay

@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Sparkles, X, Check, ChevronRight, ChevronDown } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { Sparkles, X, Check, ChevronRight, ChevronDown, Upload, FileText, Trash2 } from 'lucide-react'
 import { getMockResults } from '../data/mockAI'
 import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
+import { shortId } from '../utils/shortId'
 import styles from './AIIdeaGenerator.module.css'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -15,6 +16,14 @@ interface Props {
     onSelectIdea: (idea: GeneratedIdea) => void
     onClose: () => void
     presetResults?: ContentIdea[]
+}
+
+interface UploadedFile {
+    id: string
+    file: File
+    preview: string
+    caption: string
+    type: 'image' | 'document'
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -44,12 +53,61 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     const [results, setResults] = useState<ContentIdea[]>(presetResults || [])
     const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([])
     const [showAdvanced, setShowAdvanced] = useState(false)
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
+    const [dragOver, setDragOver] = useState(false)
+
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleFiles = useCallback((files: FileList | null) => {
+        if (!files) return
+        Array.from(files).forEach(file => {
+            const isImage = file.type.startsWith('image/')
+            const preview = isImage ? URL.createObjectURL(file) : ''
+            const type = isImage ? 'image' : 'document'
+            setUploadedFiles(prev => [...prev, {
+                id: shortId(),
+                file,
+                preview,
+                caption: '',
+                type
+            }])
+        })
+    }, [])
+
+    const onDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        setDragOver(false)
+        handleFiles(e.dataTransfer.files)
+    }
+
+    const removeFile = (id: string) => {
+        setUploadedFiles(prev => {
+            const item = prev.find(f => f.id === id)
+            if (item?.preview) URL.revokeObjectURL(item.preview)
+            return prev.filter(f => f.id !== id)
+        })
+    }
+
+    const updateCaption = (id: string, caption: string) => {
+        setUploadedFiles(prev => prev.map(f => f.id === id ? { ...f, caption } : f))
+    }
 
     const handleGenerate = () => {
         if (!topic.trim()) return
         setStep('loading')
         setSelectedIdeaIds([])
-        const input: AIGenerateInput = { topic, niche, audience, goal, tone }
+        const input: AIGenerateInput = { 
+            topic, 
+            niche, 
+            audience, 
+            goal, 
+            tone,
+            files: uploadedFiles.length > 0 ? uploadedFiles.map(f => ({
+                name: f.file.name,
+                type: f.type,
+                caption: f.caption
+            })) : undefined
+        }
         setTimeout(() => {
             setResults(getMockResults(input))
             setStep('results')
@@ -108,6 +166,10 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         setGoal('')
         setTone('default')
         setShowAdvanced(false)
+        uploadedFiles.forEach(f => {
+            if (f.preview) URL.revokeObjectURL(f.preview)
+        })
+        setUploadedFiles([])
     }
 
     return (
@@ -149,6 +211,60 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate()
                                 }}
                             />
+
+                            {/* Reference Files Upload */}
+                            <div className={styles.uploadSection}>
+                                <p className={styles.uploadLabel}>Reference files (optional)</p>
+                                <p className={styles.uploadHint}>Upload images or documents to help AI understand your vision better</p>
+                                
+                                {uploadedFiles.length > 0 && (
+                                    <div className={styles.uploadedFiles}>
+                                        {uploadedFiles.map(file => (
+                                            <div key={file.id} className={styles.uploadedFile}>
+                                                {file.type === 'image' ? (
+                                                    <img src={file.preview} alt={file.file.name} className={styles.fileThumb} />
+                                                ) : (
+                                                    <div className={styles.fileThumbDoc}>
+                                                        <FileText size={20} />
+                                                    </div>
+                                                )}
+                                                <div className={styles.fileInfo}>
+                                                    <span className={styles.fileName}>{file.file.name}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className={styles.removeFileBtn}
+                                                    onClick={() => removeFile(file.id)}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div
+                                    className={`${styles.uploadZone} ${dragOver ? styles.uploadZoneDragOver : ''}`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={onDrop}
+                                >
+                                    <Upload size={18} className={styles.uploadIcon} />
+                                    <span className={styles.uploadText}>
+                                        Drag & drop or <span>browse</span>
+                                    </span>
+                                    <span className={styles.uploadFormats}>PNG, JPG, PDF, DOC</span>
+                                </div>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={e => handleFiles(e.target.files)}
+                                />
+                            </div>
 
                             <div className={styles.chipSection}>
                                 <span className={styles.chipLabel}>Tone</span>

@@ -1,6 +1,7 @@
 import { Sparkles, ImageIcon, Search, Heart, MessageCircle, BookMarked, Share2, Music2, ThumbsUp, Repeat2, BarChart2, Settings2 } from 'lucide-react'
 import { Signal, Wifi, Battery, Home, Users, Inbox, User } from 'lucide-react'
-import { PLATFORMS, PLATFORM_ICONS } from './types'
+import { PLATFORMS } from './types'
+import { PlatformIcon } from './platformIcons'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import SchedulePicker from '../SchedulePicker'
 import styles from '../CreatePostModal.module.css'
@@ -16,7 +17,7 @@ export function PlatformTabs({ state, actions }: SidebarProps) {
           className={`${styles.platformTab} ${state.activeTab === p.id ? styles.platformTabActive : ''}`}
           onClick={() => actions.setActiveTab(p.id)}
         >
-          <span>{PLATFORM_ICONS[p.id]}</span>
+          <span><PlatformIcon platform={p.id} size={16} /></span>
           {p.label}
         </button>
       ))}

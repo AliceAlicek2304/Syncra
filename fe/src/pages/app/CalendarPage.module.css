@@ -971,7 +971,156 @@
 .postList {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
+}
+
+/* ── Post Card (New 3-section layout) ─────────────────── */
+.postCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.postCard:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Header: Status + Time (space-between) */
+.postCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.postCardStatus {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.postCardStatusIcon {
+  width: 14px;
+  height: 14px;
+  color: #22c55e;
+}
+
+.postCardStatusText {
+  font-size: 10px;
+  font-weight: 700;
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.postCardStatusTextScheduled {
+  color: #eab308;
+}
+
+.postCardTime {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Body: Thumbnail + Content (flex row) */
+.postCardBody {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.postCardThumbnail {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  background: rgba(0,0,0,0.2);
+}
+
+.postCardThumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.postCardThumbnailPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.postCardThumbnailIcon {
+  font-size: 18px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.9);
+}
+
+.postCardVideoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+}
+
+.postCardVideoIcon {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
+
+.postCardContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.postCardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.postCardCaption {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+/* Footer: Platform icons */
+.postCardFooter {
+  display: flex;
+  gap: 6px;
+}
+
+.postCardPlatformIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
 .postItem {
