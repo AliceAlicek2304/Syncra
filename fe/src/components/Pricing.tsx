@@ -21,7 +21,7 @@ const PLANS = [
   {
     name: 'Pro',
     icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
-    price: { monthly: 199, yearly: 159 },
+    price: { monthly: 149, yearly: 119 },
     desc: 'For serious content creators.',
     features: [
       'Up to 10 connected platforms',
@@ -39,7 +39,7 @@ const PLANS = [
   {
     name: 'Max',
     icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
-    price: { monthly: 299, yearly: 249 },
+    price: { monthly: 199, yearly: 159 },
     desc: 'For teams & power creators.',
     features: [
       'Everything in Pro',
