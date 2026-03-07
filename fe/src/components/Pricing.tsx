@@ -1,11 +1,12 @@
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import styles from './Pricing.module.css'
+import logo from '../assets/syncra-logo.png'
 
 const PLANS = [
   {
     name: 'Basic',
-    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 99, yearly: 79 },
     desc: 'Perfect for testing the platform.',
     features: [
@@ -20,7 +21,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 149, yearly: 119 },
     desc: 'For serious content creators.',
     features: [
@@ -38,7 +39,7 @@ const PLANS = [
   },
   {
     name: 'Max',
-    icon: <img src="./syncra-logo.png" alt="Syncra" style={{ width: 30, height: 30}} />,
+    icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 199, yearly: 159 },
     desc: 'For teams & power creators.',
     features: [
