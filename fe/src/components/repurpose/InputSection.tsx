@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { FileText, Link2, Upload, Trash2, ClipboardPaste, File, X } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import styles from './RepurposeComponents.module.css'
@@ -50,12 +50,12 @@ export default function InputSection() {
         e.target.value = ''
     }
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault()
         setIsDragging(false)
         const file = e.dataTransfer.files[0]
         if (file) readFileAsText(file)
-    }, [])
+    }
 
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
     const handleDragLeave = () => setIsDragging(false)
