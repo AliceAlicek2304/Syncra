@@ -23,4 +23,13 @@ public class WorkspaceRepository : Repository<Workspace>, IWorkspaceRepository
             .ThenInclude(om => om.User)
             .FirstOrDefaultAsync(o => o.Slug == slug);
     }
+
+    public async Task<IEnumerable<Workspace>> GetByUserIdAsync(Guid userId)
+    {
+        return await _context.WorkspaceMembers
+            .Where(m => m.UserId == userId)
+            .Include(m => m.Workspace)
+            .Select(m => m.Workspace)
+            .ToListAsync();
+    }
 }
