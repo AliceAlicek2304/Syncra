@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Syncra.Application.Repositories;
+using Syncra.Domain.Entities;
 using Syncra.Domain.Interfaces;
 using Syncra.Infrastructure.Social;
 
@@ -15,10 +18,17 @@ namespace Syncra.Api.Controllers;
 public class IntegrationsController : ControllerBase
 {
     private readonly IProviderRegistry _providerRegistry;
+    private readonly IIntegrationRepository _integrationRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public IntegrationsController(IProviderRegistry providerRegistry)
+    public IntegrationsController(
+        IProviderRegistry providerRegistry,
+        IIntegrationRepository integrationRepository,
+        IUnitOfWork unitOfWork)
     {
         _providerRegistry = providerRegistry;
+        _integrationRepository = integrationRepository;
+        _unitOfWork = unitOfWork;
     }
 
     /// <summary>
@@ -53,18 +63,26 @@ public class IntegrationsController : ControllerBase
     /// GET /api/v1/workspaces/{workspaceId}/integrations/{providerId}/callback
     /// Handles the OAuth callback from the provider and exchanges the code for tokens.
     /// </summary>
+    [AllowAnonymous]
     [HttpGet("{providerId}/callback")]
     public async Task<IActionResult> Callback(
         Guid workspaceId, 
         string providerId, 
         [FromQuery] string code, 
         [FromQuery] string state,
-        [FromQuery] string redirectUri,
-        CancellationToken cancellationToken)
+        [FromQuery] string? redirectUri = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             var provider = _providerRegistry.GetProvider(providerId);
+
+            // Reconstruct redirectUri if not provided (OAuth providers don't send it back in query string)
+            if (string.IsNullOrEmpty(redirectUri))
+            {
+                var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+                redirectUri = $"{scheme}://{Request.Host}{Request.Path}";
+            }
             
             // Basic state validation
             if (string.IsNullOrEmpty(state) || !state.Contains($"workspaceId={workspaceId}"))
@@ -79,12 +97,42 @@ public class IntegrationsController : ControllerBase
                 return BadRequest(new { error = result.Error });
             }
 
-            // Phase 01: Return summary. Phase 03 will handle token persistence securely.
+            var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
+            if (integration == null)
+            {
+                integration = new Integration
+                {
+                    WorkspaceId = workspaceId,
+                    Platform = providerId,
+                    ExternalAccountId = result.ExternalUserId,
+                    AccessToken = result.AccessToken,
+                    RefreshToken = result.RefreshToken,
+                    ExpiresAtUtc = result.ExpiresAt?.UtcDateTime,
+                    IsActive = true,
+                    Metadata = JsonSerializer.Serialize(result.Metadata)
+                };
+                await _integrationRepository.AddAsync(integration);
+            }
+            else
+            {
+                integration.ExternalAccountId = result.ExternalUserId ?? integration.ExternalAccountId;
+                integration.AccessToken = result.AccessToken ?? integration.AccessToken;
+                integration.RefreshToken = result.RefreshToken ?? integration.RefreshToken;
+                integration.ExpiresAtUtc = result.ExpiresAt?.UtcDateTime ?? integration.ExpiresAtUtc;
+                integration.IsActive = true;
+                integration.Metadata = JsonSerializer.Serialize(result.Metadata);
+                await _integrationRepository.UpdateAsync(integration);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Phase 03: Token persisted.
             return Ok(new 
             { 
                 message = "Successfully connected",
                 integration = new
                 {
+                    id = integration.Id,
                     workspaceId,
                     providerId,
                     externalUserId = result.ExternalUserId,
@@ -107,14 +155,10 @@ public class IntegrationsController : ControllerBase
     /// Lists all active integrations for a workspace.
     /// </summary>
     [HttpGet]
-    public IActionResult List(Guid workspaceId)
+    public async Task<IActionResult> List(Guid workspaceId)
     {
-        // Phase 01: Skeleton implementation. Will be implemented in Phase 03.
-        return Ok(new 
-        { 
-            message = "List of integrations for workspace (Not Implemented)", 
-            workspaceId 
-        });
+        var integrations = await _integrationRepository.GetByWorkspaceIdAsync(workspaceId);
+        return Ok(integrations);
     }
 
     /// <summary>
@@ -122,12 +166,24 @@ public class IntegrationsController : ControllerBase
     /// Disconnects a specific provider from the workspace.
     /// </summary>
     [HttpDelete("{providerId}")]
-    public IActionResult Disconnect(Guid workspaceId, string providerId)
+    public async Task<IActionResult> Disconnect(Guid workspaceId, string providerId, CancellationToken cancellationToken)
     {
-        // Phase 01: Skeleton implementation. Will be implemented in Phase 03.
+        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
+        if (integration == null)
+        {
+            return NotFound(new { error = "Integration not found for this provider." });
+        }
+
+        integration.IsActive = false;
+        integration.AccessToken = null;
+        integration.RefreshToken = null;
+
+        await _integrationRepository.UpdateAsync(integration);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return Ok(new 
         { 
-            message = "Disconnected successfully (Not Implemented)", 
+            message = "Disconnected successfully", 
             workspaceId, 
             providerId 
         });

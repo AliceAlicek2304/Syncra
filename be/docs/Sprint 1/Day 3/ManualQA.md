@@ -13,8 +13,8 @@ This document outlines the steps to verify the local OAuth flows for X (Twitter)
 
 ## Testing the OAuth Connect Flow
 1. **Initialize Connect:**
-   - Make a `GET` request to `/api/v1/workspaces/{workspaceId}/integrations/{providerId}/connect`.
-   - Provide `Authorization: Bearer <token>` and `X-Workspace-Id: <workspaceId>`.
+   - Make a `POST` request to `/api/v1/workspaces/{workspaceId}/integrations/{providerId}/connect`.
+   - Provide `Authorization: Bearer <token>` and `X-Workspace-Id: <workspaceId>`. 
    - Observe the 302 Redirect, or copy the `url` from the JSON response if the client prevents auto-redirects.
 
 2. **Authenticate with Provider:**

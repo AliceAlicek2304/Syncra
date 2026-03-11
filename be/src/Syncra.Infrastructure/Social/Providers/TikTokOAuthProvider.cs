@@ -24,7 +24,7 @@ public class TikTokOAuthProvider : ISocialProvider
     public string GetAuthorizationUrl(string state, string redirectUri)
     {
         var authUrl = "https://www.tiktok.com/v2/auth/authorize/";
-        var scopes = "user.info.basic video.list";
+        var scopes = "user.info.basic,video.list";
         
         return $"{authUrl}?client_key={_options.ClientId}&response_type=code&scope={Uri.EscapeDataString(scopes)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&state={Uri.EscapeDataString(state)}";
     }
