@@ -77,6 +77,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseMiddleware<TenantResolutionMiddleware>();
+
 app.MapControllers();
 app.MapHealthChecks("/health");
 
