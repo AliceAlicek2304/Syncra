@@ -20,12 +20,12 @@ Hoan tat auth API-first va tenant isolation theo organization de Day 3 co the ba
 
 ## 4. Workboard
 
-- [ ] D2-T01 Define auth contracts, DTOs, token payload, password policy
-- [ ] D2-T02 Implement register and login services plus controller endpoints
-- [ ] D2-T03 Implement refresh token persistence, rotation, and logout
-- [ ] D2-T04 Implement organization, membership, and role model
-- [ ] D2-T05 Add current organization endpoint and request organization resolver
-- [ ] D2-T06 Add auth and tenant isolation tests
+- [x] D2-T01 Define auth contracts, DTOs, token payload, password policy
+- [x] D2-T02 Implement register and login services plus controller endpoints
+- [x] D2-T03 Implement refresh token persistence, rotation, and logout
+- [x] D2-T04 Implement organization, membership, and role model
+- [x] D2-T05 Add current organization endpoint and request organization resolver
+- [x] D2-T06 Add auth and tenant isolation tests
 
 ## 5. Engineering tasks chi tiet
 

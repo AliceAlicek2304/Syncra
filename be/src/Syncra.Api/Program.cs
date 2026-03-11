@@ -27,11 +27,43 @@ builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+builder.Services.AddScoped<Syncra.Api.Filters.IdempotencyFilter>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Syncra API", Version = "v1" });
+
+    // 1. Add JWT Authentication support
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Chỉ cần dán Token vào đây (Hệ thống sẽ tự thêm tiền tố Bearer)"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    // 2. Add X-Workspace-Id support to all endpoints (optional but helpful)
+    c.OperationFilter<Syncra.Api.SwaggerFilters.WorkspaceHeaderFilter>();
+    
+    // 3. Add Idempotency-Key support for mutating endpoints
+    c.OperationFilter<Syncra.Api.SwaggerFilters.IdempotencyHeaderFilter>();
 });
 
 builder.Services.AddAuthentication(options =>

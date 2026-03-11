@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Syncra.Infrastructure.Persistence;
+using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
 using Syncra.Application.Repositories;
 using Syncra.Application.Options;
+using Syncra.Infrastructure.Social;
 
 namespace Syncra.Infrastructure;
 
@@ -15,8 +18,14 @@ public static class DependencyInjection
         var postgresOptions = configuration.GetSection(PostgresOptions.SectionName).Get<PostgresOptions>() 
             ?? new PostgresOptions();
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(postgresOptions.ConnectionString));
+        services.AddHttpContextAccessor();
+        services.AddScoped<AuditInterceptor>();
+
+        services.AddDbContext<AppDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(postgresOptions.ConnectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
+        });
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUserRepository, UserRepository>();
@@ -26,6 +35,8 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
+
+        services.AddSocialIntegrations(configuration);
 
         return services;
     }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Syncra.Api.Filters;
 using Syncra.Application.DTOs;
 using Syncra.Application.Repositories;
 using Syncra.Domain.Entities;
@@ -30,6 +31,7 @@ public class WorkspacesController : ControllerBase
     /// Creates a new workspace and assigns the creator as its Owner.
     /// </summary>
     [HttpPost]
+    [ServiceFilter(typeof(IdempotencyFilter))]
     public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceDto dto)
     {
         if (!ModelState.IsValid)

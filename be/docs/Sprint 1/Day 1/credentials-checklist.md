@@ -16,7 +16,7 @@ This document tracks all external credentials and integrations required for Sync
 | **Purpose** | Primary database for application data |
 | **Owner** | Tech Lead |
 | **Due Date** | Day 1 |
-| **Status** | Pending |
+| **Status** | ✅ Done |
 | **Connection** | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DATABASE`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` |
 | **Fallback Plan** | Docker local PostgreSQL container via docker-compose |
 
@@ -40,7 +40,7 @@ This document tracks all external credentials and integrations required for Sync
 | **Purpose** | Token generation for user authentication |
 | **Owner** | Dev A |
 | **Due Date** | Day 1 |
-| **Status** | Pending |
+| **Status** | ✅ Done |
 | **Environment** | `JWT_SECRET` |
 | **Fallback Plan** | Use placeholder for local dev (NOT for production) |
 
@@ -111,9 +111,9 @@ This document tracks all external credentials and integrations required for Sync
 
 | Credential | Owner | Due Date | Status | Critical Day 2 |
 |------------|-------|----------|--------|----------------|
-| PostgreSQL | Tech Lead | Day 1 | Pending | Yes |
+| PostgreSQL | Tech Lead | Day 1 | ✅ Done | Yes |
 | Redis | Tech Lead | Day 2 | Mock/Fallback | No |
-| JWT Secret | Dev A | Day 1 | Pending | Yes |
+| JWT Secret | Dev A | Day 1 | ✅ Done | Yes |
 | Sentry | Tech Lead | Day 3 | Mock/Fallback | No |
 | Stripe | Tech Lead | Sprint 2 | Mock/Fallback | No |
 | X OAuth | Dev A | Sprint 2 | Pending | No |
@@ -125,8 +125,8 @@ This document tracks all external credentials and integrations required for Sync
 ## Action Items
 
 1. **Day 1 Critical:**
-   - [ ] Set up local PostgreSQL (Docker or local install)
-   - [ ] Generate JWT secret for local development
+   - [x] Set up local PostgreSQL (Docker or local install)
+   - [x] Generate JWT secret for local development
 
 2. **Day 2 Blockers to Avoid:**
    - [ ] Ensure PostgreSQL is running and accessible
