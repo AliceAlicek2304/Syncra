@@ -1,13 +1,15 @@
 # ===========================
 # Node / npm
 # ===========================
-node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 .yarn/
+node_modules/
+dist/
+build/
 
 # ===========================
 # Vite / Build outputs
@@ -25,15 +27,18 @@ dist-ssr/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
 
 # ===========================
 # Editor / IDE
 # ===========================
-.vscode/settings.json
-.vscode/launch.json
-.vscode/tasks.json
-.idea/
+.vscode/
+.vs/
+*.user
 *.suo
+*.userosscache
+*.sln.docstates
+.idea/
 *.ntvs*
 *.njsproj
 *.sln
@@ -75,10 +80,9 @@ AGENTS.md
 # OS
 # ===========================
 .DS_Store
+Thumbs.db
 ehthumbs.db
 Desktop.ini
-.allcode
-PRESENTATION_GUIDE.md
 
 # ===========================
 # AI / Code helpers (do not commit)
@@ -90,8 +94,33 @@ CLAUDE.md
 GEMINI.md
 .agent
 .claude
+.aider*
 .github/copilot-instructions.md
+.planning/
+.kilocode
+.specify
+specs/
+
 # knowns (ignore entire folder)
 .knowns/
 .mcp.json
+
+# .NET build artifacts
+bin/
+obj/
+out/
+
+#log
+*.log
+logs/
+build_errors.txt
+build_output.txt
+
+# ASP.NET secrets
+secrets.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.json
+
+
 
