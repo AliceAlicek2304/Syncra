@@ -37,6 +37,7 @@ public class IntegrationConfiguration : BaseWorkspaceEntityConfiguration<Integra
         builder.Property(e => e.RefreshToken).HasColumnName("refresh_token");
         builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
         builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
+        builder.Property(e => e.Metadata).HasColumnType("jsonb").HasColumnName("metadata");
     }
 }
 
