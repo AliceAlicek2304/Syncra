@@ -10,9 +10,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<IProviderRegistry, ProviderRegistry>();
         
-        // Register specific ISocialProvider implementations here later
+        // Register specific ISocialProvider implementations
         services.AddHttpClient<ISocialProvider, Providers.XOAuthProvider>();
         services.AddHttpClient<ISocialProvider, Providers.TikTokOAuthProvider>();
+        services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>();
         
         return services;
     }
