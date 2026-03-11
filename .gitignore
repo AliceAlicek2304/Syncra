@@ -115,6 +115,7 @@ out/
 logs/
 build_errors.txt
 build_output.txt
+build_errors_utf8.txt
 
 # ASP.NET secrets
 secrets.json
