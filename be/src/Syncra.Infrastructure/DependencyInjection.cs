@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationRepository, IntegrationRepository>();
         services.AddScoped<IMediaRepository, MediaRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
         services.AddScoped<IntegrationTokenRefreshJob>();
