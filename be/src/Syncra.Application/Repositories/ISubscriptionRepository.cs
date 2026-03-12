@@ -12,4 +12,6 @@ public interface ISubscriptionRepository : IRepository<Subscription>
     /// - Returns null if no subscription exists for the workspace
     /// </summary>
     Task<Subscription?> GetCurrentForWorkspaceAsync(Guid workspaceId);
+    Task<Subscription> GetByWorkspaceIdAsync(Guid workspaceId);
+    Task<Subscription> GetByStripeSubscriptionIdAsync(string stripeSubscriptionId);
 }
