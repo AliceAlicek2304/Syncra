@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hangfire.Core" Version="1.8.14" />
     <ProjectReference Include="..\Syncra.Application\Syncra.Application.csproj" />
     <ProjectReference Include="..\Syncra.Domain\Syncra.Domain.csproj" />
     <ProjectReference Include="..\Syncra.Shared\Syncra.Shared.csproj" />

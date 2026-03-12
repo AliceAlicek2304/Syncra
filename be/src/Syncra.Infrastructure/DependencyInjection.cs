@@ -8,6 +8,7 @@ using Syncra.Infrastructure.Repositories;
 using Syncra.Application.Repositories;
 using Syncra.Application.Options;
 using Syncra.Infrastructure.Social;
+using Syncra.Infrastructure.Jobs;
 
 namespace Syncra.Infrastructure;
 
@@ -35,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
+        services.AddScoped<IntegrationTokenRefreshJob>();
+        services.AddScoped<IIntegrationTokenRefreshJobScheduler, IntegrationTokenRefreshJobScheduler>();
 
         services.AddSocialIntegrations(configuration);
 

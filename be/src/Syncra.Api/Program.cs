@@ -4,10 +4,13 @@ using Syncra.Application.Options;
 using Syncra.Application;
 using Syncra.Api.Middleware;
 using Syncra.Infrastructure;
+using Syncra.Infrastructure.Jobs;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +29,17 @@ builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+builder.Services.AddHangfire(configuration =>
+{
+    configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(postgresOptions.ConnectionString);
+});
+
+builder.Services.AddHangfireServer();
 
 builder.Services.AddScoped<Syncra.Api.Filters.IdempotencyFilter>();
 builder.Services.AddControllers();
@@ -102,6 +116,8 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Syncra API v1");
         c.RoutePrefix = "swagger";
     });
+
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseRouting();
@@ -113,5 +129,11 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+using (var scope = app.Services.CreateScope())
+{
+    var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
+    scheduler.ScheduleRecurringJob();
+}
 
 app.Run();

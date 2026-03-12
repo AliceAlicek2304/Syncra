@@ -19,10 +19,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Hangfire.Core" Version="1.8.14" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Syncra.Application\Syncra.Application.csproj" />
+    <ProjectReference Include="..\..\src\Syncra.Infrastructure\Syncra.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Syncra.Domain\Syncra.Domain.csproj" />
   </ItemGroup>
 
