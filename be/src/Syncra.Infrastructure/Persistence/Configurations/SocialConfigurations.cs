@@ -76,18 +76,23 @@ public class IntegrationConfiguration : BaseWorkspaceEntityConfiguration<Integra
     }
 }
 
-public class MediaConfiguration : BaseEntityConfiguration<Media>
+public class MediaConfiguration : BaseWorkspaceEntityConfiguration<Media>
 {
     public override void Configure(EntityTypeBuilder<Media> builder)
     {
         base.Configure(builder);
         builder.ToTable("media");
 
-        builder.Property(e => e.PostId).HasColumnName("post_id");
+        builder.Property(e => e.PostId).HasColumnName("post_id").IsRequired(false);
         builder.Property(e => e.FileName).IsRequired().HasMaxLength(500).HasColumnName("file_name");
         builder.Property(e => e.FileUrl).IsRequired().HasMaxLength(1000).HasColumnName("file_url");
         builder.Property(e => e.MediaType).IsRequired().HasMaxLength(50).HasColumnName("media_type");
         builder.Property(e => e.MimeType).IsRequired().HasMaxLength(100).HasColumnName("mime_type");
         builder.Property(e => e.SizeBytes).HasColumnName("size_bytes");
+
+        builder.HasOne(e => e.Workspace)
+            .WithMany()
+            .HasForeignKey(e => e.WorkspaceId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

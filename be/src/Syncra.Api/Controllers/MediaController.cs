@@ -8,6 +8,9 @@ using Syncra.Application.Options;
 using Microsoft.Extensions.Options;
 using Syncra.Application.Interfaces;
 
+using Syncra.Application.Repositories;
+using Syncra.Domain.Entities;
+
 namespace Syncra.Api.Controllers;
 
 [Authorize]
@@ -16,11 +19,19 @@ namespace Syncra.Api.Controllers;
 public class MediaController : ControllerBase
 {
     private readonly IStorageService _storageService;
+    private readonly IMediaRepository _mediaRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly MediaOptions _mediaOptions;
 
-    public MediaController(IStorageService storageService, IOptions<MediaOptions> mediaOptions)
+    public MediaController(
+        IStorageService storageService, 
+        IMediaRepository mediaRepository,
+        IUnitOfWork unitOfWork,
+        IOptions<MediaOptions> mediaOptions)
     {
         _storageService = storageService;
+        _mediaRepository = mediaRepository;
+        _unitOfWork = unitOfWork;
         _mediaOptions = mediaOptions.Value;
     }
 
@@ -43,8 +54,65 @@ public class MediaController : ControllerBase
         }
 
         await using var stream = file.OpenReadStream();
-        var result = await _storageService.SaveAsync(stream, file.FileName, file.ContentType);
+        var storageResult = await _storageService.SaveAsync(stream, file.FileName, file.ContentType);
 
-        return Ok(result);
+        var media = new Media
+        {
+            WorkspaceId = workspaceId,
+            FileName = file.FileName,
+            FileUrl = storageResult.PublicUrl,
+            MimeType = file.ContentType,
+            SizeBytes = file.Length,
+            MediaType = file.ContentType.StartsWith("image/") ? "image" : "video" // Simple logic for now
+        };
+
+        await _mediaRepository.AddAsync(media);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new
+        {
+            media.Id,
+            media.FileName,
+            media.FileUrl,
+            media.MediaType,
+            media.MimeType,
+            media.SizeBytes
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> List(
+        Guid workspaceId,
+        [FromQuery] string? mediaType,
+        [FromQuery] bool? isAttached,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var (items, totalCount) = await _mediaRepository.GetByWorkspaceIdAsync(
+            workspaceId,
+            mediaType,
+            isAttached,
+            page,
+            pageSize,
+            cancellationToken);
+
+        return Ok(new
+        {
+            Items = items.Select(m => new
+            {
+                m.Id,
+                m.FileName,
+                m.FileUrl,
+                m.MediaType,
+                m.MimeType,
+                m.SizeBytes,
+                m.PostId,
+                m.CreatedAtUtc
+            }),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 }
