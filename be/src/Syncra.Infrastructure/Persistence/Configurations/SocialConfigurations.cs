@@ -12,10 +12,21 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         builder.ToTable("posts");
 
         builder.Property(e => e.UserId).HasColumnName("user_id");
+        builder.Property(e => e.Title).IsRequired().HasMaxLength(200).HasColumnName("title");
         builder.Property(e => e.Content).IsRequired().HasColumnName("content");
-        builder.Property(e => e.Status).IsRequired().HasMaxLength(50).HasColumnName("status");
+        builder.Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50)
+            .HasConversion<string>()
+            .HasColumnName("status");
         builder.Property(e => e.ScheduledAtUtc).HasColumnName("scheduled_at_utc");
         builder.Property(e => e.PublishedAtUtc).HasColumnName("published_at_utc");
+        builder.Property(e => e.IntegrationId).HasColumnName("integration_id");
+
+        builder.HasOne(e => e.Integration)
+            .WithMany()
+            .HasForeignKey(e => e.IntegrationId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(e => e.Media)
             .WithOne(m => m.Post)
