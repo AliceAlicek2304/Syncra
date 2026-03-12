@@ -5,7 +5,7 @@ using Syncra.Infrastructure.Persistence;
 
 namespace Syncra.Infrastructure.Repositories;
 
-public class Repository<T> : IRepository<T> where T : class
+public class Repository<T> : IRepository<T> where T : EntityBase
 {
     protected readonly AppDbContext _context;
     protected readonly DbSet<T> _dbSet;
@@ -19,6 +19,11 @@ public class Repository<T> : IRepository<T> where T : class
     public virtual async Task<T?> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);
+    }
+
+    public virtual async Task<IReadOnlyList<T>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
+    {
+        return await _dbSet.Where(e => ids.Contains(e.Id)).ToListAsync();
     }
 
     public virtual async Task<IEnumerable<T>> GetAllAsync()

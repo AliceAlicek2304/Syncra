@@ -12,13 +12,14 @@ namespace Syncra.UnitTests.Application;
 public class PostServiceTests
 {
     private readonly Mock<IPostRepository> _postRepositoryMock = new();
+    private readonly Mock<IMediaRepository> _mediaRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly Mock<IPublishService> _publishServiceMock = new();
 
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
 
-    private PostService CreateService() => new(_postRepositoryMock.Object, _unitOfWorkMock.Object, _publishServiceMock.Object);
+    private PostService CreateService() => new(_postRepositoryMock.Object, _mediaRepositoryMock.Object, _unitOfWorkMock.Object, _publishServiceMock.Object);
 
     [Fact]
     public async Task CreatePostAsync_ShouldCreateDraftPost_WhenNoSchedule()
@@ -192,6 +193,89 @@ public class PostServiceTests
         Assert.True(result);
         _postRepositoryMock.Verify(r => r.DeleteAsync(postId), Times.Once);
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePostAsync_WithValidMediaIds_ShouldAttachMedia()
+    {
+        // Arrange
+        var mediaId1 = Guid.NewGuid();
+        var mediaId2 = Guid.NewGuid();
+        var mediaIds = new[] { mediaId1, mediaId2 };
+
+        var dto = new CreatePostDto("Title", "Content", null, null, mediaIds);
+
+        var mediaItems = new List<Media>
+        {
+            new() { Id = mediaId1, WorkspaceId = _workspaceId },
+            new() { Id = mediaId2, WorkspaceId = _workspaceId }
+        };
+
+        _mediaRepositoryMock.Setup(r => r.GetByIdsAsync(mediaIds)).ReturnsAsync(mediaItems);
+
+        Post? addedPost = null;
+        _postRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Post>()))
+                         .Callback<Post>(p => addedPost = p);
+
+        var sut = CreateService();
+
+        // Act
+        var result = await sut.CreatePostAsync(_workspaceId, _userId, dto);
+
+        // Assert
+        Assert.NotNull(addedPost);
+        Assert.Equal(2, addedPost.Media.Count);
+        Assert.Contains(addedPost.Media, m => m.Id == mediaId1);
+        Assert.Equal(2, result.MediaIds.Count);
+    }
+
+    [Fact]
+    public async Task UpdatePostAsync_WithMediaIds_ShouldReplaceMedia()
+    {
+        // Arrange
+        var postId = Guid.NewGuid();
+        var initialMediaId = Guid.NewGuid();
+        var post = new Post
+        {
+            Id = postId,
+            WorkspaceId = _workspaceId,
+            Media = new List<Media> { new() { Id = initialMediaId, WorkspaceId = _workspaceId, PostId = postId } }
+        };
+
+        _postRepositoryMock.Setup(r => r.GetByIdAsync(postId)).ReturnsAsync(post);
+
+        var newMediaId = Guid.NewGuid();
+        var dto = new UpdatePostDto("T", "C", null, null, null, new[] { newMediaId });
+
+        var newMediaItems = new List<Media> { new() { Id = newMediaId, WorkspaceId = _workspaceId } };
+        _mediaRepositoryMock.Setup(r => r.GetByIdsAsync(new[] { newMediaId })).ReturnsAsync(newMediaItems);
+
+        var sut = CreateService();
+
+        // Act
+        await sut.UpdatePostAsync(_workspaceId, postId, _userId, dto);
+
+        // Assert
+        Assert.Equal(1, post.Media.Count);
+        Assert.Equal(newMediaId, post.Media.First().Id);
+        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePostAsync_WithInvalidMediaId_ShouldThrowException()
+    {
+        // Arrange
+        var mediaId = Guid.NewGuid();
+        var dto = new CreatePostDto("T", "C", null, null, new[] { mediaId });
+
+        // Media from another workspace
+        var mediaItems = new List<Media> { new() { Id = mediaId, WorkspaceId = Guid.NewGuid() } };
+        _mediaRepositoryMock.Setup(r => r.GetByIdsAsync(new[] { mediaId })).ReturnsAsync(mediaItems);
+
+        var sut = CreateService();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.CreatePostAsync(_workspaceId, _userId, dto));
     }
 }
 

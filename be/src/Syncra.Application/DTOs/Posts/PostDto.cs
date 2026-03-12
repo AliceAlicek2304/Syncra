@@ -9,6 +9,7 @@ public record PostDto(
     string Status,
     DateTime? ScheduledAtUtc,
     DateTime? PublishedAtUtc,
-    Guid? IntegrationId
+    Guid? IntegrationId,
+    IReadOnlyCollection<Guid> MediaIds
 );
 

@@ -9,15 +9,18 @@ namespace Syncra.Application.Services;
 public sealed class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
+    private readonly IMediaRepository _mediaRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublishService _publishService;
 
     public PostService(
         IPostRepository postRepository,
+        IMediaRepository mediaRepository,
         IUnitOfWork unitOfWork,
         IPublishService publishService)
     {
         _postRepository = postRepository;
+        _mediaRepository = mediaRepository;
         _unitOfWork = unitOfWork;
         _publishService = publishService;
     }
@@ -42,6 +45,20 @@ public sealed class PostService : IPostService
                 : PostStatus.Draft,
             IntegrationId = dto.IntegrationId
         };
+
+        if (dto.MediaIds != null && dto.MediaIds.Any())
+        {
+            var mediaItems = await _mediaRepository.GetByIdsAsync(dto.MediaIds);
+            foreach (var media in mediaItems)
+            {
+                if (media.WorkspaceId != workspaceId || media.PostId.HasValue)
+                {
+                    // Or throw a more specific exception
+                    throw new InvalidOperationException("Invalid media item.");
+                }
+                post.Media.Add(media);
+            }
+        }
 
         await _postRepository.AddAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -129,6 +146,21 @@ public sealed class PostService : IPostService
             post.Status = PostStatusTransitions.ApplyTransition(post.Status, newStatus);
         }
 
+        if (dto.MediaIds != null)
+        {
+            post.Media.Clear();
+            var mediaItems = await _mediaRepository.GetByIdsAsync(dto.MediaIds);
+            foreach (var media in mediaItems)
+            {
+                if (media.WorkspaceId != workspaceId || (media.PostId.HasValue && media.PostId != post.Id))
+                {
+                    // Or throw a more specific exception
+                    throw new InvalidOperationException("Invalid media item.");
+                }
+                post.Media.Add(media);
+            }
+        }
+
         await _postRepository.UpdateAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -184,6 +216,7 @@ public sealed class PostService : IPostService
             post.Status.ToString(),
             post.ScheduledAtUtc,
             post.PublishedAtUtc,
-            post.IntegrationId);
+            post.IntegrationId,
+            post.Media.Select(m => m.Id).ToList());
 }
 
