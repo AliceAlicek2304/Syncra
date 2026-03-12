@@ -1,0 +1,227 @@
+using System.Text.Json;
+using Syncra.Application.DTOs.Posts;
+using Syncra.Application.Interfaces;
+using Syncra.Application.Repositories;
+using Syncra.Domain.Entities;
+using Syncra.Domain.Enums;
+using Syncra.Domain.Interfaces;
+using Syncra.Domain.Models.Social;
+
+namespace Syncra.Application.Services;
+
+public sealed class PublishService : IPublishService
+{
+    private readonly IPostRepository _postRepository;
+    private readonly IIntegrationRepository _integrationRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IReadOnlyList<ISocialProvider> _providers;
+
+    public PublishService(
+        IPostRepository postRepository,
+        IIntegrationRepository integrationRepository,
+        IUnitOfWork unitOfWork,
+        IEnumerable<ISocialProvider> providers)
+    {
+        _postRepository = postRepository;
+        _integrationRepository = integrationRepository;
+        _unitOfWork = unitOfWork;
+        _providers = providers.ToList();
+    }
+
+    public async Task<PublishResultDto> PublishAsync(
+        Guid workspaceId,
+        Guid postId,
+        Guid userId,
+        bool dryRun = false,
+        CancellationToken cancellationToken = default)
+    {
+        var post = await _postRepository.GetByIdAsync(postId);
+        if (post is null || post.WorkspaceId != workspaceId)
+        {
+            throw new InvalidOperationException("Post not found in the specified workspace.");
+        }
+
+        if (PostStatusTransitions.IsTerminal(post.Status))
+        {
+            return MapFromPost(post, post.Status == PostStatus.Published);
+        }
+
+        if (post.Status == PostStatus.Publishing)
+        {
+            return MapFromPost(post, post.Status == PostStatus.Published);
+        }
+
+        if (post.Status is not PostStatus.Draft and not PostStatus.Scheduled)
+        {
+            throw new InvalidOperationException($"Post in status '{post.Status}' cannot be published.");
+        }
+
+        if (post.IntegrationId is null)
+        {
+            throw new InvalidOperationException("Post does not have an integration configured.");
+        }
+
+        if (post.ScheduledAtUtc.HasValue && post.ScheduledAtUtc.Value > DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Post is scheduled for the future and cannot be published immediately.");
+        }
+
+        var integration = post.Integration;
+        if (integration is null)
+        {
+            integration = await _integrationRepository.GetByIdAsync(post.IntegrationId.Value)
+                           ?? throw new InvalidOperationException("Integration not found.");
+            post.Integration = integration;
+        }
+
+        if (!integration.IsActive)
+        {
+            throw new InvalidOperationException("Integration is not active.");
+        }
+
+        if (string.IsNullOrWhiteSpace(integration.AccessToken))
+        {
+            throw new InvalidOperationException("Integration access token is missing.");
+        }
+
+        if (dryRun)
+        {
+            return MapFromPost(post, success: post.Status == PostStatus.Published);
+        }
+
+        var utcNow = DateTime.UtcNow;
+
+        post.Status = PostStatusTransitions.ApplyTransition(post.Status, PostStatus.Publishing);
+        post.MarkPublishAttempt(utcNow);
+        await _postRepository.UpdateAsync(post);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var provider = GetProviderOrDefault(integration.Platform);
+        if (provider is null)
+        {
+            var errorMessage = $"Social provider '{integration.Platform}' is not registered.";
+            post.MarkPublishFailure(utcNow, errorMessage);
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new PublishResultDto(
+                Success: false,
+                ExternalId: null,
+                ExternalUrl: null,
+                ErrorCode: "provider_not_registered",
+                ErrorMessage: errorMessage,
+                RawMetadata: null);
+        }
+
+        PublishResult providerResult;
+        try
+        {
+            var content = BuildContent(post);
+            providerResult = await provider.PublishAsync(
+                integration.AccessToken!,
+                content,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            post.MarkPublishFailure(utcNow, ex.Message);
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new PublishResultDto(
+                Success: false,
+                ExternalId: null,
+                ExternalUrl: null,
+                ErrorCode: "publish_exception",
+                ErrorMessage: ex.Message,
+                RawMetadata: null);
+        }
+
+        var rawMetadata = providerResult.Metadata is { Count: > 0 }
+            ? JsonSerializer.Serialize(providerResult.Metadata)
+            : null;
+
+        if (providerResult.IsSuccess)
+        {
+            post.MarkPublishSuccess(
+                utcNow,
+                providerResult.ExternalId,
+                providerResult.ExternalUrl,
+                rawMetadata);
+
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new PublishResultDto(
+                Success: true,
+                ExternalId: providerResult.ExternalId,
+                ExternalUrl: providerResult.ExternalUrl,
+                ErrorCode: null,
+                ErrorMessage: null,
+                RawMetadata: rawMetadata);
+        }
+
+        var errorText = FormatProviderError(providerResult);
+
+        post.MarkPublishFailure(
+            utcNow,
+            errorText,
+            rawMetadata);
+
+        await _postRepository.UpdateAsync(post);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new PublishResultDto(
+            Success: false,
+            ExternalId: providerResult.ExternalId,
+            ExternalUrl: providerResult.ExternalUrl,
+            ErrorCode: providerResult.Error?.Code,
+            ErrorMessage: errorText,
+            RawMetadata: rawMetadata);
+    }
+
+    private ISocialProvider? GetProviderOrDefault(string platform) =>
+        _providers.FirstOrDefault(p =>
+            string.Equals(p.ProviderId, platform, StringComparison.OrdinalIgnoreCase));
+
+    private static string BuildContent(Post post)
+    {
+        if (string.IsNullOrWhiteSpace(post.Title))
+        {
+            return post.Content;
+        }
+
+        return $"{post.Title}\n\n{post.Content}";
+    }
+
+    private static string FormatProviderError(PublishResult result)
+    {
+        if (result.Error is null)
+        {
+            return "Publish failed.";
+        }
+
+        if (string.IsNullOrWhiteSpace(result.Error.Code))
+        {
+            return string.IsNullOrWhiteSpace(result.Error.Message)
+                ? "Publish failed."
+                : result.Error.Message;
+        }
+
+        return string.IsNullOrWhiteSpace(result.Error.Message)
+            ? result.Error.Code
+            : $"{result.Error.Code}: {result.Error.Message}";
+    }
+
+    private static PublishResultDto MapFromPost(Post post, bool success)
+    {
+        return new PublishResultDto(
+            Success: success,
+            ExternalId: post.PublishExternalId,
+            ExternalUrl: post.PublishExternalUrl,
+            ErrorCode: null,
+            ErrorMessage: post.PublishLastError,
+            RawMetadata: post.PublishProviderResponseMetadata);
+    }
+}
+

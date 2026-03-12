@@ -22,6 +22,20 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         builder.Property(e => e.ScheduledAtUtc).HasColumnName("scheduled_at_utc");
         builder.Property(e => e.PublishedAtUtc).HasColumnName("published_at_utc");
         builder.Property(e => e.IntegrationId).HasColumnName("integration_id");
+        builder.Property(e => e.PublishExternalId)
+            .HasMaxLength(200)
+            .HasColumnName("publish_external_id");
+        builder.Property(e => e.PublishExternalUrl)
+            .HasMaxLength(1000)
+            .HasColumnName("publish_external_url");
+        builder.Property(e => e.PublishLastAttemptAtUtc)
+            .HasColumnName("publish_last_attempt_at_utc");
+        builder.Property(e => e.PublishLastError)
+            .HasMaxLength(Post.PublishLastErrorMaxLength)
+            .HasColumnName("publish_last_error");
+        builder.Property(e => e.PublishProviderResponseMetadata)
+            .HasColumnType("jsonb")
+            .HasColumnName("publish_provider_response_metadata");
 
         builder.HasOne(e => e.Integration)
             .WithMany()

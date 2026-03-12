@@ -132,6 +132,36 @@ public class PostsController : ControllerBase
         return NoContent();
     }
 
+        [HttpPost("{postId:guid}/publish")]
+        public async Task<IActionResult> PublishPost(
+            Guid workspaceId,
+            Guid postId,
+            [FromBody] PublishPostRequestDto? dto,
+            CancellationToken cancellationToken)
+        {
+            var userId = ResolveUserId();
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var result = await _postService.PublishPostAsync(
+                    workspaceId,
+                    postId,
+                    userId.Value,
+                    dto?.DryRun ?? false,
+                    cancellationToken);
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
     private Guid? ResolveUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier);

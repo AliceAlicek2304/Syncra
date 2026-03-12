@@ -35,5 +35,12 @@ public interface IPostService
         Guid workspaceId,
         Guid postId,
         CancellationToken cancellationToken = default);
+
+    Task<PostDto> PublishPostAsync(
+        Guid workspaceId,
+        Guid postId,
+        Guid userId,
+        bool dryRun = false,
+        CancellationToken cancellationToken = default);
 }
 

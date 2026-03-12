@@ -10,13 +10,16 @@ public sealed class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublishService _publishService;
 
     public PostService(
         IPostRepository postRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPublishService publishService)
     {
         _postRepository = postRepository;
         _unitOfWork = unitOfWork;
+        _publishService = publishService;
     }
 
     public async Task<PostDto> CreatePostAsync(
@@ -123,7 +126,7 @@ public sealed class PostService : IPostService
         if (!string.IsNullOrWhiteSpace(dto.Status) &&
             Enum.TryParse<PostStatus>(dto.Status, ignoreCase: true, out var newStatus))
         {
-            post.Status = ApplyStatusTransition(post.Status, newStatus, dto.ScheduledAtUtc);
+            post.Status = PostStatusTransitions.ApplyTransition(post.Status, newStatus);
         }
 
         await _postRepository.UpdateAsync(post);
@@ -148,28 +151,27 @@ public sealed class PostService : IPostService
         return true;
     }
 
-    private static PostStatus ApplyStatusTransition(
-        PostStatus current,
-        PostStatus requested,
-        DateTime? scheduledAtUtc)
+    public async Task<PostDto> PublishPostAsync(
+        Guid workspaceId,
+        Guid postId,
+        Guid userId,
+        bool dryRun = false,
+        CancellationToken cancellationToken = default)
     {
-        if (current == requested)
+        await _publishService.PublishAsync(
+            workspaceId,
+            postId,
+            userId,
+            dryRun,
+            cancellationToken);
+
+        var post = await _postRepository.GetByIdAsync(postId);
+        if (post is null || post.WorkspaceId != workspaceId)
         {
-            return current;
+            throw new InvalidOperationException("Post not found in the specified workspace.");
         }
 
-        return (current, requested) switch
-        {
-            (PostStatus.Draft, PostStatus.Scheduled) =>
-                scheduledAtUtc.HasValue && scheduledAtUtc.Value > DateTime.UtcNow
-                    ? PostStatus.Scheduled
-                    : PostStatus.Draft,
-
-            (PostStatus.Draft, PostStatus.Published) => PostStatus.Published,
-            (PostStatus.Scheduled, PostStatus.Published) => PostStatus.Published,
-
-            _ => current
-        };
+        return MapToDto(post);
     }
 
     private static PostDto MapToDto(Post post) =>

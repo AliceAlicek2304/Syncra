@@ -1,5 +1,6 @@
 using Moq;
 using Syncra.Application.DTOs.Posts;
+using Syncra.Application.Interfaces;
 using Syncra.Application.Repositories;
 using Syncra.Application.Services;
 using Syncra.Domain.Entities;
@@ -12,11 +13,12 @@ public class PostServiceTests
 {
     private readonly Mock<IPostRepository> _postRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IPublishService> _publishServiceMock = new();
 
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
 
-    private PostService CreateService() => new(_postRepositoryMock.Object, _unitOfWorkMock.Object);
+    private PostService CreateService() => new(_postRepositoryMock.Object, _unitOfWorkMock.Object, _publishServiceMock.Object);
 
     [Fact]
     public async Task CreatePostAsync_ShouldCreateDraftPost_WhenNoSchedule()
