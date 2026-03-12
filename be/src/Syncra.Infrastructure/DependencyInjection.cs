@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +10,8 @@ using Syncra.Application.Repositories;
 using Syncra.Application.Options;
 using Syncra.Infrastructure.Social;
 using Syncra.Infrastructure.Jobs;
+using Syncra.Infrastructure.Storage;
+using Syncra.Application.Interfaces;
 
 namespace Syncra.Infrastructure;
 
@@ -42,6 +45,8 @@ public static class DependencyInjection
         services.AddScoped<IDuePostPublishJobScheduler, DuePostPublishJobScheduler>();
 
         services.AddSocialIntegrations(configuration);
+
+        services.AddScoped<IStorageService, LocalMediaStorage>();
 
         return services;
     }
