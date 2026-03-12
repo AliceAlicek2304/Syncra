@@ -21,6 +21,7 @@ builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(Strip
 builder.Services.Configure<SentryOptions>(builder.Configuration.GetSection(SentryOptions.SectionName));
 builder.Services.Configure<OAuthOptions>(builder.Configuration.GetSection(OAuthOptions.SectionName));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.Configure<MediaOptions>(builder.Configuration.GetSection(MediaOptions.SectionName));
 
 var postgresOptions = new PostgresOptions();
 builder.Configuration.GetSection(PostgresOptions.SectionName).Bind(postgresOptions);
