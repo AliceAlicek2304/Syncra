@@ -5,6 +5,8 @@ using Syncra.Application;
 using Syncra.Api.Middleware;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
+using Syncra.Application.Interfaces;
+using Syncra.Application.Services;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -31,6 +33,8 @@ builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 builder.Services.AddHangfire(configuration =>
 {
