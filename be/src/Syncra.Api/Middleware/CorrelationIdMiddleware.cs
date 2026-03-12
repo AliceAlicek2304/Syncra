@@ -4,6 +4,7 @@ using Microsoft.Extensions.Primitives;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Serilog.Context;
 
 namespace Syncra.Api.Middleware;
 
@@ -27,6 +28,9 @@ public sealed class CorrelationIdMiddleware
         context.Items[HeaderName] = correlationId;
         context.Response.Headers[HeaderName] = correlationId;
 
-        await _next(context);
+        using (LogContext.PushProperty("CorrelationId", correlationId))
+        {
+            await _next(context);
+        }
     }
 }

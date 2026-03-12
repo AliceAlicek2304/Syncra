@@ -23,6 +23,7 @@ public class GlobalExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "An unhandled exception occurred");
+            SentrySdk.CaptureException(ex);
             await HandleExceptionAsync(context, ex);
         }
     }
