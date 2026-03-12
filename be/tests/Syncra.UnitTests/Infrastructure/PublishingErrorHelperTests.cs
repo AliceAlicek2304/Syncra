@@ -1,6 +1,7 @@
 
 using System.Net;
 using FluentAssertions;
+using Syncra.Domain.Models.Social;
 using Syncra.Infrastructure.Publishing;
 using Xunit;
 

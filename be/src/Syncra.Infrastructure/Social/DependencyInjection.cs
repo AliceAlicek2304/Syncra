@@ -15,6 +15,9 @@ public static class DependencyInjection
         services.AddHttpClient<ISocialProvider, Providers.XOAuthProvider>();
         services.AddHttpClient<ISocialProvider, Providers.TikTokOAuthProvider>();
         services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>();
+
+        // Register publish adapters
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.XPublishAdapter>();
         
         return services;
     }

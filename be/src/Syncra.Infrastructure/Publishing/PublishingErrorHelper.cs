@@ -1,17 +1,18 @@
 
 using System.Net;
+using Syncra.Domain.Models.Social;
 
 namespace Syncra.Infrastructure.Publishing;
 
 public static class PublishingErrorHelper
 {
-    public static PublishError FromHttpFailure(HttpStatusCode statusCode, string responseBody)
+    public static ProviderError FromHttpFailure(HttpStatusCode statusCode, string responseBody)
     {
-        var error = new PublishError
+        var error = new ProviderError
         {
             Code = $"PROV_{(int)statusCode}",
             Message = $"Provider returned an error: {statusCode}",
-            ProviderResponse = responseBody.Length > 500 ? responseBody.Substring(0, 500) : responseBody
+            Details = responseBody.Length > 500 ? responseBody.Substring(0, 500) : responseBody
         };
 
         error.IsTransient = statusCode switch
@@ -24,9 +25,9 @@ public static class PublishingErrorHelper
         return error;
     }
 
-    public static PublishError FromException(Exception ex)
+    public static ProviderError FromException(Exception ex)
     {
-        return new PublishError
+        return new ProviderError
         {
             Code = "SYS_EXCEPTION",
             Message = ex.Message,
