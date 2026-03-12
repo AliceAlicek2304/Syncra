@@ -35,12 +35,15 @@ public class SubscriptionConfiguration : BaseWorkspaceEntityConfiguration<Subscr
 
         builder.Property(e => e.PlanId).HasColumnName("plan_id");
         builder.Property(e => e.Provider).HasMaxLength(50).HasColumnName("provider");
+        builder.Property(e => e.ProviderCustomerId).HasMaxLength(200).HasColumnName("provider_customer_id");
         builder.Property(e => e.ProviderSubscriptionId).HasMaxLength(200).HasColumnName("provider_subscription_id");
         builder.Property(e => e.Status).HasMaxLength(50).HasColumnName("status").HasConversion<string>();
         builder.Property(e => e.StartsAtUtc).HasColumnName("starts_at_utc");
         builder.Property(e => e.EndsAtUtc).HasColumnName("ends_at_utc");
         builder.Property(e => e.TrialEndsAtUtc).HasColumnName("trial_ends_at_utc");
         builder.Property(e => e.CanceledAtUtc).HasColumnName("canceled_at_utc");
+
+        builder.HasIndex(e => e.WorkspaceId).HasDatabaseName("ix_subscriptions_workspace_id");
 
         builder.HasOne(e => e.Plan)
             .WithMany()
