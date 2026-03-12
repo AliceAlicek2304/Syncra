@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Syncra.Application\Syncra.Application.csproj" />
     <ProjectReference Include="..\..\src\Syncra.Infrastructure\Syncra.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Syncra.Domain\Syncra.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Syncra.Api\Syncra.Api.csproj" />
   </ItemGroup>
 
 </Project>

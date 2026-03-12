@@ -115,4 +115,29 @@ public class MediaController : ControllerBase
             PageSize = pageSize
         });
     }
+
+    [HttpDelete("{mediaId}")]
+    public async Task<IActionResult> Delete(Guid workspaceId, Guid mediaId, CancellationToken cancellationToken)
+    {
+        var media = await _mediaRepository.GetByIdAsync(mediaId);
+
+        if (media == null || media.WorkspaceId != workspaceId)
+        {
+            return NotFound();
+        }
+
+        if (media.PostId.HasValue)
+        {
+            return Conflict("Cannot delete media that is attached to a post.");
+        }
+
+        // The storage key is derived from the FileUrl
+        var storageKey = Path.GetFileName(media.FileUrl);
+        await _storageService.DeleteAsync(storageKey);
+
+        await _mediaRepository.DeleteAsync(media.Id);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
 }
