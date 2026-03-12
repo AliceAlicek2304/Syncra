@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
+using Syncra.Infrastructure.Services;
 using Syncra.Application.Repositories;
 using Syncra.Application.Options;
 using Syncra.Infrastructure.Social;
@@ -49,6 +50,9 @@ public static class DependencyInjection
         services.AddSocialIntegrations(configuration);
 
         services.AddScoped<IStorageService, LocalMediaStorage>();
+
+        services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
+        services.AddScoped<IStripeService, StripeService>();
 
         return services;
     }
