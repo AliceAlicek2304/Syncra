@@ -134,6 +134,9 @@ using (var scope = app.Services.CreateScope())
 {
     var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
     scheduler.ScheduleRecurringJob();
+
+    var duePostScheduler = scope.ServiceProvider.GetRequiredService<IDuePostPublishJobScheduler>();
+    duePostScheduler.ScheduleRecurringJob();
 }
 
 app.Run();

@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
         services.AddScoped<IntegrationTokenRefreshJob>();
         services.AddScoped<IIntegrationTokenRefreshJobScheduler, IntegrationTokenRefreshJobScheduler>();
+        services.AddScoped<DuePostPublishJob>();
+        services.AddScoped<IDuePostPublishJobScheduler, DuePostPublishJobScheduler>();
 
         services.AddSocialIntegrations(configuration);
 
