@@ -169,20 +169,4 @@ public class TikTokOAuthProvider : ISocialProvider
         }
     }
 
-    public Task<PublishResult> PublishAsync(
-        string accessToken,
-        string content,
-        CancellationToken cancellationToken = default)
-    {
-        // Stub implementation for Phase 02. Real publish logic will be added in Phase 03.
-        return Task.FromResult(new PublishResult
-        {
-            IsSuccess = false,
-            Error = new ProviderError
-            {
-                Code = "publish_not_implemented",
-                Message = "Publishing to TikTok is not implemented yet."
-            }
-        });
-    }
 }

@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddSocialIntegrations(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IProviderRegistry, ProviderRegistry>();
+        services.AddSingleton<IPublishAdapterRegistry, PublishAdapterRegistry>();
         
         // Register specific ISocialProvider implementations
         services.AddHttpClient<ISocialProvider, Providers.XOAuthProvider>();

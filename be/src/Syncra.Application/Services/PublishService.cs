@@ -14,18 +14,18 @@ public sealed class PublishService : IPublishService
     private readonly IPostRepository _postRepository;
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IReadOnlyList<ISocialProvider> _providers;
+    private readonly IPublishAdapterRegistry _publishAdapterRegistry;
 
     public PublishService(
         IPostRepository postRepository,
         IIntegrationRepository integrationRepository,
         IUnitOfWork unitOfWork,
-        IEnumerable<ISocialProvider> providers)
+        IPublishAdapterRegistry publishAdapterRegistry)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
         _unitOfWork = unitOfWork;
-        _providers = providers.ToList();
+        _publishAdapterRegistry = publishAdapterRegistry;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -96,8 +96,8 @@ public sealed class PublishService : IPublishService
         await _postRepository.UpdateAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var provider = GetProviderOrDefault(integration.Platform);
-        if (provider is null)
+        var adapter = _publishAdapterRegistry.GetAdapterOrDefault(integration.Platform);
+        if (adapter is null)
         {
             var errorMessage = $"Social provider '{integration.Platform}' is not registered.";
             post.MarkPublishFailure(utcNow, errorMessage);
@@ -116,10 +116,10 @@ public sealed class PublishService : IPublishService
         PublishResult providerResult;
         try
         {
-            var content = BuildContent(post);
-            providerResult = await provider.PublishAsync(
+            var request = BuildPublishRequest(workspaceId, post);
+            providerResult = await adapter.PublishAsync(
                 integration.AccessToken!,
-                content,
+                request,
                 cancellationToken);
         }
         catch (Exception ex)
@@ -180,9 +180,19 @@ public sealed class PublishService : IPublishService
             RawMetadata: rawMetadata);
     }
 
-    private ISocialProvider? GetProviderOrDefault(string platform) =>
-        _providers.FirstOrDefault(p =>
-            string.Equals(p.ProviderId, platform, StringComparison.OrdinalIgnoreCase));
+    private static PublishRequest BuildPublishRequest(Guid workspaceId, Post post)
+    {
+        var mediaIds = post.Media.Select(m => m.Id).ToList();
+
+        return new PublishRequest
+        {
+            WorkspaceId = workspaceId,
+            PostId = post.Id,
+            Content = BuildContent(post),
+            ScheduledAtUtc = post.ScheduledAtUtc,
+            MediaIds = mediaIds
+        };
+    }
 
     private static string BuildContent(Post post)
     {

@@ -15,19 +15,23 @@ public class PublishServiceTests
     private readonly Mock<IPostRepository> _postRepositoryMock = new();
     private readonly Mock<IIntegrationRepository> _integrationRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
-    private readonly Mock<ISocialProvider> _providerMock = new();
+    private readonly Mock<IPublishAdapterRegistry> _adapterRegistryMock = new();
+    private readonly Mock<IPublishAdapter> _adapterMock = new();
 
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
 
     private PublishService CreateService(string platform = "x")
     {
-        _providerMock.SetupGet(p => p.ProviderId).Returns(platform);
+        _adapterMock.SetupGet(p => p.ProviderId).Returns(platform);
+        _adapterRegistryMock
+            .Setup(r => r.GetAdapterOrDefault(platform))
+            .Returns(_adapterMock.Object);
         return new PublishService(
             _postRepositoryMock.Object,
             _integrationRepositoryMock.Object,
             _unitOfWorkMock.Object,
-            new[] { _providerMock.Object });
+            _adapterRegistryMock.Object);
     }
 
     [Theory]
@@ -67,8 +71,8 @@ public class PublishServiceTests
             .Setup(r => r.GetByIdAsync(integrationId))
             .ReturnsAsync(integration);
 
-        _providerMock
-            .Setup(p => p.PublishAsync("at-1", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _adapterMock
+            .Setup(p => p.PublishAsync("at-1", It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PublishResult
             {
                 IsSuccess = true,
@@ -131,8 +135,8 @@ public class PublishServiceTests
             .Setup(r => r.GetByIdAsync(integrationId))
             .ReturnsAsync(integration);
 
-        _providerMock
-            .Setup(p => p.PublishAsync("at-1", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _adapterMock
+            .Setup(p => p.PublishAsync("at-1", It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PublishResult
             {
                 IsSuccess = false,
@@ -187,8 +191,8 @@ public class PublishServiceTests
         Assert.True(result.Success == (post.Status == PostStatus.Published));
         Assert.Equal(PostStatus.Published, post.Status);
 
-        _providerMock.Verify(
-            p => p.PublishAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _adapterMock.Verify(
+            p => p.PublishAsync(It.IsAny<string>(), It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(default), Times.Never);
     }

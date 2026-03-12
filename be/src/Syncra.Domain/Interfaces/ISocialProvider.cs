@@ -22,13 +22,4 @@ public interface ISocialProvider
     /// Refreshes an existing access token.
     /// </summary>
     Task<AuthResult> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Publishes content to the underlying social provider using the given access token.
-    /// For now this is a minimal contract that can be refined in Phase 03.
-    /// </summary>
-    Task<PublishResult> PublishAsync(
-        string accessToken,
-        string content,
-        CancellationToken cancellationToken = default);
 }
