@@ -19,6 +19,7 @@ public static class DependencyInjection
         // Register publish adapters
         services.AddHttpClient<IPublishAdapter, Publishing.Adapters.XPublishAdapter>();
         services.AddHttpClient<IPublishAdapter, Publishing.Adapters.TikTokPublishAdapter>();
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>();
         
         return services;
     }
