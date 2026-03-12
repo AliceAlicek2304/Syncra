@@ -21,6 +21,24 @@ public sealed class Integration : WorkspaceEntityBase
 
     public Workspace Workspace { get; set; } = null!;
 
+    public void UpdateTokens(string? accessToken, string? refreshToken, DateTime? expiresAtUtc)
+    {
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            AccessToken = accessToken;
+        }
+
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            RefreshToken = refreshToken;
+        }
+
+        if (expiresAtUtc.HasValue)
+        {
+            ExpiresAtUtc = expiresAtUtc.Value;
+        }
+    }
+
     public void MarkTokenRefreshAttempt(DateTime utcNow)
     {
         TokenRefreshLastAttemptAtUtc = utcNow;
