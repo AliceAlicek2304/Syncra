@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncra.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312031317_AddPostTitleAndIntegrationLink")]
+    partial class AddPostTitleAndIntegrationLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -261,24 +264,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Property<string>("RefreshToken")
                         .HasColumnType("text")
                         .HasColumnName("refresh_token");
-
-                    b.Property<string>("TokenRefreshHealthStatus")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("token_refresh_health_status");
-
-                    b.Property<DateTime?>("TokenRefreshLastAttemptAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_refresh_last_attempt_at_utc");
-
-                    b.Property<string>("TokenRefreshLastError")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("token_refresh_last_error");
-
-                    b.Property<DateTime?>("TokenRefreshLastSuccessAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_refresh_last_success_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")

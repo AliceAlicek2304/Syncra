@@ -49,6 +49,16 @@ public class IntegrationConfiguration : BaseWorkspaceEntityConfiguration<Integra
         builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
         builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
         builder.Property(e => e.Metadata).HasColumnType("jsonb").HasColumnName("metadata");
+
+        builder.Property(e => e.TokenRefreshLastAttemptAtUtc).HasColumnName("token_refresh_last_attempt_at_utc");
+        builder.Property(e => e.TokenRefreshLastSuccessAtUtc).HasColumnName("token_refresh_last_success_at_utc");
+        builder.Property(e => e.TokenRefreshLastError)
+            .HasMaxLength(Integration.TokenRefreshLastErrorMaxLength)
+            .HasColumnName("token_refresh_last_error");
+        builder.Property(e => e.TokenRefreshHealthStatus)
+            .HasMaxLength(20)
+            .HasConversion<string>()
+            .HasColumnName("token_refresh_health_status");
     }
 }
 
