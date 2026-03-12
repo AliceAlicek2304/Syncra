@@ -143,4 +143,19 @@ public class StripeService : IStripeService
             Metadata = session.Metadata ?? new Dictionary<string, string>()
         };
     }
+
+    public async Task<string> CreatePortalSessionAsync(Workspace workspace, string returnUrl, CancellationToken cancellationToken = default)
+    {
+        var customer = await GetOrCreateCustomerAsync(workspace, cancellationToken);
+
+        var options = new Stripe.BillingPortal.SessionCreateOptions
+        {
+            Customer = customer.Id,
+            ReturnUrl = returnUrl,
+        };
+        var service = new Stripe.BillingPortal.SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: cancellationToken);
+
+        return session.Url;
+    }
 }

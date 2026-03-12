@@ -30,4 +30,16 @@ public interface IStripeService
         string successUrl,
         string cancelUrl,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a Stripe Customer Portal session.
+    /// </summary>
+    /// <param name="workspace">The workspace for which to create the portal session</param>
+    /// <param name="returnUrl">URL to redirect after the portal session</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The URL for the Stripe Customer Portal session</returns>
+    Task<string> CreatePortalSessionAsync(
+        Workspace workspace,
+        string returnUrl,
+        CancellationToken cancellationToken = default);
 }

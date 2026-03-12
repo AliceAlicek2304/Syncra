@@ -130,6 +130,45 @@ public class SubscriptionsController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// POST /api/v1/workspaces/{workspaceId}/subscription/create-portal-session
+    /// Creates a Stripe Customer Portal session for managing a subscription.
+    /// </summary>
+    /// <remarks>
+    /// Creates a new Stripe Customer Portal session that allows the user to manage
+    /// their subscription details (e.g., payment methods, invoices, cancel subscription).
+    /// Returns a URL to redirect the user to the Stripe-hosted portal.
+    /// </remarks>
+    /// <param name="workspaceId">The workspace ID</param>
+    /// <param name="request">The portal session request containing the return URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The Stripe Customer Portal session URL</returns>
+    /// <response code="200">Returns the portal session URL</response>
+    /// <response code="401">User is not authenticated</response>
+    /// <response code="404">Workspace not found</response>
+    [HttpPost("create-portal-session")]
+    [ProducesResponseType(typeof(CreatePortalSessionResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreatePortalSession(
+        Guid workspaceId,
+        [FromBody] CreatePortalSessionRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
+        if (workspace is null)
+        { 
+            return NotFound(new { error = "Workspace not found" });
+        }
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var returnUrl = request.ReturnUrl ?? $"{baseUrl}/settings/billing";
+
+        var portalUrl = await _stripeService.CreatePortalSessionAsync(workspace, returnUrl, cancellationToken);
+
+        return Ok(new CreatePortalSessionResponseDto { PortalUrl = portalUrl });
+    }
+
     private static CurrentSubscriptionDto MapToDto(Subscription subscription)
     {
         return new CurrentSubscriptionDto
@@ -196,4 +235,27 @@ public class CreateCheckoutSessionResponseDto
     /// The client reference ID (workspace ID) for this session.
     /// </summary>
     public string? ClientReferenceId { get; set; }
+}
+
+/// <summary>
+/// Request DTO for creating a customer portal session.
+/// </summary>
+public class CreatePortalSessionRequestDto
+{
+    /// <summary>
+    /// Optional URL to redirect after the portal session.
+    /// If not provided, a default URL will be used.
+    /// </summary>
+    public string? ReturnUrl { get; set; }
+}
+
+/// <summary>
+/// Response DTO for a created customer portal session.
+/// </summary>
+public class CreatePortalSessionResponseDto
+{
+    /// <summary>
+    /// The URL to redirect the user to the Stripe Customer Portal.
+    /// </summary>
+    public required string PortalUrl { get; set; }
 }
