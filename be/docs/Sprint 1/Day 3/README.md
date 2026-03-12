@@ -20,12 +20,12 @@ Dung framework social integration co the scale duoc, va connect thanh cong 2 pro
 
 ## 4. Workboard
 
-- [ ] D3-T01 Define normalized provider contracts and shared error model
-- [ ] D3-T02 Implement provider registry and DI resolution
-- [ ] D3-T03 Add integration connect, callback, list, and disconnect endpoints
-- [ ] D3-T04 Implement X OAuth provider
-- [ ] D3-T05 Implement TikTok OAuth provider
-- [ ] D3-T06 Persist integration tokens, profile metadata, and manual verification notes
+- [x] D3-T01 Define normalized provider contracts and shared error model
+- [x] D3-T02 Implement provider registry and DI resolution
+- [x] D3-T03 Add integration connect, callback, list, and disconnect endpoints
+- [x] D3-T04 Implement X OAuth provider
+- [x] D3-T05 Implement TikTok OAuth provider
+- [x] D3-T06 Persist integration tokens, profile metadata, and manual verification notes
 - [ ] D3-T07 Run Day 3 scope check for billing and analytics
 
 ## 5. Engineering tasks chi tiet

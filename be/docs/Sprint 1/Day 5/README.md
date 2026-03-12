@@ -22,12 +22,12 @@ Dung duoc publish pipeline end-to-end: token refresh, scheduled jobs, publish ad
 
 ## 4. Workboard
 
-- [ ] D5-T01 Implement refresh token service and recurring Hangfire job
-- [ ] D5-T02 Add publish state machine and immediate publish endpoint
-- [ ] D5-T03 Add due-post scanning job and publish result persistence
-- [ ] D5-T04 Implement X, TikTok, and YouTube publish adapters
-- [ ] D5-T05 Implement media storage abstraction and upload endpoint
-- [ ] D5-T06 Implement media list, delete, attachment flow, and integration tests
+- [x] D5-T01 Implement refresh token service and recurring Hangfire job
+- [x] D5-T02 Add publish state machine and immediate publish endpoint
+- [x] D5-T03 Add due-post scanning job and publish result persistence
+- [x] D5-T04 Implement X, TikTok, and YouTube publish adapters
+- [x] D5-T05 Implement media storage abstraction and upload endpoint
+- [x] D5-T06 Implement media list, delete, attachment flow, and integration tests
 
 ## 5. Engineering tasks chi tiet
 

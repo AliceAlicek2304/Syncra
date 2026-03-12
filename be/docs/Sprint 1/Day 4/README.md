@@ -19,12 +19,12 @@ Hoan tat provider thu 3 la YouTube va dung Post CRUD day du de den Day 5 chi con
 
 ## 4. Workboard
 
-- [ ] D4-T01 Implement YouTube OAuth provider
-- [ ] D4-T02 Define post DTOs, validation rules, and status model
-- [ ] D4-T03 Implement create and update post services
-- [ ] D4-T04 Implement list, detail, delete, and filter queries
-- [ ] D4-T05 Map post with integration and media references
-- [ ] D4-T06 Add CRUD tests and Day 4 demo walkthrough
+- [x] D4-T01 Implement YouTube OAuth provider
+- [x] D4-T02 Define post DTOs, validation rules, and status model
+- [x] D4-T03 Implement create and update post services
+- [x] D4-T04 Implement list, detail, delete, and filter queries
+- [x] D4-T05 Map post with integration and media references
+- [x] D4-T06 Add CRUD tests and Day 4 demo walkthrough
 
 ## 5. Engineering tasks chi tiet
 
