@@ -29,7 +29,7 @@ public class XOAuthProvider : ISocialProvider
     public string GetAuthorizationUrl(string state, string redirectUri)
     {
         var authUrl = "https://twitter.com/i/oauth2/authorize";
-        var scopes = "tweet.read users.read offline.access";
+        var scopes = "tweet.read tweet.write users.read offline.access";
         
         return $"{authUrl}?response_type=code&client_id={_options.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope={Uri.EscapeDataString(scopes)}&state={Uri.EscapeDataString(state)}&code_challenge={CodeVerifier}&code_challenge_method=plain";
     }

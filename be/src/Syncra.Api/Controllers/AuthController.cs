@@ -45,6 +45,21 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        if (registerDto == null)
+        {
+            return BadRequest(new { Message = "Registration data is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(registerDto.Email))
+        {
+            return BadRequest(new { Message = "Email is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(registerDto.Password))
+        {
+            return BadRequest(new { Message = "Password is required." });
+        }
+
         var existingUser = await _userRepository.GetByEmailAsync(registerDto.Email);
         if (existingUser != null)
         {
@@ -74,6 +89,11 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
+        if (loginDto == null || string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
+        {
+            return BadRequest(new { Message = "Email and password are required." });
+        }
+
         var user = await _userRepository.GetByEmailAsync(loginDto.Email);
         if (user == null || !BC.Verify(loginDto.Password, user.PasswordHash))
         {
@@ -110,6 +130,11 @@ public class AuthController : ControllerBase
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshDto refreshDto)
     {
+        if (refreshDto == null || string.IsNullOrWhiteSpace(refreshDto.RefreshToken))
+        {
+            return BadRequest(new { Message = "Refresh token is required." });
+        }
+
         var refreshTokenHash = HashToken(refreshDto.RefreshToken);
         var existingToken = await _refreshTokenRepository.GetByTokenHashAsync(refreshTokenHash);
 

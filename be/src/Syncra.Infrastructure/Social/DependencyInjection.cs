@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Extensions.Http;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Infrastructure.Social;
@@ -11,15 +13,35 @@ public static class DependencyInjection
         services.AddSingleton<IProviderRegistry, ProviderRegistry>();
         services.AddSingleton<IPublishAdapterRegistry, PublishAdapterRegistry>();
         
-        // Register specific ISocialProvider implementations
-        services.AddHttpClient<ISocialProvider, Providers.XOAuthProvider>();
-        services.AddHttpClient<ISocialProvider, Providers.TikTokOAuthProvider>();
-        services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>();
+        // Define retry policy: 3 retries with exponential backoff
+        var retryPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
-        // Register publish adapters
-        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.XPublishAdapter>();
-        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.TikTokPublishAdapter>();
-        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>();
+        // Define timeout policy: 10 seconds
+        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10));
+
+        // Register specific ISocialProvider implementations with policies
+        services.AddHttpClient<ISocialProvider, Providers.XOAuthProvider>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+        
+        services.AddHttpClient<ISocialProvider, Providers.TikTokOAuthProvider>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+        
+        services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+
+        // Register publish adapters with policies
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.XPublishAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+        
+        // TikTok and YouTube adapters don't need HttpClient yet (not implemented)
+        services.AddTransient<IPublishAdapter, Publishing.Adapters.TikTokPublishAdapter>();
+        services.AddTransient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>();
         
         return services;
     }

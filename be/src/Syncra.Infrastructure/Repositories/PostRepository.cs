@@ -12,6 +12,14 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
     }
 
+    public override async Task<Post?> GetByIdAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(p => p.Media)
+            .Include(p => p.Integration)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
     public async Task<IEnumerable<Post>> GetByWorkspaceIdAsync(Guid workspaceId)
     {
         return await _dbSet
@@ -40,7 +48,7 @@ public class PostRepository : Repository<Post>, IPostRepository
 
         return await _dbSet
             .Where(p =>
-                p.Status == PostStatus.Scheduled &&
+                (p.Status == PostStatus.Scheduled || p.Status == PostStatus.Publishing) &&
                 p.ScheduledAtUtc <= utcNow)
             .OrderBy(p => p.ScheduledAtUtc)
             .ThenBy(p => p.Id)

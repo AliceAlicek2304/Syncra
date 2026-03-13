@@ -24,6 +24,16 @@ public class PostsController : ControllerBase
         [FromBody] CreatePostDto dto,
         CancellationToken cancellationToken)
     {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid workspace ID." });
+        }
+
+        if (dto == null)
+        {
+            return BadRequest(new { error = "Post data is required." });
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -91,6 +101,21 @@ public class PostsController : ControllerBase
         [FromBody] UpdatePostDto dto,
         CancellationToken cancellationToken)
     {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid workspace ID." });
+        }
+
+        if (postId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid post ID." });
+        }
+
+        if (dto == null)
+        {
+            return BadRequest(new { error = "Update data is required." });
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -139,6 +164,16 @@ public class PostsController : ControllerBase
             [FromBody] PublishPostRequestDto? dto,
             CancellationToken cancellationToken)
         {
+            if (workspaceId == Guid.Empty)
+            {
+                return BadRequest(new { error = "Invalid workspace ID." });
+            }
+
+            if (postId == Guid.Empty)
+            {
+                return BadRequest(new { error = "Invalid post ID." });
+            }
+
             var userId = ResolveUserId();
             if (userId is null)
             {

@@ -46,12 +46,7 @@ public sealed class PublishService : IPublishService
             return MapFromPost(post, post.Status == PostStatus.Published);
         }
 
-        if (post.Status == PostStatus.Publishing)
-        {
-            return MapFromPost(post, post.Status == PostStatus.Published);
-        }
-
-        if (post.Status is not PostStatus.Draft and not PostStatus.Scheduled)
+        if (post.Status is not PostStatus.Draft and not PostStatus.Scheduled and not PostStatus.Publishing)
         {
             throw new InvalidOperationException($"Post in status '{post.Status}' cannot be published.");
         }
@@ -91,10 +86,13 @@ public sealed class PublishService : IPublishService
 
         var utcNow = DateTime.UtcNow;
 
-        post.Status = PostStatusTransitions.ApplyTransition(post.Status, PostStatus.Publishing);
-        post.MarkPublishAttempt(utcNow);
-        await _postRepository.UpdateAsync(post);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (post.Status != PostStatus.Publishing)
+        {
+            post.Status = PostStatusTransitions.ApplyTransition(post.Status, PostStatus.Publishing);
+            post.MarkPublishAttempt(utcNow);
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         var adapter = _publishAdapterRegistry.GetAdapterOrDefault(integration.Platform);
         if (adapter is null)

@@ -38,6 +38,21 @@ public class IntegrationsController : ControllerBase
     [HttpPost("{providerId}/connect")]
     public IActionResult Connect(Guid workspaceId, string providerId, [FromQuery] string redirectUri)
     {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid workspace ID." });
+        }
+
+        if (string.IsNullOrWhiteSpace(providerId))
+        {
+            return BadRequest(new { error = "Provider ID is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(redirectUri))
+        {
+            return BadRequest(new { error = "Redirect URI is required." });
+        }
+
         try
         {
             var provider = _providerRegistry.GetProvider(providerId);
@@ -73,6 +88,21 @@ public class IntegrationsController : ControllerBase
         [FromQuery] string? redirectUri = null,
         CancellationToken cancellationToken = default)
     {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid workspace ID." });
+        }
+
+        if (string.IsNullOrWhiteSpace(providerId))
+        {
+            return BadRequest(new { error = "Provider ID is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return BadRequest(new { error = "Authorization code is required." });
+        }
+
         try
         {
             var provider = _providerRegistry.GetProvider(providerId);
@@ -168,6 +198,16 @@ public class IntegrationsController : ControllerBase
     [HttpDelete("{providerId}")]
     public async Task<IActionResult> Disconnect(Guid workspaceId, string providerId, CancellationToken cancellationToken)
     {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { error = "Invalid workspace ID." });
+        }
+
+        if (string.IsNullOrWhiteSpace(providerId))
+        {
+            return BadRequest(new { error = "Provider ID is required." });
+        }
+
         var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
         if (integration == null)
         {

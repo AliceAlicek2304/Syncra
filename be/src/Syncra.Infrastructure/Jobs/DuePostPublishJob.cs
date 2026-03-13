@@ -52,6 +52,10 @@ public sealed class DuePostPublishJob
                     break;
                 }
 
+                _logger.LogInformation(
+                    "Processing post {PostId} with status {Status}, scheduled at {ScheduledAt}",
+                    post.Id, post.Status, post.ScheduledAtUtc);
+
                 await ProcessPostAsync(post, cancellationToken);
                 processed++;
             }
@@ -113,19 +117,23 @@ public sealed class DuePostPublishJob
                 {
                     _logger.LogError(
                         ex,
-                        "Exception when publishing scheduled post {PostId} for workspace {WorkspaceId} and max retries exhausted on attempt {Attempt}.",
+                        "Exception when publishing scheduled post {PostId} for workspace {WorkspaceId} and max retries exhausted on attempt {Attempt}. Exception: {ExceptionType}, Message: {ExceptionMessage}",
                         post.Id,
                         post.WorkspaceId,
-                        attempt);
+                        attempt,
+                        ex.GetType().Name,
+                        ex.Message);
                     return;
                 }
 
                 _logger.LogWarning(
                     ex,
-                    "Transient exception when publishing scheduled post {PostId} for workspace {WorkspaceId} on attempt {Attempt}. Retrying...",
+                    "Transient exception when publishing scheduled post {PostId} for workspace {WorkspaceId} on attempt {Attempt}. Exception: {ExceptionType}, Message: {ExceptionMessage}. Retrying...",
                     post.Id,
                     post.WorkspaceId,
-                    attempt);
+                    attempt,
+                    ex.GetType().Name,
+                    ex.Message);
             }
         }
     }
