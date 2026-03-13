@@ -10,8 +10,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSocialIntegrations(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IProviderRegistry, ProviderRegistry>();
-        services.AddSingleton<IPublishAdapterRegistry, PublishAdapterRegistry>();
+        services.AddScoped<IProviderRegistry, ProviderRegistry>();
+        services.AddScoped<IPublishAdapterRegistry, PublishAdapterRegistry>();
         
         // Define retry policy: 3 retries with exponential backoff
         var retryPolicy = HttpPolicyExtensions
@@ -34,13 +34,18 @@ public static class DependencyInjection
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
 
+        // TikTok API Client
+        services.AddHttpClient<Publishing.Adapters.TikTok.ITikTokApiClient, Publishing.Adapters.TikTok.TikTokApiClient>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+
         // Register publish adapters with policies
         services.AddHttpClient<IPublishAdapter, Publishing.Adapters.XPublishAdapter>()
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
         
-        // TikTok and YouTube adapters don't need HttpClient yet (not implemented)
         services.AddTransient<IPublishAdapter, Publishing.Adapters.TikTokPublishAdapter>();
+        
         services.AddTransient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>();
         
         return services;

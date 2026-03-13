@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Syncra.Api.Controllers;
 using Syncra.Application.DTOs;
+using Syncra.Application.Interfaces;
 using Syncra.Application.Repositories;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
@@ -15,10 +16,15 @@ namespace Syncra.UnitTests.Api;
 public class SubscriptionsControllerTests
 {
     private readonly Mock<ISubscriptionRepository> _subscriptionRepositoryMock = new();
+    private readonly Mock<IWorkspaceRepository> _workspaceRepositoryMock = new();
+    private readonly Mock<IStripeService> _stripeServiceMock = new();
 
     private SubscriptionsController CreateController()
     {
-        return new SubscriptionsController(_subscriptionRepositoryMock.Object);
+        return new SubscriptionsController(
+            _subscriptionRepositoryMock.Object,
+            _workspaceRepositoryMock.Object,
+            _stripeServiceMock.Object);
     }
 
     [Fact]

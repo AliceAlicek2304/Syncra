@@ -33,32 +33,26 @@ public sealed class DuePostPublishJob
 
         _logger.LogInformation("Starting due-post publish job at {UtcNow}.", utcNow);
 
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var duePosts = await _postRepository.GetDueScheduledPostsAsync(
-                utcNow,
-                DefaultBatchSize,
-                cancellationToken);
+        // Fetch all due posts at once for this execution to avoid infinite loops
+        // if some posts remain in 'Publishing' status due to errors.
+        var duePosts = await _postRepository.GetDueScheduledPostsAsync(
+            utcNow,
+            DefaultBatchSize,
+            cancellationToken);
 
-            if (duePosts.Count == 0)
+        foreach (var post in duePosts)
+        {
+            if (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
 
-            foreach (var post in duePosts)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
+            _logger.LogInformation(
+                "Processing post {PostId} with status {Status}, scheduled at {ScheduledAt}",
+                post.Id, post.Status, post.ScheduledAtUtc);
 
-                _logger.LogInformation(
-                    "Processing post {PostId} with status {Status}, scheduled at {ScheduledAt}",
-                    post.Id, post.Status, post.ScheduledAtUtc);
-
-                await ProcessPostAsync(post, cancellationToken);
-                processed++;
-            }
+            await ProcessPostAsync(post, cancellationToken);
+            processed++;
         }
 
         _logger.LogInformation("Completed due-post publish job. Processed {Processed} posts.", processed);
