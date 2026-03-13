@@ -15,11 +15,16 @@ namespace Syncra.Api.Controllers
     {
         private readonly IMediator _mediator;
         private readonly StripeOptions _stripeOptions;
+        private readonly ILogger<StripeWebhookController> _logger;
 
-        public StripeWebhookController(IMediator mediator, IOptions<StripeOptions> stripeOptions)
+        public StripeWebhookController(
+            IMediator mediator, 
+            IOptions<StripeOptions> stripeOptions,
+            ILogger<StripeWebhookController> logger)
         {
             _mediator = mediator;
             _stripeOptions = stripeOptions.Value;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -31,11 +36,14 @@ namespace Syncra.Api.Controllers
                 var stripeEvent = EventUtility.ConstructEvent(json,
                     Request.Headers["Stripe-Signature"], _stripeOptions.WebhookSecret);
 
+                _logger.LogInformation("Received Stripe webhook event: {Type}", stripeEvent.Type);
+
                 switch (stripeEvent.Type)
                 {
                     case "checkout.session.completed":
                     {
                         var session = stripeEvent.Data.Object as Session;
+                        _logger.LogInformation("Processing checkout.session.completed for Workspace: {WorkspaceId}", session.ClientReferenceId);
                         var command = new UpdateSubscriptionCommand(session.ClientReferenceId, session.SubscriptionId);
                         await _mediator.Send(command);
                         break;
@@ -43,6 +51,7 @@ namespace Syncra.Api.Controllers
                     case "customer.subscription.deleted":
                     {
                         var subscription = stripeEvent.Data.Object as Subscription;
+                        _logger.LogInformation("Processing customer.subscription.deleted for Subscription: {SubscriptionId}", subscription.Id);
                         var command = new CancelSubscriptionCommand(subscription.Id);
                         await _mediator.Send(command);
                         break;
@@ -53,7 +62,13 @@ namespace Syncra.Api.Controllers
             }
             catch (StripeException e)
             {
-                return BadRequest();
+                _logger.LogError(e, "Stripe webhook error: {Message}", e.Message);
+                return BadRequest(new { error = e.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Stripe webhook: {Message}", ex.Message);
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }
