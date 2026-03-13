@@ -124,5 +124,12 @@ appsettings.Development.json
 appsettings.Production.json
 appsettings.json
 
+# ===========================
+# Media / Uploads
+# ===========================
+be/src/Syncra.Api/wwwroot/uploads/
+be/src/Syncra.Api/wwwroot/videos/
+be/src/Syncra.Api/wwwroot/temp/
+
 
 

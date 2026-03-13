@@ -36,7 +36,7 @@ public class IntegrationsController : ControllerBase
     /// Initializes the OAuth connect flow and returns the authorization URL.
     /// </summary>
     [HttpPost("{providerId}/connect")]
-    public IActionResult Connect(Guid workspaceId, string providerId, [FromQuery] string redirectUri)
+    public IActionResult Connect(Guid workspaceId, string providerId, [FromQuery] string? redirectUri = null)
     {
         if (workspaceId == Guid.Empty)
         {
@@ -46,11 +46,6 @@ public class IntegrationsController : ControllerBase
         if (string.IsNullOrWhiteSpace(providerId))
         {
             return BadRequest(new { error = "Provider ID is required." });
-        }
-
-        if (string.IsNullOrWhiteSpace(redirectUri))
-        {
-            return BadRequest(new { error = "Redirect URI is required." });
         }
 
         try

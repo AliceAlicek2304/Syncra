@@ -26,22 +26,26 @@ public class XOAuthProvider : ISocialProvider
 
     public string ProviderId => "x";
 
-    public string GetAuthorizationUrl(string state, string redirectUri)
+    public string GetAuthorizationUrl(string state, string? redirectUri = null)
     {
         var authUrl = "https://twitter.com/i/oauth2/authorize";
         var scopes = "tweet.read tweet.write users.read offline.access";
         
-        return $"{authUrl}?response_type=code&client_id={_options.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope={Uri.EscapeDataString(scopes)}&state={Uri.EscapeDataString(state)}&code_challenge={CodeVerifier}&code_challenge_method=plain";
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+        
+        return $"{authUrl}?response_type=code&client_id={_options.ClientId}&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}&scope={Uri.EscapeDataString(scopes)}&state={Uri.EscapeDataString(state)}&code_challenge={CodeVerifier}&code_challenge_method=plain";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
     {
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+        
         return await GetTokensAsync(
             new Dictionary<string, string>
             {
                 { "grant_type", "authorization_code" },
                 { "code", code },
-                { "redirect_uri", redirectUri },
+                { "redirect_uri", effectiveRedirectUri },
                 { "client_id", _options.ClientId },
                 { "code_verifier", CodeVerifier }
             }, cancellationToken);

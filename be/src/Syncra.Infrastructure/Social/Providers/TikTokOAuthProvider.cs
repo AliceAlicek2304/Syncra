@@ -21,23 +21,27 @@ public class TikTokOAuthProvider : ISocialProvider
 
     public string ProviderId => "tiktok";
 
-    public string GetAuthorizationUrl(string state, string redirectUri)
+    public string GetAuthorizationUrl(string state, string? redirectUri = null)
     {
         var authUrl = "https://www.tiktok.com/v2/auth/authorize/";
         // video.upload and video.publish are required for the Content Posting API v2
         var scopes = "user.info.basic,video.list,video.upload,video.publish";
         
-        return $"{authUrl}?client_key={_options.ClientId}&response_type=code&scope={Uri.EscapeDataString(scopes)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&state={Uri.EscapeDataString(state)}";
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+        
+        return $"{authUrl}?client_key={_options.ClientId}&response_type=code&scope={Uri.EscapeDataString(scopes)}&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}&state={Uri.EscapeDataString(state)}";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
     {
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+        
         return await GetTokensAsync(
             new Dictionary<string, string>
             {
                 { "grant_type", "authorization_code" },
                 { "code", code },
-                { "redirect_uri", redirectUri },
+                { "redirect_uri", effectiveRedirectUri },
                 { "client_key", _options.ClientId },
                 { "client_secret", _options.ClientSecret }
             }, cancellationToken);

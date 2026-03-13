@@ -11,12 +11,12 @@ public interface ISocialProvider
     /// <summary>
     /// Gets the authorization URL for the user to authenticate and authorize the application.
     /// </summary>
-    string GetAuthorizationUrl(string state, string redirectUri);
+    string GetAuthorizationUrl(string state, string? redirectUri = null);
 
     /// <summary>
     /// Exchanges an authorization code for an access token.
     /// </summary>
-    Task<AuthResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken = default);
+    Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Refreshes an existing access token.

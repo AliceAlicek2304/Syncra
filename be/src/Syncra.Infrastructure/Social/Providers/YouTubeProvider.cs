@@ -21,7 +21,7 @@ public class YouTubeProvider : ISocialProvider
 
     public string ProviderId => "youtube";
 
-    public string GetAuthorizationUrl(string state, string redirectUri)
+    public string GetAuthorizationUrl(string state, string? redirectUri = null)
     {
         const string authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
 
@@ -34,10 +34,12 @@ public class YouTubeProvider : ISocialProvider
             "openid"
         });
 
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+
         var parameters =
             $"response_type=code" +
             $"&client_id={Uri.EscapeDataString(_options.ClientId)}" +
-            $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+            $"&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}" +
             $"&scope={Uri.EscapeDataString(scopes)}" +
             $"&state={Uri.EscapeDataString(state)}" +
             $"&access_type=offline" +
@@ -46,13 +48,15 @@ public class YouTubeProvider : ISocialProvider
         return $"{authUrl}?{parameters}";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
     {
+        var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
+
         var requestData = new Dictionary<string, string>
         {
             { "grant_type", "authorization_code" },
             { "code", code },
-            { "redirect_uri", redirectUri },
+            { "redirect_uri", effectiveRedirectUri },
             { "client_id", _options.ClientId },
             { "client_secret", _options.ClientSecret }
         };
