@@ -152,6 +152,10 @@ public class IntegrationsController : ControllerBase
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Phase 03: Token persisted.
+            var metadata = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
             return Ok(new 
             { 
                 message = "Successfully connected",
@@ -161,7 +165,9 @@ public class IntegrationsController : ControllerBase
                     workspaceId,
                     providerId,
                     externalUserId = result.ExternalUserId,
-                    externalUsername = result.ExternalUsername
+                    externalUsername = result.ExternalUsername,
+                    channelId = metadata.GetValueOrDefault("channelId"),
+                    channelTitle = metadata.GetValueOrDefault("channelTitle")
                 }
             });
         }

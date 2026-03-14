@@ -48,15 +48,20 @@ Roadmap này được xây theo các giả định sau:
 
 ### Wave A: Sprint 1
 
-- X
-- TikTok
-- YouTube
+- YouTube *(Data API v3 + Analytics API v2 — free, không cần app review)*
+- Facebook Page *(Graph API — free, Insights API có sẵn)*
+- LinkedIn *(free, Share Statistics API có sẵn)*
+
+> **⚠️ Lý do thay đổi so với kế hoạch ban đầu:**
+> - **X (Twitter):** API publish yêu cầu trả phí tối thiểu $200/tháng (Basic tier), không phù hợp cho MVP.
+> - **TikTok:** Sandbox publish được nhưng Analytics API bị lock cho đến khi app review pass (2–4 tuần). Defer sang Wave B sau khi app review hoàn tất.
+> - **YouTube + Facebook + LinkedIn** đều có publish + analytics API miễn phí, không cần app review, phù hợp để demo full end-to-end ngay Sprint 1.
 
 ### Wave B: Sprint 3
 
-- LinkedIn
+- TikTok *(sau khi app review pass)*
 - LinkedIn Page
-- Facebook
+- X *(nếu có budget hoặc partnership tier)*
 
 ### Wave C: Sprint 4
 
@@ -150,16 +155,17 @@ Roadmap này được xây theo các giả định sau:
   - Local auth với JWT
   - Organization basic
   - Integration framework
-  - X, TikTok, YouTube connect và publish được
+  - **YouTube, Facebook Page, LinkedIn** connect, publish và analytics được *(Wave A mới — xem lý do tại mục 5)*
   - Post CRUD, scheduler, media upload, billing basic, analytics basic, smoke tests
 - Deliverables:
   - Release candidate `v0.1`
   - Sprint backlog Jira cho Sprint 1
-  - Demo end-to-end local
+  - Demo end-to-end local bao gồm publish + analytics cho cả 3 provider
 - Exit criteria:
   - User login được
-  - Connect được 3 provider priority
+  - Connect được 3 provider Wave A mới (YouTube, Facebook Page, LinkedIn)
   - Schedule và publish được ít nhất 1 post thành công
+  - Analytics cơ bản (views, likes, engagement) hiển thị được cho ít nhất 1 provider
 
 ## Sprint 02 - Auth and Workspace Core Parity
 
@@ -187,7 +193,9 @@ Roadmap này được xây theo các giả định sau:
 - Theme: Pilot-ready core và social expansion đầu tiên
 - Mục tiêu: Đưa backend từ MVP sang internal pilot stable, mở rộng thêm provider business-critical.
 - Scope chính:
-  - LinkedIn, LinkedIn Page, Facebook
+  - **TikTok** *(sau khi app review pass từ Sprint 1)*
+  - **LinkedIn Page**
+  - **X** *(nếu có budget/partnership tier, nếu không thì defer)*
   - Integration management cải tiến: list, disconnect, refresh, settings cơ bản
   - User management admin basics
   - Organization settings cơ bản
@@ -195,10 +203,10 @@ Roadmap này được xây theo các giả định sau:
   - Hardening cho OAuth callbacks và token storage
 - Deliverables:
   - Milestone M1 đạt điều kiện internal pilot
-  - 6 provider hoạt động end-to-end
+  - Ít nhất 5 provider hoạt động end-to-end (YouTube, Facebook Page, LinkedIn + TikTok + LinkedIn Page)
   - Security baseline cho auth và integrations
 - Exit criteria:
-  - LinkedIn, LinkedIn Page, Facebook connect và publish được
+  - TikTok và LinkedIn Page connect và publish được
   - Admin có thể xem/quản lý user level cơ bản
   - Gate G1 pass
 

@@ -25,10 +25,12 @@ public class YouTubeProvider : ISocialProvider
     {
         const string authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
 
-        // Request read-only YouTube access plus basic profile information.
+        // Request upload + analytics + read access plus basic profile information.
         var scopes = string.Join(" ", new[]
         {
+            "https://www.googleapis.com/auth/youtube.upload",
             "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/yt-analytics.readonly",
             "https://www.googleapis.com/auth/userinfo.profile",
             "https://www.googleapis.com/auth/userinfo.email",
             "openid"
@@ -208,10 +210,60 @@ public class YouTubeProvider : ISocialProvider
             {
                 result.Metadata["picture"] = picture;
             }
+
+            // Enrich with YouTube channel metadata (channelId, title, thumbnail, subscriberCount).
+            await PopulateChannelMetadataAsync(result, accessToken, cancellationToken);
         }
         catch
         {
             // Ignore profile fetching errors, token exchange already succeeded.
+        }
+    }
+
+    private async Task PopulateChannelMetadataAsync(AuthResult result, string accessToken, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Log warning but don't fail — channel info is enrichment only.
+                return;
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
+            var channelResponse = JsonSerializer.Deserialize<JsonNode>(responseString);
+            var items = channelResponse?["items"]?.AsArray();
+            if (items == null || items.Count == 0)
+            {
+                return;
+            }
+
+            var channel = items[0];
+            var channelId = channel?["id"]?.ToString();
+            var channelTitle = channel?["snippet"]?["title"]?.ToString();
+            var channelThumbnail = channel?["snippet"]?["thumbnails"]?["default"]?["url"]?.ToString();
+            var subscriberCount = channel?["statistics"]?["subscriberCount"]?.ToString();
+
+            if (!string.IsNullOrEmpty(channelId))
+                result.Metadata["channelId"] = channelId;
+
+            if (!string.IsNullOrEmpty(channelTitle))
+                result.Metadata["channelTitle"] = channelTitle;
+
+            if (!string.IsNullOrEmpty(channelThumbnail))
+                result.Metadata["channelThumbnail"] = channelThumbnail;
+
+            if (!string.IsNullOrEmpty(subscriberCount))
+                result.Metadata["subscriberCount"] = subscriberCount;
+        }
+        catch
+        {
+            // Channel metadata is enrichment — never block the auth flow.
         }
     }
 

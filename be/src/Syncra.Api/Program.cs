@@ -123,6 +123,8 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+app.UseStaticFiles();
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
