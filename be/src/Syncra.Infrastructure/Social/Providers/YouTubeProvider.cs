@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncra.Application.Options;
 using Syncra.Domain.Interfaces;
@@ -12,11 +13,13 @@ public class YouTubeProvider : ISocialProvider
 {
     private readonly HttpClient _httpClient;
     private readonly OAuthProviderOptions _options;
+    private readonly ILogger<YouTubeProvider> _logger;
 
-    public YouTubeProvider(HttpClient httpClient, IOptions<OAuthOptions> options)
+    public YouTubeProvider(HttpClient httpClient, IOptions<OAuthOptions> options, ILogger<YouTubeProvider> logger)
     {
         _httpClient = httpClient;
         _options = options.Value.YouTube;
+        _logger = logger;
     }
 
     public string ProviderId => "youtube";
@@ -25,10 +28,12 @@ public class YouTubeProvider : ISocialProvider
     {
         const string authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
 
-        // Request read-only YouTube access plus basic profile information.
+        // Request upload + analytics + read access plus basic profile information.
         var scopes = string.Join(" ", new[]
         {
+            "https://www.googleapis.com/auth/youtube.upload",
             "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/yt-analytics.readonly",
             "https://www.googleapis.com/auth/userinfo.profile",
             "https://www.googleapis.com/auth/userinfo.email",
             "openid"
@@ -208,10 +213,64 @@ public class YouTubeProvider : ISocialProvider
             {
                 result.Metadata["picture"] = picture;
             }
+
+            // Enrich with YouTube channel metadata (channelId, title, thumbnail, subscriberCount).
+            await PopulateChannelMetadataAsync(result, accessToken, cancellationToken);
         }
         catch
         {
             // Ignore profile fetching errors, token exchange already succeeded.
+        }
+    }
+
+    private async Task PopulateChannelMetadataAsync(AuthResult result, string accessToken, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YouTube channels API returned {StatusCode}: {Body}",
+                    (int)response.StatusCode, responseString);
+                return;
+            }
+
+            var channelResponse = JsonSerializer.Deserialize<JsonNode>(responseString);
+            var items = channelResponse?["items"]?.AsArray();
+            if (items == null || items.Count == 0)
+            {
+                _logger.LogWarning("YouTube channels API returned empty items. Full response: {Body}", responseString);
+                return;
+            }
+
+            var channel = items[0];
+            var channelId = channel?["id"]?.ToString();
+            var channelTitle = channel?["snippet"]?["title"]?.ToString();
+            var channelThumbnail = channel?["snippet"]?["thumbnails"]?["default"]?["url"]?.ToString();
+            var subscriberCount = channel?["statistics"]?["subscriberCount"]?.ToString();
+
+            if (!string.IsNullOrEmpty(channelId))
+                result.Metadata["channelId"] = channelId;
+
+            if (!string.IsNullOrEmpty(channelTitle))
+                result.Metadata["channelTitle"] = channelTitle;
+
+            if (!string.IsNullOrEmpty(channelThumbnail))
+                result.Metadata["channelThumbnail"] = channelThumbnail;
+
+            if (!string.IsNullOrEmpty(subscriberCount))
+                result.Metadata["subscriberCount"] = subscriberCount;
+        }
+        catch (Exception ex)
+        {
+            // Channel metadata is enrichment — never block the auth flow.
+            _logger.LogWarning(ex, "Exception fetching YouTube channel metadata.");
         }
     }
 

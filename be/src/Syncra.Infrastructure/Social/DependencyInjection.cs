@@ -12,6 +12,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IProviderRegistry, ProviderRegistry>();
         services.AddScoped<IPublishAdapterRegistry, PublishAdapterRegistry>();
+        services.AddScoped<IAnalyticsAdapterRegistry, AnalyticsAdapterRegistry>();
         
         // Define retry policy: 3 retries with exponential backoff
         var retryPolicy = HttpPolicyExtensions
@@ -46,7 +47,14 @@ public static class DependencyInjection
         
         services.AddTransient<IPublishAdapter, Publishing.Adapters.TikTokPublishAdapter>();
         
-        services.AddTransient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>();
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.YouTubePublishAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+
+        // Register analytics adapters
+        services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.YouTube.YouTubeAnalyticsAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
         
         return services;
     }

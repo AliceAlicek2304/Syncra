@@ -152,6 +152,10 @@ public class IntegrationsController : ControllerBase
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Phase 03: Token persisted.
+            var metadata = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
             return Ok(new 
             { 
                 message = "Successfully connected",
@@ -161,7 +165,9 @@ public class IntegrationsController : ControllerBase
                     workspaceId,
                     providerId,
                     externalUserId = result.ExternalUserId,
-                    externalUsername = result.ExternalUsername
+                    externalUsername = result.ExternalUsername,
+                    channelId = metadata.GetValueOrDefault("channelId"),
+                    channelTitle = metadata.GetValueOrDefault("channelTitle")
                 }
             });
         }
@@ -191,8 +197,7 @@ public class IntegrationsController : ControllerBase
     /// Disconnects a specific provider from the workspace.
     /// </summary>
     [HttpDelete("{providerId}")]
-    public async Task<IActionResult> Disconnect(Guid workspaceId, string providerId, CancellationToken cancellationToken)
-    {
+    public async Task<IActionResult> Disconnect(Guid workspaceId, string providerId, CancellationToken cancellationToken)    {
         if (workspaceId == Guid.Empty)
         {
             return BadRequest(new { error = "Invalid workspace ID." });
@@ -221,6 +226,46 @@ public class IntegrationsController : ControllerBase
             message = "Disconnected successfully", 
             workspaceId, 
             providerId 
+        });
+    }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/integrations/{providerId}/health
+    /// Returns health status of a specific integration.
+    /// </summary>
+    [HttpGet("{providerId}/health")]
+    public async Task<IActionResult> Health(Guid workspaceId, string providerId)
+    {
+        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
+
+        if (integration == null)
+        {
+            return NotFound(new { status = "not_connected", providerId });
+        }
+
+        var metadata = string.IsNullOrEmpty(integration.Metadata)
+            ? new Dictionary<string, string>()
+            : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
+        var isTokenExpired = integration.ExpiresAtUtc.HasValue
+            && integration.ExpiresAtUtc.Value < DateTime.UtcNow;
+
+        var status = !integration.IsActive ? "disconnected"
+            : isTokenExpired ? "token_expired"
+            : integration.TokenRefreshHealthStatus?.ToString().ToLower() ?? "ok";
+
+        return Ok(new
+        {
+            status,
+            providerId,
+            isActive = integration.IsActive,
+            isTokenExpired,
+            expiresAtUtc = integration.ExpiresAtUtc,
+            lastRefreshAtUtc = integration.TokenRefreshLastSuccessAtUtc,
+            lastRefreshError = integration.TokenRefreshLastError,
+            accountId = integration.ExternalAccountId,
+            channelId = metadata.GetValueOrDefault("channelId"),
+            channelTitle = metadata.GetValueOrDefault("channelTitle")
         });
     }
 }
