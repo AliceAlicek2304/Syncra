@@ -49,8 +49,24 @@ public static class DependencyInjection
 
         services.AddSocialIntegrations(configuration);
 
-        services.AddScoped<IStorageService, LocalMediaStorage>();
+        // Redis distributed cache for analytics query results.
+        // Falls back to in-memory cache when no Redis connection string is configured (e.g. local dev).
+        var redisOptions = configuration.GetSection(Application.Options.RedisOptions.SectionName)
+            .Get<Application.Options.RedisOptions>() ?? new Application.Options.RedisOptions();
+        if (!string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisOptions.ConnectionString;
+                options.InstanceName = "syncra:";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
 
+        services.AddScoped<IStorageService, LocalMediaStorage>();
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.AddScoped<IStripeService, StripeService>();
 

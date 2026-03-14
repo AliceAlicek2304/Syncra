@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Hangfire.Core" Version="1.8.14" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.4" />
     <PackageReference Include="Stripe.net" Version="50.4.1" />
     <ProjectReference Include="..\Syncra.Application\Syncra.Application.csproj" />

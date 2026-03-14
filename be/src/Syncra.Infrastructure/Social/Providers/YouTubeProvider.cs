@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncra.Application.Options;
 using Syncra.Domain.Interfaces;
@@ -12,11 +13,13 @@ public class YouTubeProvider : ISocialProvider
 {
     private readonly HttpClient _httpClient;
     private readonly OAuthProviderOptions _options;
+    private readonly ILogger<YouTubeProvider> _logger;
 
-    public YouTubeProvider(HttpClient httpClient, IOptions<OAuthOptions> options)
+    public YouTubeProvider(HttpClient httpClient, IOptions<OAuthOptions> options, ILogger<YouTubeProvider> logger)
     {
         _httpClient = httpClient;
         _options = options.Value.YouTube;
+        _logger = logger;
     }
 
     public string ProviderId => "youtube";
@@ -229,17 +232,20 @@ public class YouTubeProvider : ISocialProvider
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
+            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
+
             if (!response.IsSuccessStatusCode)
             {
-                // Log warning but don't fail — channel info is enrichment only.
+                _logger.LogWarning("YouTube channels API returned {StatusCode}: {Body}",
+                    (int)response.StatusCode, responseString);
                 return;
             }
 
-            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
             var channelResponse = JsonSerializer.Deserialize<JsonNode>(responseString);
             var items = channelResponse?["items"]?.AsArray();
             if (items == null || items.Count == 0)
             {
+                _logger.LogWarning("YouTube channels API returned empty items. Full response: {Body}", responseString);
                 return;
             }
 
@@ -261,9 +267,10 @@ public class YouTubeProvider : ISocialProvider
             if (!string.IsNullOrEmpty(subscriberCount))
                 result.Metadata["subscriberCount"] = subscriberCount;
         }
-        catch
+        catch (Exception ex)
         {
             // Channel metadata is enrichment — never block the auth flow.
+            _logger.LogWarning(ex, "Exception fetching YouTube channel metadata.");
         }
     }
 
