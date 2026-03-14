@@ -233,4 +233,28 @@ public class FacebookProvider : ISocialProvider
             _logger.LogWarning(ex, "Exception fetching Facebook page metadata.");
         }
     }
+
+    public async Task<bool> RevokeTokenAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"https://graph.facebook.com/v18.0/me/permissions?access_token={Uri.EscapeDataString(accessToken)}";
+            var response = await _httpClient.DeleteAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Facebook token revoke returned {StatusCode}", (int)response.StatusCode);
+                return false;
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseJson = JsonSerializer.Deserialize<JsonNode>(body);
+            return responseJson?["success"]?.ToString() == "true";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Exception revoking Facebook token.");
+            return false;
+        }
+    }
 }

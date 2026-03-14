@@ -65,7 +65,11 @@ public static class DependencyInjection
         services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.YouTube.YouTubeAnalyticsAdapter>()
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
-        
+
+        services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.Facebook.FacebookInsightsAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+
         return services;
     }
 }

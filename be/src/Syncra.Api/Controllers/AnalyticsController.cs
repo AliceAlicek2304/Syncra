@@ -72,6 +72,19 @@ public class AnalyticsController : ControllerBase
             return NotFound(new { error = "Provider not supported." });
         }
 
+        // Facebook uses page access token (not user token) for insights
+        var effectiveAccessToken = integration.AccessToken!;
+        if (string.Equals(providerId, "facebook", StringComparison.OrdinalIgnoreCase))
+        {
+            var integrationMeta = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
+            var pageToken = integrationMeta.GetValueOrDefault("pageAccessToken");
+            if (!string.IsNullOrEmpty(pageToken))
+                effectiveAccessToken = pageToken;
+        }
+
         try
         {
             var request = new AnalyticsRequest
@@ -83,7 +96,7 @@ public class AnalyticsController : ControllerBase
                 IsShort = isShort
             };
 
-            var result = await adapter.GetPostAnalyticsAsync(integration.AccessToken!, request, cancellationToken);
+            var result = await adapter.GetPostAnalyticsAsync(effectiveAccessToken, request, cancellationToken);
 
             if (!result.IsSuccess)
             {
@@ -137,16 +150,39 @@ public class AnalyticsController : ControllerBase
             return NotFound(new { error = "Provider not supported." });
         }
 
+        // Facebook uses page access token (not user token) for insights
+        var effectiveAccessToken = integration.AccessToken!;
+        if (string.Equals(providerId, "facebook", StringComparison.OrdinalIgnoreCase))
+        {
+            var integrationMeta = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
+            var pageToken = integrationMeta.GetValueOrDefault("pageAccessToken");
+            if (!string.IsNullOrEmpty(pageToken))
+                effectiveAccessToken = pageToken;
+        }
+
+        // Get pageId for Facebook account analytics
+        string? accountId = integration.ExternalAccountId;
+        if (string.Equals(providerId, "facebook", StringComparison.OrdinalIgnoreCase))
+        {
+            var integrationMeta = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+            accountId = integrationMeta.GetValueOrDefault("pageId") ?? accountId;
+        }
+
+        var request = new AnalyticsRequest
+        {
+            AccountId = accountId,
+            StartDateUtc = start,
+            EndDateUtc = end
+        };
+
         try
         {
-            var request = new AnalyticsRequest
-            {
-                AccountId = integration.ExternalAccountId,
-                StartDateUtc = start,
-                EndDateUtc = end
-            };
-
-            var result = await adapter.GetAccountAnalyticsAsync(integration.AccessToken!, request, cancellationToken);
+            var result = await adapter.GetAccountAnalyticsAsync(effectiveAccessToken, request, cancellationToken);
 
             if (!result.IsSuccess)
             {
