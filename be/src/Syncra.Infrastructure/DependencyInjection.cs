@@ -1,0 +1,59 @@
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Syncra.Infrastructure.Persistence;
+using Syncra.Infrastructure.Persistence.Interceptors;
+using Syncra.Infrastructure.Repositories;
+using Syncra.Infrastructure.Services;
+using Syncra.Application.Repositories;
+using Syncra.Application.Options;
+using Syncra.Infrastructure.Social;
+using Syncra.Infrastructure.Jobs;
+using Syncra.Infrastructure.Storage;
+using Syncra.Application.Interfaces;
+
+namespace Syncra.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var postgresOptions = configuration.GetSection(PostgresOptions.SectionName).Get<PostgresOptions>() 
+            ?? new PostgresOptions();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<AuditInterceptor>();
+
+        services.AddDbContext<AppDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(postgresOptions.ConnectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
+        });
+
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+        services.AddScoped<IPostRepository, PostRepository>();
+        services.AddScoped<IIntegrationRepository, IntegrationRepository>();
+        services.AddScoped<IMediaRepository, MediaRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
+        services.AddScoped<IntegrationTokenRefreshJob>();
+        services.AddScoped<IIntegrationTokenRefreshJobScheduler, IntegrationTokenRefreshJobScheduler>();
+        services.AddScoped<DuePostPublishJob>();
+        services.AddScoped<IDuePostPublishJobScheduler, DuePostPublishJobScheduler>();
+
+        services.AddSocialIntegrations(configuration);
+
+        services.AddScoped<IStorageService, LocalMediaStorage>();
+
+        services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
+        services.AddScoped<IStripeService, StripeService>();
+
+        return services;
+    }
+}
