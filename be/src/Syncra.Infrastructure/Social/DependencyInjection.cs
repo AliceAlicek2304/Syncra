@@ -55,6 +55,12 @@ public static class DependencyInjection
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
 
+        // Facebook video uploads can take longer — use 60s timeout
+        var facebookTimeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(60));
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.FacebookPublishAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(facebookTimeoutPolicy);
+
         // Register analytics adapters
         services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.YouTube.YouTubeAnalyticsAdapter>()
             .AddPolicyHandler(retryPolicy)
