@@ -166,8 +166,12 @@ public class IntegrationsController : ControllerBase
                     providerId,
                     externalUserId = result.ExternalUserId,
                     externalUsername = result.ExternalUsername,
+                    // YouTube fields
                     channelId = metadata.GetValueOrDefault("channelId"),
-                    channelTitle = metadata.GetValueOrDefault("channelTitle")
+                    channelTitle = metadata.GetValueOrDefault("channelTitle"),
+                    // Facebook fields
+                    pageId = metadata.GetValueOrDefault("pageId"),
+                    pageName = metadata.GetValueOrDefault("pageName")
                 }
             });
         }
