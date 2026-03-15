@@ -19,6 +19,8 @@ public sealed class Workspace : EntityBase
     public Subscription? Subscription { get; set; }
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Integration> Integrations { get; set; } = new List<Integration>();
+    public ICollection<Idea> Ideas { get; set; } = new List<Idea>();
+    public ICollection<Group> Groups { get; set; } = new List<Group>();
 
     // Private parameterless constructor for EF Core
     private Workspace() { }

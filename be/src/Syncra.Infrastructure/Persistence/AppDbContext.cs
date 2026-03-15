@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<Integration> Integrations => Set<Integration>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Media> Media => Set<Media>();
+    public DbSet<Idea> Ideas => Set<Idea>();
+    public DbSet<Group> Groups => Set<Group>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
