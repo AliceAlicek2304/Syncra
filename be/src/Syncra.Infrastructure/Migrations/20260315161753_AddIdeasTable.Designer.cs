@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncra.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315161753_AddIdeasTable")]
+    partial class AddIdeasTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,108 +119,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("audit_logs", (string)null);
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.Group", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("groups", (string)null);
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.Idea", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId", "Status");
-
-                    b.ToTable("ideas", (string)null);
                 });
 
             modelBuilder.Entity("Syncra.Domain.Entities.IdempotencyRecord", b =>
@@ -1248,28 +1149,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.ToTable("workspace_members", (string)null);
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.Group", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("Groups")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workspace");
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.Idea", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("Ideas")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workspace");
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.Integration", b =>
                 {
                     b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
@@ -1435,10 +1314,6 @@ namespace Syncra.Infrastructure.Migrations
 
             modelBuilder.Entity("Syncra.Domain.Entities.Workspace", b =>
                 {
-                    b.Navigation("Groups");
-
-                    b.Navigation("Ideas");
-
                     b.Navigation("Integrations");
 
                     b.Navigation("Members");
