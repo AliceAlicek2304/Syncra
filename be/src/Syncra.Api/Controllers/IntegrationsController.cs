@@ -166,8 +166,12 @@ public class IntegrationsController : ControllerBase
                     providerId,
                     externalUserId = result.ExternalUserId,
                     externalUsername = result.ExternalUsername,
+                    // YouTube fields
                     channelId = metadata.GetValueOrDefault("channelId"),
-                    channelTitle = metadata.GetValueOrDefault("channelTitle")
+                    channelTitle = metadata.GetValueOrDefault("channelTitle"),
+                    // Facebook fields
+                    pageId = metadata.GetValueOrDefault("pageId"),
+                    pageName = metadata.GetValueOrDefault("pageName")
                 }
             });
         }
@@ -264,8 +268,13 @@ public class IntegrationsController : ControllerBase
             lastRefreshAtUtc = integration.TokenRefreshLastSuccessAtUtc,
             lastRefreshError = integration.TokenRefreshLastError,
             accountId = integration.ExternalAccountId,
+            // YouTube-specific
             channelId = metadata.GetValueOrDefault("channelId"),
-            channelTitle = metadata.GetValueOrDefault("channelTitle")
+            channelTitle = metadata.GetValueOrDefault("channelTitle"),
+            // Facebook-specific
+            pageId = metadata.GetValueOrDefault("pageId"),
+            pageName = metadata.GetValueOrDefault("pageName"),
+            pageCategory = metadata.GetValueOrDefault("pageCategory")
         });
     }
 }

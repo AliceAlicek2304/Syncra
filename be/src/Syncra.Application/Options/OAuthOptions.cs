@@ -6,6 +6,7 @@ public class OAuthOptions
     public OAuthProviderOptions X { get; set; } = new();
     public OAuthProviderOptions TikTok { get; set; } = new();
     public OAuthProviderOptions YouTube { get; set; } = new();
+    public OAuthProviderOptions Facebook { get; set; } = new();
 }
 
 public class OAuthProviderOptions

@@ -1,179 +1,88 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
+using Syncra.Application.Interfaces;
 using Syncra.Application.Repositories;
-using Syncra.Domain.Interfaces;
-using Syncra.Domain.Models.Social;
 
 namespace Syncra.Api.Controllers;
 
+/// <summary>
+/// Matches Potiz analytics.controller.ts exactly.
+/// GET /analytics/:integration  → checkAnalytics()
+/// GET /analytics/post/:postId  → checkPostAnalytics()
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/v1/workspaces/{workspaceId}/analytics")]
 public class AnalyticsController : ControllerBase
 {
-    private readonly IAnalyticsAdapterRegistry _analyticsRegistry;
-    private readonly IIntegrationRepository _integrationRepository;
-    private readonly IDistributedCache _cache;
-    private readonly ILogger<AnalyticsController> _logger;
+    private readonly IIntegrationAnalyticsService _analyticsService;
+    private readonly IPostRepository _postRepository;
 
-    private static readonly DistributedCacheEntryOptions CacheOptions = new()
+    public AnalyticsController(IIntegrationAnalyticsService analyticsService, IPostRepository postRepository)
     {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
-    };
-
-    public AnalyticsController(
-        IAnalyticsAdapterRegistry analyticsRegistry,
-        IIntegrationRepository integrationRepository,
-        IDistributedCache cache,
-        ILogger<AnalyticsController> logger)
-    {
-        _analyticsRegistry = analyticsRegistry;
-        _integrationRepository = integrationRepository;
-        _cache = cache;
-        _logger = logger;
+        _analyticsService = analyticsService;
+        _postRepository = postRepository;
     }
 
     /// <summary>
-    /// GET /api/v1/workspaces/{workspaceId}/analytics/{providerId}/post/{externalId}
-    /// Returns analytics for a specific post/video.
+    /// GET /api/v1/workspaces/{workspaceId}/analytics/{integrationId}?date=30
+    /// Matches Potiz analytics.controller.ts:16 getIntegration().
     /// </summary>
-    [HttpGet("{providerId}/post/{externalId}")]
+    [HttpGet("{integrationId:guid}")]
+    public async Task<IActionResult> GetIntegrationAnalytics(
+        Guid workspaceId,
+        Guid integrationId,
+        [FromQuery] int date = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _analyticsService.CheckAnalyticsAsync(
+            workspaceId, integrationId, date, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30
+    /// Matches Potiz analytics.controller.ts:25 getPostAnalytics().
+    /// </summary>
+    [HttpGet("post/{postId:guid}")]
     public async Task<IActionResult> GetPostAnalytics(
         Guid workspaceId,
-        string providerId,
-        string externalId,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate,
-        [FromQuery] bool? isShort,
-        CancellationToken cancellationToken)
+        Guid postId,
+        [FromQuery] int date = 30,
+        CancellationToken cancellationToken = default)
     {
-        var start = startDate ?? DateTime.UtcNow.AddDays(-28);
-        var end = endDate ?? DateTime.UtcNow;
+        var result = await _analyticsService.CheckPostAnalyticsAsync(
+            workspaceId, postId, date, cancellationToken);
 
-        var cacheKey = $"analytics:{workspaceId}:{providerId}:post:{externalId}:{start:yyyyMMdd}:{end:yyyyMMdd}";
-
-        var cached = await TryGetCacheAsync(cacheKey, cancellationToken);
-        if (cached != null)
-        {
-            return Content(cached, "application/json");
-        }
-
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
-        if (integration == null || !integration.IsActive)
-        {
-            return NotFound(new { error = $"No active {providerId} integration found for this workspace." });
-        }
-
-        var adapter = _analyticsRegistry.GetAdapterOrDefault(providerId);
-        if (adapter == null)
-        {
-            return NotFound(new { error = "Provider not supported." });
-        }
-
-        try
-        {
-            var request = new AnalyticsRequest
-            {
-                ExternalId = externalId,
-                AccountId = integration.ExternalAccountId,
-                StartDateUtc = start,
-                EndDateUtc = end,
-                IsShort = isShort
-            };
-
-            var result = await adapter.GetPostAnalyticsAsync(integration.AccessToken!, request, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return UnprocessableEntity(new { error = result.Error });
-            }
-
-            var json = JsonSerializer.Serialize(result);
-            await TrySetCacheAsync(cacheKey, json, cancellationToken);
-
-            return Content(json, "application/json");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching post analytics for {ProviderId}/{ExternalId}", providerId, externalId);
-            return StatusCode(500, new { error = "An error occurred while fetching analytics." });
-        }
+        return Ok(result);
     }
 
     /// <summary>
-    /// GET /api/v1/workspaces/{workspaceId}/analytics/{providerId}/account
-    /// Returns aggregate analytics for the channel/page/profile.
+    /// GET /api/v1/workspaces/{workspaceId}/analytics/post/{postId}/debug
+    /// Debug endpoint — dumps raw post + integration state to diagnose empty analytics.
     /// </summary>
-    [HttpGet("{providerId}/account")]
-    public async Task<IActionResult> GetAccountAnalytics(
-        Guid workspaceId,
-        string providerId,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate,
-        CancellationToken cancellationToken)
+    [HttpGet("post/{postId:guid}/debug")]
+    public async Task<IActionResult> DebugPost(Guid workspaceId, Guid postId)
     {
-        var start = startDate ?? DateTime.UtcNow.AddDays(-28);
-        var end = endDate ?? DateTime.UtcNow;
+        var post = await _postRepository.GetByIdAsync(postId);
+        if (post == null)
+            return NotFound(new { error = "Post not found" });
 
-        var cacheKey = $"analytics:{workspaceId}:{providerId}:account:{start:yyyyMMdd}:{end:yyyyMMdd}";
-
-        var cached = await TryGetCacheAsync(cacheKey, cancellationToken);
-        if (cached != null)
+        return Ok(new
         {
-            return Content(cached, "application/json");
-        }
-
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
-        if (integration == null || !integration.IsActive)
-        {
-            return NotFound(new { error = $"No active {providerId} integration found for this workspace." });
-        }
-
-        var adapter = _analyticsRegistry.GetAdapterOrDefault(providerId);
-        if (adapter == null)
-        {
-            return NotFound(new { error = "Provider not supported." });
-        }
-
-        try
-        {
-            var request = new AnalyticsRequest
-            {
-                AccountId = integration.ExternalAccountId,
-                StartDateUtc = start,
-                EndDateUtc = end
-            };
-
-            var result = await adapter.GetAccountAnalyticsAsync(integration.AccessToken!, request, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return UnprocessableEntity(new { error = result.Error });
-            }
-
-            var json = JsonSerializer.Serialize(result);
-            await TrySetCacheAsync(cacheKey, json, cancellationToken);
-
-            return Content(json, "application/json");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching account analytics for {ProviderId}", providerId);
-            return StatusCode(500, new { error = "An error occurred while fetching analytics." });
-        }
-    }
-
-    private async Task<string?> TryGetCacheAsync(string key, CancellationToken ct)
-    {
-        try { return await _cache.GetStringAsync(key, ct); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Redis get failed for key {Key}", key); return null; }
-    }
-
-    private async Task TrySetCacheAsync(string key, string value, CancellationToken ct)
-    {
-        try { await _cache.SetStringAsync(key, value, CacheOptions, ct); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Redis set failed for key {Key}", key); }
+            postId = post.Id,
+            workspaceId = post.WorkspaceId,
+            workspaceMatch = post.WorkspaceId == workspaceId,
+            status = post.Status.ToString(),
+            publishExternalId = post.PublishExternalId,
+            publishExternalUrl = post.PublishExternalUrl,
+            integrationId = post.IntegrationId,
+            integrationPlatform = post.Integration?.Platform,
+            integrationExternalAccountId = post.Integration?.ExternalAccountId,
+            integrationHasToken = !string.IsNullOrEmpty(post.Integration?.AccessToken),
+            integrationTokenExpiresAt = post.Integration?.ExpiresAtUtc,
+            integrationIsActive = post.Integration?.IsActive
+        });
     }
 }

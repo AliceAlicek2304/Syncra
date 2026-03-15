@@ -66,6 +66,7 @@ public static class DependencyInjection
             services.AddDistributedMemoryCache();
         }
 
+        services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IStorageService, LocalMediaStorage>();
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.AddScoped<IStripeService, StripeService>();

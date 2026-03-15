@@ -34,6 +34,10 @@ public static class DependencyInjection
         services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>()
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
+        
+        services.AddHttpClient<ISocialProvider, Providers.FacebookProvider>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
 
         // TikTok API Client
         services.AddHttpClient<Publishing.Adapters.TikTok.ITikTokApiClient, Publishing.Adapters.TikTok.TikTokApiClient>()
@@ -51,11 +55,21 @@ public static class DependencyInjection
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
 
+        // Facebook video uploads can take longer — use 60s timeout
+        var facebookTimeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(60));
+        services.AddHttpClient<IPublishAdapter, Publishing.Adapters.FacebookPublishAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(facebookTimeoutPolicy);
+
         // Register analytics adapters
         services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.YouTube.YouTubeAnalyticsAdapter>()
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
-        
+
+        services.AddHttpClient<IAnalyticsAdapter, Publishing.Adapters.Facebook.FacebookInsightsAdapter>()
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy);
+
         return services;
     }
 }

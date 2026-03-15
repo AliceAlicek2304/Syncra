@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
-
 namespace Syncra.Infrastructure.Publishing.Adapters.YouTube;
 
 public sealed class YouTubeAnalyticsAdapter : IAnalyticsAdapter
@@ -22,7 +21,84 @@ public sealed class YouTubeAnalyticsAdapter : IAnalyticsAdapter
 
     public string ProviderId => "youtube";
 
-    public async Task<ProviderAnalyticsResult> GetPostAnalyticsAsync(
+    /// <summary>
+    /// Matches Potiz analytics() contract — returns AnalyticsData[] with label/data/percentageChange.
+    /// </summary>
+    public async Task<List<AnalyticsData>> GetAnalyticsAsync(
+        string id,
+        string accessToken,
+        int date,
+        CancellationToken cancellationToken = default)
+    {
+        var endDate = DateTime.UtcNow;
+        var startDate = endDate.AddDays(-date);
+
+        var url = BuildUrl(new Dictionary<string, string>
+        {
+            ["ids"] = "channel==MINE",
+            ["metrics"] = "views,likes,comments,shares,estimatedMinutesWatched,subscribersGained",
+            ["startDate"] = startDate.ToString("yyyy-MM-dd"),
+            ["endDate"] = endDate.ToString("yyyy-MM-dd")
+        });
+
+        var (json, error) = await FetchAsync(accessToken, url, cancellationToken);
+        if (error != null) return new List<AnalyticsData>();
+
+        var result = ParseReportResponse(json!, ProviderId);
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+        var analyticsData = new List<AnalyticsData>();
+        if (result.Views.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Views", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Views.Value.ToString(), Date = today } } });
+        if (result.Likes.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Likes", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Likes.Value.ToString(), Date = today } } });
+        if (result.Comments.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Comments", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Comments.Value.ToString(), Date = today } } });
+
+        return analyticsData;
+    }
+
+    /// <summary>
+    /// Matches Potiz postAnalytics() contract — returns AnalyticsData[] with label/data/percentageChange.
+    /// </summary>
+    public async Task<List<AnalyticsData>> GetPostAnalyticsAsync(
+        string integrationId,
+        string accessToken,
+        string postId,
+        int date,
+        CancellationToken cancellationToken = default)
+    {
+        var endDate = DateTime.UtcNow;
+        var startDate = endDate.AddDays(-date);
+
+        var url = BuildUrl(new Dictionary<string, string>
+        {
+            ["ids"] = "channel==MINE",
+            ["metrics"] = "views,likes,comments,shares,estimatedMinutesWatched,averageViewDuration",
+            ["dimensions"] = "video",
+            ["filters"] = $"video=={postId}",
+            ["startDate"] = startDate.ToString("yyyy-MM-dd"),
+            ["endDate"] = endDate.ToString("yyyy-MM-dd")
+        });
+
+        var (json, error) = await FetchAsync(accessToken, url, cancellationToken);
+        if (error != null) return new List<AnalyticsData>();
+
+        var result = ParseReportResponse(json!, ProviderId);
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+        var analyticsData = new List<AnalyticsData>();
+        if (result.Views.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Views", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Views.Value.ToString(), Date = today } } });
+        if (result.Likes.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Likes", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Likes.Value.ToString(), Date = today } } });
+        if (result.Comments.HasValue)
+            analyticsData.Add(new AnalyticsData { Label = "Comments", PercentageChange = 0, Data = new List<AnalyticsDataPoint> { new() { Total = result.Comments.Value.ToString(), Date = today } } });
+
+        return analyticsData;
+    }
+
+    public async Task<ProviderAnalyticsResult> GetPostAnalyticsLegacyAsync(
         string accessToken,
         AnalyticsRequest request,
         CancellationToken cancellationToken = default)

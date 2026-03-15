@@ -22,4 +22,11 @@ public interface ISocialProvider
     /// Refreshes an existing access token.
     /// </summary>
     Task<AuthResult> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revoke the access token with the provider. Optional - not all providers support this.
+    /// Default implementation returns false (no-op).
+    /// </summary>
+    Task<bool> RevokeTokenAsync(string accessToken, CancellationToken cancellationToken = default)
+        => Task.FromResult(false);
 }
