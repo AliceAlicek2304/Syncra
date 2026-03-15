@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Infrastructure.Persistence;
 
@@ -22,5 +22,10 @@ public class IntegrationRepository : Repository<Integration>, IIntegrationReposi
     {
         return await _dbSet
             .FirstOrDefaultAsync(i => i.WorkspaceId == workspaceId && i.Platform == platform);
+    }
+
+    public async Task<IReadOnlyList<Integration>> GetAllAsync()
+    {
+        return await _dbSet.ToListAsync();
     }
 }

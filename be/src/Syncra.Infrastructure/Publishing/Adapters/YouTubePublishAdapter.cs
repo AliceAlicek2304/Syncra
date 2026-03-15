@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncra.Application.Options;
-using Syncra.Application.Repositories;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
 using Syncra.Infrastructure.Publishing.Adapters.YouTube;

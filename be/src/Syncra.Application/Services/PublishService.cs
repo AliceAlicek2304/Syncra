@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Interfaces;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Interfaces;
@@ -56,7 +56,7 @@ public sealed class PublishService : IPublishService
             throw new InvalidOperationException("Post does not have an integration configured.");
         }
 
-        if (post.ScheduledAtUtc.HasValue && post.ScheduledAtUtc.Value > DateTime.UtcNow)
+        if (post.ScheduledAt.IsInFuture)
         {
             throw new InvalidOperationException("Post is scheduled for the future and cannot be published immediately.");
         }
@@ -88,7 +88,7 @@ public sealed class PublishService : IPublishService
 
         if (post.Status != PostStatus.Publishing)
         {
-            post.Status = PostStatusTransitions.ApplyTransition(post.Status, PostStatus.Publishing);
+            post.TransitionTo(PostStatus.Publishing);
             post.MarkPublishAttempt(utcNow);
             await _postRepository.UpdateAsync(post);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -182,13 +182,29 @@ public sealed class PublishService : IPublishService
     {
         var mediaIds = post.Media.Select(m => m.Id).ToList();
 
+        var metadata = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(post.Integration?.Metadata))
+        {
+            try
+            {
+                var integrationMeta = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(post.Integration.Metadata);
+                if (integrationMeta is not null)
+                {
+                    foreach (var kv in integrationMeta)
+                        metadata[kv.Key] = kv.Value;
+                }
+            }
+            catch { /* ignore */ }
+        }
+
         return new PublishRequest
         {
             WorkspaceId = workspaceId,
             PostId = post.Id,
             Content = BuildContent(post),
-            ScheduledAtUtc = post.ScheduledAtUtc,
-            MediaIds = mediaIds
+            ScheduledAtUtc = post.ScheduledAt,
+            MediaIds = mediaIds,
+            Metadata = metadata
         };
     }
 

@@ -1,4 +1,4 @@
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Infrastructure.Persistence;
 
 namespace Syncra.Infrastructure.Repositories;

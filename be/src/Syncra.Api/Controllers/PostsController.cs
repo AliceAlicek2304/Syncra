@@ -1,8 +1,10 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs.Posts;
-using Syncra.Application.Interfaces;
+using Syncra.Application.Features.Posts.Commands;
+using Syncra.Application.Features.Posts.Queries;
+using Syncra.Shared.Extensions;
+using MediatR;
 
 namespace Syncra.Api.Controllers;
 
@@ -11,11 +13,11 @@ namespace Syncra.Api.Controllers;
 [Route("api/v1/workspaces/{workspaceId}/[controller]")]
 public class PostsController : ControllerBase
 {
-    private readonly IPostService _postService;
+    private readonly IMediator _mediator;
 
-    public PostsController(IPostService postService)
+    public PostsController(IMediator mediator)
     {
-        _postService = postService;
+        _mediator = mediator;
     }
 
     [HttpPost]
@@ -24,37 +26,24 @@ public class PostsController : ControllerBase
         [FromBody] CreatePostDto dto,
         CancellationToken cancellationToken)
     {
-        if (workspaceId == Guid.Empty)
-        {
-            return BadRequest(new { error = "Invalid workspace ID." });
-        }
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
 
-        if (dto == null)
-        {
-            return BadRequest(new { error = "Post data is required." });
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        var userId = ResolveUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        var created = await _postService.CreatePostAsync(
+        var command = new CreatePostCommand(
             workspaceId,
             userId.Value,
-            dto,
-            cancellationToken);
+            dto.Title,
+            dto.Content,
+            dto.ScheduledAtUtc,
+            dto.IntegrationId,
+            dto.MediaIds);
+
+        var result = await _mediator.Send(command, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetPostById),
-            new { workspaceId, postId = created.Id },
-            created);
+            new { workspaceId, postId = result.Id },
+            result);
     }
 
     [HttpGet]
@@ -67,16 +56,17 @@ public class PostsController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var posts = await _postService.GetPostsAsync(
+        var query = new GetPostsQuery(
             workspaceId,
             status,
             scheduledFromUtc,
             scheduledToUtc,
             page,
-            pageSize,
-            cancellationToken);
+            pageSize);
 
-        return Ok(posts);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
     }
 
     [HttpGet("{postId:guid}")]
@@ -85,13 +75,15 @@ public class PostsController : ControllerBase
         Guid postId,
         CancellationToken cancellationToken)
     {
-        var post = await _postService.GetPostByIdAsync(workspaceId, postId, cancellationToken);
-        if (post is null)
+        var query = new GetPostByIdQuery(workspaceId, postId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result is null)
         {
             return NotFound();
         }
 
-        return Ok(post);
+        return Ok(result);
     }
 
     [HttpPut("{postId:guid}")]
@@ -101,45 +93,28 @@ public class PostsController : ControllerBase
         [FromBody] UpdatePostDto dto,
         CancellationToken cancellationToken)
     {
-        if (workspaceId == Guid.Empty)
-        {
-            return BadRequest(new { error = "Invalid workspace ID." });
-        }
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
 
-        if (postId == Guid.Empty)
-        {
-            return BadRequest(new { error = "Invalid post ID." });
-        }
-
-        if (dto == null)
-        {
-            return BadRequest(new { error = "Update data is required." });
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        var userId = ResolveUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        var updated = await _postService.UpdatePostAsync(
+        var command = new UpdatePostCommand(
             workspaceId,
             postId,
             userId.Value,
-            dto,
-            cancellationToken);
+            dto.Title,
+            dto.Content,
+            dto.ScheduledAtUtc,
+            dto.Status,
+            dto.IntegrationId,
+            dto.MediaIds);
 
-        if (updated is null)
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (result is null)
         {
             return NotFound();
         }
 
-        return Ok(updated);
+        return Ok(result);
     }
 
     [HttpDelete("{postId:guid}")]
@@ -148,8 +123,10 @@ public class PostsController : ControllerBase
         Guid postId,
         CancellationToken cancellationToken)
     {
-        var deleted = await _postService.DeletePostAsync(workspaceId, postId, cancellationToken);
-        if (!deleted)
+        var command = new DeletePostCommand(workspaceId, postId);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result)
         {
             return NotFound();
         }
@@ -157,55 +134,18 @@ public class PostsController : ControllerBase
         return NoContent();
     }
 
-        [HttpPost("{postId:guid}/publish")]
-        public async Task<IActionResult> PublishPost(
-            Guid workspaceId,
-            Guid postId,
-            [FromBody] PublishPostRequestDto? dto,
-            CancellationToken cancellationToken)
-        {
-            if (workspaceId == Guid.Empty)
-            {
-                return BadRequest(new { error = "Invalid workspace ID." });
-            }
-
-            if (postId == Guid.Empty)
-            {
-                return BadRequest(new { error = "Invalid post ID." });
-            }
-
-            var userId = ResolveUserId();
-            if (userId is null)
-            {
-                return Unauthorized();
-            }
-
-            try
-            {
-                var result = await _postService.PublishPostAsync(
-                    workspaceId,
-                    postId,
-                    userId.Value,
-                    dto?.DryRun ?? false,
-                    cancellationToken);
-
-                return Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
-
-    private Guid? ResolveUserId()
+    [HttpPost("{postId:guid}/publish")]
+    public async Task<IActionResult> PublishPost(
+        Guid workspaceId,
+        Guid postId,
+        [FromBody] PublishPostRequestDto? dto,
+        CancellationToken cancellationToken)
     {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (claim is null)
-        {
-            return null;
-        }
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
 
-        return Guid.TryParse(claim.Value, out var id) ? id : null;
+        var command = new PublishPostCommand(workspaceId, postId, userId.Value, dto?.DryRun ?? false);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
     }
 }
-

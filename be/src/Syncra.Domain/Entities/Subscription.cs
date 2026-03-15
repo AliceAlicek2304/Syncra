@@ -4,6 +4,7 @@ namespace Syncra.Domain.Entities;
 
 public sealed class Subscription : WorkspaceEntityBase
 {
+    public new Guid WorkspaceId { get; set; }
     public Guid PlanId { get; set; }
     public string? Provider { get; set; }
     public string? ProviderCustomerId { get; set; }

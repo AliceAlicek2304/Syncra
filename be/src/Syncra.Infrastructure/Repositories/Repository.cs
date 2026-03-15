@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Syncra.Application.Repositories;
 using Syncra.Domain.Entities;
 using Syncra.Infrastructure.Persistence;
 
 namespace Syncra.Infrastructure.Repositories;
 
-public class Repository<T> : IRepository<T> where T : EntityBase
+public class Repository<T> where T : EntityBase
 {
     protected readonly AppDbContext _context;
     protected readonly DbSet<T> _dbSet;

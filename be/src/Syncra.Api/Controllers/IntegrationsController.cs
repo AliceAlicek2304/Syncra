@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Syncra.Application.Repositories;
-using Syncra.Domain.Entities;
-using Syncra.Domain.Interfaces;
-using Syncra.Infrastructure.Social;
+using Syncra.Application.Features.Integrations.Commands;
+using Syncra.Application.Features.Integrations.Queries;
+using MediatR;
 
 namespace Syncra.Api.Controllers;
 
@@ -17,18 +11,11 @@ namespace Syncra.Api.Controllers;
 [Route("api/v1/workspaces/{workspaceId}/[controller]")]
 public class IntegrationsController : ControllerBase
 {
-    private readonly IProviderRegistry _providerRegistry;
-    private readonly IIntegrationRepository _integrationRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMediator _mediator;
 
-    public IntegrationsController(
-        IProviderRegistry providerRegistry,
-        IIntegrationRepository integrationRepository,
-        IUnitOfWork unitOfWork)
+    public IntegrationsController(IMediator mediator)
     {
-        _providerRegistry = providerRegistry;
-        _integrationRepository = integrationRepository;
-        _unitOfWork = unitOfWork;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -36,37 +23,14 @@ public class IntegrationsController : ControllerBase
     /// Initializes the OAuth connect flow and returns the authorization URL.
     /// </summary>
     [HttpPost("{providerId}/connect")]
-    public IActionResult Connect(Guid workspaceId, string providerId, [FromQuery] string? redirectUri = null)
+    public async Task<IActionResult> Connect(
+        Guid workspaceId,
+        string providerId,
+        [FromQuery] string? redirectUri = null,
+        CancellationToken cancellationToken = default)
     {
-        if (workspaceId == Guid.Empty)
-        {
-            return BadRequest(new { error = "Invalid workspace ID." });
-        }
-
-        if (string.IsNullOrWhiteSpace(providerId))
-        {
-            return BadRequest(new { error = "Provider ID is required." });
-        }
-
-        try
-        {
-            var provider = _providerRegistry.GetProvider(providerId);
-            
-            // Encode minimal state. In production, consider signing this or storing in a session/cache.
-            var state = $"workspaceId={workspaceId}";
-            
-            var url = provider.GetAuthorizationUrl(state, redirectUri);
-            
-            return Ok(new { url });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var url = await _mediator.Send(new ConnectIntegrationCommand(workspaceId, providerId, redirectUri), cancellationToken);
+        return Ok(new { url });
     }
 
     /// <summary>
@@ -76,113 +40,39 @@ public class IntegrationsController : ControllerBase
     [AllowAnonymous]
     [HttpGet("{providerId}/callback")]
     public async Task<IActionResult> Callback(
-        Guid workspaceId, 
-        string providerId, 
-        [FromQuery] string code, 
+        Guid workspaceId,
+        string providerId,
+        [FromQuery] string code,
         [FromQuery] string state,
         [FromQuery] string? redirectUri = null,
         CancellationToken cancellationToken = default)
     {
-        if (workspaceId == Guid.Empty)
+        if (string.IsNullOrEmpty(redirectUri))
         {
-            return BadRequest(new { error = "Invalid workspace ID." });
+            var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+            redirectUri = $"{scheme}://{Request.Host}{Request.Path}";
         }
 
-        if (string.IsNullOrWhiteSpace(providerId))
-        {
-            return BadRequest(new { error = "Provider ID is required." });
-        }
+        var result = await _mediator.Send(
+            new OAuthCallbackCommand(workspaceId, providerId, code, state, redirectUri),
+            cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(code))
+        return Ok(new
         {
-            return BadRequest(new { error = "Authorization code is required." });
-        }
-
-        try
-        {
-            var provider = _providerRegistry.GetProvider(providerId);
-
-            // Reconstruct redirectUri if not provided (OAuth providers don't send it back in query string)
-            if (string.IsNullOrEmpty(redirectUri))
+            message = "Successfully connected",
+            integration = new
             {
-                var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
-                redirectUri = $"{scheme}://{Request.Host}{Request.Path}";
+                id = result.IntegrationId,
+                result.WorkspaceId,
+                result.ProviderId,
+                result.ExternalUserId,
+                result.ExternalUsername,
+                result.ChannelId,
+                result.ChannelTitle,
+                result.PageId,
+                result.PageName
             }
-            
-            // Basic state validation
-            if (string.IsNullOrEmpty(state) || !state.Contains($"workspaceId={workspaceId}"))
-            {
-                return BadRequest(new { error = "Invalid or mismatched state parameter." });
-            }
-
-            var result = await provider.ExchangeCodeAsync(code, redirectUri, cancellationToken);
-            
-            if (!result.IsSuccess)
-            {
-                return BadRequest(new { error = result.Error });
-            }
-
-            var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
-            if (integration == null)
-            {
-                integration = new Integration
-                {
-                    WorkspaceId = workspaceId,
-                    Platform = providerId,
-                    ExternalAccountId = result.ExternalUserId,
-                    AccessToken = result.AccessToken,
-                    RefreshToken = result.RefreshToken,
-                    ExpiresAtUtc = result.ExpiresAt?.UtcDateTime,
-                    IsActive = true,
-                    Metadata = JsonSerializer.Serialize(result.Metadata)
-                };
-                await _integrationRepository.AddAsync(integration);
-            }
-            else
-            {
-                integration.ExternalAccountId = result.ExternalUserId ?? integration.ExternalAccountId;
-                integration.AccessToken = result.AccessToken ?? integration.AccessToken;
-                integration.RefreshToken = result.RefreshToken ?? integration.RefreshToken;
-                integration.ExpiresAtUtc = result.ExpiresAt?.UtcDateTime ?? integration.ExpiresAtUtc;
-                integration.IsActive = true;
-                integration.Metadata = JsonSerializer.Serialize(result.Metadata);
-                await _integrationRepository.UpdateAsync(integration);
-            }
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            // Phase 03: Token persisted.
-            var metadata = string.IsNullOrEmpty(integration.Metadata)
-                ? new Dictionary<string, string>()
-                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
-
-            return Ok(new 
-            { 
-                message = "Successfully connected",
-                integration = new
-                {
-                    id = integration.Id,
-                    workspaceId,
-                    providerId,
-                    externalUserId = result.ExternalUserId,
-                    externalUsername = result.ExternalUsername,
-                    // YouTube fields
-                    channelId = metadata.GetValueOrDefault("channelId"),
-                    channelTitle = metadata.GetValueOrDefault("channelTitle"),
-                    // Facebook fields
-                    pageId = metadata.GetValueOrDefault("pageId"),
-                    pageName = metadata.GetValueOrDefault("pageName")
-                }
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        });
     }
 
     /// <summary>
@@ -190,10 +80,10 @@ public class IntegrationsController : ControllerBase
     /// Lists all active integrations for a workspace.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> List(Guid workspaceId)
+    public async Task<IActionResult> List(Guid workspaceId, CancellationToken cancellationToken)
     {
-        var integrations = await _integrationRepository.GetByWorkspaceIdAsync(workspaceId);
-        return Ok(integrations);
+        var result = await _mediator.Send(new GetIntegrationsQuery(workspaceId), cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -201,36 +91,13 @@ public class IntegrationsController : ControllerBase
     /// Disconnects a specific provider from the workspace.
     /// </summary>
     [HttpDelete("{providerId}")]
-    public async Task<IActionResult> Disconnect(Guid workspaceId, string providerId, CancellationToken cancellationToken)    {
-        if (workspaceId == Guid.Empty)
-        {
-            return BadRequest(new { error = "Invalid workspace ID." });
-        }
-
-        if (string.IsNullOrWhiteSpace(providerId))
-        {
-            return BadRequest(new { error = "Provider ID is required." });
-        }
-
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
-        if (integration == null)
-        {
-            return NotFound(new { error = "Integration not found for this provider." });
-        }
-
-        integration.IsActive = false;
-        integration.AccessToken = null;
-        integration.RefreshToken = null;
-
-        await _integrationRepository.UpdateAsync(integration);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Ok(new 
-        { 
-            message = "Disconnected successfully", 
-            workspaceId, 
-            providerId 
-        });
+    public async Task<IActionResult> Disconnect(
+        Guid workspaceId,
+        string providerId,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DisconnectIntegrationCommand(workspaceId, providerId), cancellationToken);
+        return Ok(new { message = "Disconnected successfully", workspaceId, providerId });
     }
 
     /// <summary>
@@ -238,43 +105,12 @@ public class IntegrationsController : ControllerBase
     /// Returns health status of a specific integration.
     /// </summary>
     [HttpGet("{providerId}/health")]
-    public async Task<IActionResult> Health(Guid workspaceId, string providerId)
+    public async Task<IActionResult> Health(
+        Guid workspaceId,
+        string providerId,
+        CancellationToken cancellationToken)
     {
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(workspaceId, providerId);
-
-        if (integration == null)
-        {
-            return NotFound(new { status = "not_connected", providerId });
-        }
-
-        var metadata = string.IsNullOrEmpty(integration.Metadata)
-            ? new Dictionary<string, string>()
-            : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
-
-        var isTokenExpired = integration.ExpiresAtUtc.HasValue
-            && integration.ExpiresAtUtc.Value < DateTime.UtcNow;
-
-        var status = !integration.IsActive ? "disconnected"
-            : isTokenExpired ? "token_expired"
-            : integration.TokenRefreshHealthStatus?.ToString().ToLower() ?? "ok";
-
-        return Ok(new
-        {
-            status,
-            providerId,
-            isActive = integration.IsActive,
-            isTokenExpired,
-            expiresAtUtc = integration.ExpiresAtUtc,
-            lastRefreshAtUtc = integration.TokenRefreshLastSuccessAtUtc,
-            lastRefreshError = integration.TokenRefreshLastError,
-            accountId = integration.ExternalAccountId,
-            // YouTube-specific
-            channelId = metadata.GetValueOrDefault("channelId"),
-            channelTitle = metadata.GetValueOrDefault("channelTitle"),
-            // Facebook-specific
-            pageId = metadata.GetValueOrDefault("pageId"),
-            pageName = metadata.GetValueOrDefault("pageName"),
-            pageCategory = metadata.GetValueOrDefault("pageCategory")
-        });
+        var result = await _mediator.Send(new GetIntegrationHealthQuery(workspaceId, providerId), cancellationToken);
+        return Ok(result);
     }
 }
