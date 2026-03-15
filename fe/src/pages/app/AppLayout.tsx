@@ -48,9 +48,9 @@ export default function AppLayout() {
 
   return (
     <div className={`${styles.layout} ${collapsed ? styles.collapsed : ''}`}>
-      {/* Sidebar */}
+
       <aside className={styles.sidebar}>
-        {/* Logo + collapse */}
+
         <div className={styles.sidebarTop}>
           <a href="/" className={styles.logo}>
             <img src={logo} alt="Syncra" className={styles.logoImg} />
@@ -65,7 +65,7 @@ export default function AppLayout() {
           </button>
         </div>
 
-        {/* New Post button */}
+
         <div className={styles.newPostWrap}>
           <button
             className={`${styles.newPostBtn} ${collapsed ? styles.newPostBtnCollapsed : ''}`}
@@ -76,7 +76,7 @@ export default function AppLayout() {
           </button>
         </div>
 
-        {/* Nav */}
+
         <nav className={styles.nav}>
           {NAV_ITEMS.map(item => (
             <NavLink
@@ -97,7 +97,7 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Bottom: settings + user */}
+
         <div className={styles.sidebarBottom}>
           <NavLink
             to="/app/settings"
@@ -110,11 +110,15 @@ export default function AppLayout() {
           </NavLink>
 
           <div className={styles.userRow}>
-            <div className={styles.avatar}>{user?.avatar}</div>
+             {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="avatar" className={styles.avatar} />
+            ) : (
+                <div className={styles.avatar}>{user?.displayName?.[0] || 'U'}</div>
+            )}
             {!collapsed && (
               <div className={styles.userInfo}>
-                <span className={styles.userName}>{user?.name}</span>
-                <span className={styles.userPlan}>{user?.plan} plan</span>
+                <span className={styles.userName}>{user?.displayName}</span>
+                <span className={styles.userPlan}>Free Plan</span>
               </div>
             )}
             {!collapsed && (
@@ -126,12 +130,12 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
+
       <main className={styles.main}>
         <Outlet />
       </main>
 
-      {/* Single Modal Mount */}
+
       <CreatePostModal
         isOpen={state.isOpen}
         onClose={closeCreatePost}
@@ -142,13 +146,13 @@ export default function AppLayout() {
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
       
-      {/* Floating AI Coach */}
+
       <AICoach />
       
-      {/* Premium Background Layer */}
+
       <MeshBackground />
       
-      {/* Search & Actions Palette */}
+
       <CommandPalette onNewPost={() => openCreatePost({ source: 'command' })} />
     </div>
   )

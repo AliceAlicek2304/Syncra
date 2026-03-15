@@ -81,16 +81,18 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(o => !o)}
                 aria-label="User menu"
               >
-                <span className={styles.avatarCircle}>{user.avatar}</span>
+                <span className={styles.avatarCircle}>
+                  {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%'}} /> : (user.displayName?.[0] || 'M').toUpperCase()}
+                </span>
                 <div className={styles.avatarInfo}>
-                  <span className={styles.avatarName}>{user.name}</span>
-                  <span className={styles.avatarPlan}>{user.plan}</span>
+                  <span className={styles.avatarName}>{user.displayName || 'Minh Anh'}</span>
+                  <span className={styles.avatarPlan}>Creator Plan</span>
                 </div>
               </button>
               {dropdownOpen && (
                 <div className={styles.dropdown}>
                   <div className={styles.dropdownHeader}>
-                    <span className={styles.dropdownHandle}>{user.handle}</span>
+                    <span className={styles.dropdownHandle}>@{user.email.split('@')[0]}</span>
                   </div>
                   {USER_MENU.map(item => (
                     <button

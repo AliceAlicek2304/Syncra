@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/refs */
+
 import { useState, useRef } from 'react'
 import { Smile, Hash, Settings2, X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
 import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, type Platform } from './types'
@@ -176,18 +176,22 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
   return (
     <>
       <div className={styles.postArea}>
-        {/* Author row */}
+
         <div className={styles.authorRow}>
           <div className={styles.avatarWrap}>
-            <div className={styles.avatarBubble}>{state.user?.avatar ?? 'U'}</div>
+            {state.user?.avatarUrl ? (
+              <img src={state.user.avatarUrl} alt="avatar" className={styles.avatarBubble} />
+            ) : (
+               <div className={styles.avatarBubble}>{state.user?.displayName?.[0] || 'U'}</div>
+            )}
             <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[state.activeTab]}`}>
               <PlatformIcon platform={state.activeTab} size={12} />
             </div>
           </div>
-          <span className={styles.authorName}>{state.user?.name ?? 'You'}</span>
+          <span className={styles.authorName}>{state.user?.displayName || 'You'}</span>
         </div>
 
-        {/* Textarea */}
+
         <textarea
           ref={refs.textareaRef}
           className={styles.textarea}
@@ -196,7 +200,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
           onChange={e => actions.setActiveCaption(e.target.value)}
         />
 
-        {/* Media upload */}
+
         {state.media.length === 0 ? (
           <div
             className={`${styles.mediaZone} ${state.dragOver ? styles.mediaZoneDragOver : ''}`}
@@ -271,7 +275,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         />
       </div>
 
-      {/* Toolbar*/}
+
       <div className={styles.toolbar} style={{ position: 'relative' }}>
         <div ref={refs.emojiRef} style={{ position: 'relative' }}>
           <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">

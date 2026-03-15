@@ -5,7 +5,7 @@ import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
 import { shortId } from '../utils/shortId'
 import styles from './AIIdeaGenerator.module.css'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+
 export interface GeneratedIdea {
     id: string
     title: string
@@ -26,7 +26,7 @@ interface UploadedFile {
     type: 'image' | 'document'
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+
 const TONES = [
     { value: 'default', label: 'Balanced' },
     { value: 'casual', label: 'Casual' },
@@ -42,7 +42,7 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
-// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
     const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
     const [topic, setTopic] = useState('')
@@ -119,7 +119,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     }
 
     const handleBulkAdd = () => {
-        // If it's a preset result (e.g. from AI Coach), we join them into a single blob to feed the post editor.
+
         if (presetResults && selectedIdeaIds.length > 0) {
             const combinedContent = selectedIdeaIds.map(id => {
                 const r = results.find(x => x.id === id)
@@ -134,7 +134,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
             return
         }
 
-        // For default mode (adding separated cards to Ideas board)
+
         selectedIdeaIds.forEach(id => {
             const idea = results.find(r => r.id === id)
             if (idea) {
@@ -171,7 +171,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     return (
         <div className={styles.overlay}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                {/* Header */}
+
                 <div className={styles.modalHeader}>
                     <div className={styles.modalTitle}>
                         <Sparkles size={18} className={styles.modalTitleIcon} />
@@ -189,9 +189,9 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                     </div>
                 </div>
 
-                {/* Body */}
+
                 <div className={styles.modalBody}>
-                    {/* ── FORM ── */}
+
                     {step === 'form' && (
                         <div className={styles.formWrap}>
                             <p className={styles.formSubtitle}>What do you want to create?</p>
@@ -208,7 +208,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                 }}
                             />
 
-                            {/* Reference Files Upload */}
+
                             <div className={styles.uploadSection}>
                                 <p className={styles.uploadLabel}>Reference files (optional)</p>
                                 <p className={styles.uploadHint}>Upload images or documents to help AI understand your vision better</p>
@@ -341,7 +341,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                         </div>
                     )}
 
-                    {/* ── LOADING ── */}
+
                     {step === 'loading' && (
                         <div className={styles.loadingWrap}>
                             <div className={styles.loadingOrb} />
@@ -356,7 +356,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                         </div>
                     )}
 
-                    {/* ── RESULTS ── */}
+
                     {step === 'results' && (
                         <>
                             <div className={styles.resultsList}>

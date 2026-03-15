@@ -1,8 +1,9 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { WorkspaceProvider } from './context/WorkspaceContext'
 import type { ReactNode } from 'react'
 
-// Homepage components
+
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Stats from './components/Stats'
@@ -13,7 +14,7 @@ import Testimonials from './components/Testimonials'
 import TrustBadges from './components/TrustBadges'
 import Footer from './components/Footer'
 
-// App pages
+
 import { CalendarProvider } from './context/CalendarContext'
 import { RepurposeProvider } from './context/RepurposeContext'
 import { CreatePostModalProvider } from './context/createPostModalContext'
@@ -58,13 +59,15 @@ const router = createBrowserRouter(
       path: '/app',
       element: (
         <ProtectedRoute>
-          <CalendarProvider>
-            <RepurposeProvider>
-              <CreatePostModalProvider>
-                <AppLayout />
-              </CreatePostModalProvider>
-            </RepurposeProvider>
-          </CalendarProvider>
+          <WorkspaceProvider>
+            <CalendarProvider>
+              <RepurposeProvider>
+                <CreatePostModalProvider>
+                  <AppLayout />
+                </CreatePostModalProvider>
+              </RepurposeProvider>
+            </CalendarProvider>
+          </WorkspaceProvider>
         </ProtectedRoute>
       ),
       children: [

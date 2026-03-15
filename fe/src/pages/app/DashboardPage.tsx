@@ -25,15 +25,15 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      {/* Welcome */}
+
       <div className={styles.welcome}>
         <div>
-          <h1 className={styles.title}>Chào buổi tối, {user?.name?.split(' ')[0]} 👋</h1>
+          <h1 className={styles.title}>Chào buổi tối, {user?.displayName?.split(' ')[0] || 'bạn'} 👋</h1>
           <p className={styles.subtitle}>Đây là tổng quan hiệu suất content của bạn hôm nay.</p>
         </div>
       </div>
 
-      {/* Stats */}
+
       <div className={styles.statsGrid}>
         {QUICK_STATS.map(s => (
           <div key={s.label} className={`glass-card ${styles.statCard}`}>
@@ -58,7 +58,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent posts */}
+
       <div className={`glass-card ${styles.section}`}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Posts gần đây</h2>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
         </table>
       </div>
 
-      {/* AI tip */}
+
       <div className={`glass-card ${styles.aiTip}`}>
         <div className={styles.aiTipIcon}><Sparkles size={18} /></div>
         <div>
@@ -109,7 +109,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Onboarding */}
+
       <OnboardingTour />
     </div>
   )
