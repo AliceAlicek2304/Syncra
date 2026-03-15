@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.Interfaces;
 using Syncra.Application.Repositories;
+using Syncra.Application.Services;
 
 namespace Syncra.Api.Controllers;
 
@@ -9,6 +10,7 @@ namespace Syncra.Api.Controllers;
 /// Matches Potiz analytics.controller.ts exactly.
 /// GET /analytics/:integration  → checkAnalytics()
 /// GET /analytics/post/:postId  → checkPostAnalytics()
+/// GET /analytics/summary       → aggregate analytics across all integrations
 /// </summary>
 [Authorize]
 [ApiController]
@@ -17,11 +19,16 @@ public class AnalyticsController : ControllerBase
 {
     private readonly IIntegrationAnalyticsService _analyticsService;
     private readonly IPostRepository _postRepository;
+    private readonly IWorkspaceAnalyticsService _workspaceAnalyticsService;
 
-    public AnalyticsController(IIntegrationAnalyticsService analyticsService, IPostRepository postRepository)
+    public AnalyticsController(
+        IIntegrationAnalyticsService analyticsService,
+        IPostRepository postRepository,
+        IWorkspaceAnalyticsService workspaceAnalyticsService)
     {
         _analyticsService = analyticsService;
         _postRepository = postRepository;
+        _workspaceAnalyticsService = workspaceAnalyticsService;
     }
 
     /// <summary>
@@ -84,5 +91,35 @@ public class AnalyticsController : ControllerBase
             integrationTokenExpiresAt = post.Integration?.ExpiresAtUtc,
             integrationIsActive = post.Integration?.IsActive
         });
+    }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/analytics/summary?date=30
+    /// Aggregate analytics across all active integrations in the workspace.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetWorkspaceSummary(
+        Guid workspaceId,
+        [FromQuery] int date = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _workspaceAnalyticsService.GetSummaryAsync(
+            workspaceId, date, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/analytics/heatmap?date=90
+    /// Best posting times heatmap - group published posts by DayOfWeek × Hour.
+    /// </summary>
+    [HttpGet("heatmap")]
+    public async Task<IActionResult> GetWorkspaceHeatmap(
+        Guid workspaceId,
+        [FromQuery] int date = 90,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _workspaceAnalyticsService.GetHeatmapAsync(
+            workspaceId, date, cancellationToken);
+        return Ok(result);
     }
 }

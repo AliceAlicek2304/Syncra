@@ -8,4 +8,9 @@ public interface IWorkspaceAnalyticsService
         Guid workspaceId,
         int date = 30,
         CancellationToken cancellationToken = default);
+
+    Task<HeatmapDto> GetHeatmapAsync(
+        Guid workspaceId,
+        int date = 90,
+        CancellationToken cancellationToken = default);
 }
