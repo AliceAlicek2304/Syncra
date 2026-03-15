@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddScoped<Interfaces.IIntegrationTokenRefreshService, Services.IntegrationTokenRefreshService>();
         services.AddScoped<Interfaces.IPublishService, Services.PublishService>();
         services.AddScoped<Interfaces.IIntegrationAnalyticsService, Services.IntegrationAnalyticsService>();
+        services.AddScoped<Interfaces.IWorkspaceAnalyticsService, Services.WorkspaceAnalyticsService>();
         return services;
     }
 }
