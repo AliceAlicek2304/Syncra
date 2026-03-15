@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Domain.Interfaces;
@@ -9,18 +7,21 @@ public interface IAnalyticsAdapter
     string ProviderId { get; }
 
     /// <summary>
-    /// Fetch analytics for a specific post/video by externalId.
+    /// Fetch aggregate analytics for the channel/page. Matches Potiz analytics().
     /// </summary>
-    Task<ProviderAnalyticsResult> GetPostAnalyticsAsync(
+    Task<List<AnalyticsData>> GetAnalyticsAsync(
+        string id,
         string accessToken,
-        AnalyticsRequest request,
+        int date,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Fetch aggregate analytics for the entire channel/page/profile.
+    /// Fetch analytics for a specific post. Matches Potiz postAnalytics().
     /// </summary>
-    Task<ProviderAnalyticsResult> GetAccountAnalyticsAsync(
+    Task<List<AnalyticsData>> GetPostAnalyticsAsync(
+        string integrationId,
         string accessToken,
-        AnalyticsRequest request,
+        string postId,
+        int date,
         CancellationToken cancellationToken = default);
 }

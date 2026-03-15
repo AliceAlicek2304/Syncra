@@ -109,7 +109,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
 
         var httpRequest = new HttpRequestMessage(
             HttpMethod.Post,
-            $"https://graph.facebook.com/v18.0/{pageId}/feed")
+            $"https://graph.facebook.com/v25.0/{pageId}/feed")
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
         };
@@ -172,7 +172,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
         form.Add(fileContent, "source", media.FileName ?? "photo.jpg");
 
         var response = await _httpClient.PostAsync(
-            $"https://graph.facebook.com/v18.0/{pageId}/photos", form, cancellationToken);
+            $"https://graph.facebook.com/v25.0/{pageId}/photos", form, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -233,7 +233,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
         form.Add(fileContent, "source", media.FileName ?? "video.mp4");
 
         var response = await _httpClient.PostAsync(
-            $"https://graph.facebook.com/v18.0/{pageId}/videos", form, cancellationToken);
+            $"https://graph.facebook.com/v25.0/{pageId}/videos", form, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -263,10 +263,15 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
             : FacebookContentType.Photo;
     }
 
+    private static readonly JsonSerializerOptions ErrorJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private static PublishResult MapFacebookError(HttpResponseMessage response, string body)
     {
         FacebookApiError? apiError = null;
-        try { apiError = JsonSerializer.Deserialize<FacebookApiError>(body); } catch { }
+        try { apiError = JsonSerializer.Deserialize<FacebookApiError>(body, ErrorJsonOptions); } catch { }
 
         var errorCode = apiError?.Error?.Code ?? 0;
         var errorMessage = apiError?.Error?.Message ?? $"Facebook API returned {(int)response.StatusCode}.";
@@ -338,6 +343,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
             {
                 Code = $"facebook_error_{errorCode}",
                 Message = errorMessage,
+                Details = body,
                 IsTransient = (int)response.StatusCode >= 500
             }
         };

@@ -1,18 +1,21 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
+using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Infrastructure.Publishing.Adapters.Facebook;
 
+/// <summary>
+/// Matches Potiz facebook.provider.ts analytics() and postAnalytics() methods exactly.
+/// </summary>
 public sealed class FacebookInsightsAdapter : IAnalyticsAdapter
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<FacebookInsightsAdapter> _logger;
 
-    private const string GraphApiBaseUrl = "https://graph.facebook.com/v18.0";
+    private const string GraphApiBaseUrl = "https://graph.facebook.com/v20.0";
 
     public FacebookInsightsAdapter(HttpClient httpClient, ILogger<FacebookInsightsAdapter> logger)
     {
@@ -22,215 +25,242 @@ public sealed class FacebookInsightsAdapter : IAnalyticsAdapter
 
     public string ProviderId => "facebook";
 
-    public async Task<ProviderAnalyticsResult> GetPostAnalyticsAsync(
+    /// <summary>
+    /// Matches Potiz facebook.provider.ts:489 analytics().
+    /// Metrics: page_impressions_unique, page_posts_impressions_unique, page_post_engagements,
+    ///          page_daily_follows, page_video_views
+    /// NOTE: id here is ExternalAccountId (user id). Page insights need pageId from metadata.
+    ///       integrationId carries the metadata JSON so we can extract pageId + pageAccessToken.
+    /// </summary>
+    public async Task<List<AnalyticsData>> GetAnalyticsAsync(
+        string id,
         string accessToken,
-        AnalyticsRequest request,
+        int date,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(request.ExternalId))
-        {
-            return ErrorResult("missing_external_id", "ExternalId (postId) is required for post analytics.");
-        }
+        // Resolve page access token and page id from integration metadata
+        var effectiveToken = ResolvePageAccessToken(id, accessToken);
+        var pageId = ResolvePageId(id);
 
-        // Facebook post insights metrics
-        var metrics = "post_impressions,post_impressions_unique,post_engaged_users,post_reactions_by_type_total,post_clicks";
-        var url = $"{GraphApiBaseUrl}/{request.ExternalId}/insights?metric={metrics}&access_token={Uri.EscapeDataString(accessToken)}";
+        var until = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var since = DateTimeOffset.UtcNow.AddDays(-date).ToUnixTimeSeconds();
+
+        var metrics = "page_impressions_unique,page_posts_impressions_unique,page_post_engagements,page_daily_follows,page_video_views";
+        var url = $"{GraphApiBaseUrl}/{pageId}/insights?metric={metrics}&access_token={Uri.EscapeDataString(effectiveToken)}&period=day&since={since}&until={until}";
 
         var (json, error) = await FetchAsync(url, cancellationToken);
-        if (error != null) return error;
+        if (error != null) throw error;
 
-        return ParsePostInsightsResponse(json!, ProviderId);
+        var data = json?["data"]?.AsArray();
+        if (data == null) return new List<AnalyticsData>();
+
+        var result = new List<AnalyticsData>();
+        foreach (var d in data)
+        {
+            var name = d?["name"]?.ToString();
+            var label = MapPageMetricLabel(name);
+            var values = d?["values"]?.AsArray();
+            if (values == null) continue;
+
+            var points = new List<AnalyticsDataPoint>();
+            foreach (var v in values)
+            {
+                var total = v?["value"]?.ToString() ?? "0";
+                var endTime = v?["end_time"]?.ToString();
+                var dateStr = endTime != null && DateTimeOffset.TryParse(endTime, out var dt)
+                    ? dt.ToString("yyyy-MM-dd")
+                    : DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+                points.Add(new AnalyticsDataPoint { Total = total, Date = dateStr });
+            }
+
+            result.Add(new AnalyticsData
+            {
+                Label = label,
+                PercentageChange = 5, // Matches Potiz facebook.provider.ts:515
+                Data = points
+            });
+        }
+
+        return result;
     }
 
-    public async Task<ProviderAnalyticsResult> GetAccountAnalyticsAsync(
+    /// <summary>
+    /// Matches Potiz facebook.provider.ts:524 postAnalytics().
+    /// Metrics: post_impressions_unique, post_reactions_by_type_total, post_clicks, post_clicks_by_type
+    /// NOTE: Facebook post insights require a Page Access Token, not a User Access Token.
+    ///       integrationId here carries the integration metadata JSON so we can extract pageAccessToken.
+    /// </summary>
+    public async Task<List<AnalyticsData>> GetPostAnalyticsAsync(
+        string integrationId,
         string accessToken,
-        AnalyticsRequest request,
+        string postId,
+        int date,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(request.AccountId))
-        {
-            return ErrorResult("missing_account_id", "Facebook Page ID required. Pass pageId in AnalyticsRequest.AccountId.");
-        }
+        // Resolve page access token from integration metadata — Facebook requires it for post insights
+        var effectiveToken = ResolvePageAccessToken(integrationId, accessToken);
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
-        var pageId = request.AccountId;
-        var startDate = request.StartDateUtc;
-        var endDate = request.EndDateUtc;
-
-        // Page-level metrics (period=day, aggregate over date range)
-        var metrics = "page_impressions,page_impressions_unique,page_post_engagements,page_fans,page_fan_adds,page_views_total";
-        var sinceUnix = new DateTimeOffset(startDate).ToUnixTimeSeconds();
-        var untilUnix = new DateTimeOffset(endDate).ToUnixTimeSeconds();
-
-        var url = $"{GraphApiBaseUrl}/{pageId}/insights?metric={metrics}&period=day&since={sinceUnix}&until={untilUnix}&access_token={Uri.EscapeDataString(accessToken)}";
+        var url = $"{GraphApiBaseUrl}/{postId}/insights?metric=post_impressions_unique,post_reactions_by_type_total,post_clicks,post_clicks_by_type&access_token={Uri.EscapeDataString(effectiveToken)}";
 
         var (json, error) = await FetchAsync(url, cancellationToken);
-        if (error != null) return error;
+        if (error != null) throw error;
 
-        return ParseAccountInsightsResponse(json!, ProviderId);
+        var data = json?["data"]?.AsArray();
+        if (data == null || data.Count == 0) return new List<AnalyticsData>();
+
+        var result = new List<AnalyticsData>();
+
+        foreach (var metric in data)
+        {
+            var name = metric?["name"]?.ToString();
+            var values = metric?["values"]?.AsArray();
+            var value = values?[0]?["value"];
+            if (value == null) continue;
+
+            string label;
+            string total;
+
+            switch (name)
+            {
+                case "post_impressions_unique":
+                    // Matches Potiz facebook.provider.ts:555
+                    label = "Impressions";
+                    total = value.ToString() ?? "0";
+                    break;
+
+                case "post_clicks":
+                    // Matches Potiz facebook.provider.ts:559
+                    label = "Clicks";
+                    total = value.ToString() ?? "0";
+                    break;
+
+                case "post_clicks_by_type":
+                    // Matches Potiz facebook.provider.ts:568 — sum all click types
+                    label = "Clicks by Type";
+                    total = SumObjectValues(value);
+                    break;
+
+                case "post_reactions_by_type_total":
+                    // Matches Potiz facebook.provider.ts:578 — sum all reaction types
+                    label = "Reactions";
+                    total = SumObjectValues(value);
+                    break;
+
+                default:
+                    continue;
+            }
+
+            result.Add(new AnalyticsData
+            {
+                Label = label,
+                PercentageChange = 0, // Matches Potiz facebook.provider.ts:587
+                Data = new List<AnalyticsDataPoint>
+                {
+                    new() { Total = total, Date = today }
+                }
+            });
+        }
+
+        return result;
     }
 
-    private async Task<(JsonNode? json, ProviderAnalyticsResult? error)> FetchAsync(
+    /// <summary>
+    /// Extracts pageAccessToken from integration metadata JSON.
+    /// Falls back to the user accessToken if not found.
+    /// Metadata format: {"pageId":"...","pageAccessToken":"...","pageName":"..."}
+    /// </summary>
+    private static string ResolvePageAccessToken(string metadataJson, string fallbackToken)
+    {
+        if (string.IsNullOrEmpty(metadataJson)) return fallbackToken;
+        try
+        {
+            var meta = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataJson);
+            var pageToken = meta?.GetValueOrDefault("pageAccessToken");
+            return !string.IsNullOrEmpty(pageToken) ? pageToken : fallbackToken;
+        }
+        catch { return fallbackToken; }
+    }
+
+    /// <summary>
+    /// Extracts pageId from integration metadata JSON.
+    /// Falls back to the raw id string if not found.
+    /// </summary>
+    private static string ResolvePageId(string metadataJson)
+    {
+        if (string.IsNullOrEmpty(metadataJson)) return metadataJson;
+        try
+        {
+            var meta = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataJson);
+            var pageId = meta?.GetValueOrDefault("pageId");
+            return !string.IsNullOrEmpty(pageId) ? pageId : metadataJson;
+        }
+        catch { return metadataJson; }
+    }
+
+    private static string MapPageMetricLabel(string? name) => name switch    {
+        // Matches Potiz facebook.provider.ts:506-513
+        "page_impressions_unique"        => "Page Impressions",
+        "page_post_engagements"          => "Posts Engagement",
+        "page_daily_follows"             => "Page followers",
+        "page_video_views"               => "Videos views",
+        _                                => "Posts Impressions"
+    };
+
+    private static string SumObjectValues(JsonNode? node)
+    {
+        if (node == null) return "0";
+        try
+        {
+            var obj = node.AsObject();
+            var sum = obj.Sum(kv => kv.Value?.GetValue<long>() ?? 0);
+            return sum.ToString();
+        }
+        catch
+        {
+            return "0";
+        }
+    }
+
+    private async Task<(JsonNode? json, RefreshTokenException? error)> FetchAsync(
         string url,
         CancellationToken cancellationToken)
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            _logger.LogInformation("[FacebookInsights] GET {Url}", url.Split("access_token=")[0] + "access_token=***");
+            var response = await _httpClient.GetAsync(url, cancellationToken);
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return (null, MapFacebookError(response.StatusCode, body));
-            }
+            _logger.LogInformation("[FacebookInsights] Response {StatusCode}: {Body}", (int)response.StatusCode, body.Length > 500 ? body[..500] : body);
 
             JsonNode? json = null;
-            try { json = JsonSerializer.Deserialize<JsonNode>(body); }
-            catch { /* ignore parse errors */ }
+            try { json = JsonSerializer.Deserialize<JsonNode>(body); } catch { }
+
+            // Check for token errors — matches Potiz handleErrors() refresh-token cases
+            if (!response.IsSuccessStatusCode || json?["error"] != null)
+            {
+                var errorCode = json?["error"]?["code"]?.GetValue<int>() ?? 0;
+                var errorMsg = json?["error"]?["message"]?.ToString() ?? body;
+
+                // Token expired/revoked — trigger RefreshToken retry (Potiz pattern)
+                if (errorCode == 190 || body.Contains("Error validating access token") ||
+                    body.Contains("REVOKED_ACCESS_TOKEN"))
+                {
+                    return (null, new RefreshTokenException(errorMsg));
+                }
+
+                _logger.LogWarning("[FacebookInsights] API error {Code}: {Message}", errorCode, errorMsg);
+                return (null, null);
+            }
 
             return (json, null);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception fetching Facebook Insights.");
-            return (null, ErrorResult("internal_error", ex.Message, isTransient: true));
+            _logger.LogError(ex, "[FacebookInsights] Exception fetching.");
+            return (null, null);
         }
     }
-
-    private ProviderAnalyticsResult ParsePostInsightsResponse(JsonNode json, string providerId)
-    {
-        var result = new ProviderAnalyticsResult { IsSuccess = true, ProviderId = providerId };
-
-        var data = json["data"]?.AsArray();
-        if (data == null || data.Count == 0)
-        {
-            return result;
-        }
-
-        // Build dictionary of metric name -> value
-        var metrics = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in data)
-        {
-            var name = item?["name"]?.ToString();
-            var values = item?["values"]?.AsArray();
-            if (!string.IsNullOrEmpty(name) && values != null && values.Count > 0)
-            {
-                // Get the last value (most recent)
-                var lastValue = values[values.Count - 1];
-                if (long.TryParse(lastValue?["value"]?.ToString(), out var val))
-                {
-                    metrics[name] = val;
-                }
-            }
-        }
-
-        // Map to normalized fields
-        result.Impressions = metrics.GetValueOrDefault("post_impressions");
-        result.Reach = metrics.GetValueOrDefault("post_impressions_unique");
-        result.EngagementRate = result.Reach > 0
-            ? (double?)((double)metrics.GetValueOrDefault("post_engaged_users") / result.Reach * 100)
-            : null;
-        result.Clicks = metrics.GetValueOrDefault("post_clicks");
-
-        // Store reactions breakdown in RawMetrics
-        if (metrics.TryGetValue("post_reactions_by_type_total", out var reactionsStr))
-        {
-            result.RawMetrics["reactions"] = reactionsStr;
-        }
-
-        return result;
-    }
-
-    private ProviderAnalyticsResult ParseAccountInsightsResponse(JsonNode json, string providerId)
-    {
-        var result = new ProviderAnalyticsResult { IsSuccess = true, ProviderId = providerId };
-
-        var data = json["data"]?.AsArray();
-        if (data == null || data.Count == 0)
-        {
-            return result;
-        }
-
-        // Aggregate values across all days
-        var aggregated = new Dictionary<string, long>();
-
-        foreach (var item in data)
-        {
-            var name = item?["name"]?.ToString();
-            var values = item?["values"]?.AsArray();
-            if (string.IsNullOrEmpty(name) || values == null) continue;
-
-            if (!aggregated.ContainsKey(name))
-            {
-                aggregated[name] = 0;
-            }
-
-            foreach (var valueObj in values)
-            {
-                if (long.TryParse(valueObj?["value"]?.ToString(), out var val))
-                {
-                    aggregated[name] += val;
-                }
-            }
-        }
-
-        // Map to normalized fields
-        result.Impressions = aggregated.GetValueOrDefault("page_impressions");
-        result.Reach = aggregated.GetValueOrDefault("page_impressions_unique");
-        result.Views = aggregated.GetValueOrDefault("page_views_total");
-
-        // Store additional metrics in RawMetrics
-        if (aggregated.TryGetValue("page_fans", out var fans))
-            result.RawMetrics["page_fans"] = fans;
-        if (aggregated.TryGetValue("page_fan_adds", out var fanAdds))
-            result.RawMetrics["page_fan_adds"] = fanAdds;
-        if (aggregated.TryGetValue("page_post_engagements", out var engagements))
-            result.RawMetrics["page_post_engagements"] = engagements;
-
-        return result;
-    }
-
-    private ProviderAnalyticsResult MapFacebookError(System.Net.HttpStatusCode statusCode, string body)
-    {
-        _logger.LogWarning("Facebook Insights API returned {StatusCode}: {Body}", (int)statusCode, body);
-
-        FacebookApiError? apiError = null;
-        try { apiError = JsonSerializer.Deserialize<FacebookApiError>(body); }
-        catch { }
-
-        var errorCode = apiError?.Error?.Code ?? 0;
-
-        // Token expired
-        if (errorCode == 190)
-        {
-            return ErrorResult("unauthorized", "Page access token expired. Please reconnect your Facebook account.");
-        }
-
-        // Permission denied
-        if (errorCode == 200 || errorCode == 10)
-        {
-            return ErrorResult("permission_denied", "Missing read_insights permission.");
-        }
-
-        // Rate limited
-        if (errorCode == 368 || errorCode == 32 || errorCode == 4)
-        {
-            return ErrorResult("rate_limited", "Facebook rate limit reached. Try again later.", isTransient: true);
-        }
-
-        // Invalid metric
-        if (errorCode == 100)
-        {
-            return ErrorResult("invalid_metric", apiError?.Error?.Message ?? "Invalid metric parameter.");
-        }
-
-        return ErrorResult($"facebook_error_{errorCode}", apiError?.Error?.Message ?? $"Facebook API returned {(int)statusCode}.");
-    }
-
-    private static ProviderAnalyticsResult ErrorResult(string code, string message, bool isTransient = false) => new()
-    {
-        IsSuccess = false,
-        ProviderId = "facebook",
-        Error = new ProviderError { Code = code, Message = message, IsTransient = isTransient }
-    };
 }
