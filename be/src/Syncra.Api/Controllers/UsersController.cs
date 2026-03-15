@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Syncra.Application.DTOs;
-using Syncra.Application.Repositories;
+using Syncra.Application.Features.Users.Queries;
+using Syncra.Shared.Extensions;
+using MediatR;
 
 namespace Syncra.Api.Controllers;
 
@@ -10,44 +11,22 @@ namespace Syncra.Api.Controllers;
 [Route("api/v1/[controller]")]
 public class UsersController : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IMediator _mediator;
 
-    public UsersController(IUserRepository userRepository)
+    public UsersController(IMediator mediator)
     {
-        _userRepository = userRepository;
+        _mediator = mediator;
     }
 
     [HttpGet("me")]
-    public async Task<IActionResult> GetMyProfile()
+    public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-        {
+        var userId = User.GetUserId();
+        if (userId is null)
             return Unauthorized();
-        }
 
-        if (!Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            return Unauthorized();
-        }
-
-        var user = await _userRepository.GetByIdWithProfileAsync(userId);
-        if (user == null)
-        {
-            return NotFound();
-        }
-
-        var profileDto = new UserProfileDto(
-            user.Id,
-            user.Email,
-            user.Profile?.DisplayName,
-            user.Profile?.FirstName,
-            user.Profile?.LastName,
-            user.Profile?.AvatarUrl,
-            user.Profile?.Timezone,
-            user.Profile?.Locale
-        );
-
-        return Ok(profileDto);
+        var query = new GetUserProfileQuery(userId.Value);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
     }
 }

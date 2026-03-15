@@ -1,6 +1,8 @@
+using Syncra.Application.Common.Interfaces;
+
 namespace Syncra.Application.Options;
 
-public class JwtOptions
+public class JwtOptions : IJwtOptions
 {
     public const string SectionName = "Jwt";
     public string Secret { get; set; } = string.Empty;

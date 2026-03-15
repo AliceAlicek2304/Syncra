@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Syncra.Application.Interfaces;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 
 namespace Syncra.Infrastructure.Jobs;
@@ -49,7 +49,7 @@ public sealed class DuePostPublishJob
 
             _logger.LogInformation(
                 "Processing post {PostId} with status {Status}, scheduled at {ScheduledAt}",
-                post.Id, post.Status, post.ScheduledAtUtc);
+                post.Id, post.Status, post.ScheduledAt);
 
             await ProcessPostAsync(post, cancellationToken);
             processed++;

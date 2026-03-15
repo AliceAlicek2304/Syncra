@@ -1,5 +1,5 @@
 using MediatR;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Subscriptions.Commands
 {

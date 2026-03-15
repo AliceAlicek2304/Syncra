@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs;
-using Syncra.Application.Repositories;
-using Syncra.Application.Interfaces;
-using Syncra.Application.Options;
-using Syncra.Domain.Entities;
-using Microsoft.Extensions.Options;
-using BC = BCrypt.Net.BCrypt;
+using Syncra.Application.Features.Auth.Commands;
+using Syncra.Application.Features.Users.Queries;
+using Syncra.Shared.Extensions;
+using MediatR;
 
 namespace Syncra.Api.Controllers;
 
@@ -14,186 +12,53 @@ namespace Syncra.Api.Controllers;
 [Route("api/v1/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IRepository<UserSession> _userSessionRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ITokenService _tokenService;
-    private readonly JwtOptions _jwtOptions;
+    private readonly IMediator _mediator;
 
-    public AuthController(
-        IUserRepository userRepository, 
-        IRefreshTokenRepository refreshTokenRepository,
-        IRepository<UserSession> userSessionRepository,
-        IUnitOfWork unitOfWork,
-        ITokenService tokenService,
-        IOptions<JwtOptions> jwtOptions)
+    public AuthController(IMediator mediator)
     {
-        _userRepository = userRepository;
-        _refreshTokenRepository = refreshTokenRepository;
-        _userSessionRepository = userSessionRepository;
-        _unitOfWork = unitOfWork;
-        _tokenService = tokenService;
-        _jwtOptions = jwtOptions.Value;
+        _mediator = mediator;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+    public async Task<IActionResult> Register([FromBody] RegisterDto registerDto, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var command = new RegisterCommand(
+            registerDto.Email,
+            registerDto.Password,
+            registerDto.FirstName,
+            registerDto.LastName);
 
-        if (registerDto == null)
-        {
-            return BadRequest(new { Message = "Registration data is required." });
-        }
+        var result = await _mediator.Send(command, cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(registerDto.Email))
-        {
-            return BadRequest(new { Message = "Email is required." });
-        }
-
-        if (string.IsNullOrWhiteSpace(registerDto.Password))
-        {
-            return BadRequest(new { Message = "Password is required." });
-        }
-
-        var existingUser = await _userRepository.GetByEmailAsync(registerDto.Email);
-        if (existingUser != null)
-        {
-            return BadRequest(new { Message = "User with this email already exists." });
-        }
-
-        var user = new User
-        {
-            Email = registerDto.Email,
-            NormalizedEmail = registerDto.Email.ToUpperInvariant(),
-            PasswordHash = BC.HashPassword(registerDto.Password),
-            Status = "active",
-            Profile = new UserProfile
-            {
-                FirstName = registerDto.FirstName,
-                LastName = registerDto.LastName,
-                DisplayName = $"{registerDto.FirstName} {registerDto.LastName}"
-            }
-        };
-
-        await _userRepository.AddAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-        
-        return CreatedAtAction(nameof(Register), new { id = user.Id }, new { Message = "User registered successfully." });
+        return CreatedAtAction(nameof(Register), new { id = result }, new { Message = "User registered successfully." });
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+    public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
-        if (loginDto == null || string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
-        {
-            return BadRequest(new { Message = "Email and password are required." });
-        }
-
-        var user = await _userRepository.GetByEmailAsync(loginDto.Email);
-        if (user == null || !BC.Verify(loginDto.Password, user.PasswordHash))
-        {
-            return Unauthorized(new { Message = "Invalid email or password." });
-        }
-
-        var token = _tokenService.GenerateJwtToken(user);
-        var refreshToken = _tokenService.GenerateRefreshToken();
-        var refreshTokenHash = HashToken(refreshToken);
-
-        var session = new UserSession
-        {
-            UserId = user.Id,
-            IssuedAtUtc = DateTime.UtcNow,
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays),
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-            UserAgent = Request.Headers["User-Agent"].ToString()
-        };
-
-        var refreshTokenEntity = new RefreshToken
-        {
-            TokenHash = refreshTokenHash,
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays),
-            Session = session
-        };
-
-        await _userSessionRepository.AddAsync(session);
-        await _refreshTokenRepository.AddAsync(refreshTokenEntity);
-        await _unitOfWork.SaveChangesAsync();
-
-        return Ok(new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc));
+        var command = new LoginCommand(loginDto.Email, loginDto.Password);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshDto refreshDto)
+    public async Task<IActionResult> Refresh([FromBody] RefreshDto refreshDto, CancellationToken cancellationToken)
     {
-        if (refreshDto == null || string.IsNullOrWhiteSpace(refreshDto.RefreshToken))
-        {
-            return BadRequest(new { Message = "Refresh token is required." });
-        }
-
-        var refreshTokenHash = HashToken(refreshDto.RefreshToken);
-        var existingToken = await _refreshTokenRepository.GetByTokenHashAsync(refreshTokenHash);
-
-        if (existingToken == null || existingToken.RevokedAtUtc != null || existingToken.ExpiresAtUtc < DateTime.UtcNow)
-        {
-            return Unauthorized(new { Message = "Invalid or expired refresh token." });
-        }
-
-        var user = existingToken.Session.User;
-        var newToken = _tokenService.GenerateJwtToken(user);
-        var newRefreshToken = _tokenService.GenerateRefreshToken();
-        var newRefreshTokenHash = HashToken(newRefreshToken);
-
-        // Rotate token
-        existingToken.RotatedAtUtc = DateTime.UtcNow;
-        
-        var nextRefreshToken = new RefreshToken
-        {
-            TokenHash = newRefreshTokenHash,
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays),
-            UserSessionId = existingToken.UserSessionId
-        };
-
-        existingToken.ReplacedByTokenId = nextRefreshToken.Id;
-
-        await _refreshTokenRepository.AddAsync(nextRefreshToken);
-        await _unitOfWork.SaveChangesAsync();
-
-        return Ok(new AuthResponseDto(newToken, newRefreshToken, existingToken.Session.ExpiresAtUtc));
+        var command = new RefreshTokenCommand(refreshDto.RefreshToken);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
     }
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<IActionResult> GetMe()
+    public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-        {
+        var userId = User.GetUserId();
+        if (userId is null)
             return Unauthorized();
-        }
 
-        if (!Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            return Unauthorized();
-        }
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(new UserDto(user.Id, user.Email));
-    }
-
-    private string HashToken(string token)
-    {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(token));
-        return Convert.ToBase64String(hashBytes);
+        var query = new GetCurrentUserQuery(userId.Value);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
     }
 }

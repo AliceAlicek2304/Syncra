@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
+using Syncra.Application.Options;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Infrastructure.Social;
@@ -10,6 +11,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSocialIntegrations(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<OAuthOptions>(configuration.GetSection(OAuthOptions.SectionName));
+
         services.AddScoped<IProviderRegistry, ProviderRegistry>();
         services.AddScoped<IPublishAdapterRegistry, PublishAdapterRegistry>();
         services.AddScoped<IAnalyticsAdapterRegistry, AnalyticsAdapterRegistry>();

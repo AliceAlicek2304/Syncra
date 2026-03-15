@@ -7,8 +7,9 @@ using Syncra.Infrastructure.Persistence;
 using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
 using Syncra.Infrastructure.Services;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Application.Options;
+using Syncra.Application.Common.Interfaces;
 using Syncra.Infrastructure.Social;
 using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Storage;
@@ -26,13 +27,17 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<AuditInterceptor>();
 
+        // Bind JwtOptions for both IOptions<JwtOptions> (TokenService) and IJwtOptions (Application handlers)
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        services.AddSingleton<IJwtOptions>(jwtOptions);
+
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
             options.UseNpgsql(postgresOptions.ConnectionString);
             options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
         });
 
-        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
         services.AddScoped<IPostRepository, PostRepository>();
@@ -40,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IMediaRepository, MediaRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
         services.AddScoped<IntegrationTokenRefreshJob>();
@@ -68,6 +74,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IStorageService, LocalMediaStorage>();
+        services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.AddScoped<IStripeService, StripeService>();
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Syncra.Domain.Entities;
+using Syncra.Infrastructure.Persistence.Converters;
 
 namespace Syncra.Infrastructure.Persistence.Configurations;
 
@@ -11,8 +12,8 @@ public class WorkspaceConfiguration : BaseEntityConfiguration<Workspace>
         base.Configure(builder);
         builder.ToTable("workspaces");
 
-        builder.Property(e => e.Name).IsRequired().HasMaxLength(200).HasColumnName("name");
-        builder.Property(e => e.Slug).IsRequired().HasMaxLength(100).HasColumnName("slug");
+        builder.Property(e => e.Name).IsRequired().HasMaxLength(100).HasColumnName("name").HasConversion(ValueObjectConverters.WorkspaceNameConverter);
+        builder.Property(e => e.Slug).IsRequired().HasMaxLength(50).HasColumnName("slug").HasConversion(ValueObjectConverters.WorkspaceSlugConverter);
         builder.Property(e => e.OwnerUserId).HasColumnName("owner_user_id");
 
         builder.HasIndex(e => e.Slug).IsUnique();

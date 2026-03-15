@@ -7,7 +7,7 @@ using SessionLineItemOptions = Stripe.Checkout.SessionLineItemOptions;
 using Syncra.Application.DTOs;
 using Syncra.Application.Interfaces;
 using Syncra.Application.Options;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 
 namespace Syncra.Infrastructure.Services;
@@ -69,7 +69,7 @@ public class StripeService : IStripeService
         var customer = await customerService2.CreateAsync(customerOptions, cancellationToken: cancellationToken);
 
         // Save the Stripe customer ID to the workspace
-        workspace.StripeCustomerId = customer.Id;
+        workspace.SetStripeCustomerId(customer.Id);
         await _workspaceRepository.UpdateAsync(workspace);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

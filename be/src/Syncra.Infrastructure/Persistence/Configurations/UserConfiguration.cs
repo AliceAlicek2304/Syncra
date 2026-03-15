@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Syncra.Domain.Entities;
+using Syncra.Infrastructure.Persistence.Converters;
 
 namespace Syncra.Infrastructure.Persistence.Configurations;
 
@@ -11,7 +12,7 @@ public class UserConfiguration : BaseEntityConfiguration<User>
         base.Configure(builder);
         builder.ToTable("users");
 
-        builder.Property(e => e.Email).IsRequired().HasMaxLength(256).HasColumnName("email");
+        builder.Property(e => e.Email).IsRequired().HasMaxLength(256).HasColumnName("email").HasConversion(ValueObjectConverters.EmailConverter);
         builder.HasIndex(e => e.Email).IsUnique();
         
         builder.Property(e => e.NormalizedEmail).IsRequired().HasMaxLength(256).HasColumnName("normalized_email");

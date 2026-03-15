@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Syncra.Application.Interfaces;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;

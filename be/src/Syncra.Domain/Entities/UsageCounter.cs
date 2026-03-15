@@ -2,6 +2,7 @@ namespace Syncra.Domain.Entities;
 
 public sealed class UsageCounter : WorkspaceEntityBase
 {
+    public new Guid WorkspaceId { get; set; }
     public string MetricCode { get; set; } = string.Empty;
     public DateTime PeriodStartUtc { get; set; }
     public DateTime PeriodEndUtc { get; set; }

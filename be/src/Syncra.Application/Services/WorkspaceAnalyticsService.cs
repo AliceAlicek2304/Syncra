@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Analytics;
 using Syncra.Application.Interfaces;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Models.Social;
 

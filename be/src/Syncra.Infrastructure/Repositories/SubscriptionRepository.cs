@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Syncra.Application.Repositories;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
 using Syncra.Infrastructure.Persistence;
