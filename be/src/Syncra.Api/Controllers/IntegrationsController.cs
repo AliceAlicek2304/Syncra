@@ -1,3 +1,4 @@
+using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.Features.Integrations.Commands;
@@ -34,19 +35,26 @@ public class IntegrationsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/v1/workspaces/{workspaceId}/integrations/{providerId}/callback
+    /// GET /api/v1/integrations/{providerId}/callback
     /// Handles the OAuth callback from the provider and exchanges the code for tokens.
     /// </summary>
     [AllowAnonymous]
-    [HttpGet("{providerId}/callback")]
+    [HttpGet("~/api/v1/integrations/{providerId}/callback")]
     public async Task<IActionResult> Callback(
-        Guid workspaceId,
         string providerId,
         [FromQuery] string code,
         [FromQuery] string state,
         [FromQuery] string? redirectUri = null,
         CancellationToken cancellationToken = default)
     {
+        var stateParams = HttpUtility.ParseQueryString(state);
+        var workspaceIdStr = stateParams["workspaceId"];
+
+        if (string.IsNullOrEmpty(workspaceIdStr) || !Guid.TryParse(workspaceIdStr, out var workspaceId))
+        {
+            return BadRequest(new { error = "Invalid or missing workspaceId in state parameter" });
+        }
+
         if (string.IsNullOrEmpty(redirectUri))
         {
             var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
