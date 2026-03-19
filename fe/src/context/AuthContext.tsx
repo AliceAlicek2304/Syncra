@@ -13,11 +13,30 @@ export interface User {
   locale?: string
 }
 
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
+export interface RegisterPayload {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+}
+
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: () => Promise<void>
+  login: (payload: LoginPayload) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
+}
+
+type AuthResponse = {
+  token?: string
+  accessToken?: string
+  refreshToken?: string
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -54,39 +73,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
 
-  const login = async () => {
+  const login = async (payload: LoginPayload) => {
     try {
       setIsLoading(true)
-      const credentials = { email: 'minhanh@syncra.io', password: 'Password123!' }
-      
+      const res = await api.post<AuthResponse>('/auth/login', payload)
+      const accessToken = res.data.token ?? res.data.accessToken
+      const refreshToken = res.data.refreshToken
 
-      try {
-        const res = await api.post('/auth/login', credentials)
-        localStorage.setItem('accessToken', res.data.accessToken)
-        localStorage.setItem('refreshToken', res.data.refreshToken)
-      } catch (e: any) {
-
-        if (e.response?.status === 401 || e.response?.status === 400 || e.response?.status === 404) {
-          const regData = {
-            email: credentials.email,
-            password: credentials.password,
-            firstName: 'Minh',
-            lastName: 'Anh'
-          }
-          await api.post('/auth/register', regData)
-
-          const res = await api.post('/auth/login', credentials)
-          localStorage.setItem('accessToken', res.data.accessToken)
-          localStorage.setItem('refreshToken', res.data.refreshToken)
-        } else {
-          throw e
-        }
+      if (!accessToken || !refreshToken) {
+        throw new Error('Invalid login response from server.')
       }
+
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
       
       await fetchUser()
+      setIsLoading(false)
     } catch (error) {
-       console.error('Demo login failed', error)
+       console.error('Login failed', error)
        setIsLoading(false)
+       throw error
+    }
+  }
+
+  const register = async (payload: RegisterPayload) => {
+    try {
+      setIsLoading(true)
+      await api.post('/auth/register', payload)
+      await login({ email: payload.email, password: payload.password })
+    } catch (error) {
+      setIsLoading(false)
+      throw error
     }
   }
 
@@ -95,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

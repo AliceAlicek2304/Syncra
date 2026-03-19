@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../../api/axios'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './AnalyticsPage.module.css'
 
 interface AnalyticsOverviewDto {
@@ -19,6 +20,30 @@ interface PlatformAnalyticsDto {
   postCount: number
 }
 
+interface IntegrationDto {
+  platform?: string
+  providerId?: string
+  isActive?: boolean
+}
+
+interface ProviderErrorDto {
+  code?: string
+  message?: string
+}
+
+interface ProviderAnalyticsResultDto {
+  isSuccess?: boolean
+  providerId?: string
+  views?: number
+  likes?: number
+  comments?: number
+  shares?: number
+  impressions?: number
+  reach?: number
+  engagementRate?: number
+  error?: ProviderErrorDto
+}
+
 const INSIGHTS = [
   { icon: '🔥', text: 'Bài dạng Reel hiệu quả hơn 2.3x so với Photo trên Instagram của bạn.' },
   { icon: '⏰', text: 'Giờ vàng đăng bài: Thứ 3 & Thứ 5 lúc 19:00–21:00 trên TikTok.' },
@@ -29,33 +54,99 @@ const INSIGHTS = [
 const WEEKLY_BARS = [45, 60, 38, 85, 52, 90, 68]
 
 export default function AnalyticsPage() {
+  const { activeWorkspace } = useWorkspace()
   const [overview, setOverview] = useState<AnalyticsOverviewDto | null>(null)
   const [platforms, setPlatforms] = useState<PlatformAnalyticsDto[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!activeWorkspace) {
+        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
+        setPlatforms([])
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
-        const toUtc = new Date().toISOString()
-        const fromUtc = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-        
-        const [overviewRes, platformRes] = await Promise.all([
-          api.get('/analytics/overview', { params: { fromUtc, toUtc } }),
-          api.get('/analytics/platforms', { params: { fromUtc, toUtc } }),
-        ])
 
-        setOverview(overviewRes.data)
-        setPlatforms(platformRes.data)
+        const endDate = new Date().toISOString()
+        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+        const integrationsRes = await api.get(`/workspaces/${activeWorkspace.id}/integrations`)
+        const integrations = Array.isArray(integrationsRes.data) ? integrationsRes.data as IntegrationDto[] : []
+
+        const providerIds = integrations
+          .filter((i) => i?.isActive !== false)
+          .map((i) => (i.platform || i.providerId || '').toLowerCase())
+          .filter(Boolean)
+
+        if (providerIds.length === 0) {
+          setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
+          setPlatforms([])
+          return
+        }
+
+        const analyticsResults = await Promise.allSettled(
+          providerIds.map((providerId) =>
+            api.get<ProviderAnalyticsResultDto>(
+              `/workspaces/${activeWorkspace.id}/analytics/${providerId}/account`,
+              { params: { startDate, endDate } }
+            )
+          )
+        )
+
+        const mappedPlatforms: PlatformAnalyticsDto[] = analyticsResults
+          .map((result, index): PlatformAnalyticsDto | null => {
+            if (result.status !== 'fulfilled') return null
+
+            const providerId = providerIds[index]
+            const data = result.value.data || {}
+            if (data.isSuccess === false) {
+              console.warn(`Analytics fetch failed for ${providerId}: ${data.error?.message || 'unknown error'}`)
+              return null
+            }
+
+            const views = data.views || 0
+            const reach = data.reach || data.impressions || views
+            const likes = data.likes || 0
+            const comments = data.comments || 0
+            const shares = data.shares || 0
+            const engagement = likes + comments + shares
+
+            return {
+              platform: providerId,
+              reach,
+              engagement,
+              // Account analytics API does not currently return post count.
+              postCount: 0,
+            }
+          })
+          .filter((p): p is PlatformAnalyticsDto => p !== null)
+
+        const totalReach = mappedPlatforms.reduce((sum, p) => sum + p.reach, 0)
+        const totalEngagement = mappedPlatforms.reduce((sum, p) => sum + p.engagement, 0)
+        const engagementRate = totalReach > 0 ? Number(((totalEngagement / totalReach) * 100).toFixed(2)) : 0
+
+        setPlatforms(mappedPlatforms)
+        setOverview({
+          totalReach,
+          totalEngagement,
+          engagementRate,
+          totalPosts: 0,
+        })
       } catch (err) {
         console.error('Failed to fetch analytics', err)
+        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
+        setPlatforms([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [])
+  }, [activeWorkspace])
 
   if (loading) {
     return <div style={{ padding: 40, color: '#fff' }}>Loading Analytics...</div>

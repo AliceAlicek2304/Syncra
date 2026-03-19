@@ -15,6 +15,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Serilog;
 using Syncra.Api.Logging;
+using Syncra.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -25,7 +26,14 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
         .Enrich.With<RedactingEnricher>());
 
-builder.WebHost.UseSentry();
+var sentryDsn = builder.Configuration["SENTRY_DSN"] ?? builder.Configuration["Sentry:Dsn"];
+if (!string.IsNullOrWhiteSpace(sentryDsn))
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        options.Dsn = sentryDsn;
+    });
+}
 
 builder.Services.Configure<PostgresOptions>(builder.Configuration.GetSection(PostgresOptions.SectionName));
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection(RedisOptions.SectionName));
@@ -59,6 +67,18 @@ builder.Services.AddHangfire(configuration =>
 builder.Services.AddHangfireServer();
 
 builder.Services.AddScoped<Syncra.Api.Filters.IdempotencyFilter>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -142,6 +162,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
+app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -152,6 +174,12 @@ app.MapHealthChecks("/health");
 
 using (var scope = app.Services.CreateScope())
 {
+    if (app.Environment.IsDevelopment())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await DevAuthDataSeeder.SeedAsync(dbContext, app.Logger);
+    }
+
     var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
     scheduler.ScheduleRecurringJob();
 

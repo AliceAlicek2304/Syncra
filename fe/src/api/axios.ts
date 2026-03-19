@@ -1,6 +1,12 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
+type AuthResponse = {
+  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
+};
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5260/api/v1';
 
 export const api = axios.create({
@@ -84,10 +90,14 @@ api.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+        const response = await axios.post<AuthResponse>(`${BASE_URL}/auth/refresh`, { refreshToken });
         
-        const newAccessToken = response.data.accessToken;
+        const newAccessToken = response.data.token ?? response.data.accessToken;
         const newRefreshToken = response.data.refreshToken;
+
+        if (!newAccessToken || !newRefreshToken) {
+          throw new Error('Invalid refresh token response.');
+        }
 
         localStorage.setItem('accessToken', newAccessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
@@ -106,7 +116,6 @@ api.interceptors.response.use(
         localStorage.removeItem('refreshToken');
 
         localStorage.removeItem('user');
-        window.location.href = '/TechNest/'; 
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

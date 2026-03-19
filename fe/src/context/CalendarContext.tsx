@@ -59,9 +59,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     d.setHours(h, m, 0)
     
     try {
+      const normalizedContent = (post.caption || post.title || '').trim()
       await api.post(`/workspaces/${activeWorkspace.id}/posts`, {
         title: post.title,
-        content: post.caption,
+        content: normalizedContent,
         status: post.status,
         scheduledAtUtc: d.toISOString()
       })
@@ -82,9 +83,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     d.setHours(h, m, 0)
 
     try {
+      const normalizedContent = (merged.caption || merged.title || '').trim()
       await api.put(`/workspaces/${activeWorkspace.id}/posts/${id}`, {
         title: merged.title,
-        content: merged.caption,
+        content: normalizedContent,
         status: merged.status,
         scheduledAtUtc: d.toISOString()
       })

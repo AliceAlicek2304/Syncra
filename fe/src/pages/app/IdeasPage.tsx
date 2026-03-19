@@ -461,9 +461,10 @@ export default function IdeasPage() {
         }])
 
         try {
+            const normalizedContent = (title || 'Idea').trim()
             const res = await api.post(`/workspaces/${activeWorkspace.id}/posts`, {
                 title,
-                content: '',
+                content: normalizedContent,
                 status: groupId,
                 scheduledAtUtc: null
             })
@@ -494,9 +495,10 @@ export default function IdeasPage() {
         if (!activeWorkspace) return
         
         try {
+            const normalizedContent = (updated.description || updated.title || 'Idea').trim()
             await api.put(`/workspaces/${activeWorkspace.id}/posts/${updated.id}`, {
                 title: updated.title,
-                content: updated.description || '',
+                content: normalizedContent,
                 status: updated.status,
                 scheduledAtUtc: null
             })
@@ -523,9 +525,10 @@ export default function IdeasPage() {
         if (!idea || !activeWorkspace) return
 
         try {
+            const normalizedContent = (idea.description || idea.title || 'Idea').trim()
             await api.put(`/workspaces/${activeWorkspace.id}/posts/${id}`, {
                 title: idea.title,
-                content: idea.description || '',
+                content: normalizedContent,
                 status: groupId,
                 scheduledAtUtc: null
             })
