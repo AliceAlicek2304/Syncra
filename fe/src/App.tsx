@@ -45,7 +45,12 @@ function Homepage() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return null
+  }
+
   return user ? <>{children}</> : <Navigate to="/" replace />
 }
 

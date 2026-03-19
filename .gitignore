@@ -123,6 +123,7 @@ secrets.json
 appsettings.Development.json
 appsettings.Production.json
 appsettings.json
+be/src/Syncra.Api/Properties/launchSettings.json
 
 # ===========================
 # Media / Uploads

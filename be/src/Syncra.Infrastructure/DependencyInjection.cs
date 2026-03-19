@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
@@ -69,6 +70,17 @@ public static class DependencyInjection
         services.AddScoped<IStorageService, LocalMediaStorage>();
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.AddScoped<IStripeService, StripeService>();
+        services.Configure<GroqOptions>(configuration.GetSection(GroqOptions.SectionName));
+        services.AddHttpClient<IAiIdeaGenerationService, GroqIdeaGenerationService>((sp, client) =>
+        {
+            var groqOptions = configuration.GetSection(GroqOptions.SectionName).Get<GroqOptions>()
+                ?? new GroqOptions();
+
+            client.BaseAddress = new Uri(groqOptions.BaseUrl);
+            client.DefaultRequestHeaders.Accept.Clear();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.Timeout = TimeSpan.FromSeconds(40);
+        });
 
         return services;
     }

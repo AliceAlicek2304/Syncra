@@ -35,13 +35,36 @@ interface Idea {
     createdAt: number
 }
 
+const BOARD_TO_BACKEND_STATUS: Record<string, string> = {
+    unassigned: 'Draft',
+    todo: 'Scheduled',
+    inprogress: 'Publishing',
+    done: 'Published',
+}
+
+const BACKEND_TO_BOARD_STATUS: Record<string, string> = {
+    draft: 'unassigned',
+    scheduled: 'todo',
+    publishing: 'inprogress',
+    published: 'done',
+    failed: 'unassigned',
+}
+
+const toBackendStatus = (boardStatus: string): string =>
+    BOARD_TO_BACKEND_STATUS[boardStatus] ?? 'Draft'
+
+const toBoardStatus = (backendStatus?: string): string => {
+    const normalized = backendStatus?.toLowerCase() ?? ''
+    return BACKEND_TO_BOARD_STATUS[normalized] ?? 'unassigned'
+}
+
 
 const mapPostToIdea = (post: any): Idea => ({
     id: post.id,
     title: post.title,
     description: post.content,
-    status: post.status?.toLowerCase() || 'unassigned',
-    createdAt: new Date(post.publishedAtUtc || Date.now()).getTime()
+    status: toBoardStatus(post.status),
+    createdAt: new Date(post.createdAtUtc || post.publishedAtUtc || Date.now()).getTime()
 })
 
 interface Group {
@@ -465,7 +488,7 @@ export default function IdeasPage() {
             const res = await api.post(`/workspaces/${activeWorkspace.id}/posts`, {
                 title,
                 content: normalizedContent,
-                status: groupId,
+                status: toBackendStatus(groupId),
                 scheduledAtUtc: null
             })
             // Replace temp id with real
@@ -499,7 +522,7 @@ export default function IdeasPage() {
             await api.put(`/workspaces/${activeWorkspace.id}/posts/${updated.id}`, {
                 title: updated.title,
                 content: normalizedContent,
-                status: updated.status,
+                status: toBackendStatus(updated.status),
                 scheduledAtUtc: null
             })
         } catch (err) {
@@ -529,7 +552,7 @@ export default function IdeasPage() {
             await api.put(`/workspaces/${activeWorkspace.id}/posts/${id}`, {
                 title: idea.title,
                 content: normalizedContent,
-                status: groupId,
+                status: toBackendStatus(groupId),
                 scheduledAtUtc: null
             })
         } catch (err) {

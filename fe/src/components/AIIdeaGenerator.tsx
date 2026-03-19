@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react'
 import { Sparkles, X, Check, ChevronRight, ChevronDown, Upload, FileText, Trash2 } from 'lucide-react'
-import { getMockResults } from '../data/mockAI'
 import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
 import { shortId } from '../utils/shortId'
+import { api } from '../api/axios'
+import { useWorkspace } from '../context/WorkspaceContext'
 import styles from './AIIdeaGenerator.module.css'
 
 
@@ -42,8 +43,14 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
+type GenerateIdeasApiResponse = {
+    topic: string
+    ideas: ContentIdea[]
+}
+
 
 export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
+    const { activeWorkspace } = useWorkspace()
     const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
     const [topic, setTopic] = useState('')
     const [niche, setNiche] = useState('')
@@ -55,6 +62,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
     const [dragOver, setDragOver] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -88,15 +96,22 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         })
     }
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         if (!topic.trim()) return
+
+        if (!activeWorkspace) {
+            setErrorMessage('Không tìm thấy workspace đang hoạt động.')
+            return
+        }
+
+        setErrorMessage('')
         setStep('loading')
         setSelectedIdeaIds([])
-        const input: AIGenerateInput = { 
-            topic, 
-            niche, 
-            audience, 
-            goal, 
+        const input: AIGenerateInput = {
+            topic,
+            niche,
+            audience,
+            goal,
             tone,
             files: uploadedFiles.length > 0 ? uploadedFiles.map(f => ({
                 name: f.file.name,
@@ -104,10 +119,31 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                 caption: f.caption
             })) : undefined
         }
-        setTimeout(() => {
-            setResults(getMockResults(input))
+
+        try {
+            const res = await api.post<GenerateIdeasApiResponse>(
+                `/workspaces/${activeWorkspace.id}/ai/ideas/generate`,
+                {
+                    topic: input.topic,
+                    niche: input.niche,
+                    audience: input.audience,
+                    goal: input.goal,
+                    tone: input.tone,
+                    count: 5,
+                    files: input.files
+                }
+            )
+
+            setResults(res.data.ideas ?? [])
             setStep('results')
-        }, 1600)
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.title ||
+                'Không thể tạo ý tưởng AI lúc này. Vui lòng thử lại.'
+            setErrorMessage(message)
+            setStep('form')
+        }
     }
 
     const toggleSelect = (idea: ContentIdea) => {
@@ -162,6 +198,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         setGoal('')
         setTone('default')
         setShowAdvanced(false)
+        setErrorMessage('')
         uploadedFiles.forEach(f => {
             if (f.preview) URL.revokeObjectURL(f.preview)
         })
@@ -338,6 +375,10 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                     <span>Generate</span>
                                 </button>
                             </div>
+
+                            {errorMessage && (
+                                <p className={styles.formError}>{errorMessage}</p>
+                            )}
                         </div>
                     )}
 

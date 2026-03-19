@@ -6,7 +6,7 @@ import ResultsGrid from '../../components/repurpose/ResultsGrid'
 import { useRepurpose } from '../../context/repurposeContextBase'
 
 export default function RepurposePage() {
-  const { results, isGenerating } = useRepurpose()
+  const { results, isGenerating, error } = useRepurpose()
   const hasOutput = results.length > 0 || isGenerating
 
   return (
@@ -45,6 +45,20 @@ export default function RepurposePage() {
         <InputSection />
         <ConfigBar />
       </div>
+
+      {error && (
+        <div style={{
+          marginTop: 12,
+          padding: '10px 12px',
+          borderRadius: 10,
+          border: '1px solid rgba(239,68,68,0.35)',
+          background: 'rgba(239,68,68,0.12)',
+          color: '#fecaca',
+          fontSize: 13,
+        }}>
+          {error}
+        </div>
+      )}
 
       {hasOutput ? (
         <ResultsGrid />
