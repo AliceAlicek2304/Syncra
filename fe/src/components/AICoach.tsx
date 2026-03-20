@@ -3,16 +3,12 @@ import { Sparkles, X, TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from '
 import styles from './AICoach.module.css'
 import { TREND_TIPS } from '../data/mockCoachTrends'
 import AIIdeaGenerator from './AIIdeaGenerator'
-import { useCreatePostModal } from '../context/createPostModalContext'
-import type { ContentIdea } from '../data/mockAI'
 
 export default function AICoach() {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const [generatorIdeas, setGeneratorIdeas] = useState<ContentIdea[] | null>(null)
-  
-  const { openCreatePost } = useCreatePostModal()
-  
+  const [preTopic, setPreTopic] = useState<string | null>(null)
+
   // Carousel state
   const [slideIndex, setSlideIndex] = useState(1)
   const [enableTransition, setEnableTransition] = useState(true)
@@ -23,14 +19,12 @@ export default function AICoach() {
     isAnimatingRef.current = isAnimating
   }, [isAnimating])
 
-  // Add cloned slides at boundaries for infinite loop
   const slides = useMemo(() => {
     if (!TREND_TIPS || TREND_TIPS.length === 0) return []
     return [TREND_TIPS[TREND_TIPS.length - 1], ...TREND_TIPS, TREND_TIPS[0]]
   }, [])
 
   useEffect(() => {
-    // Simulate a notification popping up after 3 seconds
     const timer = setTimeout(() => {
       if (!isOpen) setShowNotification(true)
     }, 3000)
@@ -42,9 +36,9 @@ export default function AICoach() {
     setShowNotification(false)
   }
 
-  const handleActionClick = (ideas: ContentIdea[]) => {
-    setGeneratorIdeas(ideas)
-    setIsOpen(false) // Close coach panel, then open generator modal
+  const handleActionClick = (topic: string) => {
+    setPreTopic(topic)
+    setIsOpen(false)
   }
 
   const handleNext = useCallback(() => {
@@ -64,17 +58,14 @@ export default function AICoach() {
   const handleTransitionEnd = () => {
     setIsAnimating(false)
     if (slideIndex === slides.length - 1) {
-      // Reached the clone of first, snap to real first
       setEnableTransition(false)
       setSlideIndex(1)
     } else if (slideIndex === 0) {
-      // Reached the clone of last, snap to real last
       setEnableTransition(false)
       setSlideIndex(slides.length - 2)
     }
   }
 
-  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -86,7 +77,6 @@ export default function AICoach() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handlePrev, handleNext])
 
-  // Calculate index for the pagination display
   const realIndex = slides.length > 0 ? (slideIndex - 1 + TREND_TIPS.length) % TREND_TIPS.length : 0
   const notificationTip = TREND_TIPS[0]
 
@@ -107,9 +97,8 @@ export default function AICoach() {
           </div>
         )}
 
-        {/* Main Orb: Only visible when the panel is closed */}
         {!isOpen && (
-          <button 
+          <button
             className={`${styles.orb} ${showNotification ? styles.orbAlert : ''}`}
             onClick={toggleCoach}
           >
@@ -120,7 +109,6 @@ export default function AICoach() {
           </button>
         )}
 
-        {/* Expanded Panel */}
         {isOpen && (
           <div className={`glass-card ${styles.panel}`}>
             <div className={styles.panelHeader}>
@@ -134,11 +122,9 @@ export default function AICoach() {
             </div>
 
             <div className={styles.panelContent}>
-              {/* Wrapper with relative positioning for overlay buttons */}
               <div className={styles.carouselWrapper}>
-                {/* Carousel Viewport */}
                 <div className={styles.carouselViewport}>
-                  <div 
+                  <div
                     className={`${styles.carouselTrack} ${enableTransition ? styles.transition : ''}`}
                     style={{ transform: `translateX(-${slideIndex * 100}%)` }}
                     onTransitionEnd={handleTransitionEnd}
@@ -152,8 +138,8 @@ export default function AICoach() {
                           </div>
                           <h4 className={styles.tipTitle}>{tip.title}</h4>
                           <p className={styles.tipText}>{tip.text}</p>
-                          
-                          <button className={styles.actionBtn} onClick={() => handleActionClick(tip.ideas)}>
+
+                          <button className={styles.actionBtn} onClick={() => handleActionClick(tip.topic)}>
                             {tip.action} <ArrowRight size={14} />
                           </button>
                         </div>
@@ -181,7 +167,6 @@ export default function AICoach() {
                 </button>
               </div>
 
-              {/* Pagination indicator only */}
               <div className={styles.paginationWrap}>
                 <span className={styles.pagination}>
                   {realIndex + 1} / {TREND_TIPS.length}
@@ -199,14 +184,13 @@ export default function AICoach() {
         )}
       </div>
 
-      {/* Embedded Generator Modal (when a trend is clicked) */}
-      {generatorIdeas && (
+      {/* AI Generator modal — opens with pre-filled topic from trend */}
+      {preTopic !== null && (
         <AIIdeaGenerator
-          presetResults={generatorIdeas}
-          onClose={() => setGeneratorIdeas(null)}
-          onSelectIdea={(idea) => {
-            openCreatePost({ initialContent: idea.description, source: 'coach' })
-            setGeneratorIdeas(null)
+          presetTopic={preTopic}
+          onClose={() => setPreTopic(null)}
+          onSelectIdea={() => {
+            setPreTopic(null)
           }}
         />
       )}

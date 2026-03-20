@@ -114,6 +114,51 @@ public sealed class AiController : ControllerBase
         }
     }
 
+    [HttpPost("assist")]
+    public async Task<IActionResult> AssistContent(
+        Guid workspaceId,
+        [FromBody] AssistContentRequestDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (workspaceId == Guid.Empty)
+        {
+            return BadRequest(new { message = "Invalid workspace ID." });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var userId = ResolveUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var canAccessWorkspace = await _db.WorkspaceMembers
+            .AnyAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId.Value, cancellationToken);
+
+        if (!canAccessWorkspace)
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            var result = await _ideaGenerationService.AssistContentAsync(workspaceId, userId.Value, dto, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(502, new { message = $"AI provider error: {ex.Message}" });
+        }
+    }
+
     private Guid? ResolveUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier);

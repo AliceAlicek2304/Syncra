@@ -17,6 +17,7 @@ interface Props {
     onSelectIdea: (idea: GeneratedIdea) => void
     onClose: () => void
     presetResults?: ContentIdea[]
+    presetTopic?: string
 }
 
 interface UploadedFile {
@@ -49,10 +50,10 @@ type GenerateIdeasApiResponse = {
 }
 
 
-export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
+export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults, presetTopic }: Props) {
     const { activeWorkspace } = useWorkspace()
     const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
-    const [topic, setTopic] = useState('')
+    const [topic, setTopic] = useState(presetTopic || '')
     const [niche, setNiche] = useState('')
     const [audience, setAudience] = useState('')
     const [goal, setGoal] = useState('')
@@ -177,7 +178,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                 onSelectIdea({
                     id: idea.id + '-' + Date.now() + '-' + Math.random(),
                     title: idea.title,
-                    description: idea.hook,
+                    description: idea.caption,
                 })
             }
         })

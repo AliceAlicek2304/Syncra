@@ -49,7 +49,7 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
             throw new InvalidOperationException("Groq API key is not configured. Set Groq__ApiKey in your environment.");
         }
 
-        var count = Math.Clamp(request.Count <= 0 ? 5 : request.Count, 1, 10);
+        var count = Math.Clamp(request.Count <= 0 ? 3 : request.Count, 1, 10);
 
         var completion = await SendGroqJsonAsync(
             BuildIdeaSystemPrompt(),
@@ -63,7 +63,8 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         }
 
         var json = ExtractJson(content);
-        var parsed = JsonSerializer.Deserialize<IdeasEnvelope>(json, JsonOptions);
+        var sanitizedJson = SanitizeJson(json);
+        var parsed = JsonSerializer.Deserialize<IdeasEnvelope>(sanitizedJson, JsonOptions);
         var normalized = NormalizeIdeas(parsed?.Ideas, count);
 
         if (normalized.Count == 0)
@@ -107,7 +108,8 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         }
 
         var json = ExtractJson(content);
-        var parsed = JsonSerializer.Deserialize<RepurposeEnvelope>(json, JsonOptions);
+        var sanitizedJson = SanitizeJson(json);
+        var parsed = JsonSerializer.Deserialize<RepurposeEnvelope>(sanitizedJson, JsonOptions);
         var atoms = NormalizeRepurposeAtoms(parsed?.Atoms, request.Platforms, request.ExtractAtoms);
 
         if (atoms.Count == 0)
@@ -116,6 +118,36 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         }
 
         return new GenerateRepurposeResponseDto(atoms);
+    }
+
+    public async Task<AssistContentResponseDto> AssistContentAsync(
+        Guid workspaceId,
+        Guid userId,
+        AssistContentRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Content))
+        {
+            throw new ArgumentException("Content is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            throw new InvalidOperationException("Groq API key is not configured.");
+        }
+
+        var completion = await SendGroqRawAsync(
+            BuildAssistSystemPrompt(),
+            BuildAssistUserPrompt(request),
+            cancellationToken);
+
+        var content = completion?.Choices?.FirstOrDefault()?.Message?.Content;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException("Groq returned empty content for assist.");
+        }
+
+        return new AssistContentResponseDto { Result = content.Trim() };
     }
 
     private async Task<GroqChatCompletionResponse?> SendGroqJsonAsync(
@@ -185,112 +217,184 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         throw lastException ?? new HttpRequestException("Groq API error: all candidate models failed.");
     }
 
+    private async Task<GroqChatCompletionResponse?> SendGroqRawAsync(
+        string systemPrompt,
+        string userPrompt,
+        CancellationToken cancellationToken)
+    {
+        // Similar to SendGroqJsonAsync but without forcing JSON mode if the model supports it, 
+        // though Groq handles standard chat just fine.
+        return await SendGroqJsonAsync(systemPrompt, userPrompt, cancellationToken);
+    }
+
     private static string BuildIdeaSystemPrompt() =>
         """
-        You are Syncra AI, an expert social media strategist for content creators and small teams.
+        You are Syncra AI, a top Vietnamese social media content writer. You write viral Facebook and TikTok posts in fluent Vietnamese.
 
-        Objective:
-        Generate practical, ready-to-use content ideas that can be added directly into a planning board.
-        Ideas must prioritize execution quality, audience relevance, and cross-platform adaptability.
+        RULES:
+        1. 'hook' = ONE sentence (max 15 words) to stop the scroll. NEVER put this in caption.
+        2. 'caption' = The FULL post body (everything after the hook). MIN 400 characters. Use \n\n between paragraphs. Use emojis (1 per section). End with a strong CTA on its own line.
+        3. ALL \n inside JSON strings must be escaped as \n (JSON-safe). No literal line breaks in strings.
 
-        Output rules:
-        - Return ONLY valid JSON (no markdown, no explanation).
-        - JSON shape MUST be:
-          {
-            "ideas": [
-              {
-                "type": "Reel|Carousel|Photo|Thread|Short",
-                "hook": "string",
-                "title": "string",
-                "caption": "string",
-                "hashtags": ["#tag1", "#tag2"],
-                "platforms": ["TikTok", "Instagram", "YouTube", "X", "LinkedIn", "Facebook"],
-                "bestTime": "string",
-                "estimatedReach": "string"
-              }
-            ]
-          }
-        - Keep captions concise, high-converting, and native to social media.
-        - Include 4-8 relevant hashtags per idea, each hashtag must start with '#'.
-        - Use mixed Vietnamese + English style only if it feels natural for creator content in Vietnam.
-        - Ensure diversity of formats and angles (education, storytelling, authority, conversion).
+        CAPTION STRUCTURE (follow this):
+        [1-2 lines of context or story]\n\n[Core insight with bullet points or numbered tips]\n\n[Lesson or takeaway]\n\n[CTA line — specific, action-driven]
+
+        EXAMPLE OUTPUT (for a topic about morning routines):
+        hook: "5h30 sáng, trong khi bạn còn ngủ thì người thành công đang làm điều này."
+        caption: "Không phải ai dậy sớm cũng thành công. Nhưng hầu hết người thành công đều dậy sớm.\n\nSau 3 tháng thử thách 5h30 sáng, đây là những gì thực sự thay đổi trong cuộc sống của mình:\n\n✅ 1 tiếng yên tĩnh trước khi thế giới thức dậy — không ai nhắn tin, không có deadline.\n✅ Mindset rõ ràng hơn khi tập thể dục lúc sáng sớm thay vì chiều tối.\n✅ Productivity tăng đến 40% chỉ vì mình có thêm 1 deep work session mỗi ngày.\n\nBí quyết không phải là ý chí — mà là chuẩn bị TỐI QUA:\n👉 Để quần áo tập sẵn trước khi ngủ.\n👉 Đặt báo thức cách xa giường.\n👉 Có lý do đủ mạnh để MUỐN thức dậy.\n\n💬 Bạn thường dậy lúc mấy giờ? Comment bên dưới để mình biết bạn thuộc team nào nhé! 🔥"
+
+        Return ONLY valid JSON matching the schema below. No markdown.
+
+        {
+          "ideas": [
+            {
+              "type": "Reel|Carousel|Photo|Thread|Short",
+              "hook": "string",
+              "title": "string",
+              "caption": "string",
+              "hashtags": ["#tag"],
+              "platforms": ["Facebook", "TikTok", "LinkedIn", "Instagram"],
+              "bestTime": "string",
+              "estimatedReach": "string"
+            }
+          ]
+        }
         """;
 
     private static string BuildIdeaUserPrompt(GenerateIdeasRequestDto request, int count)
     {
         var fileContext = request.Files is { Count: > 0 }
             ? string.Join("\n", request.Files.Select(f =>
-                $"- File: {f.Name} | Type: {f.Type} | Note: {f.Caption ?? "(none)"}"))
-            : "- No reference files provided.";
+                $"- {f.Name} ({f.Type}): {f.Caption ?? "no note"}"))
+            : "none";
+
+        var ctaHint = request.Goal?.ToLowerInvariant() switch
+        {
+            "sales"     => "CTA: push readers to buy/contact NOW (FOMO style)",
+            "followers" => "CTA: ask readers to follow for more",
+            "awareness" => "CTA: ask readers to share or save this post",
+            _           => "CTA: ask a question to spark comments"
+        };
 
         return $"""
-        Generate exactly {count} social content ideas for Syncra users.
+        Write {count} Vietnamese social media post(s) about this topic.
 
-        Constraints:
-        - Topic: {request.Topic}
-        - Niche: {request.Niche ?? "General"}
-        - Audience: {request.Audience ?? "General audience"}
-        - Goal: {request.Goal ?? "engagement"}
-        - Tone: {request.Tone ?? "balanced"}
+        Topic: {request.Topic}
+        Niche: {request.Niche ?? "General"}
+        Audience: {request.Audience ?? "Vietnamese social media users"}
+        Goal: {request.Goal ?? "engagement"}
+        Tone: {request.Tone ?? "friendly and relatable"}
+        {ctaHint}
+        Reference files: {fileContext}
 
-        Reference context:
-        {fileContext}
+        Requirements:
+        - caption must be AT LEAST 400 characters with \n\n between paragraphs.
+        - Each idea must use a DIFFERENT angle or format (story, list, tips, contrarian take).
+        - Write like a real Vietnamese creator. Sound human, not robotic.
 
-        Return only JSON in the required schema.
+        Return ONLY the JSON object.
         """;
     }
 
         private static string BuildRepurposeSystemPrompt() =>
                 """
-                You are Syncra AI Repurpose Engine.
+                You are Syncra AI Repurpose Engine—an elite content transformer fluent in Vietnamese social media culture.
+                Your job: take one source text and re-create it as platform-native posts that feel authentic, not copy-pasted.
 
-                Mission:
-                Convert one long-form source content into platform-ready short-form outputs.
+                === FIELD DEFINITIONS ===
+                - **content**: The FULL, complete post body for the platform. Must be long (200–500 words for Facebook/LinkedIn). For X (Twitter), keep it under 280 chars. For TikTok use script format.
+                - **title**: Short descriptor (internal label, not a headline).
+                - **suggestedHashtags**: 3–6 relevant hashtags.
+                - **suggestedCta**: A strong, specific call to action.
 
-                Output format:
-                Return ONLY valid JSON with shape:
+                === PLATFORM-NATIVE RULES ===
+                - **Facebook/LinkedIn**: Deep storytelling. Open with a hook sentence, build with context and value, close with a question or CTA. Use \n for spacing. Must feel like it was written specifically for that platform, NOT recycled.
+                - **X (Twitter)**: One powerful standalone tweet OR numbered thread. Each tweet max 280 chars. Write in Vietnamese.
+                - **Instagram**: Conversational caption. Emoji-rich. Start strong. End with: "Lưu bài này lại để xem sau! 🔖"
+                - **Newsletter**: Professional tone. Include a subject-line-quality title. Structured paragraphs.
+
+                === TECHNICAL RULES ===
+                - Return ONLY valid JSON. No markdown fences.
+                - ALL newlines inside JSON strings MUST be escaped as '\n'. No literal newline characters inside strings.
+                - Write in Vietnamese. Use English only for industry-specific terms.
+
+                === SCHEMA ===
                 {
                     "atoms": [
                         {
                             "type": "POST|THREAD|CAROUSEL|INSIGHT|TIP|QUOTE",
-                            "title": "string or null",
-                            "content": "string",
-                            "platform": "LinkedIn|X|Instagram|Newsletter",
+                            "title": "string",
+                            "content": "string (FULL post body)",
+                            "platform": "Facebook|LinkedIn|X|Instagram|Newsletter",
                             "suggestedHashtags": ["#tag1", "#tag2"],
-                            "suggestedCta": "string or null"
+                            "suggestedCta": "string"
                         }
                     ]
                 }
-
-                Quality rules:
-                - Keep outputs actionable and specific to creator workflows.
-                - Adapt tone and formatting per platform conventions.
-                - Hashtags must start with '#', max 6.
-                - Never output markdown fences.
                 """;
 
-        private static string BuildRepurposeUserPrompt(GenerateRepurposeRequestDto request)
-        {
-                var platforms = string.Join(", ", request.Platforms);
-                var mode = request.ExtractAtoms
-                        ? "INSIGHTS MODE: prioritize atomized nuggets (INSIGHT/TIP/QUOTE)."
-                        : "FULL MODE: mix long output formats (POST/THREAD/CAROUSEL) with concise atoms.";
+    private static string BuildRepurposeUserPrompt(GenerateRepurposeRequestDto request)
+    {
+        var platforms = string.Join(", ", request.Platforms);
+        var mode = request.ExtractAtoms
+            ? "INSIGHTS MODE: prioritize atomized nuggets (INSIGHT/TIP/QUOTE)."
+            : "FULL MODE: mix long output formats (POST/THREAD/CAROUSEL) with concise atoms.";
 
-                return $"""
-                Repurpose this source content for Syncra users.
+        return $"""
+                Repurpose this content into platform-native posts in Vietnamese.
 
-                Constraints:
-                - Platforms: {platforms}
-                - Tone: {request.Tone ?? "adaptive"}
-                - Length: {request.Length ?? "medium"}
-                - {mode}
+                === CONFIGURATION ===
+                Target Platforms: {platforms}
+                Tone: {request.Tone ?? "Adaptive – match the platform culture"}
+                Desired Length: {request.Length ?? "medium"}
+                Mode: {mode}
 
-                Source content:
+                === SOURCE CONTENT ===
                 {request.SourceText}
 
-                Return strict JSON only.
+                === MANDATORY REMINDER ===
+                - 'content' field = FULL post body (not a summary). Write it as if you're posting it yourself.
+                - Adapt the style for EACH platform. A Facebook post and a LinkedIn post from the same source should look VERY different.
+                - Minimum: 150 words per atom for Facebook/LinkedIn.
+
+                Return only the JSON object.
                 """;
-        }
+    }
+
+    private static string BuildAssistSystemPrompt() =>
+        """
+        You are Syncra AI Assistant, a professional Vietnamese content editor.
+        Your goal is to help users improve their social media posts.
+
+        RULES:
+        1. ALWAYS respond in Vietnamese.
+        2. Keep the original meaning and core message intact.
+        3. Do NOT include any meta-talk like "Here is your rephrased content". Return ONLY the modified content.
+        4. Preserve emojis if they are appropriate, or add better ones if requested.
+        5. Respect the user's specific action (rephrase, shorten, expand, write-more).
+        """;
+
+    private static string BuildAssistUserPrompt(AssistContentRequestDto request)
+    {
+        var actionPrompt = request.Action.ToLowerInvariant() switch
+        {
+            "rephrase" => "Hãy viết lại đoạn nội dung sau theo cách lôi cuốn và tự nhiên hơn, nhưng giữ nguyên ý nghĩa chính.",
+            "shorten" => "Hãy tóm tắt đoạn nội dung sau sao cho ngắn gọn, súc tích nhưng vẫn giữ được những ý chính quan trọng nhất. Cắt bỏ những từ thừa.",
+            "expand" => "Hãy mở rộng đoạn nội dung sau bằng cách thêm chi tiết, ví dụ hoặc giải thích sâu hơn để tăng giá trị cho người đọc.",
+            "write-more" => "Hãy viết tiếp đoạn nội dung sau theo mạch văn hiện tại để hoàn thiện ý tưởng.",
+            _ => request.Instruction ?? "Hãy cải thiện đoạn nội dung sau."
+        };
+
+        return $"""
+        Hành động: {actionPrompt}
+        Tiêu đề hiện tại (nếu có): {request.Title ?? "N/A"}
+
+        NỘI DUNG GỐC:
+        {request.Content}
+
+        HÃY TRẢ VỀ KẾT QUẢ ĐÃ ĐƯỢC XỬ LÝ (CHỈ TRẢ VỀ NỘI DUNG, KHÔNG CÓ LỜI DẪN):
+        """;
+    }
 
     private static string ExtractJson(string raw)
     {
@@ -315,6 +419,43 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         }
 
         return trimmed;
+    }
+
+    private static string SanitizeJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return json;
+
+        // LLMs sometimes output literal newlines inside JSON strings which is invalid JSON.
+        // This simple regex-based approach escapes them. 
+        // We look for a newline that is NOT preceded by a backslash.
+        // Actually, a simpler way for LLM output is to just replace \r\n and \n with \n string
+        // but that might break correctly escaped ones.
+        
+        // Let's use a more robust search: replace literal newlines only if they appear 
+        // between quotes of a key-value pair. But for now, since we expect NO literal newlines 
+        // in a valid JSON structure except as separators, we can try to be smart.
+        
+        var sb = new StringBuilder();
+        bool inString = false;
+        for (int i = 0; i < json.Length; i++)
+        {
+            char c = json[i];
+            if (c == '"' && (i == 0 || json[i - 1] != '\\'))
+            {
+                inString = !inString;
+                sb.Append(c);
+            }
+            else if (inString && (c == '\n' || c == '\r'))
+            {
+                if (c == '\r' && i + 1 < json.Length && json[i + 1] == '\n') i++;
+                sb.Append("\\n");
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
     }
 
     private static IReadOnlyCollection<GeneratedIdeaDto> NormalizeIdeas(IReadOnlyCollection<RawIdea>? ideas, int count)

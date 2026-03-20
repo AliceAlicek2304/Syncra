@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Sparkles, Wand2 } from 'lucide-react'
+import { Sparkles, Wand2, Loader2 } from 'lucide-react'
+import { api } from '../api/axios'
+import { useWorkspace } from '../context/WorkspaceContext'
 import styles from './EditIdeaModal.module.css'
 
 interface Props {
@@ -17,27 +19,38 @@ const QUICK_ACTIONS: { id: QuickAction; label: string; emoji: string }[] = [
     { id: 'expand', label: 'Expand', emoji: '📋' },
 ]
 
-function simulateAI(prompt: string, action?: QuickAction, base?: string): string {
-    if (action === 'write-more') return (base || '') + '\n\nBuilding on this idea further, there are several compelling angles to explore and develop into actionable content that resonates with your target audience...'
-    if (action === 'rephrase') return `Here is a fresh take on your idea: ${(base || prompt).split('').reverse().slice(0, 60).join('')}...`
-    if (action === 'shorten') return (base || prompt).split(' ').slice(0, 20).join(' ') + '...'
-    if (action === 'expand') return (base || prompt) + '\n\nExpanded context: This idea opens the door to deeper exploration of the subject matter, bringing in diverse perspectives and concrete examples to make your content more impactful and shareable across platforms.'
-    return `AI-generated content based on your prompt:\n\n"${prompt}"\n\nHere's a compelling angle: This topic has tremendous potential for engagement. Consider leading with a hook that challenges conventional wisdom, then backing it up with relatable examples.`
+interface AssistResponse {
+    result: string
 }
 
 export default function IdeaAIAssistantPanel({ title, content, onApply }: Props) {
+    const { activeWorkspace } = useWorkspace()
     const [prompt, setPrompt] = useState('')
     const [result, setResult] = useState('')
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
 
-    const generate = (overridePrompt?: string, action?: QuickAction) => {
+    const generate = async (overridePrompt?: string, action?: QuickAction) => {
+        if (!activeWorkspace) return
         const p = overridePrompt ?? prompt
         if (!p.trim() && !action) return
+
         setLoading(true)
-        setTimeout(() => {
-            setResult(simulateAI(p, action, content || title))
+        setError('')
+        try {
+            const response = await api.post<AssistResponse>(`/workspaces/${activeWorkspace.id}/ai/assist`, {
+                content: content || title,
+                action: action || 'custom',
+                instruction: action ? undefined : p,
+                title: title
+            })
+            setResult(response.data.result)
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Không thể kết nối với AI. Vui lòng thử lại.')
+            console.error('AI Assistant error:', err)
+        } finally {
             setLoading(false)
-        }, 700)
+        }
     }
 
     const handleQuickAction = (action: QuickAction) => {
@@ -94,8 +107,15 @@ export default function IdeaAIAssistantPanel({ title, content, onApply }: Props)
                     </div>
                 </div>
 
+                {/* Error */}
+                {error && (
+                    <div className={styles.aiError}>
+                        {error}
+                    </div>
+                )}
+
                 {/* Result */}
-                {result && (
+                {result && !loading && (
                     <div className={styles.aiResultBox}>
                         <div className={styles.aiResultBoxHeader}>
                             <Wand2 size={12} />
@@ -108,6 +128,13 @@ export default function IdeaAIAssistantPanel({ title, content, onApply }: Props)
                         >
                             Apply to Content
                         </button>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className={styles.aiLoading}>
+                        <Loader2 className={styles.spinning} size={20} />
+                        <span>AI đang xử lý...</span>
                     </div>
                 )}
 

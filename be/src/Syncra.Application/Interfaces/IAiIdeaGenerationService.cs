@@ -15,4 +15,10 @@ public interface IAiIdeaGenerationService
         Guid userId,
         GenerateRepurposeRequestDto request,
         CancellationToken cancellationToken = default);
+
+    Task<AssistContentResponseDto> AssistContentAsync(
+        Guid workspaceId,
+        Guid userId,
+        AssistContentRequestDto request,
+        CancellationToken cancellationToken = default);
 }
