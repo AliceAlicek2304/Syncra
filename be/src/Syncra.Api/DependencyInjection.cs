@@ -12,6 +12,9 @@ namespace Syncra.Api;
 
 public static class DependencyInjection
 {
+    private const string LocalPostgresFallbackConnectionString =
+        "Host=127.0.0.1;Port=5432;Database=syncra_db;Username=postgres;Password=1234567890";
+
     public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpClient();
@@ -98,6 +101,9 @@ public static class DependencyInjection
     {
         var postgresOptions = new PostgresOptions();
         configuration.GetSection(PostgresOptions.SectionName).Bind(postgresOptions);
+        var resolvedConnectionString = HasPassword(postgresOptions.ConnectionString)
+            ? postgresOptions.ConnectionString
+            : LocalPostgresFallbackConnectionString;
 
         services.AddHangfire(configuration =>
         {
@@ -105,11 +111,17 @@ public static class DependencyInjection
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(postgresOptions.ConnectionString);
+                .UsePostgreSqlStorage(resolvedConnectionString);
         });
 
         services.AddHangfireServer();
 
         return services;
+    }
+
+    private static bool HasPassword(string? connectionString)
+    {
+        return !string.IsNullOrWhiteSpace(connectionString)
+               && connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
     }
 }

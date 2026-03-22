@@ -11,6 +11,10 @@ LoadDotEnv();
 
 var builder = WebApplication.CreateBuilder(args);
 var postgresConnectionString = builder.Configuration["Postgres:ConnectionString"];
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    postgresConnectionString = "Host=127.0.0.1;Port=5432;Database=syncra_db;Username=postgres;Password=1234567890";
+}
 var canEnableHangfire = HasConnectionPassword(postgresConnectionString);
 
 builder.Host.UseSerilog((context, configuration) =>
