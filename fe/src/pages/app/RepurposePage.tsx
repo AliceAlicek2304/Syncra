@@ -6,8 +6,8 @@ import ResultsGrid from '../../components/repurpose/ResultsGrid'
 import { useRepurpose } from '../../context/repurposeContextBase'
 
 export default function RepurposePage() {
-  const { results, isGenerating } = useRepurpose()
-  const hasOutput = results.length > 0 || isGenerating
+  const { results, isGenerating, error } = useRepurpose()
+  const hasOutput = results.length > 0 || isGenerating || !!error
 
   return (
     <div className={styles.page}>

@@ -33,7 +33,7 @@ function SkeletonCard() {
 }
 
 export default function ResultsGrid() {
-    const { results, isGenerating } = useRepurpose()
+    const { results, isGenerating, error } = useRepurpose()
     const [activeFilter, setActiveFilter] = useState<RepurposePlatform | 'All'>('All')
 
     const usedPlatforms = Array.from(new Set(results.map(r => r.platform))) as RepurposePlatform[]
@@ -101,6 +101,8 @@ export default function ResultsGrid() {
                 <div className={styles.resultsGrid}>
                     {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
                 </div>
+            ) : error ? (
+                <div className={styles.repurposeError}>{error}</div>
             ) : (
                 <div className={styles.resultsGrid}>
                     {filtered.map((atom, i) => (

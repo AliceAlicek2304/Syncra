@@ -1,9 +1,8 @@
-import { useState } from 'react'
 import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import { mockGenerateRepurpose } from '../../data/mockAI'
 import type { RepurposePlatform } from '../../data/mockAI'
+import { generateRepurpose } from '../../data/repurposeService'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
@@ -36,9 +35,10 @@ const LENGTHS = [
     { id: 'long', label: 'Dài' },
 ]
 
+const GENERATION_ERROR_MESSAGE = 'Không thể tạo nội dung AI. Vui lòng thử lại.'
+
 export default function ConfigBar() {
     const { config, setConfig, isGenerating, setIsGenerating, setResults, setError } = useRepurpose()
-    const [contentLength, setContentLength] = useState('medium')
 
     const togglePlatform = (p: RepurposePlatform) => {
         setConfig(prev => {
@@ -55,15 +55,17 @@ export default function ConfigBar() {
         setIsGenerating(true)
         setError(null)
         try {
-            const response = await mockGenerateRepurpose({
+            const response = await generateRepurpose({
                 sourceText: config.sourceText,
                 platforms: config.targetPlatforms,
                 tone: config.tone,
+                length: config.length,
                 extractAtoms: config.extractAtoms,
             })
             setResults(response.atoms)
-        } catch {
-            setError('An error occurred while generating content.')
+        } catch (err) {
+            console.error('Repurpose generation failed:', err)
+            setError(GENERATION_ERROR_MESSAGE)
         } finally {
             setIsGenerating(false)
         }
@@ -130,8 +132,8 @@ export default function ConfigBar() {
                         {LENGTHS.map(l => (
                             <button
                                 key={l.id}
-                                className={`${styles.tonePill} ${contentLength === l.id ? styles.tonePillActive : ''}`}
-                                onClick={() => setContentLength(l.id)}
+                                className={`${styles.tonePill} ${config.length === l.id ? styles.tonePillActive : ''}`}
+                                onClick={() => setConfig(prev => ({ ...prev, length: l.id as 'short' | 'medium' | 'long' }))}
                             >
                                 {l.label}
                             </button>
