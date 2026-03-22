@@ -10,7 +10,7 @@ Primary UI files:
 - fe/src/components/repurpose/AtomCard.tsx
 - fe/src/pages/app/RepurposePage.tsx
 - fe/src/context/RepurposeContext.tsx
-- fe/src/context/repurposeContextBase.tsx
+- fe/src/context/repurposeContextBase.ts
 
 Current mock generation/types:
 - fe/src/data/mockAI.ts

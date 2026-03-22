@@ -1,7 +1,7 @@
 # Claude Restrictions and Safety Guardrails
 
 ## Mandatory process
-1. Read all files listed in `session-start-prompt.md` before coding.
+1. Read all files listed before coding.
 2. Restate in-scope and out-of-scope before any edit.
 3. Implement exactly one slice per chat.
 4. Edit only files allowed by the selected slice.
@@ -23,6 +23,7 @@
 - Keep loading and error state deterministic.
 - Avoid hidden side effects in UI handlers.
 - Preserve current UX language unless requirement says otherwise.
+- All error message must not be generic
 
 ## Evidence rules for every completion
 Must include:
