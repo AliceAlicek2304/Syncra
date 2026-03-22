@@ -11,7 +11,7 @@ import Toast from '../../components/Toast'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
 
-// ── Constants ─────────────────────────────────────────
+
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -39,7 +39,7 @@ interface CalPost {
   isMock?: boolean
 }
 
-// ── Platform config ───────────────────────────────────
+
 const PLATFORMS = [
   { id: 'all', label: 'All', color: '#8b5cf6' },
   { id: 'TikTok', label: 'TikTok', color: '#8b5cf6' },
@@ -50,27 +50,8 @@ const PLATFORMS = [
   { id: 'YouTube', label: 'YouTube', color: '#ef4444' },
 ]
 
-// ── Mock data ─────────────────────────────────────────
-const MOCK_POSTS: Record<string, CalPost[]> = {
-  '2026-2-18': [{ id: 'a1', title: 'Tips làm content', platform: 'TikTok', status: 'published', time: '19:00', color: '#8b5cf6', caption: '', hashtags: [], isMock: true }],
-  '2026-2-19': [
-    { id: 'a2', title: 'AI Tools 2026', platform: 'Instagram', status: 'published', time: '08:00', color: '#ec4899', caption: '', hashtags: [], isMock: true },
-    { id: 'a3', title: 'Day in my life', platform: 'TikTok', status: 'published', time: '20:00', color: '#8b5cf6', caption: '', hashtags: [], isMock: true },
-  ],
-  '2026-2-22': [{ id: 'a4', title: 'Workspace setup', platform: 'Instagram', status: 'published', time: '09:00', color: '#ec4899', caption: '', hashtags: [], isMock: true }],
-  '2026-2-24': [
-    { id: 'a5', title: 'Multi-platform tips', platform: 'LinkedIn', status: 'published', time: '10:00', color: '#22d3ee', caption: '', hashtags: [], isMock: true },
-    { id: 'a6', title: 'Creator growth thread', platform: 'X', status: 'scheduled', time: '20:00', color: '#f59e0b', caption: '', hashtags: [], isMock: true },
-  ],
-  '2026-2-25': [{ id: 'a7', title: 'Behind the scenes', platform: 'Instagram', status: 'scheduled', time: '08:00', color: '#ec4899', caption: '', hashtags: [], isMock: true }],
-  '2026-2-27': [
-    { id: 'a8', title: '5 lỗi mới làm YouTube', platform: 'YouTube', status: 'scheduled', time: '15:00', color: '#ef4444', caption: '', hashtags: [], isMock: true },
-    { id: 'a9', title: 'Productivity hacks', platform: 'TikTok', status: 'draft', time: '—', color: '#8b5cf6', caption: '', hashtags: [], isMock: true },
-  ],
-  '2026-2-28': [{ id: 'a10', title: 'Q&A với followers', platform: 'Instagram', status: 'scheduled', time: '19:00', color: '#ec4899', caption: '', hashtags: [], isMock: true }],
-}
 
-// ── Helpers ───────────────────────────────────────────
+
 function getPostKey(year: number, month: number, day: number) {
   return `${year}-${month}-${day}`
 }
@@ -90,8 +71,8 @@ function getWeekDays(year: number, month: number, day: number): { y: number; m: 
   })
 }
 
-// ── Hour slots for week/day view ─────────────────────
-const HOURS = Array.from({ length: 18 }, (_, i) => i + 6) // 6:00 – 23:00
+
+const HOURS = Array.from({ length: 18 }, (_, i) => i + 6)
 
 function timeToSlot(time: string): number {
   if (!time || time === '—') return 0
@@ -99,7 +80,7 @@ function timeToSlot(time: string): number {
   return (h - 6) * 60 + (m || 0)
 }
 
-// ── Main Component ────────────────────────────────────
+
 export default function CalendarPage() {
   const { posts: contextPosts, updatePost } = useCalendar()
   const { openCreatePost, openEditPost } = useCreatePostModal()
@@ -135,7 +116,7 @@ export default function CalendarPage() {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  // Close dropdowns on outside click
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (monthPickerRef.current && !monthPickerRef.current.contains(e.target as Node)) {
@@ -149,27 +130,23 @@ export default function CalendarPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // ── Merge mock + context posts ─────────────────────
+
   const allPostsByKey = useMemo(() => {
     const merged: Record<string, CalPost[]> = {}
-    // Add mock posts
-    Object.entries(MOCK_POSTS).forEach(([key, ps]) => {
-      merged[key] = [...ps]
-    })
-    // Add context posts
     contextPosts.forEach(p => {
       const key = getPostKey(p.year, p.month, p.day)
       const cp: CalPost = {
         id: p.id, title: p.title, platform: p.platform,
         status: p.status, time: p.time, color: p.color,
         caption: p.caption, hashtags: p.hashtags, image: p.image,
+        isMock: false
       }
       merged[key] = [...(merged[key] ?? []), cp]
     })
     return merged
   }, [contextPosts])
 
-  // ── Filter by platform ─────────────────────────────
+
   const filteredPostsByKey = useMemo(() => {
     if (platformFilter === 'all') return allPostsByKey
     const result: Record<string, CalPost[]> = {}
@@ -180,7 +157,7 @@ export default function CalendarPage() {
     return result
   }, [allPostsByKey, platformFilter])
 
-  // ── Navigation ─────────────────────────────────────
+
   const prevMonth = useCallback(() => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
@@ -241,7 +218,7 @@ export default function CalendarPage() {
     return ((hours - 6) * 60 + minutes)
   }, [])
 
-  // ── Drag & drop handlers ───────────────────────────
+
   const handleDragStart = (postId: string) => setDragPostId(postId)
   const handleDragEnd = () => { setDragPostId(null); setDragOverKey(null) }
   const handleDragOver = (e: React.DragEvent, key: string) => {
@@ -255,19 +232,19 @@ export default function CalendarPage() {
     setDragPostId(null); setDragOverKey(null)
   }
 
-  // ── Open create modal with date ────────────────────
+
   const openCreateForDay = (y: number, m: number, d: number) => {
     openCreatePost({ source: 'calendar', initialDate: { year: y, month: m, day: d } })
   }
 
-  // ── Open edit modal ────────────────────────────────
+
   const handleOpenEditPost = (post: CalPost) => {
-    if (post.isMock) return // mock posts are read-only for now
+    if (post.isMock) return
     const sp = contextPosts.find(p => p.id === post.id)
     if (sp) { openEditPost(sp) }
   }
 
-  // ── Calendar grid data ─────────────────────────────
+
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
@@ -278,10 +255,9 @@ export default function CalendarPage() {
 
   const weekDays = useMemo(() =>
     getWeekDays(year, month, selectedDay ?? today.getDate()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [year, month, selectedDay])
 
-  // ── Visual content card component (handles broken image state) ───────
+
   const VisualCard: React.FC<{
     post: CalPost
     onClick: (e: React.MouseEvent) => void
@@ -369,7 +345,7 @@ export default function CalendarPage() {
     )
   }
 
-  // ── Month View ─────────────────────────────────────
+  
   const renderMonthView = () => (
     <div className={`glass-card ${styles.calCard}`} role="grid" aria-label="Month calendar">
       <div className={styles.dayHeaders} role="row">
@@ -460,7 +436,7 @@ export default function CalendarPage() {
           )
         })}
       </div>
-      {/* Legend */}
+
       <div className={styles.legend}>
         {[
           { color: '#22c55e', label: 'Đã đăng' },
@@ -476,7 +452,7 @@ export default function CalendarPage() {
     </div>
   )
 
-  // ── Week View ──────────────────────────────────────
+
   const renderWeekView = () => {
     const now = new Date()
     const isCurrentWeek = weekDays.some(
@@ -485,7 +461,7 @@ export default function CalendarPage() {
     
     return (
     <div className={`glass-card ${styles.calCard} ${styles.weekCard}`} role="grid" aria-label="Week calendar">
-      {/* Column headers */}
+
       <div className={styles.weekHeader} role="row">
         <div className={styles.weekTimeGutter} />
         {weekDays.map(({ y, m, d }) => {
@@ -513,7 +489,7 @@ export default function CalendarPage() {
         })}
       </div>
 
-      {/* Timeline */}
+
       <div className={styles.weekBody} role="rowgroup">
         {HOURS.map(hour => (
           <div key={hour} className={styles.weekRow} role="row">
@@ -547,7 +523,7 @@ export default function CalendarPage() {
           </div>
         ))}
         
-        {/* Current time indicator line */}
+
         {isCurrentWeek && currentTimePosition !== null && (
           <div 
             className={styles.currentTimeLine}
@@ -561,7 +537,7 @@ export default function CalendarPage() {
     </div>
   )}
 
-  // ── Day View ───────────────────────────────────────
+
   const renderDayView = () => {
     const dayKey = getPostKey(year, month, selectedDay ?? today.getDate())
     const dayPosts = filteredPostsByKey[dayKey] ?? []
@@ -601,7 +577,7 @@ export default function CalendarPage() {
             )
           })}
           
-          {/* Current time indicator for day view */}
+
           {isToday && currentTimePosition !== null && (
             <div 
               className={styles.currentTimeLine}
@@ -616,7 +592,7 @@ export default function CalendarPage() {
     )
   }
 
-  // ── Side detail panel ──────────────────────────────
+
   const renderDetailPanel = () => (
     <div className={`glass-card ${styles.detailCard}`}>
       {selectedDay ? (
@@ -655,7 +631,7 @@ export default function CalendarPage() {
                   className={styles.postCard}
                   onClick={() => handleOpenEditPost(p)}
                 >
-                  {/* Header: Status + Time */}
+
                   <div className={styles.postCardHeader}>
                     <div className={styles.postCardStatus}>
                       <CheckCircle size={14} className={styles.postCardStatusIcon} />
@@ -666,7 +642,7 @@ export default function CalendarPage() {
                     <span className={styles.postCardTime}>{p.time}</span>
                   </div>
 
-                  {/* Body: Thumbnail + Content */}
+
                   <div className={styles.postCardBody}>
                     <div className={styles.postCardThumbnail}>
                       {p.image ? (
@@ -679,7 +655,7 @@ export default function CalendarPage() {
                           <ExtendedPlatformIcon platform={p.platform} size={18} />
                         </div>
                       )}
-                      {/* Video indicator - show for posts that might be videos (YouTube, TikTok) */}
+
                       {(p.platform === 'YouTube' || p.platform === 'TikTok') && (
                         <div className={styles.postCardVideoOverlay}>
                           <Play size={18} className={styles.postCardVideoIcon} />
@@ -694,7 +670,7 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  {/* Footer: Platform icons */}
+
                   <div className={styles.postCardFooter}>
                     <div 
                       className={styles.postCardPlatformIcon}
@@ -721,7 +697,7 @@ export default function CalendarPage() {
   const onPrev = viewMode === 'month' ? prevMonth : viewMode === 'week' ? prevWeek : prevDay
   const onNext = viewMode === 'month' ? nextMonth : viewMode === 'week' ? nextWeek : nextDay
 
-  // ── Main render ────────────────────────────────────
+
   return (
     <div className={styles.page} onKeyDown={handleKeyDown} tabIndex={-1}>
       {/* Header */}

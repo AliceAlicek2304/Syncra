@@ -298,6 +298,16 @@
     min-height: 16px;
 }
 
+.formError {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #fecaca;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
 .generateIconBtn {
     display: inline-flex;
     align-items: center;

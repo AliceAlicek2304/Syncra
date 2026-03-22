@@ -22,9 +22,11 @@ import type { GeneratedIdea } from '../../components/AIIdeaGenerator'
 import EditIdeaModal from '../../components/EditIdeaModal'
 import DropdownPortal from '../../components/DropdownPortal'
 import { shortId } from '../../utils/shortId'
+import { api } from '../../api/axios'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './IdeasPage.module.css'
 
-// ─── Types ─────────────────────────────────────────────────────────────────
+
 interface Idea {
     id: string
     title: string
@@ -33,12 +35,44 @@ interface Idea {
     createdAt: number
 }
 
+const BOARD_TO_BACKEND_STATUS: Record<string, string> = {
+    unassigned: 'Draft',
+    todo: 'Scheduled',
+    inprogress: 'Publishing',
+    done: 'Published',
+}
+
+const BACKEND_TO_BOARD_STATUS: Record<string, string> = {
+    draft: 'unassigned',
+    scheduled: 'todo',
+    publishing: 'inprogress',
+    published: 'done',
+    failed: 'unassigned',
+}
+
+const toBackendStatus = (boardStatus: string): string =>
+    BOARD_TO_BACKEND_STATUS[boardStatus] ?? 'Draft'
+
+const toBoardStatus = (backendStatus?: string): string => {
+    const normalized = backendStatus?.toLowerCase() ?? ''
+    return BACKEND_TO_BOARD_STATUS[normalized] ?? 'unassigned'
+}
+
+
+const mapPostToIdea = (post: any): Idea => ({
+    id: post.id,
+    title: post.title,
+    description: post.content,
+    status: toBoardStatus(post.status),
+    createdAt: new Date(post.createdAtUtc || post.publishedAtUtc || Date.now()).getTime()
+})
+
 interface Group {
     id: string
     name: string
 }
 
-// ─── Default groups ─────────────────────────────────────────────────────────
+
 const DEFAULT_GROUPS: Group[] = [
     { id: 'unassigned', name: 'Unassigned' },
     { id: 'todo', name: 'To Do' },
@@ -46,7 +80,7 @@ const DEFAULT_GROUPS: Group[] = [
     { id: 'done', name: 'Done' },
 ]
 
-// ─── Idea Card ──────────────────────────────────────────────────────────────
+
 interface IdeaCardProps {
     idea: Idea
     groups: Group[]
@@ -72,7 +106,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
     const dropdownRef = useRef<HTMLDivElement>(null)
     const subMenuRef = useRef<HTMLDivElement>(null)
 
-    // Close on outside click — must watch portal content too
+
     useEffect(() => {
         if (!openMenu) return
         const handler = (e: MouseEvent) => {
@@ -144,7 +178,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
                 )}
             </div>
 
-            {/* 3-dot menu button — stays in card for hover detection */}
+
             <div
                 className={styles.cardMenuWrapper}
                 onMouseDown={e => e.stopPropagation()}
@@ -159,7 +193,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
                 </button>
             </div>
 
-            {/* Main dropdown — rendered via portal at body level */}
+
             <DropdownPortal anchorRef={btnRef} isOpen={openMenu} width={160}>
                 <div ref={dropdownRef} className={styles.cardDropdown}>
                     <div className={styles.cardDropdownItem} onClick={handleMoveClick} ref={moveItemRef}>
@@ -175,7 +209,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
                 </div>
             </DropdownPortal>
 
-            {/* Submenu — also via portal, anchored to move item */}
+
             <DropdownPortal anchorRef={moveItemRef} isOpen={openMenu && showMoveMenu} width={150}>
                 <div ref={subMenuRef} className={styles.cardDropdown}>
                     {otherGroups.length === 0 ? (
@@ -197,7 +231,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
     )
 }
 
-// ─── Overlay Card (ghost during drag) ──────────────────────────────────────
+
 function OverlayCard({ idea }: { idea: Idea }) {
     return (
         <div className={`${styles.ideaCard} ${styles.ideaCardOverlay}`} style={{ cursor: 'grabbing' }}>
@@ -211,7 +245,7 @@ function OverlayCard({ idea }: { idea: Idea }) {
     )
 }
 
-// ─── Column ────────────────────────────────────────────────────────────────
+
 interface ColumnProps {
     group: Group
     ideas: Idea[]
@@ -344,6 +378,7 @@ function QuickAddModal({ groupId, onAdd, onClose }: QuickAddProps) {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function IdeasPage() {
+    const { activeWorkspace } = useWorkspace()
     const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS)
     const [ideas, setIdeas] = useState<Idea[]>([])
     const [activeId, setActiveId] = useState<string | null>(null)
@@ -352,6 +387,17 @@ export default function IdeasPage() {
     const [quickAddGroupId, setQuickAddGroupId] = useState<string | null>(null)
     const [newGroupName, setNewGroupName] = useState('')
     const [addingGroup, setAddingGroup] = useState(false)
+
+    // Fetch ideas
+    useEffect(() => {
+        if (!activeWorkspace) return
+        api.get(`/workspaces/${activeWorkspace.id}/posts`)
+            .then((res: any) => {
+                const mapped = res.data.map(mapPostToIdea)
+                setIdeas(mapped)
+            })
+            .catch((err: any) => console.error('Failed to load posts', err))
+    }, [activeWorkspace])
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
@@ -410,25 +456,48 @@ export default function IdeasPage() {
         })
     }
 
-    const handleDragEnd = () => {
+    const handleDragEnd = ({ active, over }: any) => {
         setActiveId(null)
 
-        // Optimistic update is already handled by `handleDragOver` to ensure smooth UI behavior.
-        // If a backend persistence layer is added later, trigger the API update here.
-        // Example:
-        // if (over) {
-        //     const idea = ideas.find(i => i.id === active.id)
-        //     if (idea) api.updateIdea(idea.id, { status: idea.status })
-        // }
+        if (over) {
+             const idea = ideas.find((i: Idea) => String(i.id) === String(active.id))
+             const targetGroupId = over.data.current?.type === 'Column' 
+                 ? over.id 
+                 : over.data.current?.idea?.status
+            
+             if (idea && targetGroupId && idea.status !== targetGroupId) {
+                 moveIdea(idea.id, String(targetGroupId))
+             }
+         }
     }
 
-    const addIdea = (groupId: string, title: string) => {
+    const addIdea = async (groupId: string, title: string) => {
+        if (!activeWorkspace) return
+        
+        // Optimistic UI
+        const tempId = shortId()
         setIdeas(prev => [...prev, {
-            id: shortId(),
+            id: tempId,
             title,
             status: groupId,
             createdAt: Date.now(),
         }])
+
+        try {
+            const normalizedContent = (title || 'Idea').trim()
+            const res = await api.post(`/workspaces/${activeWorkspace.id}/posts`, {
+                title,
+                content: normalizedContent,
+                status: toBackendStatus(groupId),
+                scheduledAtUtc: null
+            })
+            // Replace temp id with real
+            setIdeas(prev => prev.map(i => i.id === tempId ? mapPostToIdea(res.data) : i))
+        } catch (err) {
+            console.error('Failed to create idea', err)
+            // Revert on fail
+            setIdeas(prev => prev.filter(i => i.id !== tempId))
+        }
     }
 
     const handleSelectAIIdea = (generated: GeneratedIdea) => {
@@ -442,16 +511,53 @@ export default function IdeasPage() {
         setShowAIModal(false)
     }
 
-    const saveIdea = (updated: Idea) => {
+    const saveIdea = async (updated: Idea) => {
+        // Optimistic UI update
         setIdeas(prev => prev.map(i => i.id === updated.id ? updated : i))
+
+        if (!activeWorkspace) return
+        
+        try {
+            const normalizedContent = (updated.description || updated.title || 'Idea').trim()
+            await api.put(`/workspaces/${activeWorkspace.id}/posts/${updated.id}`, {
+                title: updated.title,
+                content: normalizedContent,
+                status: toBackendStatus(updated.status),
+                scheduledAtUtc: null
+            })
+        } catch (err) {
+            console.error('Failed to update idea', err)
+            // Add toast notification later if desired
+        }
     }
 
-    const deleteIdea = (id: string) => {
+    const deleteIdea = async (id: string) => {
         setIdeas(prev => prev.filter(i => i.id !== id))
+        
+        if (!activeWorkspace) return
+        try {
+            await api.delete(`/workspaces/${activeWorkspace.id}/posts/${id}`)
+        } catch (err) {
+             console.error('Failed to delete idea', err)
+        }
     }
 
-    const moveIdea = (id: string, groupId: string) => {
+    const moveIdea = async (id: string, groupId: string) => {
         setIdeas(prev => prev.map(i => i.id === id ? { ...i, status: groupId } : i))
+        const idea = ideas.find(i => i.id === id)
+        if (!idea || !activeWorkspace) return
+
+        try {
+            const normalizedContent = (idea.description || idea.title || 'Idea').trim()
+            await api.put(`/workspaces/${activeWorkspace.id}/posts/${id}`, {
+                title: idea.title,
+                content: normalizedContent,
+                status: toBackendStatus(groupId),
+                scheduledAtUtc: null
+            })
+        } catch (err) {
+             console.error('Failed to move idea', err)
+        }
     }
 
     const addGroup = () => {

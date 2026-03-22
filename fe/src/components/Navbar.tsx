@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import AuthModal from './AuthModal'
 import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
 
@@ -23,8 +24,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { user, login, logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -43,10 +45,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleLogin = () => {
-    login()
-    navigate('/app/dashboard')
-  }
+  const handleLoginClick = () => setAuthModalOpen(true)
 
   const handleLogout = () => {
     logout()
@@ -81,16 +80,18 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(o => !o)}
                 aria-label="User menu"
               >
-                <span className={styles.avatarCircle}>{user.avatar}</span>
+                <span className={styles.avatarCircle}>
+                  {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%'}} /> : (user.displayName?.[0] || 'M').toUpperCase()}
+                </span>
                 <div className={styles.avatarInfo}>
-                  <span className={styles.avatarName}>{user.name}</span>
-                  <span className={styles.avatarPlan}>{user.plan}</span>
+                  <span className={styles.avatarName}>{user.displayName || 'Minh Anh'}</span>
+                  <span className={styles.avatarPlan}>Creator Plan</span>
                 </div>
               </button>
               {dropdownOpen && (
                 <div className={styles.dropdown}>
                   <div className={styles.dropdownHeader}>
-                    <span className={styles.dropdownHandle}>{user.handle}</span>
+                    <span className={styles.dropdownHandle}>@{user.email.split('@')[0]}</span>
                   </div>
                   {USER_MENU.map(item => (
                     <button
@@ -115,7 +116,7 @@ export default function Navbar() {
               <button
                 className="btn-secondary"
                 style={{ padding: '10px 20px', fontSize: '14px' }}
-                onClick={handleLogin}
+                onClick={handleLoginClick}
               >
                 Sign in
               </button>
@@ -152,7 +153,10 @@ export default function Navbar() {
                 <button
                   className="btn-secondary"
                   style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => { handleLogin(); setMenuOpen(false) }}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    handleLoginClick()
+                  }}
                 >
                   Sign in
                 </button>
@@ -162,6 +166,12 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => navigate('/app/dashboard')}
+      />
     </nav>
   )
 }

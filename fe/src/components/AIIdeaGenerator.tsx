@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
 import { Sparkles, X, Check, ChevronRight, ChevronDown, Upload, FileText, Trash2 } from 'lucide-react'
-import { getMockResults } from '../data/mockAI'
 import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
 import { shortId } from '../utils/shortId'
+import { api } from '../api/axios'
+import { useWorkspace } from '../context/WorkspaceContext'
 import styles from './AIIdeaGenerator.module.css'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+
 export interface GeneratedIdea {
     id: string
     title: string
@@ -16,6 +17,7 @@ interface Props {
     onSelectIdea: (idea: GeneratedIdea) => void
     onClose: () => void
     presetResults?: ContentIdea[]
+    presetTopic?: string
 }
 
 interface UploadedFile {
@@ -26,7 +28,7 @@ interface UploadedFile {
     type: 'image' | 'document'
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+
 const TONES = [
     { value: 'default', label: 'Balanced' },
     { value: 'casual', label: 'Casual' },
@@ -42,10 +44,16 @@ const GOALS = [
 
 type Step = 'form' | 'loading' | 'results'
 
-// ─── Component ───────────────────────────────────────────────────────────────
-export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
+type GenerateIdeasApiResponse = {
+    topic: string
+    ideas: ContentIdea[]
+}
+
+
+export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults, presetTopic }: Props) {
+    const { activeWorkspace } = useWorkspace()
     const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
-    const [topic, setTopic] = useState('')
+    const [topic, setTopic] = useState(presetTopic || '')
     const [niche, setNiche] = useState('')
     const [audience, setAudience] = useState('')
     const [goal, setGoal] = useState('')
@@ -55,6 +63,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
     const [dragOver, setDragOver] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -88,15 +97,22 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         })
     }
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         if (!topic.trim()) return
+
+        if (!activeWorkspace) {
+            setErrorMessage('Không tìm thấy workspace đang hoạt động.')
+            return
+        }
+
+        setErrorMessage('')
         setStep('loading')
         setSelectedIdeaIds([])
-        const input: AIGenerateInput = { 
-            topic, 
-            niche, 
-            audience, 
-            goal, 
+        const input: AIGenerateInput = {
+            topic,
+            niche,
+            audience,
+            goal,
             tone,
             files: uploadedFiles.length > 0 ? uploadedFiles.map(f => ({
                 name: f.file.name,
@@ -104,10 +120,31 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                 caption: f.caption
             })) : undefined
         }
-        setTimeout(() => {
-            setResults(getMockResults(input))
+
+        try {
+            const res = await api.post<GenerateIdeasApiResponse>(
+                `/workspaces/${activeWorkspace.id}/ai/ideas/generate`,
+                {
+                    topic: input.topic,
+                    niche: input.niche,
+                    audience: input.audience,
+                    goal: input.goal,
+                    tone: input.tone,
+                    count: 5,
+                    files: input.files
+                }
+            )
+
+            setResults(res.data.ideas ?? [])
             setStep('results')
-        }, 1600)
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.title ||
+                'Không thể tạo ý tưởng AI lúc này. Vui lòng thử lại.'
+            setErrorMessage(message)
+            setStep('form')
+        }
     }
 
     const toggleSelect = (idea: ContentIdea) => {
@@ -119,7 +156,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     }
 
     const handleBulkAdd = () => {
-        // If it's a preset result (e.g. from AI Coach), we join them into a single blob to feed the post editor.
+
         if (presetResults && selectedIdeaIds.length > 0) {
             const combinedContent = selectedIdeaIds.map(id => {
                 const r = results.find(x => x.id === id)
@@ -134,14 +171,14 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
             return
         }
 
-        // For default mode (adding separated cards to Ideas board)
+
         selectedIdeaIds.forEach(id => {
             const idea = results.find(r => r.id === id)
             if (idea) {
                 onSelectIdea({
                     id: idea.id + '-' + Date.now() + '-' + Math.random(),
                     title: idea.title,
-                    description: idea.hook,
+                    description: idea.caption,
                 })
             }
         })
@@ -162,6 +199,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         setGoal('')
         setTone('default')
         setShowAdvanced(false)
+        setErrorMessage('')
         uploadedFiles.forEach(f => {
             if (f.preview) URL.revokeObjectURL(f.preview)
         })
@@ -171,7 +209,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
     return (
         <div className={styles.overlay}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                {/* Header */}
+
                 <div className={styles.modalHeader}>
                     <div className={styles.modalTitle}>
                         <Sparkles size={18} className={styles.modalTitleIcon} />
@@ -189,9 +227,9 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                     </div>
                 </div>
 
-                {/* Body */}
+
                 <div className={styles.modalBody}>
-                    {/* ── FORM ── */}
+
                     {step === 'form' && (
                         <div className={styles.formWrap}>
                             <p className={styles.formSubtitle}>What do you want to create?</p>
@@ -208,7 +246,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                 }}
                             />
 
-                            {/* Reference Files Upload */}
+
                             <div className={styles.uploadSection}>
                                 <p className={styles.uploadLabel}>Reference files (optional)</p>
                                 <p className={styles.uploadHint}>Upload images or documents to help AI understand your vision better</p>
@@ -338,10 +376,14 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                     <span>Generate</span>
                                 </button>
                             </div>
+
+                            {errorMessage && (
+                                <p className={styles.formError}>{errorMessage}</p>
+                            )}
                         </div>
                     )}
 
-                    {/* ── LOADING ── */}
+
                     {step === 'loading' && (
                         <div className={styles.loadingWrap}>
                             <div className={styles.loadingOrb} />
@@ -356,7 +398,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                         </div>
                     )}
 
-                    {/* ── RESULTS ── */}
+
                     {step === 'results' && (
                         <>
                             <div className={styles.resultsList}>

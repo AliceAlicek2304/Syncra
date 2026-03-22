@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { TrendingUp, Hash, Zap, Sparkles, Filter } from 'lucide-react'
+import AIIdeaGenerator from '../../components/AIIdeaGenerator'
+import type { GeneratedIdea } from '../../components/AIIdeaGenerator'
 import styles from './TrendRadarPage.module.css'
 
 const TRENDING_TOPICS = [
@@ -18,6 +21,12 @@ const POPULAR_HASHTAGS = [
 ]
 
 export default function TrendRadarPage() {
+  const [generatorTopic, setGeneratorTopic] = useState<string | null>(null)
+
+  const handleCreateContent = (topic: string) => {
+    setGeneratorTopic(topic)
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -64,7 +73,10 @@ export default function TrendRadarPage() {
                     <td className={styles.volume}>{t.volume}</td>
                     <td><span className={styles.sentiment}>{t.sentiment}</span></td>
                     <td>
-                      <button className={styles.useBtn}>
+                      <button
+                        className={styles.useBtn}
+                        onClick={() => handleCreateContent(t.topic)}
+                      >
                         <Zap size={14} /> Tạo Content
                       </button>
                     </td>
@@ -98,9 +110,27 @@ export default function TrendRadarPage() {
               Chủ đề <strong>"AI Workflow"</strong> đang có xu hướng tăng mạnh trên LinkedIn. 
               Hãy thử tạo một bài chia sẻ quy trình làm việc của bạn để thu hút engagement cao.
             </p>
+            <button
+              className={styles.useBtn}
+              style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}
+              onClick={() => handleCreateContent('AI Workflow Automation cho Content Creator')}
+            >
+              <Zap size={14} /> Tạo ngay
+            </button>
           </div>
         </div>
       </div>
+
+      {/* AI Generator Modal */}
+      {generatorTopic !== null && (
+        <AIIdeaGenerator
+          presetTopic={generatorTopic}
+          onClose={() => setGeneratorTopic(null)}
+          onSelectIdea={(_idea: GeneratedIdea) => {
+            setGeneratorTopic(null)
+          }}
+        />
+      )}
     </div>
   )
 }

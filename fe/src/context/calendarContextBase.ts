@@ -20,6 +20,7 @@ export interface CalendarContextValue {
     addPost: (post: Omit<ScheduledPost, 'id'>) => void
     updatePost: (id: string, changes: Partial<Omit<ScheduledPost, 'id'>>) => void
     removePost: (id: string) => void
+    refreshPosts: () => Promise<void>
 }
 
 export const CalendarContext = createContext<CalendarContextValue | null>(null)

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import { mockGenerateRepurpose } from '../../data/mockAI'
-import type { RepurposePlatform } from '../../data/mockAI'
+import { api } from '../../api/axios'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import type { RepurposePlatform, RepurposeAtom } from '../../data/mockAI'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
@@ -36,7 +37,10 @@ const LENGTHS = [
     { id: 'long', label: 'Dài' },
 ]
 
+const MIN_SOURCE_LENGTH = 5
+
 export default function ConfigBar() {
+    const { activeWorkspace } = useWorkspace()
     const { config, setConfig, isGenerating, setIsGenerating, setResults, setError } = useRepurpose()
     const [contentLength, setContentLength] = useState('medium')
 
@@ -52,18 +56,32 @@ export default function ConfigBar() {
 
     const handleGenerate = async () => {
         if (!config.sourceText.trim()) return
+        if (config.sourceText.trim().length < MIN_SOURCE_LENGTH) {
+            setError(`Nội dung nguồn cần ít nhất ${MIN_SOURCE_LENGTH} ký tự.`)
+            return
+        }
+        if (!activeWorkspace) {
+            setError('Không tìm thấy workspace đang hoạt động.')
+            return
+        }
+
         setIsGenerating(true)
         setError(null)
         try {
-            const response = await mockGenerateRepurpose({
+            const response = await api.post<{ atoms: RepurposeAtom[] }>(`/workspaces/${activeWorkspace.id}/ai/repurpose/generate`, {
                 sourceText: config.sourceText,
                 platforms: config.targetPlatforms,
                 tone: config.tone,
                 extractAtoms: config.extractAtoms,
+                length: contentLength,
             })
-            setResults(response.atoms)
-        } catch {
-            setError('An error occurred while generating content.')
+            setResults(response.data.atoms)
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.title ||
+                'Không thể repurpose nội dung lúc này. Vui lòng thử lại.'
+            setError(message)
         } finally {
             setIsGenerating(false)
         }
@@ -161,7 +179,7 @@ export default function ConfigBar() {
                 <button
                     className={styles.generateBtn}
                     onClick={handleGenerate}
-                    disabled={!config.sourceText.trim() || isGenerating || config.targetPlatforms.length === 0}
+                    disabled={!config.sourceText.trim() || config.sourceText.trim().length < MIN_SOURCE_LENGTH || isGenerating || config.targetPlatforms.length === 0}
                 >
                     <div className={styles.generateBtnShimmer} />
                     {isGenerating ? <Loader2 className={styles.spinning} size={16} /> : <Sparkles size={16} />}
@@ -169,6 +187,9 @@ export default function ConfigBar() {
                 </button>
                 {config.targetPlatforms.length === 0 && (
                     <p className={styles.generateHint}>Hãy chọn ít nhất 1 nền tảng</p>
+                )}
+                {config.sourceText.trim().length > 0 && config.sourceText.trim().length < MIN_SOURCE_LENGTH && (
+                    <p className={styles.generateHint}>Nội dung cần ít nhất {MIN_SOURCE_LENGTH} ký tự</p>
                 )}
             </div>
         </div>

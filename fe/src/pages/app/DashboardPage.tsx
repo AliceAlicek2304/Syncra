@@ -1,39 +1,111 @@
 import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { api } from '../../api/axios'
 import OnboardingTour from '../../components/OnboardingTour'
 import CountingNumber from '../../components/CountingNumber'
 import styles from './DashboardPage.module.css'
 
-const QUICK_STATS = [
-  { label: 'Tổng lượt reach', value: 128400, delta: '+24%', icon: <TrendingUp size={18} />, color: '#8b5cf6', isK: true },
-  { label: 'Engagement rate', value: 8, delta: '+11%', icon: <BarChart3 size={18} />, color: '#ec4899', isPercent: true },
-  { label: 'Platforms kết nối', value: 6, delta: 'active', icon: <Globe2 size={18} />, color: '#22d3ee' },
-  { label: 'Posts đã schedule', value: 12, delta: 'tháng này', icon: <CalendarClock size={18} />, color: '#f59e0b' },
-]
+interface PostDto {
+  id: string
+  title?: string
+  content?: string
+  status: string
+  platforms?: string[]
+  scheduledAtUtc?: string
+  publishedAtUtc?: string
+  createdAtUtc?: string
+}
 
-const RECENT_POSTS = [
-  { title: 'Tips làm content cho người mới bắt đầu', platform: 'TikTok', status: 'published', reach: '24.1K', date: 'Hôm nay 19:00' },
-  { title: 'AI Tools miễn phí thay đổi workflow của mình', platform: 'Instagram', status: 'scheduled', reach: '—', date: 'Mai 08:00' },
-  { title: 'Day in my life làm content creator 😅', platform: 'TikTok', status: 'scheduled', reach: '—', date: 'Thứ 5 20:00' },
-  { title: '5 lỗi sai khi mới bắt đầu làm YouTube', platform: 'YouTube', status: 'draft', reach: '—', date: 'Chưa lên lịch' },
-]
+interface PagedResult<T> {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Chào buổi sáng'
+  if (h < 18) return 'Chào buổi chiều'
+  return 'Chào buổi tối'
+}
+
+function formatPostDate(post: PostDto): string {
+  const dateStr = post.scheduledAtUtc || post.publishedAtUtc || post.createdAtUtc
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  const now = new Date()
+  const diff = d.getTime() - now.getTime()
+  const days = Math.round(diff / 86400000)
+  if (days === 0) return `Hôm nay ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  if (days === 1) return `Mai ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  if (days === -1) return 'Hôm qua'
+  if (days < 0) return d.toLocaleDateString('vi-VN')
+  const weekDays = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
+  return `${weekDays[d.getDay()]} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+}
+
+function getStatusLabel(status: string) {
+  switch (status?.toLowerCase()) {
+    case 'published': return '✅ Đã đăng'
+    case 'scheduled': return '⏰ Scheduled'
+    case 'draft': return '📝 Draft'
+    case 'failed': return '❌ Thất bại'
+    default: return status
+  }
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { activeWorkspace } = useWorkspace()
+
+  const [recentPosts, setRecentPosts] = useState<PostDto[]>([])
+  const [totalPosts, setTotalPosts] = useState(0)
+  const [scheduledCount, setScheduledCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!activeWorkspace) { setLoading(false); return }
+    const fetch = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get<PagedResult<PostDto>>(`/workspaces/${activeWorkspace.id}/posts`, {
+          params: { pageSize: 6 }
+        })
+        const items = res.data?.items ?? []
+        setRecentPosts(items)
+        setTotalPosts(res.data?.totalCount ?? items.length)
+        setScheduledCount(items.filter(p => p.status?.toLowerCase() === 'scheduled').length)
+      } catch {
+        setRecentPosts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetch()
+  }, [activeWorkspace])
+
+  const QUICK_STATS = [
+    { label: 'Tổng posts', value: totalPosts, delta: 'tổng cộng', icon: <TrendingUp size={18} />, color: '#8b5cf6' },
+    { label: 'Đã publish', value: recentPosts.filter(p => p.status?.toLowerCase() === 'published').length, delta: 'trong trang này', icon: <BarChart3 size={18} />, color: '#ec4899' },
+    { label: 'Platforms', value: new Set(recentPosts.flatMap(p => p.platforms ?? [])).size || 0, delta: 'active', icon: <Globe2 size={18} />, color: '#22d3ee' },
+    { label: 'Đã lên lịch', value: scheduledCount, delta: 'đang chờ', icon: <CalendarClock size={18} />, color: '#f59e0b' },
+  ]
 
   return (
     <div className={styles.page}>
-      {/* Welcome */}
+
       <div className={styles.welcome}>
         <div>
-          <h1 className={styles.title}>Chào buổi tối, {user?.name?.split(' ')[0]} 👋</h1>
-          <p className={styles.subtitle}>Đây là tổng quan hiệu suất content của bạn hôm nay.</p>
+          <h1 className={styles.title}>{getGreeting()}, {user?.displayName?.split(' ')[0] || 'bạn'} 👋</h1>
+          <p className={styles.subtitle}>Đây là tổng quan content workspace của bạn.</p>
         </div>
       </div>
 
-      {/* Stats */}
       <div className={styles.statsGrid}>
         {QUICK_STATS.map(s => (
           <div key={s.label} className={`glass-card ${styles.statCard}`}>
@@ -41,24 +113,14 @@ export default function DashboardPage() {
               {s.icon}
             </div>
             <div className={styles.statValue}>
-              <CountingNumber
-                value={s.value}
-                format={(v) => {
-                  if (s.isK) return `${(v / 1000).toFixed(1)}K`
-                  if (s.isPercent) return `${v}.4%`
-                  return v.toString()
-                }}
-              />
+              <CountingNumber value={s.value} format={(v) => v.toString()} />
             </div>
             <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
-              {s.delta}
-            </div>
+            <div className={styles.statDelta} style={{ color: s.color }}>{s.delta}</div>
           </div>
         ))}
       </div>
 
-      {/* Recent posts */}
       <div className={`glass-card ${styles.section}`}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Posts gần đây</h2>
@@ -66,42 +128,55 @@ export default function DashboardPage() {
             Xem tất cả <ArrowUpRight size={13} />
           </button>
         </div>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Tiêu đề</th>
-              <th>Platform</th>
-              <th>Trạng thái</th>
-              <th>Reach</th>
-              <th>Thời gian</th>
-            </tr>
-          </thead>
-          <tbody>
-            {RECENT_POSTS.map(p => (
-              <tr key={p.title}>
-                <td className={styles.postTitle}>{p.title}</td>
-                <td><span className={styles.platformTag}>{p.platform}</span></td>
-                <td>
-                  <span className={`${styles.status} ${styles[`status_${p.status}`]}`}>
-                    {p.status === 'published' ? '✅ Đã đăng' : p.status === 'scheduled' ? '⏰ Scheduled' : '📝 Draft'}
-                  </span>
-                </td>
-                <td className={styles.reach}>{p.reach}</td>
-                <td className={styles.date}>{p.date}</td>
+        {loading ? (
+          <div style={{ padding: '24px 0', color: 'var(--text-muted)', textAlign: 'center', fontSize: 13 }}>
+            Đang tải...
+          </div>
+        ) : recentPosts.length === 0 ? (
+          <div style={{ padding: '24px 0', color: 'var(--text-muted)', textAlign: 'center', fontSize: 13 }}>
+            Chưa có post nào. <button className={styles.seeAll} onClick={() => navigate('/app/calendar')}>Tạo post đầu tiên →</button>
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Platform</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {recentPosts.map(p => (
+                <tr key={p.id}>
+                  <td className={styles.postTitle}>
+                    {p.title || (p.content ? p.content.substring(0, 50) + (p.content.length > 50 ? '…' : '') : '(Không có tiêu đề)')}
+                  </td>
+                  <td>
+                    {(p.platforms ?? []).map(pl => (
+                      <span key={pl} className={styles.platformTag} style={{ marginRight: 4 }}>{pl}</span>
+                    ))}
+                  </td>
+                  <td>
+                    <span className={`${styles.status} ${styles[`status_${p.status?.toLowerCase()}`]}`}>
+                      {getStatusLabel(p.status)}
+                    </span>
+                  </td>
+                  <td className={styles.date}>{formatPostDate(p)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* AI tip */}
       <div className={`glass-card ${styles.aiTip}`}>
         <div className={styles.aiTipIcon}><Sparkles size={18} /></div>
         <div>
           <div className={styles.aiTipTitle}>Gợi ý từ AI</div>
           <div className={styles.aiTipText}>
-            Posts dạng <strong>Reel</strong> của bạn đang có engagement cao hơn 2.3x so với Photo.
-            Thử tạo thêm Reel tuần này nhé — đặc biệt vào <strong>Thứ 3 & Thứ 5 lúc 19:00</strong>.
+            Hãy lên kế hoạch content đều đặn. Dùng <strong>AI Idea Generator</strong> để tạo ý tưởng bài viết
+            phù hợp với niche và audience của bạn — <strong>nhanh hơn 10x</strong> so với brainstorm tay.
           </div>
         </div>
         <button className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 12, padding: '8px 16px', flexShrink: 0 }}>
@@ -109,7 +184,6 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Onboarding */}
       <OnboardingTour />
     </div>
   )
