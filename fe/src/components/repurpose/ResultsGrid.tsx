@@ -4,6 +4,7 @@ import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import type { RepurposePlatform } from '../../data/mockAI'
 import AtomCard from './AtomCard.tsx'
+import { buildRepurposeCardItems } from './cardBuilder'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformMeta { icon?: ElementType; color: string }
@@ -39,7 +40,7 @@ export default function ResultsGrid() {
     const usedPlatforms = Array.from(new Set(results.map(r => r.platform))) as RepurposePlatform[]
     const filterTabs = ['All', ...usedPlatforms] as (RepurposePlatform | 'All')[]
 
-    const filtered = activeFilter === 'All' ? results : results.filter(r => r.platform === activeFilter)
+    const filtered = buildRepurposeCardItems(results, activeFilter)
 
     const handleExport = () => {
         const text = results.map(a =>

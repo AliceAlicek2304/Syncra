@@ -129,6 +129,10 @@ export function parseRepurposeAtomsResponse(rawText: string, selectedPlatforms: 
   return atoms.map(atom => parseAtom(atom, selectedPlatforms))
 }
 
+export function extractRepurposeAtoms(rawText: string, selectedPlatforms: RepurposePlatform[]): RepurposeAtom[] {
+  return parseRepurposeAtomsResponse(rawText, selectedPlatforms)
+}
+
 export async function generateRepurpose(req: GenerateRepurposeRequest): Promise<{ atoms: RepurposeAtom[] }> {
   const sanitizedSourceText = sanitizeSourceText(req.sourceText)
   const prompt = buildRepurposePrompt({ ...req, sourceText: sanitizedSourceText })
@@ -153,6 +157,6 @@ export async function generateRepurpose(req: GenerateRepurposeRequest): Promise<
   }
 
   const payload = await response.text()
-  const atoms = parseRepurposeAtomsResponse(payload, req.platforms)
+  const atoms = extractRepurposeAtoms(payload, req.platforms)
   return { atoms }
 }
