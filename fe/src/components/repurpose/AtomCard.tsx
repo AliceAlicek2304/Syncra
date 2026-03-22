@@ -120,7 +120,7 @@ export default function AtomCard({ atom, index = 0, selectionMode = false, selec
             </p>
 
             {isLong && (
-                <button className={styles.expandBtn} onClick={(e) => { e.stopPropagation(); setExpanded(v => !v) }}>
+                <button className={styles.expandBtn} onClick={(e) => { e.stopPropagation(); setExpanded(prev => !prev) }}>
                     {expanded ? <><ChevronUp size={12} /> Thu gọn</> : <><ChevronDown size={12} /> Xem thêm</>}
                 </button>
             )}
