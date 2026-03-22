@@ -101,6 +101,7 @@ GEMINI.md
 .specify
 .antigravity
 specs/
+.opencode/
 
 # knowns (ignore entire folder)
 .knowns/
