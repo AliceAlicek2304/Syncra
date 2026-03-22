@@ -34,25 +34,50 @@ function SkeletonCard() {
 }
 
 export default function ResultsGrid() {
-    const { results, isGenerating, error } = useRepurpose()
+    const { results, isGenerating, error, config } = useRepurpose()
     const [activeFilter, setActiveFilter] = useState<RepurposePlatform | 'All'>('All')
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
 
-    const usedPlatforms = Array.from(new Set(results.map(r => r.platform))) as RepurposePlatform[]
-    const filterTabs = ['All', ...usedPlatforms] as (RepurposePlatform | 'All')[]
+    const selectedPlatforms = config.targetPlatforms
+    const filterTabs = ['All', ...selectedPlatforms] as (RepurposePlatform | 'All')[]
+    const effectiveFilter = activeFilter !== 'All' && !selectedPlatforms.includes(activeFilter) ? 'All' : activeFilter
+    const filtered = buildRepurposeCardItems(results, effectiveFilter)
+    const selectedCount = results.filter((atom) => selectedIds.includes(atom.id)).length
 
-    const filtered = buildRepurposeCardItems(results, activeFilter)
+    const toggleCardSelection = (atomId: string) => {
+        setSelectedIds((prev) => prev.includes(atomId) ? prev.filter(id => id !== atomId) : [...prev, atomId])
+    }
 
-    const handleExport = () => {
-        const text = results.map(a =>
+    const exportAtoms = (atomsToExport: typeof results, fileName: string) => {
+        const text = atomsToExport.map(a =>
             `[${a.platform} – ${a.type}]${a.title ? '\n' + a.title : ''}\n${a.content}\n${a.suggestedHashtags.join(' ')}`
         ).join('\n\n---\n\n')
         const blob = new Blob([text], { type: 'text/plain' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'repurposed-content.txt'
+        a.download = fileName
         a.click()
         URL.revokeObjectURL(url)
+    }
+
+    const handleExportSelected = () => {
+        const selectedAtoms = results.filter(atom => selectedIds.includes(atom.id))
+        if (selectedAtoms.length === 0) return
+        exportAtoms(selectedAtoms, 'repurposed-selected-content.txt')
+    }
+
+    const handleExportAll = () => {
+        exportAtoms(results, 'repurposed-content.txt')
+    }
+
+    const handleExportFile = () => {
+        if (!selectionMode) {
+            setSelectionMode(true)
+            return
+        }
+        handleExportSelected()
     }
 
     return (
@@ -78,8 +103,8 @@ export default function ResultsGrid() {
                             return (
                                 <button
                                     key={p}
-                                    className={`${styles.platformTab} ${activeFilter === p ? styles.platformTabActive : ''}`}
-                                    style={activeFilter === p ? { '--tab-color': meta.color } as React.CSSProperties : {}}
+                                    className={`${styles.platformTab} ${effectiveFilter === p ? styles.platformTabActive : ''}`}
+                                    style={effectiveFilter === p ? { '--tab-color': meta.color } as React.CSSProperties : {}}
                                     onClick={() => setActiveFilter(p)}
                                 >
                                     {Icon && <Icon size={12} />}
@@ -91,10 +116,28 @@ export default function ResultsGrid() {
                 )}
 
                 {results.length > 0 && (
-                    <button className={styles.exportBtn} onClick={handleExport}>
-                        <Download size={13} />
-                        Xuất tất cả
-                    </button>
+                    <div className={styles.exportActions}>
+                        {selectionMode && (
+                            <>
+                                <span className={styles.selectedCounter}>Đã chọn {selectedCount}</span>
+                                <button
+                                    className={styles.exportBtn}
+                                    onClick={handleExportAll}
+                                >
+                                    <Download size={13} />
+                                    Xuất tất cả
+                                </button>
+                            </>
+                        )}
+                        <button
+                            className={styles.exportBtn}
+                            onClick={handleExportFile}
+                            disabled={selectionMode && selectedCount === 0}
+                        >
+                            <Download size={13} />
+                            Xuất file
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -107,7 +150,14 @@ export default function ResultsGrid() {
             ) : (
                 <div className={styles.resultsGrid}>
                     {filtered.map((atom, i) => (
-                        <AtomCard key={atom.id} atom={atom} index={i} />
+                        <AtomCard
+                            key={atom.id}
+                            atom={atom}
+                            index={i}
+                            selectionMode={selectionMode}
+                            selected={selectedIds.includes(atom.id)}
+                            onToggleSelect={toggleCardSelection}
+                        />
                     ))}
                 </div>
             )}
