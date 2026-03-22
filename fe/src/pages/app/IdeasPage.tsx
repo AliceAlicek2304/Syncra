@@ -387,11 +387,12 @@ export default function IdeasPage() {
     const [quickAddGroupId, setQuickAddGroupId] = useState<string | null>(null)
     const [newGroupName, setNewGroupName] = useState('')
     const [addingGroup, setAddingGroup] = useState(false)
+    const [dragSourceStatus, setDragSourceStatus] = useState<string | null>(null)
 
     // Fetch ideas
     useEffect(() => {
         if (!activeWorkspace) return
-        api.get(`/workspaces/${activeWorkspace.id}/posts`)
+        api.get(`/workspaces/${activeWorkspace.id}/ideas`)
             .then((res: any) => {
                 const mapped = res.data.map(mapPostToIdea)
                 setIdeas(mapped)
@@ -403,6 +404,10 @@ export default function IdeasPage() {
 
     const handleDragStart = ({ active }: DragStartEvent) => {
         setActiveId(String(active.id))
+        const idea = ideas.find(i => i.id === String(active.id))
+        if (idea) {
+            setDragSourceStatus(idea.status)
+        }
     }
 
     const handleDragOver = ({ active, over }: DragOverEvent) => {
@@ -459,16 +464,18 @@ export default function IdeasPage() {
     const handleDragEnd = ({ active, over }: any) => {
         setActiveId(null)
 
-        if (over) {
+        if (over && dragSourceStatus) {
              const idea = ideas.find((i: Idea) => String(i.id) === String(active.id))
-             const targetGroupId = over.data.current?.type === 'Column' 
-                 ? over.id 
+             const targetGroupId = over.data.current?.type === 'Column'
+                 ? over.id
                  : over.data.current?.idea?.status
-            
-             if (idea && targetGroupId && idea.status !== targetGroupId) {
+
+             if (idea && targetGroupId && dragSourceStatus !== targetGroupId) {
                  moveIdea(idea.id, String(targetGroupId))
              }
-         }
+        }
+        
+        setDragSourceStatus(null)
     }
 
     const addIdea = async (groupId: string, title: string) => {
@@ -485,7 +492,7 @@ export default function IdeasPage() {
 
         try {
             const normalizedContent = (title || 'Idea').trim()
-            const res = await api.post(`/workspaces/${activeWorkspace.id}/posts`, {
+            const res = await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
                 title,
                 content: normalizedContent,
                 status: toBackendStatus(groupId),
@@ -519,7 +526,7 @@ export default function IdeasPage() {
         
         try {
             const normalizedContent = (updated.description || updated.title || 'Idea').trim()
-            await api.put(`/workspaces/${activeWorkspace.id}/posts/${updated.id}`, {
+            await api.put(`/workspaces/${activeWorkspace.id}/ideas/${updated.id}`, {
                 title: updated.title,
                 content: normalizedContent,
                 status: toBackendStatus(updated.status),
@@ -536,7 +543,7 @@ export default function IdeasPage() {
         
         if (!activeWorkspace) return
         try {
-            await api.delete(`/workspaces/${activeWorkspace.id}/posts/${id}`)
+            await api.delete(`/workspaces/${activeWorkspace.id}/ideas/${id}`)
         } catch (err) {
              console.error('Failed to delete idea', err)
         }
@@ -549,7 +556,7 @@ export default function IdeasPage() {
 
         try {
             const normalizedContent = (idea.description || idea.title || 'Idea').trim()
-            await api.put(`/workspaces/${activeWorkspace.id}/posts/${id}`, {
+            await api.put(`/workspaces/${activeWorkspace.id}/ideas/${id}`, {
                 title: idea.title,
                 content: normalizedContent,
                 status: toBackendStatus(groupId),
