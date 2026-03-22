@@ -26,6 +26,8 @@ var app = builder.Build();
 
 app.UseStaticFiles();
 
+app.UseCors("AllowFrontend");
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

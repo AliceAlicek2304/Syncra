@@ -36,36 +36,27 @@ public static class DevAuthDataSeeder
 
             if (existingUser is null)
             {
-                var newUser = new User
+                var newUser = User.Create(seedUser.Email, BC.HashPassword(DefaultPassword));
+                newUser.Id = seedUser.Id;
+                newUser.Profile = new UserProfile
                 {
-                    Id = seedUser.Id,
-                    Email = seedUser.Email,
-                    NormalizedEmail = seedUser.Email.ToUpperInvariant(),
-                    PasswordHash = BC.HashPassword(DefaultPassword),
-                    Status = "active",
+                    Id = Guid.NewGuid(),
+                    UserId = seedUser.Id,
+                    FirstName = seedUser.FirstName,
+                    LastName = seedUser.LastName,
+                    DisplayName = $"{seedUser.FirstName} {seedUser.LastName}",
+                    Timezone = "UTC",
+                    Locale = "en",
                     CreatedAtUtc = DateTime.UtcNow,
-                    Version = 1,
-                    Profile = new UserProfile
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = seedUser.Id,
-                        FirstName = seedUser.FirstName,
-                        LastName = seedUser.LastName,
-                        DisplayName = $"{seedUser.FirstName} {seedUser.LastName}",
-                        Timezone = "UTC",
-                        Locale = "en",
-                        CreatedAtUtc = DateTime.UtcNow,
-                        Version = 1
-                    }
+                    Version = 1
                 };
 
                 await db.Users.AddAsync(newUser, cancellationToken);
                 continue;
             }
 
-            existingUser.Status = "active";
-            existingUser.NormalizedEmail = seedUser.Email.ToUpperInvariant();
-            existingUser.PasswordHash = BC.HashPassword(DefaultPassword);
+            existingUser.Reactivate();
+            existingUser.UpdatePassword(BC.HashPassword(DefaultPassword));
 
             if (existingUser.Profile is null)
             {
@@ -92,15 +83,8 @@ public static class DevAuthDataSeeder
 
         if (workspace is null)
         {
-            workspace = new Workspace
-            {
-                Id = WorkspaceId,
-                Name = "Syncra Dev Team",
-                Slug = "syncra-dev-team",
-                OwnerUserId = OwnerUserId,
-                CreatedAtUtc = DateTime.UtcNow,
-                Version = 1
-            };
+            workspace = Workspace.Create(OwnerUserId, "Syncra Dev Team", "syncra-dev-team");
+            workspace.Id = WorkspaceId;
 
             await db.Workspaces.AddAsync(workspace, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
@@ -116,23 +100,16 @@ public static class DevAuthDataSeeder
 
             if (existingMember is null)
             {
-                await db.WorkspaceMembers.AddAsync(new WorkspaceMember
-                {
-                    Id = Guid.NewGuid(),
-                    WorkspaceId = workspace.Id,
-                    UserId = seedUser.Id,
-                    Role = seedUser.Role,
-                    Status = WorkspaceMemberStatus.Active,
-                    JoinedAtUtc = DateTime.UtcNow,
-                    CreatedAtUtc = DateTime.UtcNow,
-                    Version = 1
-                }, cancellationToken);
+                var newMember = WorkspaceMember.Create(workspace.Id, seedUser.Id, seedUser.Role.ToString());
+                newMember.Id = Guid.NewGuid();
+                newMember.Activate();
+
+                await db.WorkspaceMembers.AddAsync(newMember, cancellationToken);
                 continue;
             }
 
-            existingMember.Role = seedUser.Role;
-            existingMember.Status = WorkspaceMemberStatus.Active;
-            existingMember.JoinedAtUtc ??= DateTime.UtcNow;
+            existingMember.ChangeRole(seedUser.Role.ToString());
+            existingMember.Activate();
         }
 
         await db.SaveChangesAsync(cancellationToken);
