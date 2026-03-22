@@ -1,4 +1,4 @@
-import { TrendingUp, BarChart3, Users, Eye, Heart } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, BarChart3, Users, Eye, Heart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { api } from '../../api/axios'
 import CountingNumber from '../../components/CountingNumber'
@@ -55,6 +55,8 @@ interface PlatformAnalyticsDto {
   reach: number
   engagement: number
   postCount: number
+  growth: number
+  trend: 'up' | 'down' | 'neutral'
 }
 
 interface IntegrationDto {
@@ -79,6 +81,7 @@ export default function AnalyticsPage() {
   const [platforms, setPlatforms] = useState<PlatformAnalyticsDto[]>([])
   const [heatmapData, setHeatmapData] = useState<HeatmapDto | null>(null)
   const [weeklyReach, setWeeklyReach] = useState<WeeklyReachDto[]>([])
+  const [deltas, setDeltas] = useState({ reach: '0%', engagement: '0%', followers: '0%', posts: '0%' })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -133,16 +136,40 @@ export default function AnalyticsPage() {
             const integration = activeIntegrations[index]
             const analyticsData = result.value.data || []
 
+            // Extract all data points with dates
+            const allPoints = analyticsData
+              .flatMap(d => d.data)
+              .map(p => ({ date: new Date(p.date), value: parseInt(p.total) || 0 }))
+              .sort((a, b) => b.date.getTime() - a.date.getTime())
+
+            // Calculate current and previous period reach (split by midpoint date)
+            const midpoint = Math.floor(allPoints.length / 2)
+            const currentPeriod = allPoints.slice(0, midpoint || 1)
+            const previousPeriod = allPoints.slice(midpoint || 1)
+            
+            const currentReach = currentPeriod.reduce((sum, p) => sum + p.value, 0)
+            const previousReach = previousPeriod.reduce((sum, p) => sum + p.value, 0)
+
+            // Calculate growth percentage
+            const growth = previousReach > 0 
+              ? Math.round(((currentReach - previousReach) / previousReach) * 100)
+              : (currentReach > 0 ? 100 : 0)
+
             // Extract metrics from AnalyticsData labels
             const reach = sumAnalyticsData(analyticsData, ['Page Impressions', 'Views'])
             const engagement = sumAnalyticsData(analyticsData, ['Posts Engagement', 'Likes', 'Comments', 'Shares'])
-            const postCount = sumAnalyticsData(analyticsData, ['Posts']) // Assuming there's a Posts label
+            const postCount = sumAnalyticsData(analyticsData, ['Posts'])
+
+            // Determine trend based on growth
+            const trend = growth > 0 ? 'up' : growth < 0 ? 'down' : 'neutral'
 
             return {
               platform: integration.platform || integration.providerId || 'Unknown',
               reach,
               engagement,
               postCount,
+              growth,
+              trend,
             }
           })
           .filter((p): p is PlatformAnalyticsDto => p !== null)
@@ -158,6 +185,18 @@ export default function AnalyticsPage() {
         setPlatforms(mappedPlatforms)
         setHeatmapData(heatmap)
         setWeeklyReach(summary.weeklyReach || [])
+
+        // Calculate percentage changes from weekly reach (compare last 2 weeks)
+        const sortedWeeks = [...(summary.weeklyReach || [])].sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime())
+        const thisWeek = sortedWeeks[0]?.reach || 0
+        const lastWeek = sortedWeeks[1]?.reach || 0
+        const reachDelta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : (thisWeek > 0 ? 100 : 0)
+        setDeltas({
+          reach: `${reachDelta >= 0 ? '+' : ''}${reachDelta}%`,
+          engagement: `+${Math.round(summary.engagementRate)}%`,
+          followers: `+${summary.followerGrowth}`,
+          posts: `${summary.totalPosts} posts`,
+        })
 
       } catch (err) {
         console.error('Failed to fetch analytics', err)
@@ -198,8 +237,8 @@ export default function AnalyticsPage() {
 
       <div className={styles.metricsRow}>
         {[
-          { icon: <Eye size={18} />, label: 'Total Reach', value: overview?.totalReach || 0, delta: '+24%', color: '#8b5cf6', isK: true },
-          { icon: <Heart size={18} />, label: 'Avg. Engagement', value: overview?.engagementRate || 0, delta: '+11%', color: '#ec4899', isPercent: true },
+          { icon: <Eye size={18} />, label: 'Total Reach', value: overview?.totalReach || 0, delta: deltas.reach, color: '#8b5cf6', isK: true },
+          { icon: <Heart size={18} />, label: 'Avg. Engagement', value: overview?.engagementRate || 0, delta: deltas.engagement, color: '#ec4899', isPercent: true },
           { icon: <Users size={18} />, label: 'Follower Growth', value: overview?.followerGrowth || 0, delta: 'this month', color: '#22d3ee' },
           { icon: <BarChart3 size={18} />, label: 'Total Posts', value: overview?.totalPosts || 0, delta: 'across platforms', color: '#f59e0b' },
         ].map(m => (
@@ -209,8 +248,8 @@ export default function AnalyticsPage() {
               <CountingNumber 
                 value={m.value} 
                 format={(v) => {
-                  if (m.isK) return `${(v/1000).toFixed(1)}K`
-                  if (m.isPercent) return `${v}.4%`
+                  if (m.isK) return v >= 1000 ? `${(v/1000).toFixed(1)}K` : v.toLocaleString()
+                  if (m.isPercent) return `${v}%`
                   if (m.label === 'Follower Growth') return `+${v.toLocaleString()}`
                   return v.toString()
                 }}
@@ -226,18 +265,21 @@ export default function AnalyticsPage() {
 
         <div className={`glass-card ${styles.chartCard}`}>
           <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Reach theo tuần</h2>
-            <span className={styles.cardSub}>7 ngày gần nhất</span>
+            <h2 className={styles.chartTitle}>Reach theo tuần</h2>
+            <span className={styles.cardSub}>7 tuần gần nhất</span>
           </div>
             <div className={styles.chartWrap}>
               <div className={styles.bars}>
                 {weeklyReach.slice(-7).map((week, i) => {
-                  const height = weeklyReach.length > 0 ? (week.reach / Math.max(...weeklyReach.map(w => w.reach))) * 100 : 0
+                  const maxReach = Math.max(...weeklyReach.map(w => w.reach), 1)
+                  const height = (week.reach / maxReach) * 100
+                  const weekDate = new Date(week.weekStart)
+                  const weekLabel = `${weekDate.getDate()}/${weekDate.getMonth() + 1}`
                   return (
                     <div key={i} className={styles.barWrap}>
-                      <div className={styles.barVal}>{(week.reach / 1000).toFixed(1)}K</div>
+                      <div className={styles.barVal}>{week.reach >= 1000 ? `${(week.reach/1000).toFixed(1)}K` : week.reach}</div>
                       <div className={styles.bar} style={{ height: `${height}%` }} />
-                      <span className={styles.barDay}>{['M','T','W','T','F','S','S'][i]}</span>
+                      <span className={styles.barDay}>{weekLabel}</span>
                     </div>
                   )
                 })}
@@ -298,14 +340,16 @@ export default function AnalyticsPage() {
                 <td><span className={styles.platformName}>{p.platform || 'Unknown'}</span></td>
                 <td className={styles.reach}>{p.reach.toLocaleString()}</td>
                 <td>
-                  <span className={styles.growth} style={{ color: '#22c55e' }}>
-                    +{(Math.random() * 20 + 1).toFixed(1)}%
+                  <span className={styles.growth} style={{ color: p.growth >= 0 ? '#22c55e' : '#ef4444' }}>
+                    {p.growth >= 0 ? '+' : ''}{p.growth}%
                   </span>
                 </td>
                 <td className={styles.engagement}>{p.engagement.toLocaleString()}</td>
                 <td className={styles.posts}>{p.postCount}</td>
                 <td>
-                  <TrendingUp size={16} color="#22c55e" />
+                  {p.trend === 'up' && <TrendingUp size={16} color="#22c55e" />}
+                  {p.trend === 'down' && <TrendingDown size={16} color="#ef4444" />}
+                  {p.trend === 'neutral' && <Minus size={16} color="#94a3b8" />}
                 </td>
               </tr>
             ))}
