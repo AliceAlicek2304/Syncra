@@ -4,6 +4,7 @@ import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import type { RepurposePlatform } from '../../data/mockAI'
 import AtomCard from './AtomCard.tsx'
+import { buildRepurposeCardItems } from './cardBuilder'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformMeta { icon?: ElementType; color: string }
@@ -33,13 +34,13 @@ function SkeletonCard() {
 }
 
 export default function ResultsGrid() {
-    const { results, isGenerating } = useRepurpose()
+    const { results, isGenerating, error } = useRepurpose()
     const [activeFilter, setActiveFilter] = useState<RepurposePlatform | 'All'>('All')
 
     const usedPlatforms = Array.from(new Set(results.map(r => r.platform))) as RepurposePlatform[]
     const filterTabs = ['All', ...usedPlatforms] as (RepurposePlatform | 'All')[]
 
-    const filtered = activeFilter === 'All' ? results : results.filter(r => r.platform === activeFilter)
+    const filtered = buildRepurposeCardItems(results, activeFilter)
 
     const handleExport = () => {
         const text = results.map(a =>
@@ -101,6 +102,8 @@ export default function ResultsGrid() {
                 <div className={styles.resultsGrid}>
                     {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
                 </div>
+            ) : error ? (
+                <div className={styles.repurposeError}>{error}</div>
             ) : (
                 <div className={styles.resultsGrid}>
                     {filtered.map((atom, i) => (
