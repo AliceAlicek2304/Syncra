@@ -11,6 +11,9 @@ import styles from './RepurposeComponents.module.css'
 interface Props {
     atom: RepurposeAtom
     index?: number
+    selectionMode?: boolean
+    selected?: boolean
+    onToggleSelect?: (atomId: string) => void
 }
 
 interface PlatformCfg { icon?: ElementType; xText?: string; color: string; bg: string; border: string }
@@ -31,7 +34,7 @@ const TYPE_CFG: Record<AtomType, { icon: ElementType; label: string }> = {
     QUOTE:    { icon: Quote,       label: 'Quote' },
 }
 
-export default function AtomCard({ atom, index = 0 }: Props) {
+export default function AtomCard({ atom, index = 0, selectionMode = false, selected = false, onToggleSelect }: Props) {
     const [copied, setCopied] = useState(false)
     const [expanded, setExpanded] = useState(false)
 
@@ -53,15 +56,26 @@ export default function AtomCard({ atom, index = 0 }: Props) {
         alert(`Lên lịch đăng trên ${atom.platform}:\n\n${atom.content.slice(0, 80)}...`)
     }
 
+    const handleCardClick = () => {
+        if (!selectionMode || !onToggleSelect) return
+        onToggleSelect(atom.id)
+    }
+
     return (
         <div
-            className={styles.atomCard}
+            className={`${styles.atomCard} ${selectionMode ? styles.atomCardSelectable : ''} ${selected ? styles.atomCardSelected : ''}`}
             style={{
                 '--card-color': platform.color,
                 '--card-border': platform.border,
                 animationDelay: `${index * 0.06}s`,
             } as React.CSSProperties}
+            onClick={handleCardClick}
         >
+            {selectionMode && (
+                <span className={`${styles.selectionCheckbox} ${selected ? styles.selectionCheckboxActive : ''}`} aria-hidden="true">
+                    {selected ? '✓' : ''}
+                </span>
+            )}
             {/* Left accent bar */}
             <div className={styles.cardAccent} style={{ background: platform.color }} />
 
@@ -84,7 +98,7 @@ export default function AtomCard({ atom, index = 0 }: Props) {
                     <button className={styles.cardActionBtn} onClick={handleSchedule} title="Lên lịch đăng">
                         <Calendar size={13} />
                     </button>
-                    <button className={styles.cardActionBtn} title="Tạo lại">
+                    <button className={styles.cardActionBtn} title="Tạo lại" onClick={(e) => e.stopPropagation()}>
                         <RefreshCw size={13} />
                     </button>
                     <button
@@ -106,7 +120,7 @@ export default function AtomCard({ atom, index = 0 }: Props) {
             </p>
 
             {isLong && (
-                <button className={styles.expandBtn} onClick={() => setExpanded(e => !e)}>
+                <button className={styles.expandBtn} onClick={(e) => { e.stopPropagation(); setExpanded(prev => !prev) }}>
                     {expanded ? <><ChevronUp size={12} /> Thu gọn</> : <><ChevronDown size={12} /> Xem thêm</>}
                 </button>
             )}
