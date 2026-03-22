@@ -35,8 +35,6 @@ const LENGTHS = [
     { id: 'long', label: 'Dài' },
 ]
 
-const GENERATION_ERROR_MESSAGE = 'Không thể tạo nội dung AI. Vui lòng thử lại.'
-
 export default function ConfigBar() {
     const { config, setConfig, isGenerating, setIsGenerating, setResults, setError } = useRepurpose()
 
@@ -65,7 +63,8 @@ export default function ConfigBar() {
             setResults(response.atoms)
         } catch (err) {
             console.error('Repurpose generation failed:', err)
-            setError(GENERATION_ERROR_MESSAGE)
+            const details = err instanceof Error ? err.message : ''
+            setError(details ? `Tạo nội dung thất bại: ${details}` : 'Tạo nội dung thất bại: Không xác định được nguyên nhân.')
         } finally {
             setIsGenerating(false)
         }

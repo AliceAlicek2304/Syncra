@@ -7,6 +7,8 @@ using Syncra.Application;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
 
+LoadDotEnv();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
@@ -62,3 +64,34 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+static void LoadDotEnv()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    for (var i = 0; i < 8 && current is not null; i++)
+    {
+        var candidate = Path.Combine(current.FullName, ".env");
+        if (File.Exists(candidate))
+        {
+            foreach (var line in File.ReadAllLines(candidate))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) continue;
+
+                var separator = trimmed.IndexOf('=');
+                if (separator <= 0) continue;
+
+                var key = trimmed[..separator].Trim();
+                var value = trimmed[(separator + 1)..].Trim().Trim('"');
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+                {
+                    Environment.SetEnvironmentVariable(key, value);
+                }
+            }
+            break;
+        }
+
+        current = current.Parent;
+    }
+}
