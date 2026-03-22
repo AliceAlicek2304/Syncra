@@ -4,14 +4,45 @@ import { CalendarContext } from './calendarContextBase'
 import type { ScheduledPost } from './calendarContextBase'
 import { api } from '../api/axios'
 import { useWorkspace } from './WorkspaceContext'
+import { useIntegrations } from '../hooks/useIntegrations'
 
 export type { ScheduledPost, CalendarContextValue } from './calendarContextBase'
 
+// Platform color and label mappings
+const PLATFORM_INFO: Record<string, { color: string; label: string }> = {
+  tiktok: { color: '#8b5cf6', label: 'TikTok' },
+  instagram: { color: '#ec4899', label: 'Instagram' },
+  facebook: { color: '#3b82f6', label: 'Facebook' },
+  x: { color: '#f59e0b', label: 'X' },
+  twitter: { color: '#f59e0b', label: 'X' },
+  linkedin: { color: '#22d3ee', label: 'LinkedIn' },
+  youtube: { color: '#ef4444', label: 'YouTube' },
+}
 
-const mapPostToScheduled = (dto: any): ScheduledPost => {
-  const d = new Date(dto.scheduledAtUtc || dto.publishedAtUtc || Date.now())
+function mapPostToScheduled(dto: any, integrations: Array<{ id: string; platform: string; isActive: boolean }>): ScheduledPost {
+  // Use scheduledAtUtc for scheduled posts, publishedAtUtc for published posts
+  const dateUtc = dto.status === 'Scheduled' ? dto.scheduledAtUtc : dto.publishedAtUtc
+  const d = new Date(dateUtc || Date.now())
   const h = d.getHours().toString().padStart(2, '0')
   const m = d.getMinutes().toString().padStart(2, '0')
+
+  // Map platform from integrationId
+  let platform = 'TikTok'
+  
+  if (dto.integrationId) {
+    const integration = integrations.find(i => i.id === dto.integrationId)
+    if (integration) {
+      const info = PLATFORM_INFO[integration.platform.toLowerCase()] || PLATFORM_INFO.tiktok
+      platform = info.label
+    }
+  }
+
+  // Color based on status
+  const statusColor: Record<string, string> = {
+    published: '#22c55e',
+    scheduled: '#eab308',
+    draft: '#475569',
+  }
 
   return {
     id: dto.id,
@@ -19,34 +50,33 @@ const mapPostToScheduled = (dto: any): ScheduledPost => {
     month: d.getMonth(),
     day: d.getDate(),
     title: dto.title,
-    platform: dto.title.includes('Instagram') ? 'Instagram' 
-            : dto.title.includes('YouTube') ? 'YouTube'
-            : dto.title.includes('X') ? 'X'
-            : dto.title.includes('LinkedIn') ? 'LinkedIn'
-            : dto.title.includes('Facebook') ? 'Facebook'
-            : 'TikTok',
-    status: dto.status?.toLowerCase() || 'draft',
+    platform,
+    status: dto.status?.toLowerCase() as 'scheduled' | 'draft' | 'published' || 'draft',
     time: `${h}:${m}`,
-    color: '#8b5cf6',
+    color: statusColor[dto.status?.toLowerCase() || 'draft'] || '#8b5cf6',
     caption: dto.content || '',
     hashtags: [],
+    mediaIds: dto.mediaIds || [],
+    integrationId: dto.integrationId,
+    // Note: image URL is loaded on-demand in edit modal from mediaIds
   }
 }
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<ScheduledPost[]>([])
   const { activeWorkspace } = useWorkspace()
+  const { integrations } = useIntegrations()
 
   const refreshPosts = useCallback(async () => {
     if (!activeWorkspace) return
     try {
       const res = await api.get(`/workspaces/${activeWorkspace.id}/posts`)
-      const mapped = res.data.map(mapPostToScheduled)
+      const mapped = res.data.map((dto: any) => mapPostToScheduled(dto, integrations))
       setPosts(mapped)
     } catch (e) {
       console.error('Failed to load scheduled posts', e)
     }
-  }, [activeWorkspace])
+  }, [activeWorkspace, integrations])
 
   useEffect(() => {
     refreshPosts()

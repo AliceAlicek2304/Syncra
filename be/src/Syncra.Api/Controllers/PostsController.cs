@@ -144,7 +144,14 @@ public class PostsController : ControllerBase
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
-        var command = new PublishPostCommand(workspaceId, postId, userId.Value, dto?.DryRun ?? false);
+        var command = new PublishPostCommand(
+            workspaceId,
+            postId,
+            userId.Value,
+            dto?.DryRun ?? false,
+            dto?.ScheduledAtUtc,
+            dto?.IntegrationId);
+
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }

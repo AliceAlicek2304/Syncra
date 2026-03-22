@@ -197,6 +197,7 @@ public sealed class Post : WorkspaceEntityBase
     {
         return Status is PostStatus.Draft or PostStatus.Scheduled or PostStatus.Publishing
             && IntegrationId.HasValue
+            && ScheduledAt is not null
             && !ScheduledAt.IsInFuture;
     }
 

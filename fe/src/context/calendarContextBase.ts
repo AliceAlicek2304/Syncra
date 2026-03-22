@@ -13,6 +13,8 @@ export interface ScheduledPost {
     caption: string
     hashtags: string[]
     image?: string
+    mediaIds?: string[]  // Array of media GUIDs from backend
+    integrationId?: string | null  // Integration ID for platform lookup
 }
 
 export interface CalendarContextValue {

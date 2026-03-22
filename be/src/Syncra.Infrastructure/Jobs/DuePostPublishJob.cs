@@ -49,7 +49,7 @@ public sealed class DuePostPublishJob
 
             _logger.LogInformation(
                 "Processing post {PostId} with status {Status}, scheduled at {ScheduledAt}",
-                post.Id, post.Status, post.ScheduledAt);
+                post.Id, post.Status, post.ScheduledAt?.ToString() ?? "None");
 
             await ProcessPostAsync(post, cancellationToken);
             processed++;

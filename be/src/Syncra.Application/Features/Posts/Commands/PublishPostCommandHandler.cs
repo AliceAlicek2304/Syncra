@@ -4,6 +4,7 @@ using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
+using Syncra.Domain.Enums;
 
 namespace Syncra.Application.Features.Posts.Commands;
 
@@ -31,6 +32,26 @@ public sealed class PublishPostCommandHandler : IRequestHandler<PublishPostComma
             throw new DomainException("not_found", "Post not found in the specified workspace.");
         }
 
+        // If IntegrationId is provided, set it on the post (allows setting integration at publish time)
+        if (request.IntegrationId.HasValue && request.IntegrationId != post.IntegrationId)
+        {
+            post.SetIntegration(request.IntegrationId.Value);
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // If ScheduledAtUtc is provided, schedule the post (do NOT publish immediately)
+        if (request.ScheduledAtUtc.HasValue)
+        {
+            // Domain entity validates that scheduled time is in the future
+            post.Schedule(request.ScheduledAtUtc.Value);
+            await _postRepository.UpdateAsync(post);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return PostMapper.ToDto(post);
+        }
+
+        // Immediate publish flow
         // Use domain behavior to check if post can be published
         if (!post.CanBePublished())
         {

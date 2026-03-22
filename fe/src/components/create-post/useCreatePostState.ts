@@ -4,7 +4,12 @@ import { useCalendar } from '../../context/calendarContextBase'
 import { getMockResults } from '../../data/mockAI'
 import type { AIGenerateInput } from '../../data/mockAI'
 import { shortId } from '../../utils/shortId'
-import { PLATFORMS, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
+import { PLATFORMS, getConnectedPlatforms, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
+import { api } from '../../api/axios'
+import { mediaApi } from '../../api/media'
+import { postsApi, type CreatePostPayload } from '../../api/posts'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { useIntegrations } from '../../hooks/useIntegrations'
 
 export function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
   const clean = base.trim()
@@ -20,12 +25,17 @@ export function convertCaptionForPlatform(base: string, _platform: Platform, max
 export function useCreatePostState(props: CreatePostModalProps) {
   const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
   const { user } = useAuth()
-  const { addPost, updatePost } = useCalendar()
+  const { updatePost, refreshPosts } = useCalendar()
+  const { activeWorkspace } = useWorkspace()
+  const { integrations } = useIntegrations()
 
   const isEditMode = !!editPost
 
-  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
-  const [activeTab, setActiveTab] = useState<Platform>('TikTok')
+  // Get connected platforms from integrations
+  const connectedPlatforms = getConnectedPlatforms(integrations)
+  
+  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : [])
+  const [activeTab, setActiveTab] = useState<Platform>(connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok')
 
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
     TikTok: '', Instagram: '', Facebook: '', X: ''
@@ -64,25 +74,31 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiRef = useRef<HTMLDivElement>(null)
 
-  // Using useEffect to initialize state here triggers a warning because it's better to do this
-  // without useEffect or at least not synchronously setting state inside.
-  // We'll wrap it in a setTimeout to fix the synchronous warning
+  const prevEditPostIdRef = useRef<string | null>(null)
+
+  // Initialize state when modal opens or when editing a different post
   useEffect(() => {
     if (!isOpen) {
       didInitRef.current = false
       initialSnapshotRef.current = null
-      // Use requestAnimationFrame or setTimeout to delay state update outside synchronous flow
-      // or check if it actually needs an update
+      prevEditPostIdRef.current = null
       if (showUnsavedDialog) {
         requestAnimationFrame(() => setShowUnsavedDialog(false))
       }
       return
     }
+    
+    // Reset init flag when editing a different post
+    if (editPost && editPost.id !== prevEditPostIdRef.current) {
+      didInitRef.current = false
+      prevEditPostIdRef.current = editPost.id
+    }
+    
     if (didInitRef.current) return
 
     setTimeout(() => {
       let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
-      let initPlatforms: Platform[] = ['TikTok']
+      let initPlatforms: Platform[] = connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : []
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
@@ -90,22 +106,39 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       // Edit mode - load from existing post
       if (editPost) {
-        nextCaptions = { 
-          TikTok: editPost.caption, 
-          Instagram: editPost.caption, 
-          Facebook: editPost.caption, 
-          X: editPost.caption 
+        nextCaptions = {
+          TikTok: editPost.caption,
+          Instagram: editPost.caption,
+          Facebook: editPost.caption,
+          X: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
-        
-        if (editPost.image) {
-          initMedia = [{ id: shortId(), url: editPost.image, type: 'image', name: 'image' }]
-        }
-        
+
         initSchMode = true
         const mm = String(editPost.month + 1).padStart(2, '0')
         const dd = String(editPost.day).padStart(2, '0')
         initSchTime = `${editPost.year}-${mm}-${dd}T${editPost.time}`
+
+        // Load media from mediaIds (async) - always fetch from backend for edit mode
+        if (editPost.mediaIds && editPost.mediaIds.length > 0 && activeWorkspace) {
+          ;(async () => {
+            try {
+              const res = await mediaApi.list(activeWorkspace.id)
+              const matchedMedia = res.data
+                .filter(m => editPost.mediaIds?.includes(m.id))
+                .map(m => ({
+                  id: shortId(),
+                  url: m.url,
+                  type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video',
+                  name: m.fileName,
+                  backendId: m.id
+                }))
+              setMedia(matchedMedia)
+            } catch (e) {
+              console.error('Failed to load media for post', e)
+            }
+          })()
+        }
       }
       else if (!initialContent && !initialDate) {
         try {
@@ -143,8 +176,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
-      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
-      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
+      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : connectedPlatforms)
+      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : (connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok'))
       setMedia(initMedia)
 
       // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
@@ -152,7 +185,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
         media: initMedia,
-        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
+        activePlatforms: initPlatforms.length > 0 ? initPlatforms : connectedPlatforms,
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
       })
@@ -181,6 +214,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const overLimit = caption.length > charLimit
   const hasPlatforms = activePlatforms.length > 0
 
+  // Helper to get integration for a platform
+  const getIntegrationForPlatform = (platform: Platform) => {
+    return integrations.find(i => i.platform.toLowerCase() === platform.toLowerCase() && i.isActive)
+  }
+
+  // Check if any selected platform has an active integration
+  const hasIntegration = activePlatforms.some(p => getIntegrationForPlatform(p) !== undefined)
+  const missingIntegrationPlatforms = activePlatforms.filter(p => !getIntegrationForPlatform(p))
+
   const reset = useCallback(() => {
     setEditingId(null)
     setMedia(prev => { prev.forEach(m => URL.revokeObjectURL(m.url)); return [] })
@@ -192,8 +234,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(['TikTok'])
-    setActiveTab('TikTok')
+    setActivePlatforms(connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : [])
+    setActiveTab(connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok')
     setAiPrompt('')
     setAiResults([])
     setAiIsGenerating(false)
@@ -201,7 +243,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     initialSnapshotRef.current = null
     didInitRef.current = false
-  }, [])
+  }, [connectedPlatforms])
 
   // We should NOT store `isDirty` as a ref that we update during render.
   // We can just return it from the hook. But to keep the same signature without refactoring too much:
@@ -220,9 +262,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [onClose, getIsDirty, reset])
 
-  const handleDraft = (): boolean => {
+  const handleDraft = async (): Promise<boolean> => {
     if (!hasPlatforms) {
       onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
+      return false
+    }
+
+    if (!activeWorkspace) {
+      onToast?.({ message: 'No workspace selected.', type: 'error' })
       return false
     }
 
@@ -249,55 +296,79 @@ export function useCreatePostState(props: CreatePostModalProps) {
       X: '#1DA1F2'
     }
 
-    const firstImage = media.find(m => m.type === 'image')?.url
-    
-    if (isEditMode && editPost) {
-      // Update existing post as draft
-      const platform = activePlatforms[0] || editPost.platform
-      const caption = captionsByPlatform[platform] || editPost.caption
-      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-      
-      updatePost(editPost.id, {
-        title: caption.slice(0, 50) || `Draft on ${platform}`,
-        platform,
-        status: 'draft',
-        time,
-        day,
-        month,
-        year,
-        color: platformColors[platform] || editPost.color,
-        caption,
-        hashtags,
-        image: firstImage || editPost.image
-      })
-      onToast?.({ message: 'Draft updated successfully.', type: 'success' })
-    } else {
-      // Create new draft posts
-      activePlatforms.forEach(platform => {
-        const platformCaption = captionsByPlatform[platform] || ''
-        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-        
-        addPost({
-          year,
-          month,
-          day,
-          title: platformCaption.slice(0, 50) || `Draft on ${platform}`,
+    try {
+      // Upload media first and get backend GUIDs
+      const mediaIds = await uploadMediaAndGetIds()
+      const firstImage = media.find(m => m.type === 'image')?.url
+
+      if (isEditMode && editPost) {
+        // Update existing post as draft on backend
+        const platform = activePlatforms[0] || editPost.platform
+        const caption = captionsByPlatform[platform] || editPost.caption
+        const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+        const integration = getIntegrationForPlatform(platform as Platform)
+
+        // Update on backend
+        await postsApi.update(activeWorkspace.id, editPost.id, {
+          title: caption.slice(0, 50) || `Draft on ${platform}`,
+          content: caption,
+          status: 'draft',
+          integrationId: integration?.id || null,
+          mediaIds
+        })
+
+        // Update local state
+        updatePost(editPost.id, {
+          title: caption.slice(0, 50) || `Draft on ${platform}`,
           platform,
           status: 'draft',
           time,
-          color: platformColors[platform] || '#888888',
-          caption: platformCaption,
-          hashtags: platformHashtags,
-          image: firstImage
+          day,
+          month,
+          year,
+          color: platformColors[platform] || editPost.color,
+          caption,
+          hashtags,
+          image: firstImage || editPost.image
         })
-      })
-      onToast?.({ message: 'Draft saved successfully.', type: 'success' })
-    }
+        onToast?.({ message: 'Draft updated successfully.', type: 'success' })
+      } else {
+        // Create new draft posts on backend
+        for (const platform of activePlatforms) {
+          const platformCaption = captionsByPlatform[platform] || ''
+          const integration = getIntegrationForPlatform(platform)
 
-    localStorage.removeItem('syncra_draft')
-    
-    initialSnapshotRef.current = currentSnapshot
-    return true
+          const mm = String(month + 1).padStart(2, '0')
+          const dd = String(day).padStart(2, '0')
+          const scheduledAtUtc = scheduleMode
+            ? new Date(`${year}-${mm}-${dd}T${time}:00Z`).toISOString()
+            : null
+
+          // Create on backend
+          const postPayload: CreatePostPayload = {
+            title: platformCaption.slice(0, 50) || `Draft on ${platform}`,
+            content: platformCaption,
+            scheduledAtUtc,
+            integrationId: integration?.id || null,
+            mediaIds
+          }
+
+          await postsApi.create(activeWorkspace.id, postPayload)
+        }
+        onToast?.({ message: 'Draft saved successfully.', type: 'success' })
+      }
+
+      localStorage.removeItem('syncra_draft')
+      await refreshPosts?.()
+
+      initialSnapshotRef.current = currentSnapshot
+      return true
+    } catch (error: any) {
+      console.error('Failed to save draft', error)
+      const errorMsg = error?.response?.data?.errors?.[0]?.message || error?.response?.data?.message || 'Failed to save draft'
+      onToast?.({ message: errorMsg, type: 'error' })
+      return false
+    }
   }
 
   const handleSchedule = () => {
@@ -305,25 +376,120 @@ export function useCreatePostState(props: CreatePostModalProps) {
       onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
       return
     }
+    if (!hasIntegration) {
+      onToast?.({ 
+        message: `Please connect at least one platform first. Missing: ${missingIntegrationPlatforms.join(', ')}`, 
+        type: 'error' 
+      })
+      return
+    }
     setShowPublishConfirmDialog(true)
   }
 
-  const confirmSchedule = () => {
-    let year: number, month: number, day: number, time: string
-
-    if (scheduleTime && scheduleMode) {
-      const scheduleDate = new Date(scheduleTime)
-      year = scheduleDate.getFullYear()
-      month = scheduleDate.getMonth()
-      day = scheduleDate.getDate()
-      time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
-    } else {
-      const today = new Date()
-      year = today.getFullYear()
-      month = today.getMonth()
-      day = today.getDate()
-      time = '09:00'
+  const confirmPublishNow = async () => {
+    const platformColors: Record<string, string> = {
+      TikTok: '#ff0050',
+      Instagram: '#e1306c',
+      Facebook: '#4267B2',
+      X: '#1DA1F2'
     }
+
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    const day = now.getDate()
+    const time = now.toTimeString().slice(0, 5)
+
+    try {
+      // Upload media first and get backend GUIDs
+      const mediaIds = await uploadMediaAndGetIds()
+
+      if (isEditMode && editPost) {
+        // Update existing post and publish
+        const platform = activePlatforms[0] || editPost.platform
+        const caption = captionsByPlatform[platform] || editPost.caption
+        const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+        const integration = getIntegrationForPlatform(platform as Platform)
+
+        updatePost(editPost.id, {
+          title: caption.slice(0, 50) || `Post on ${platform}`,
+          platform,
+          status: 'draft',
+          time,
+          day,
+          month,
+          year,
+          color: platformColors[platform] || editPost.color,
+          caption,
+          hashtags,
+          image: media.find(m => m.type === 'image')?.url || editPost.image
+        })
+
+        // Call publish endpoint
+        await api.post(`/workspaces/${activeWorkspace?.id}/posts/${editPost.id}/publish`, {
+          dryRun: false,
+          integrationId: integration?.id
+        })
+        onToast?.({ message: 'Post published successfully!', type: 'success' })
+      } else {
+        // Create new posts and publish them
+        for (const platform of activePlatforms) {
+          const platformCaption = captionsByPlatform[platform] || ''
+          const integration = getIntegrationForPlatform(platform)
+
+          if (!integration) {
+            onToast?.({
+              message: `No integration found for ${platform}. Please connect this platform first.`,
+              type: 'error'
+            })
+            continue
+          }
+
+          // Create post first (without scheduledAtUtc - will be draft)
+          const postPayload: Record<string, any> = {
+            title: platformCaption.slice(0, 50) || `Post on ${platform}`,
+            content: platformCaption,
+            scheduledAtUtc: null,
+            integrationId: integration.id,
+            mediaIds
+          }
+
+          const res = await api.post(`/workspaces/${activeWorkspace?.id}/posts`, postPayload)
+          const postId = res.data.id
+
+          // Call publish endpoint
+          await api.post(`/workspaces/${activeWorkspace?.id}/posts/${postId}/publish`, { dryRun: false })
+        }
+        onToast?.({ message: `Post published successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
+      }
+
+      localStorage.removeItem('syncra_draft')
+      await refreshPosts?.()
+      setShowPublishConfirmDialog(false)
+      if (createAnother) {
+        reset()
+      } else {
+        reset()
+        onClose()
+      }
+    } catch (error: any) {
+      console.error('Failed to publish post', error)
+      const errorMsg = error?.response?.data?.errors?.[0]?.message || error?.response?.data?.message || 'Failed to publish post'
+      onToast?.({ message: errorMsg, type: 'error' })
+    }
+  }
+
+  const confirmSchedule = async () => {
+    if (!scheduleTime) {
+      onToast?.({ message: 'Please select a date and time for scheduling.', type: 'error' })
+      return
+    }
+
+    const scheduleDate = new Date(scheduleTime)
+    const year = scheduleDate.getFullYear()
+    const month = scheduleDate.getMonth()
+    const day = scheduleDate.getDate()
+    const time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
 
     const platformColors: Record<string, string> = {
       TikTok: '#ff0050',
@@ -332,59 +498,80 @@ export function useCreatePostState(props: CreatePostModalProps) {
       X: '#1DA1F2'
     }
 
-    const firstImage = media.find(m => m.type === 'image')?.url
-    
-    if (isEditMode && editPost) {
-      // Update existing post
-      const platform = activePlatforms[0] || editPost.platform
-      const caption = captionsByPlatform[platform] || editPost.caption
-      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-      
-      updatePost(editPost.id, {
-        title: caption.slice(0, 50) || `Post on ${platform}`,
-        platform,
-        status: 'scheduled',
-        time,
-        day,
-        month,
-        year,
-        color: platformColors[platform] || editPost.color,
-        caption,
-        hashtags,
-        image: firstImage || editPost.image
-      })
-      onToast?.({ message: 'Post updated successfully!', type: 'success' })
-    } else {
-      // Create new posts
-      activePlatforms.forEach(platform => {
-        const platformCaption = captionsByPlatform[platform] || ''
-        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-        
-        addPost({
-          year,
-          month,
-          day,
-          title: platformCaption.slice(0, 50) || `Post on ${platform}`,
+    try {
+      // Upload media first and get backend GUIDs
+      const mediaIds = await uploadMediaAndGetIds()
+
+      if (isEditMode && editPost) {
+        // Update existing post
+        const platform = activePlatforms[0] || editPost.platform
+        const caption = captionsByPlatform[platform] || editPost.caption
+        const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+        const integration = getIntegrationForPlatform(platform as Platform)
+
+        updatePost(editPost.id, {
+          title: caption.slice(0, 50) || `Post on ${platform}`,
           platform,
           status: 'scheduled',
           time,
-          color: platformColors[platform] || '#888888',
-          caption: platformCaption,
-          hashtags: platformHashtags,
-          image: firstImage
+          day,
+          month,
+          year,
+          color: platformColors[platform] || editPost.color,
+          caption,
+          hashtags,
+          image: media.find(m => m.type === 'image')?.url || editPost.image
         })
-      })
-      onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
-    }
 
-    localStorage.removeItem('syncra_draft')
-    
-    setShowPublishConfirmDialog(false)
-    if (createAnother) {
-      reset()
-    } else {
-      reset()
-      onClose()
+        // If scheduling, update the post with integration and scheduled time via the publish endpoint
+        if (integration) {
+          await api.post(`/workspaces/${activeWorkspace?.id}/posts/${editPost.id}/publish`, {
+            scheduledAtUtc: scheduleDate.toISOString()
+          })
+        }
+        onToast?.({ message: 'Post updated successfully!', type: 'success' })
+      } else {
+        // Create new posts
+        for (const platform of activePlatforms) {
+          const platformCaption = captionsByPlatform[platform] || ''
+          const integration = getIntegrationForPlatform(platform)
+
+          if (!integration) {
+            onToast?.({
+              message: `No integration found for ${platform}. Please connect this platform first.`,
+              type: 'error'
+            })
+            continue
+          }
+
+          const d = new Date(year, month, day)
+          const [h, m] = time.split(':').map(Number)
+          d.setHours(h, m, 0)
+
+          await api.post(`/workspaces/${activeWorkspace?.id}/posts`, {
+            title: platformCaption.slice(0, 50) || `Post on ${platform}`,
+            content: platformCaption,
+            scheduledAtUtc: d.toISOString(),
+            integrationId: integration.id,
+            mediaIds
+          })
+        }
+        onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
+      }
+
+      localStorage.removeItem('syncra_draft')
+      await refreshPosts?.()
+      setShowPublishConfirmDialog(false)
+      if (createAnother) {
+        reset()
+      } else {
+        reset()
+        onClose()
+      }
+    } catch (error: any) {
+      console.error('Failed to schedule post', error)
+      const errorMsg = error?.response?.data?.errors?.[0]?.message || error?.response?.data?.message || 'Failed to schedule post'
+      onToast?.({ message: errorMsg, type: 'error' })
     }
   }
 
@@ -535,6 +722,43 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }, 800)
   }
 
+  // Upload all media files that haven't been uploaded yet and return their backend GUIDs
+  const uploadMediaAndGetIds = useCallback(async (): Promise<string[]> => {
+    const mediaWithoutBackendId = media.filter(m => !m.backendId && m.type === 'image')
+    const existingIds = media.filter(m => m.backendId).map(m => m.backendId!)
+
+    if (mediaWithoutBackendId.length === 0) {
+      return existingIds
+    }
+
+    const newIds: string[] = []
+
+    for (const mediaItem of mediaWithoutBackendId) {
+      try {
+        // Convert base64/blob URL to File
+        const response = await fetch(mediaItem.url)
+        const blob = await response.blob()
+        const file = new File([blob], mediaItem.name, { type: mediaItem.type === 'image' ? 'image/jpeg' : 'video/mp4' })
+
+        // Upload to backend
+        const uploadResult = await mediaApi.upload(activeWorkspace!.id, file)
+        const backendId = uploadResult.data.id
+
+        // Update media with backend ID
+        setMedia(prev => prev.map(m =>
+          m.id === mediaItem.id ? { ...m, backendId } : m
+        ))
+
+        newIds.push(backendId)
+      } catch (error) {
+        console.error('Failed to upload media:', mediaItem.name, error)
+        throw new Error(`Failed to upload ${mediaItem.name}`)
+      }
+    }
+
+    return [...existingIds, ...newIds]
+  }, [media, activeWorkspace])
+
   const applyAISuggestion = (suggestion: string) => {
     setActiveCaption(suggestion)
   }
@@ -555,7 +779,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       showPublishConfirmDialog,
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
-      currentSnapshot, isEditMode, editPost
+      hasIntegration, missingIntegrationPlatforms,
+      currentSnapshot, isEditMode, editPost, connectedPlatforms
     },
     refs,
     actions: {
@@ -565,7 +790,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setShowPublishConfirmDialog,
       setDragId, setDragOverId, setAiPrompt, setAiResults, setAiIsGenerating,
       setEditingId, setActiveCaption, reset, handleAttemptClose, handleDraft,
-      handleSchedule, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
+      handleSchedule, confirmPublishNow, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
       handleDragStart, handleDragOver, handleDropOnThumb, handleDragEnd,
       handleReplaceVideo, handleReplaceFile, handleEditorSave, insertAtCursor,
       handleGenerateAI, applyAISuggestion

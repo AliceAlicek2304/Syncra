@@ -57,11 +57,12 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                 >
                   Discard
                 </button>
-                <button 
-                  className="btn-primary" 
+                <button
+                  className="btn-primary"
                   style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
-                  onClick={() => {
-                    if (actions.handleDraft()) {
+                  onClick={async () => {
+                    const saved = await actions.handleDraft()
+                    if (saved) {
                       actions.setShowUnsavedDialog(false)
                       actions.reset()
                       props.onClose()
@@ -91,17 +92,17 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                <button 
-                  className="btn-secondary" 
+                <button
+                  className="btn-secondary"
                   style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
                   onClick={() => actions.setShowPublishConfirmDialog(false)}
                 >
                   Cancel
                 </button>
-                <button 
-                  className="btn-primary" 
+                <button
+                  className="btn-primary"
                   style={{ fontSize: 13, padding: '8px 16px', flex: 1, background: state.scheduleMode ? 'var(--gradient-brand)' : '#22c55e' }}
-                  onClick={() => actions.confirmSchedule()}
+                  onClick={() => state.scheduleMode ? actions.confirmSchedule() : actions.confirmPublishNow()}
                 >
                   {state.scheduleMode ? 'Schedule' : 'Publish'}
                 </button>
@@ -150,7 +151,16 @@ export default function CreatePostModal(props: CreatePostModalProps) {
 
         <div className={styles.body}>
           <div className={styles.composer}>
-            {!state.hasPlatforms ? (
+            {state.connectedPlatforms.length === 0 ? (
+              <div className={styles.composerEmpty}>
+                <div className={styles.previewEmptyIcon}>
+                  <ImageIcon size={28} style={{ color: 'var(--text-muted)' }} />
+                </div>
+                <span className={styles.previewEmptyText}>
+                  No connected platforms. Please connect at least one social media account in Settings.
+                </span>
+              </div>
+            ) : !state.hasPlatforms ? (
               <div className={styles.composerEmpty}>
                 <div className={styles.previewEmptyIcon}>
                   <ImageIcon size={28} style={{ color: 'var(--text-muted)' }} />

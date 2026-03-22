@@ -27,29 +27,15 @@ public class FacebookProvider : ISocialProvider
     {
         const string authUrl = "https://www.facebook.com/v25.0/dialog/oauth";
 
-        // Parse state to determine entity type and set scopes accordingly
-        var stateParams = System.Web.HttpUtility.ParseQueryString(state.Replace('&', '?').Split('?')[1] ?? state);
-        var entityType = stateParams["type"] ?? "page";
-
-        var scopes = entityType == "group"
-            ? new List<string>
-              {
-                  "pages_manage_posts",
-                  "pages_read_engagement",
-                  "read_insights",
-                  "pages_show_list",
-                  "public_profile",
-                  "groups_access_member_info",
-                  "groups_read_user_content"
-              }
-            : new List<string>
-              {
-                  "pages_manage_posts",
-                  "pages_read_engagement",
-                  "read_insights",
-                  "pages_show_list",
-                  "public_profile"
-              };
+        // MVP: Only support Facebook Pages
+        var scopes = new List<string>
+        {
+            "pages_manage_posts",
+            "pages_read_engagement",
+            "read_insights",
+            "pages_show_list",
+            "public_profile"
+        };
 
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
 
@@ -66,10 +52,6 @@ public class FacebookProvider : ISocialProvider
     public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, string? state = null, CancellationToken cancellationToken = default)
     {
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
-
-        // Parse state to get entity type (page or group)
-        var stateParams = System.Web.HttpUtility.ParseQueryString(state?.Replace('&', '?').Split('?')[1] ?? state ?? "");
-        var entityType = stateParams["type"] ?? "page";
 
         var requestData = new Dictionary<string, string>
         {
@@ -135,16 +117,7 @@ public class FacebookProvider : ISocialProvider
             if (!string.IsNullOrEmpty(accessToken))
             {
                 await PopulateUserProfileAsync(result, accessToken, cancellationToken);
-                
-                // Fetch page or group metadata based on entity type
-                if (entityType == "group")
-                {
-                    await PopulateGroupMetadataAsync(result, accessToken, cancellationToken);
-                }
-                else
-                {
-                    await PopulatePageMetadataAsync(result, accessToken, cancellationToken);
-                }
+                await PopulatePageMetadataAsync(result, accessToken, cancellationToken);
             }
 
             return result;
@@ -279,48 +252,6 @@ public class FacebookProvider : ISocialProvider
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Exception fetching Facebook page metadata.");
-        }
-    }
-
-    private async Task PopulateGroupMetadataAsync(AuthResult result, string userAccessToken, CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Fetch groups the user is a member of and admin of
-            var url = $"https://graph.facebook.com/v25.0/me/groups?fields=id,name,member_count,privacy&access_token={Uri.EscapeDataString(userAccessToken)}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Facebook /me/groups returned {StatusCode}: {Body}", (int)response.StatusCode, responseString);
-                return;
-            }
-
-            var groupsResponse = JsonSerializer.Deserialize<JsonNode>(responseString);
-            var data = groupsResponse?["data"]?.AsArray();
-
-            if (data == null || data.Count == 0)
-            {
-                _logger.LogWarning("Facebook /me/groups returned empty data — user may not have any Groups.");
-                return;
-            }
-
-            var group = data[0];
-            var groupId = group?["id"]?.ToString();
-            var groupName = group?["name"]?.ToString();
-            var groupPrivacy = group?["privacy"]?.ToString();
-
-            _logger.LogInformation("Facebook group metadata: groupId={GroupId} groupName={GroupName}",
-                groupId, groupName);
-
-            if (!string.IsNullOrEmpty(groupId)) result.Metadata["groupId"] = groupId;
-            if (!string.IsNullOrEmpty(groupName)) result.Metadata["groupName"] = groupName;
-            if (!string.IsNullOrEmpty(groupPrivacy)) result.Metadata["groupPrivacy"] = groupPrivacy;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Exception fetching Facebook group metadata.");
         }
     }
 

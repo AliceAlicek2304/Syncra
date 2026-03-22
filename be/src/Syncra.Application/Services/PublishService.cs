@@ -56,7 +56,7 @@ public sealed class PublishService : IPublishService
             throw new InvalidOperationException("Post does not have an integration configured.");
         }
 
-        if (post.ScheduledAt.IsInFuture)
+        if (post.ScheduledAt is not null && post.ScheduledAt.IsInFuture)
         {
             throw new InvalidOperationException("Post is scheduled for the future and cannot be published immediately.");
         }
@@ -202,7 +202,7 @@ public sealed class PublishService : IPublishService
             WorkspaceId = workspaceId,
             PostId = post.Id,
             Content = BuildContent(post),
-            ScheduledAtUtc = post.ScheduledAt,
+            ScheduledAtUtc = post.ScheduledAt?.UtcValue,
             MediaIds = mediaIds,
             Metadata = metadata
         };

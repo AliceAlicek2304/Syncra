@@ -93,7 +93,7 @@ public class PostRepository : Repository<Post>, IPostRepository
 
             var filtered = allPosts.Where(p =>
             {
-                var scheduled = p.ScheduledAt.UtcValue;
+                var scheduled = p.ScheduledAt?.UtcValue ?? DateTime.MinValue;
                 if (scheduledFromUtc.HasValue && scheduled < scheduledFromUtc.Value)
                     return false;
                 if (scheduledToUtc.HasValue && scheduled > scheduledToUtc.Value)

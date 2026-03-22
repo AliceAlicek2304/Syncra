@@ -27,7 +27,8 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
 
         builder.Property(e => e.ScheduledAt)
             .HasColumnName("scheduled_at_utc")
-            .HasConversion(ValueObjectConverters.ScheduledTimeConverter);
+            .HasConversion(ValueObjectConverters.ScheduledTimeConverter)
+            .IsRequired(true);  // Never null - uses DateTime.MinValue for "None"
 
         // Primitive properties
         builder.Property(e => e.UserId).HasColumnName("user_id");

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Plus, Clock,
   CalendarDays, List, LayoutGrid,
@@ -35,6 +35,8 @@ interface CalPost {
   caption: string
   hashtags: string[]
   image?: string
+  mediaIds?: string[]
+  integrationId?: string | null
   isMock?: boolean
 }
 
@@ -74,23 +76,103 @@ function getWeekDays(year: number, month: number, day: number): { y: number; m: 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6)
 
 function timeToSlot(time: string): number {
-  if (!time || time === '—') return 0
+  if (!time || time === '—') return -1
   const [h, m] = time.split(':').map(Number)
   return (h - 6) * 60 + (m || 0)
 }
+
+// Platform gradient constants - defined once outside component
+const PLATFORM_GRADIENTS: Record<string, string> = {
+  TikTok: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+  Instagram: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #eab308 100%)',
+  Facebook: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+  X: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+  LinkedIn: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
+  YouTube: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+}
+
+// VisualCard component moved outside to avoid re-creation on every render
+const VisualCard = React.memo(function VisualCard({
+  post,
+  onClick,
+  isDragging,
+  onDragStart,
+  onDragEnd,
+}: {
+  post: CalPost
+  onClick: (e: React.MouseEvent) => void
+  isDragging: boolean
+  onDragStart: () => void
+  onDragEnd: () => void
+}) {
+  const gradient = PLATFORM_GRADIENTS[post.platform] || PLATFORM_GRADIENTS.TikTok
+
+  const [imageError, setImageError] = useState(false)
+
+  return (
+    <div
+      className={`${styles.visualCard} ${isDragging ? styles.postPillDragging : ''}`}
+      style={{ '--card-accent': post.color } as React.CSSProperties}
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      title={post.title}
+    >
+      {/* Thumbnail on LEFT - fixed size 56x56 */}
+      <div className={styles.cardThumbnail}>
+        {post.image && !imageError ? (
+          <img
+            src={post.image}
+            alt={post.title}
+            className={styles.cardImage}
+            onError={() => setImageError(true)}
+          />
+          ) : imageError ? (
+          // Fallback when image fails to load
+          <div className={styles.cardPlaceholderBroken}>
+            <ExtendedPlatformIcon platform={post.platform} size={20} />
+          </div>
+        ) : (
+          <div className={styles.cardPlaceholder} style={{ background: gradient }}>
+            <ExtendedPlatformIcon platform={post.platform} size={20} />
+          </div>
+        )}
+      </div>
+      {/* Content on RIGHT */}
+      <div className={styles.cardContent}>
+        <span className={styles.cardTime}>{post.time}</span>
+        <span className={styles.cardTitle}>{post.title}</span>
+        <div className={styles.cardPlatform}>
+          <span className={styles.platformBadge} style={{ background: `${post.color}20`, color: post.color }}>
+            {post.platform}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+})
 
 
 export default function CalendarPage() {
   const { posts: contextPosts, updatePost } = useCalendar()
   const { openCreatePost, openEditPost } = useCreatePostModal()
-  
-  const today = useMemo(() => new Date(), [])
+
+  const [today, setToday] = useState(() => new Date())
 
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate())
   const [viewMode, setViewMode] = useState<ViewMode>('month')
   const [platformFilter, setPlatformFilter] = useState('all')
+
+  // Update today every minute to handle midnight crossover
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setToday(new Date())
+    }, 60000) // Update every minute
+    return () => clearInterval(interval)
+  }, [])
   
   // Picker dropdown state
   const [showMonthPicker, setShowMonthPicker] = useState(false)
@@ -133,6 +215,7 @@ export default function CalendarPage() {
         id: p.id, title: p.title, platform: p.platform,
         status: p.status, time: p.time, color: p.color,
         caption: p.caption, hashtags: p.hashtags, image: p.image,
+        mediaIds: p.mediaIds, integrationId: p.integrationId,
         isMock: false
       }
       merged[key] = [...(merged[key] ?? []), cp]
@@ -153,40 +236,61 @@ export default function CalendarPage() {
 
 
   const prevMonth = useCallback(() => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1) }
-    else setMonth(m => m - 1)
+    setMonth(m => {
+      if (m === 0) {
+        setYear(y => y - 1)
+        return 11
+      }
+      return m - 1
+    })
     setSelectedDay(null)
-  }, [month])
+  }, [])
 
   const nextMonth = useCallback(() => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1) }
-    else setMonth(m => m + 1)
+    setMonth(m => {
+      if (m === 11) {
+        setYear(y => y + 1)
+        return 0
+      }
+      return m + 1
+    })
     setSelectedDay(null)
-  }, [month])
+  }, [])
 
-  const prevWeek = useCallback(() => {
+  const prevWeek = () => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) - 7)
-    setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }, [year, month, selectedDay, today])
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setSelectedDay(d.getDate())
+  }
 
-  const nextWeek = useCallback(() => {
+  const nextWeek = () => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) + 7)
-    setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }, [year, month, selectedDay, today])
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setSelectedDay(d.getDate())
+  }
 
-  const prevDay = useCallback(() => {
+  const prevDay = () => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) - 1)
-    setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }, [year, month, selectedDay, today])
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setSelectedDay(d.getDate())
+  }
 
-  const nextDay = useCallback(() => {
+  const nextDay = () => {
     const d = new Date(year, month, (selectedDay ?? today.getDate()) + 1)
-    setYear(d.getFullYear()); setMonth(d.getMonth()); setSelectedDay(d.getDate())
-  }, [year, month, selectedDay, today])
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setSelectedDay(d.getDate())
+  }
 
   const goToday = useCallback(() => {
-    setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(today.getDate())
-  }, [today])
+    const now = new Date()
+    setYear(now.getFullYear())
+    setMonth(now.getMonth())
+    setSelectedDay(now.getDate())
+  }, [])
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -203,13 +307,29 @@ export default function CalendarPage() {
     }
   }, [viewMode, prevMonth, prevWeek, prevDay, nextMonth, nextWeek, nextDay, goToday])
 
-  // Current time position for week/day view
-  const currentTimePosition = useMemo(() => {
+  // Current time position for week/day view - updates every minute
+  const [currentTimePosition, setCurrentTimePosition] = useState<number | null>(() => {
     const now = new Date()
     const hours = now.getHours()
     const minutes = now.getMinutes()
     if (hours < 6 || hours >= 24) return null
     return ((hours - 6) * 60 + minutes)
+  })
+
+  useEffect(() => {
+    const updateCurrentTime = () => {
+      const now = new Date()
+      const hours = now.getHours()
+      const minutes = now.getMinutes()
+      if (hours < 6 || hours >= 24) {
+        setCurrentTimePosition(null)
+      } else {
+        setCurrentTimePosition((hours - 6) * 60 + minutes)
+      }
+    }
+    updateCurrentTime()
+    const interval = setInterval(updateCurrentTime, 60000) // Update every minute
+    return () => clearInterval(interval)
   }, [])
 
 
@@ -249,71 +369,7 @@ export default function CalendarPage() {
 
   const weekDays = useMemo(() =>
     getWeekDays(year, month, selectedDay ?? today.getDate()),
-    [year, month, selectedDay])
-
-
-  const VisualCard: React.FC<{
-    post: CalPost
-    onClick: (e: React.MouseEvent) => void
-    isDragging: boolean
-    onDragStart: () => void
-    onDragEnd: () => void
-  }> = ({ post, onClick, isDragging, onDragStart, onDragEnd }) => {
-    const platformGradients: Record<string, string> = {
-      TikTok: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-      Instagram: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #eab308 100%)',
-      Facebook: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-      X: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-      LinkedIn: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
-      YouTube: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    }
-    const gradient = platformGradients[post.platform] || platformGradients.TikTok
-
-    const [imageError, setImageError] = useState(false)
-
-    return (
-      <div
-        className={`${styles.visualCard} ${isDragging ? styles.postPillDragging : ''}`}
-        style={{ '--card-accent': post.color } as React.CSSProperties}
-        draggable
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onClick={onClick}
-        title={post.title}
-      >
-        {/* Thumbnail on LEFT - fixed size 56x56 */}
-        <div className={styles.cardThumbnail}>
-          {post.image && !imageError ? (
-            <img 
-              src={post.image} 
-              alt={post.title} 
-              className={styles.cardImage}
-              onError={() => setImageError(true)}
-            />
-            ) : imageError ? (
-            // Fallback when image fails to load
-            <div className={styles.cardPlaceholderBroken}>
-              <ExtendedPlatformIcon platform={post.platform} size={20} />
-            </div>
-          ) : (
-            <div className={styles.cardPlaceholder} style={{ background: gradient }}>
-              <ExtendedPlatformIcon platform={post.platform} size={20} />
-            </div>
-          )}
-        </div>
-        {/* Content on RIGHT */}
-        <div className={styles.cardContent}>
-          <span className={styles.cardTime}>{post.time}</span>
-          <span className={styles.cardTitle}>{post.title}</span>
-          <div className={styles.cardPlatform}>
-            <span className={styles.platformBadge} style={{ background: `${post.color}20`, color: post.color }}>
-              {post.platform}
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
+    [year, month, selectedDay, today])
 
   // ── Render visual content card (used in week/day view) ───────
   const renderPostPill = (p: CalPost) => {
@@ -390,7 +446,7 @@ export default function CalendarPage() {
                 </button>
               </div>
               <div className={styles.cellPosts}>
-                {posts.slice(0, 2).map(p => (
+                {posts.map(p => (
                   <div
                     key={p.id}
                     className={`${styles.cellPostChip} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
@@ -416,15 +472,7 @@ export default function CalendarPage() {
                     <span className={styles.chipTitle}>{p.title}</span>
                   </div>
                 ))}
-                {posts.length > 2 && (
-                  <button 
-                    className={styles.moreCount}
-                    onClick={(e) => { e.stopPropagation(); setSelectedDay(day) }}
-                    aria-label={`Show ${posts.length - 2} more posts`}
-                  >
-                    +{posts.length - 2} more
-                  </button>
-                )}
+
               </div>
             </div>
           )
@@ -433,7 +481,7 @@ export default function CalendarPage() {
 
       <div className={styles.legend}>
         {[
-          { color: '#22c55e', label: 'Đã đăng' },
+          { color: '#22c55e', label: 'Posted' },
           { color: '#eab308', label: 'Scheduled' },
           { color: '#475569', label: 'Draft' },
         ].map(l => (
@@ -492,18 +540,18 @@ export default function CalendarPage() {
               const key = getPostKey(y, m, d)
               const postsInSlot = (filteredPostsByKey[key] ?? []).filter(p => {
                 const slot = timeToSlot(p.time)
-                return slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
+                return slot >= 0 && slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
               })
-              const isDragOver = dragOverKey === `${key}-${hour}`
+              const isDragOver = dragOverKey === key
               const isTodayCell = y === today.getFullYear() && m === today.getMonth() && d === today.getDate()
               const isCurrentHour = isTodayCell && hour === now.getHours()
-              
+
               return (
                 <div
                   key={`${key}-${hour}`}
                   className={`${styles.weekCell} ${isDragOver ? styles.cellDragOver : ''} ${isCurrentHour ? styles.weekCellCurrentHour : ''}`}
                   onClick={() => openCreateForDay(y, m, d)}
-                  onDragOver={e => handleDragOver(e, `${key}-${hour}`)}
+                  onDragOver={e => handleDragOver(e, key)}
                   onDrop={e => handleDrop(e, y, m, d)}
                   onDragLeave={() => setDragOverKey(null)}
                   role="gridcell"
@@ -548,9 +596,9 @@ export default function CalendarPage() {
           {HOURS.map(hour => {
             const postsInSlot = dayPosts.filter(p => {
               const slot = timeToSlot(p.time)
-              return slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
+              return slot >= 0 && slot >= (hour - 6) * 60 && slot < (hour - 6 + 1) * 60
             })
-            const isDragOver = dragOverKey === `day-${hour}`
+            const isDragOver = dragOverKey === dayKey
             const isCurrentHour = isToday && hour === now.getHours()
             return (
               <div key={hour} className={styles.dayRow} role="row">
@@ -558,7 +606,7 @@ export default function CalendarPage() {
                 <div
                   className={`${styles.daySlot} ${isDragOver ? styles.cellDragOver : ''} ${isCurrentHour ? styles.daySlotCurrentHour : ''}`}
                   onClick={() => openCreateForDay(year, month, d)}
-                  onDragOver={e => handleDragOver(e, `day-${hour}`)}
+                  onDragOver={e => handleDragOver(e, dayKey)}
                   onDrop={e => handleDrop(e, year, month, d)}
                   onDragLeave={() => setDragOverKey(null)}
                   role="gridcell"
@@ -608,13 +656,13 @@ export default function CalendarPage() {
           {selectedPosts.length === 0 ? (
             <div className={styles.emptyDay}>
               <Clock size={28} className={styles.emptyIcon} />
-              <p>Chưa có post nào</p>
+              <p>No posts yet</p>
               <button
                 className="btn-primary"
                 onClick={() => openCreateForDay(year, month, selectedDay)}
                 style={{ fontSize: 12, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 4 }}
               >
-                <Plus size={12} /> Tạo ngay
+                <Plus size={12} /> Create Post
               </button>
             </div>
           ) : (
@@ -682,7 +730,7 @@ export default function CalendarPage() {
       ) : (
         <div className={styles.emptyDay}>
           <Clock size={28} className={styles.emptyIcon} />
-          <p>Chọn một ngày để xem chi tiết</p>
+          <p>Select a day to view details</p>
         </div>
       )}
     </div>
@@ -698,7 +746,7 @@ export default function CalendarPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Content Calendar</h1>
-          <p className={styles.subtitle}>Lên lịch và quản lý tất cả bài đăng của bạn</p>
+          <p className={styles.subtitle}>Schedule and manage all your posts</p>
         </div>
         <button
           className={styles.newPostBtn}

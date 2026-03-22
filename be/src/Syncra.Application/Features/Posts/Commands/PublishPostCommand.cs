@@ -7,5 +7,7 @@ public record PublishPostCommand(
     Guid WorkspaceId,
     Guid PostId,
     Guid UserId,
-    bool DryRun = false
+    bool DryRun = false,
+    DateTime? ScheduledAtUtc = null,
+    Guid? IntegrationId = null
 ) : IRequest<PostDto>;

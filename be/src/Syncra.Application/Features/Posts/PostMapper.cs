@@ -13,7 +13,7 @@ public static class PostMapper
             post.Title.Value,
             post.Content.Value,
             post.Status.ToString(),
-            post.ScheduledAt.UtcValue,
+            post.ScheduledAt?.UtcValue,
             post.PublishedAtUtc,
             post.IntegrationId,
             post.Media.Select(m => m.Id).ToList());

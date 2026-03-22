@@ -180,6 +180,23 @@
   font-size: 14px;
   font-weight: 700;
   color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comingSoonBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--purple-400);
+  background: rgba(167, 139, 250, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .socialStatus {

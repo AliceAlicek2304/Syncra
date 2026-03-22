@@ -30,8 +30,9 @@ public static class ValueObjectConverters
         v => v.Value,
         v => WorkspaceSlug.Create(v));
 
-    // ScheduledTime converter - handles null for "None"
-    public static readonly ValueConverter<ScheduledTime, DateTime?> ScheduledTimeConverter = new(
-        v => v.IsNone ? null : v.UtcValue,
-        v => v.HasValue ? ScheduledTime.Create(v) : ScheduledTime.None);
+    // ScheduledTime converter - uses DateTime.MinValue to represent "None"
+    // This avoids null issues with EF Core value conversion
+    public static readonly ValueConverter<ScheduledTime, DateTime> ScheduledTimeConverter = new(
+        v => v.IsNone ? DateTime.MinValue : v.UtcValue,
+        v => v == DateTime.MinValue ? ScheduledTime.None : ScheduledTime.Create(v));
 }

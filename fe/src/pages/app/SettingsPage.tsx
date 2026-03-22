@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react'
-import { Settings, Sparkles, Save, ShieldCheck, Twitter, Facebook, Youtube, Music2, RefreshCw } from 'lucide-react'
+import { Settings, Sparkles, Save, ShieldCheck, Twitter, Facebook, Youtube, Music2, RefreshCw, Lock } from 'lucide-react'
 import RadarChart from '../../components/RadarChart'
 import DisconnectConfirm from '../../components/DisconnectConfirm'
-import FacebookConnectModal, { type FacebookEntityType } from '../../components/FacebookConnectModal'
+import FacebookConnectModal from '../../components/FacebookConnectModal'
 import { useIntegrations } from '../../hooks/useIntegrations'
 import { useToast } from '../../context/ToastContext'
 import styles from './SettingsPage.module.css'
 
 const PLATFORMS = [
-  { id: 'x', name: 'X / Twitter', icon: Twitter, color: '#ffffff', bg: 'rgba(255,255,255,0.08)' },
   { id: 'facebook', name: 'Facebook', icon: Facebook, color: '#1877f2', bg: 'rgba(24,119,242,0.12)' },
-  { id: 'youtube', name: 'YouTube', icon: Youtube, color: '#ff0000', bg: 'rgba(255,0,0,0.12)' },
-  { id: 'tiktok', name: 'TikTok', icon: Music2, color: '#00f2ea', bg: 'rgba(0,242,234,0.12)' },
-] as const
+  { id: 'x', name: 'X / Twitter', icon: Twitter, color: '#ffffff', bg: 'rgba(255,255,255,0.08)', comingSoon: true },
+  { id: 'youtube', name: 'YouTube', icon: Youtube, color: '#ff0000', bg: 'rgba(255,0,0,0.12)', comingSoon: true },
+  { id: 'tiktok', name: 'TikTok', icon: Music2, color: '#00f2ea', bg: 'rgba(0,242,234,0.12)', comingSoon: true },
+] satisfies Array<{
+  id: string
+  name: string
+  icon: React.ComponentType<{ size?: number; color?: string }>
+  color: string
+  bg: string
+  comingSoon?: boolean
+}>
 
 export default function SettingsPage() {
   const [brandTone, setBrandTone] = useState({
@@ -73,16 +80,13 @@ export default function SettingsPage() {
       setShowFacebookModal(true)
       return
     }
-    try {
-      await connect(providerId)
-    } catch {
-      addToast({ message: 'Failed to connect. Please try again.', type: 'error' })
-    }
+    // Coming soon platforms - show toast
+    addToast({ message: `${providerId} integration coming soon!`, type: 'info' })
   }
 
-  const handleFacebookConfirm = async (entityType: FacebookEntityType) => {
+  const handleFacebookConfirm = async () => {
     try {
-      const result = await connect('facebook', entityType)
+      const result = await connect('facebook')
       if (result?.data.url) {
         window.location.href = result.data.url
       }
@@ -192,6 +196,7 @@ export default function SettingsPage() {
                 const isPending = isConnecting === platform.id || isDisconnecting === platform.id
                 const healthStatus = integration?.tokenRefreshHealthStatus
                 const username = integration?.metadata?.['username'] ?? integration?.metadata?.['name']
+                const isComingSoon = platform.comingSoon ?? false
 
                 return (
                   <div key={platform.id} className={styles.socialCard}>
@@ -203,31 +208,41 @@ export default function SettingsPage() {
                     </div>
 
                     <div className={styles.socialMeta}>
-                      <span className={styles.socialName}>{platform.name}</span>
-                      <span className={styles.socialStatus}>
-                        {isActive && (
-                          <>
-                            <span className={styles.statusDot} data-status="connected" />
-                            {username
-                              ? `@${username}`
-                              : isExpired
-                              ? 'Connection expired'
-                              : 'Connected'}
-                          </>
-                        )}
-                        {isExpired && !isActive && (
-                          <>
-                            <span className={styles.statusDot} data-status="expired" />
-                            Connection expired
-                          </>
-                        )}
-                        {!isActive && !isExpired && (
-                          <>
-                            <span className={styles.statusDot} data-status="disconnected" />
-                            Not connected
-                          </>
+                      <span className={styles.socialName}>
+                        {platform.name}
+                        {isComingSoon && (
+                          <span className={styles.comingSoonBadge}>
+                            <Lock size={10} />
+                            Coming Soon
+                          </span>
                         )}
                       </span>
+                      {!isComingSoon && (
+                        <span className={styles.socialStatus}>
+                          {isActive && (
+                            <>
+                              <span className={styles.statusDot} data-status="connected" />
+                              {username
+                                ? `@${username}`
+                                : isExpired
+                                ? 'Connection expired'
+                                : 'Connected'}
+                            </>
+                          )}
+                          {isExpired && !isActive && (
+                            <>
+                              <span className={styles.statusDot} data-status="expired" />
+                              Connection expired
+                            </>
+                          )}
+                          {!isActive && !isExpired && (
+                            <>
+                              <span className={styles.statusDot} data-status="disconnected" />
+                              Not connected
+                            </>
+                          )}
+                        </span>
+                      )}
                       {isActive && healthStatus && (
                         <span className={`${styles.healthBadge}`} data-health={healthStatus}>
                           <RefreshCw size={10} />
@@ -243,11 +258,13 @@ export default function SettingsPage() {
                           ? setDisconnectTarget({ id: platform.id, name: platform.name })
                           : handleConnect(platform.id)
                       }
-                      disabled={isPending}
+                      disabled={isPending || isComingSoon}
                       aria-label={isActive ? `Disconnect ${platform.name}` : `Connect ${platform.name}`}
                     >
                       {isPending ? (
                         <span className={styles.spinner} />
+                      ) : isComingSoon ? (
+                        'Soon'
                       ) : isActive ? (
                         isExpired ? 'Reconnect' : 'Disconnect'
                       ) : (

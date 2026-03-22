@@ -9,6 +9,7 @@ export interface MediaFile {
   url: string
   type: 'image' | 'video'
   name: string
+  backendId?: string  // GUID returned from backend after upload
 }
 
 export type PlatformCaptionMap = Record<Platform, string>
@@ -28,6 +29,16 @@ export const PLATFORMS: { id: Platform; label: string; maxChars: number }[] = [
   { id: 'Facebook', label: 'Facebook', maxChars: 2200 },
   { id: 'X', label: 'Twitter/X', maxChars: 280 },
 ]
+
+export function getConnectedPlatforms(integrations: Array<{ platform: string; isActive: boolean }>): Platform[] {
+  const connectedPlatformIds = integrations
+    .filter(i => i.isActive)
+    .map(i => i.platform)
+  
+  return PLATFORMS
+    .filter(p => connectedPlatformIds.some(id => id.toLowerCase() === p.id.toLowerCase()))
+    .map(p => p.id)
+}
 
 export const PLATFORM_ICONS: Record<Platform, string> = {
   TikTok: '♪',

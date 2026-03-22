@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { integrationsApi, type IntegrationDto, type ConnectOptions } from '../api/integrations'
+import { integrationsApi, type IntegrationDto } from '../api/integrations'
 import { useWorkspace } from '../context/WorkspaceContext'
 
 export function useIntegrations() {
@@ -28,13 +28,13 @@ export function useIntegrations() {
     fetchIntegrations()
   }, [fetchIntegrations])
 
-  const connect = useCallback(async (providerId: string, entityType?: ConnectOptions['entityType']) => {
+  const connect = useCallback(async (providerId: string) => {
     if (!activeWorkspace) return
     setIsConnecting(providerId)
     setError(null)
     try {
       const frontendRedirectUri = `${window.location.origin}/Syncra/app/settings`
-      const res = await integrationsApi.connect(activeWorkspace.id, providerId, { entityType, frontendRedirectUri })
+      const res = await integrationsApi.connect(activeWorkspace.id, providerId, { frontendRedirectUri })
       return res
     } catch (err) {
       setError('Failed to start connection. Please try again.')
