@@ -53,7 +53,7 @@ public class YouTubeProvider : ISocialProvider
         return $"{authUrl}?{parameters}";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, string? state = null, CancellationToken cancellationToken = default)
     {
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
 

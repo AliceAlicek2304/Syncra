@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Settings, Sparkles, Save, ShieldCheck, Twitter, Facebook, Youtube, Music2, RefreshCw } from 'lucide-react'
 import RadarChart from '../../components/RadarChart'
 import DisconnectConfirm from '../../components/DisconnectConfirm'
+import FacebookConnectModal, { type FacebookEntityType } from '../../components/FacebookConnectModal'
 import { useIntegrations } from '../../hooks/useIntegrations'
 import { useToast } from '../../context/ToastContext'
 import styles from './SettingsPage.module.css'
@@ -23,6 +24,7 @@ export default function SettingsPage() {
     minimalist: 0.5
   })
   const [disconnectTarget, setDisconnectTarget] = useState<{ id: string; name: string } | null>(null)
+  const [showFacebookModal, setShowFacebookModal] = useState(false)
 
   const { addToast } = useToast()
   const {
@@ -67,10 +69,27 @@ export default function SettingsPage() {
   }
 
   const handleConnect = async (providerId: string) => {
+    if (providerId === 'facebook') {
+      setShowFacebookModal(true)
+      return
+    }
     try {
       await connect(providerId)
     } catch {
       addToast({ message: 'Failed to connect. Please try again.', type: 'error' })
+    }
+  }
+
+  const handleFacebookConfirm = async (entityType: FacebookEntityType) => {
+    try {
+      const result = await connect('facebook', entityType)
+      if (result?.data.url) {
+        window.location.href = result.data.url
+      }
+    } catch {
+      addToast({ message: 'Failed to connect. Please try again.', type: 'error' })
+    } finally {
+      setShowFacebookModal(false)
     }
   }
 
@@ -251,6 +270,13 @@ export default function SettingsPage() {
           isLoading={isDisconnecting !== null}
         />
       )}
+
+      <FacebookConnectModal
+        isOpen={showFacebookModal}
+        onClose={() => setShowFacebookModal(false)}
+        onConfirm={handleFacebookConfirm}
+        isLoading={isConnecting === 'facebook'}
+      />
     </div>
   )
 }

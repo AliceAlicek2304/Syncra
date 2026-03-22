@@ -36,10 +36,10 @@ public class XOAuthProvider : ISocialProvider
         return $"{authUrl}?response_type=code&client_id={_options.ClientId}&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}&scope={Uri.EscapeDataString(scopes)}&state={Uri.EscapeDataString(state)}&code_challenge={CodeVerifier}&code_challenge_method=plain";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, string? state = null, CancellationToken cancellationToken = default)
     {
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
-        
+
         return await GetTokensAsync(
             new Dictionary<string, string>
             {

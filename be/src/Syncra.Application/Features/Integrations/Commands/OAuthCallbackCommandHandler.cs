@@ -27,8 +27,11 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
         if (string.IsNullOrEmpty(request.State) || !request.State.Contains($"workspaceId={request.WorkspaceId}"))
             throw new DomainException("invalid_state", "Invalid or mismatched state parameter.");
 
+        var stateParams = System.Web.HttpUtility.ParseQueryString(request.State.Replace('&', '?').Split('?')[1] ?? request.State);
+        var entityType = stateParams["type"];
+
         var provider = GetProvider(request.ProviderId);
-        var result = await provider.ExchangeCodeAsync(request.Code, request.RedirectUri, cancellationToken);
+        var result = await provider.ExchangeCodeAsync(request.Code, request.RedirectUri, request.State, cancellationToken);
 
         if (!result.IsSuccess)
             throw new DomainException("oauth_failed", result.Error?.ToString() ?? "OAuth exchange failed.");
@@ -41,8 +44,14 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
                 result.ExternalUserId, result.AccessToken,
                 result.RefreshToken, result.ExpiresAt?.UtcDateTime);
 
-            if (result.Metadata.Count > 0)
-                integration.SetMetadata(JsonSerializer.Serialize(result.Metadata));
+            var newMetadata = new Dictionary<string, string>(result.Metadata);
+            if (!string.IsNullOrEmpty(entityType))
+            {
+                newMetadata["type"] = entityType;
+            }
+
+            if (newMetadata.Count > 0)
+                integration.SetMetadata(JsonSerializer.Serialize(newMetadata));
 
             await _integrationRepository.AddAsync(integration);
         }
@@ -51,15 +60,33 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
             integration.UpdateTokens(result.AccessToken, result.RefreshToken, result.ExpiresAt?.UtcDateTime);
             integration.Reactivate();
 
-            if (result.Metadata.Count > 0)
-                integration.SetMetadata(JsonSerializer.Serialize(result.Metadata));
+            var existingMetadata = string.IsNullOrEmpty(integration.Metadata)
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
+
+            var mergedMetadata = new Dictionary<string, string>(result.Metadata);
+            foreach (var kvp in existingMetadata)
+            {
+                if (!mergedMetadata.ContainsKey(kvp.Key))
+                {
+                    mergedMetadata[kvp.Key] = kvp.Value;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(entityType))
+            {
+                mergedMetadata["type"] = entityType;
+            }
+
+            if (mergedMetadata.Count > 0)
+                integration.SetMetadata(JsonSerializer.Serialize(mergedMetadata));
 
             await _integrationRepository.UpdateAsync(integration);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var metadata = string.IsNullOrEmpty(integration.Metadata)
+        var finalMetadata = string.IsNullOrEmpty(integration.Metadata)
             ? new Dictionary<string, string>()
             : JsonSerializer.Deserialize<Dictionary<string, string>>(integration.Metadata) ?? new();
 
@@ -69,10 +96,10 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
             request.ProviderId,
             result.ExternalUserId,
             result.ExternalUsername,
-            metadata.GetValueOrDefault("channelId"),
-            metadata.GetValueOrDefault("channelTitle"),
-            metadata.GetValueOrDefault("pageId"),
-            metadata.GetValueOrDefault("pageName"));
+            finalMetadata.GetValueOrDefault("channelId"),
+            finalMetadata.GetValueOrDefault("channelTitle"),
+            finalMetadata.GetValueOrDefault("pageId"),
+            finalMetadata.GetValueOrDefault("pageName"));
     }
 
     private ISocialProvider GetProvider(string providerId) =>

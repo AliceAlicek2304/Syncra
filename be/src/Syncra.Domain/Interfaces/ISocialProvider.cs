@@ -16,7 +16,7 @@ public interface ISocialProvider
     /// <summary>
     /// Exchanges an authorization code for an access token.
     /// </summary>
-    Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default);
+    Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, string? state = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Refreshes an existing access token.

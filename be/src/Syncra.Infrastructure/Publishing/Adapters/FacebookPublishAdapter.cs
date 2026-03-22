@@ -45,16 +45,21 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     {
         try
         {
-            var pageId = request.Metadata.GetValueOrDefault("pageId");
-            if (string.IsNullOrEmpty(pageId))
+            var entityType = request.Metadata.GetValueOrDefault("type") ?? "page";
+            var entityId = entityType == "group"
+                ? request.Metadata.GetValueOrDefault("groupId")
+                : request.Metadata.GetValueOrDefault("pageId");
+
+            if (string.IsNullOrEmpty(entityId))
             {
+                var entityTypeName = entityType == "group" ? "Group" : "Page";
                 return new PublishResult
                 {
                     IsSuccess = false,
                     Error = new ProviderError
                     {
-                        Code = "page_not_configured",
-                        Message = "Facebook Page ID not found. Please reconnect your Facebook account.",
+                        Code = $"{entityType}_not_configured",
+                        Message = $"Facebook {entityTypeName} ID not found. Please reconnect your Facebook account.",
                         IsTransient = false
                     }
                 };
@@ -65,7 +70,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
 
             if (request.MediaIds.Count == 0)
             {
-                return await PublishTextPostAsync(pageId, pageAccessToken, request, cancellationToken);
+                return await PublishTextPostAsync(entityId, entityType, pageAccessToken, request, cancellationToken);
             }
 
             var mediaItems = await _mediaRepository.GetByIdsAsync(request.MediaIds);
@@ -73,9 +78,9 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
 
             return contentType switch
             {
-                FacebookContentType.Video => await PublishVideoAsync(pageId, pageAccessToken, request, mediaItems, cancellationToken),
-                FacebookContentType.Photo => await PublishPhotoAsync(pageId, pageAccessToken, request, mediaItems, cancellationToken),
-                _ => await PublishTextPostAsync(pageId, pageAccessToken, request, cancellationToken)
+                FacebookContentType.Video => await PublishVideoAsync(entityId, entityType, pageAccessToken, request, mediaItems, cancellationToken),
+                FacebookContentType.Photo => await PublishPhotoAsync(entityId, entityType, pageAccessToken, request, mediaItems, cancellationToken),
+                _ => await PublishTextPostAsync(entityId, entityType, pageAccessToken, request, cancellationToken)
             };
         }
         catch (Exception ex)
@@ -95,11 +100,13 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     }
 
     private async Task<PublishResult> PublishTextPostAsync(
-        string pageId,
+        string entityId,
+        string entityType,
         string pageAccessToken,
         PublishRequest request,
         CancellationToken cancellationToken)
     {
+        var endpoint = entityType == "group" ? "feed" : "feed";
         var body = JsonSerializer.Serialize(new
         {
             message = request.Content,
@@ -108,7 +115,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
 
         var httpRequest = new HttpRequestMessage(
             HttpMethod.Post,
-            $"https://graph.facebook.com/v25.0/{pageId}/feed")
+            $"https://graph.facebook.com/v25.0/{entityId}/{endpoint}")
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
         };
@@ -132,7 +139,8 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     }
 
     private async Task<PublishResult> PublishPhotoAsync(
-        string pageId,
+        string entityId,
+        string entityType,
         string pageAccessToken,
         PublishRequest request,
         IReadOnlyList<Syncra.Domain.Entities.Media> mediaItems,
@@ -140,7 +148,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     {
         var media = mediaItems.FirstOrDefault();
         if (media == null)
-            return await PublishTextPostAsync(pageId, pageAccessToken, request, cancellationToken);
+            return await PublishTextPostAsync(entityId, entityType, pageAccessToken, request, cancellationToken);
 
         var filePath = Path.Combine(_storageOptions.LocalRootPath, Path.GetFileName(media.FileUrl));
         if (!File.Exists(filePath))
@@ -170,8 +178,9 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
             string.IsNullOrEmpty(media.MimeType) ? "image/jpeg" : media.MimeType);
         form.Add(fileContent, "source", media.FileName ?? "photo.jpg");
 
+        var endpoint = entityType == "group" ? "photos" : "photos";
         var response = await _httpClient.PostAsync(
-            $"https://graph.facebook.com/v25.0/{pageId}/photos", form, cancellationToken);
+            $"https://graph.facebook.com/v25.0/{entityId}/{endpoint}", form, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -191,7 +200,8 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     }
 
     private async Task<PublishResult> PublishVideoAsync(
-        string pageId,
+        string entityId,
+        string entityType,
         string pageAccessToken,
         PublishRequest request,
         IReadOnlyList<Syncra.Domain.Entities.Media> mediaItems,
@@ -199,7 +209,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
     {
         var media = mediaItems.FirstOrDefault(m => m.MediaType == "video") ?? mediaItems.FirstOrDefault();
         if (media == null)
-            return await PublishTextPostAsync(pageId, pageAccessToken, request, cancellationToken);
+            return await PublishTextPostAsync(entityId, entityType, pageAccessToken, request, cancellationToken);
 
         var filePath = Path.Combine(_storageOptions.LocalRootPath, Path.GetFileName(media.FileUrl));
         if (!File.Exists(filePath))
@@ -231,8 +241,9 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
             string.IsNullOrEmpty(media.MimeType) ? "video/mp4" : media.MimeType);
         form.Add(fileContent, "source", media.FileName ?? "video.mp4");
 
+        var endpoint = entityType == "group" ? "videos" : "videos";
         var response = await _httpClient.PostAsync(
-            $"https://graph.facebook.com/v25.0/{pageId}/videos", form, cancellationToken);
+            $"https://graph.facebook.com/v25.0/{entityId}/{endpoint}", form, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)

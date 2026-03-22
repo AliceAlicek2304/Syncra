@@ -32,10 +32,10 @@ public class TikTokOAuthProvider : ISocialProvider
         return $"{authUrl}?client_key={_options.ClientId}&response_type=code&scope={Uri.EscapeDataString(scopes)}&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}&state={Uri.EscapeDataString(state)}";
     }
 
-    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> ExchangeCodeAsync(string code, string? redirectUri = null, string? state = null, CancellationToken cancellationToken = default)
     {
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
-        
+
         return await GetTokensAsync(
             new Dictionary<string, string>
             {

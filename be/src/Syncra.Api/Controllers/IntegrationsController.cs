@@ -28,9 +28,11 @@ public class IntegrationsController : ControllerBase
         Guid workspaceId,
         string providerId,
         [FromQuery] string? redirectUri = null,
+        [FromQuery] string? entityType = null,
+        [FromQuery] string? frontendRedirectUri = null,
         CancellationToken cancellationToken = default)
     {
-        var url = await _mediator.Send(new ConnectIntegrationCommand(workspaceId, providerId, redirectUri), cancellationToken);
+        var url = await _mediator.Send(new ConnectIntegrationCommand(workspaceId, providerId, redirectUri, entityType, frontendRedirectUri), cancellationToken);
         return Ok(new { url });
     }
 
@@ -49,10 +51,11 @@ public class IntegrationsController : ControllerBase
     {
         var stateParams = HttpUtility.ParseQueryString(state);
         var workspaceIdStr = stateParams["workspaceId"];
+        var frontendRedirectUri = stateParams["frontendRedirectUri"];
 
         if (string.IsNullOrEmpty(workspaceIdStr) || !Guid.TryParse(workspaceIdStr, out var workspaceId))
         {
-            return BadRequest(new { error = "Invalid or missing workspaceId in state parameter" });
+            return RedirectWithError(frontendRedirectUri ?? "/", "Invalid or missing workspaceId in state parameter");
         }
 
         if (string.IsNullOrEmpty(redirectUri))
@@ -61,26 +64,27 @@ public class IntegrationsController : ControllerBase
             redirectUri = $"{scheme}://{Request.Host}{Request.Path}";
         }
 
-        var result = await _mediator.Send(
-            new OAuthCallbackCommand(workspaceId, providerId, code, state, redirectUri),
-            cancellationToken);
-
-        return Ok(new
+        try
         {
-            message = "Successfully connected",
-            integration = new
-            {
-                id = result.IntegrationId,
-                result.WorkspaceId,
-                result.ProviderId,
-                result.ExternalUserId,
-                result.ExternalUsername,
-                result.ChannelId,
-                result.ChannelTitle,
-                result.PageId,
-                result.PageName
-            }
-        });
+            var result = await _mediator.Send(
+                new OAuthCallbackCommand(workspaceId, providerId, code, state, redirectUri),
+                cancellationToken);
+
+            // Redirect back to frontend app with success parameter
+            var redirectUrl = $"{frontendRedirectUri}?connected={providerId}";
+            return Redirect(redirectUrl);
+        }
+        catch (Exception ex)
+        {
+            // Redirect back to frontend app with error parameter
+            return RedirectWithError(frontendRedirectUri ?? "/", ex.Message);
+        }
+    }
+
+    private IActionResult RedirectWithError(string baseUrl, string error)
+    {
+        var separator = baseUrl.Contains('?') ? '&' : '?';
+        return Redirect($"{baseUrl}{separator}integration_error={Uri.EscapeDataString(error)}");
     }
 
     /// <summary>

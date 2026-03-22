@@ -22,12 +22,21 @@ export interface DisconnectResponse {
   providerId: string
 }
 
+export interface ConnectOptions {
+  entityType?: 'page' | 'group'
+  frontendRedirectUri?: string
+}
+
 export const integrationsApi = {
   list: (workspaceId: string) =>
     api.get<IntegrationDto[]>(`/workspaces/${workspaceId}/integrations`),
 
-  connect: (workspaceId: string, providerId: string) =>
-    api.post<ConnectResponse>(`/workspaces/${workspaceId}/integrations/${providerId}/connect`),
+  connect: (workspaceId: string, providerId: string, options?: ConnectOptions) =>
+    api.post<ConnectResponse>(
+      `/workspaces/${workspaceId}/integrations/${providerId}/connect`,
+      null,
+      { params: options }
+    ),
 
   disconnect: (workspaceId: string, providerId: string) =>
     api.delete<DisconnectResponse>(`/workspaces/${workspaceId}/integrations/${providerId}`),

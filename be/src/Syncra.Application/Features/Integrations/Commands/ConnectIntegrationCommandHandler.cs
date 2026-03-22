@@ -16,6 +16,14 @@ public sealed class ConnectIntegrationCommandHandler : IRequestHandler<ConnectIn
     {
         var provider = GetProvider(request.ProviderId);
         var state = $"workspaceId={request.WorkspaceId}";
+        if (!string.IsNullOrEmpty(request.EntityType))
+        {
+            state += $"&type={request.EntityType}";
+        }
+        if (!string.IsNullOrEmpty(request.FrontendRedirectUri))
+        {
+            state += $"&frontendRedirectUri={Uri.EscapeDataString(request.FrontendRedirectUri)}";
+        }
         var url = provider.GetAuthorizationUrl(state, request.RedirectUri);
         return Task.FromResult(url);
     }
