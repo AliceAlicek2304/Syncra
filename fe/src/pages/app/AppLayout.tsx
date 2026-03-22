@@ -1,11 +1,13 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Layers
 } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
+import WorkspaceSwitcher from '../../components/workspace/WorkspaceSwitcher'
 import CreatePostModal from '../../components/CreatePostModal'
 import { shortId } from '../../utils/shortId'
 import Toast, { type ToastItem } from '../../components/Toast'
@@ -22,11 +24,13 @@ const NAV_ITEMS = [
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+  { to: '/app/workspaces', icon: <Layers size={18} />, label: 'Workspaces' },
   { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
 ]
 
 export default function AppLayout() {
   const { user, logout } = useAuth()
+  const { activeWorkspace } = useWorkspace()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -109,6 +113,12 @@ export default function AppLayout() {
             {!collapsed && <span className={styles.navLabel}>Settings</span>}
           </NavLink>
 
+          {!collapsed && (
+            <div className={styles.workspaceSection}>
+              <WorkspaceSwitcher />
+            </div>
+          )}
+          
           <div className={styles.userRow}>
              {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="avatar" className={styles.avatar} />
@@ -118,7 +128,7 @@ export default function AppLayout() {
             {!collapsed && (
               <div className={styles.userInfo}>
                 <span className={styles.userName}>{user?.displayName}</span>
-                <span className={styles.userPlan}>Free Plan</span>
+                <span className={styles.userPlan}>{activeWorkspace?.name || 'No workspace'}</span>
               </div>
             )}
             {!collapsed && (

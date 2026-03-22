@@ -177,6 +177,12 @@
   flex-shrink: 0;
 }
 
+/* ── Workspace Section ── */
+.workspaceSection {
+  padding: 10px 10px 4px;
+  flex-shrink: 0;
+}
+
 /* ── Bottom ── */
 .sidebarBottom {
   padding: 10px;

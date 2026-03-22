@@ -66,8 +66,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   const createWorkspace = async (name: string) => {
-    await api.post('/workspaces', { name })
+    const res = await api.post('/workspaces', { name })
+    const newWorkspace: Workspace = res.data
     await fetchWorkspaces()
+    setActiveWorkspaceState(newWorkspace)
+    localStorage.setItem('activeWorkspaceId', newWorkspace.id)
   }
 
   return (
