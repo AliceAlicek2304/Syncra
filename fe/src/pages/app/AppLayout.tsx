@@ -3,14 +3,14 @@ import {
   LayoutDashboard, Lightbulb, CalendarDays,
   BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Layers
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
+import { useToast } from '../../context/ToastContext'
 import WorkspaceSwitcher from '../../components/workspace/WorkspaceSwitcher'
 import CreatePostModal from '../../components/CreatePostModal'
-import { shortId } from '../../utils/shortId'
-import Toast, { type ToastItem } from '../../components/Toast'
+import Toast from '../../components/Toast'
 import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
@@ -33,17 +33,10 @@ export default function AppLayout() {
   const { activeWorkspace } = useWorkspace()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-  const [toasts, setToasts] = useState<ToastItem[]>([])
+
+  const { addToast } = useToast()
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
-
-  const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
-    setToasts(prev => [...prev, { ...t, id: shortId() }])
-  }, [])
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
-  }, [])
 
   const handleLogout = () => {
     logout()
@@ -154,7 +147,7 @@ export default function AppLayout() {
         initialDate={state.initialDate}
         editPost={state.editPost}
       />
-      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <Toast />
       
 
       <AICoach />

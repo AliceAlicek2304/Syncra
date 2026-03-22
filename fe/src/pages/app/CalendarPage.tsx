@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { useCalendar } from '../../context/calendarContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
-import type { ToastItem } from '../../components/Toast'
 import Toast from '../../components/Toast'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
@@ -110,11 +109,6 @@ export default function CalendarPage() {
   const [dragPostId, setDragPostId] = useState<string | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
 
-  // Toast
-  const [toasts, setToasts] = useState<ToastItem[]>([])
-  const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
-  }, [])
 
 
   useEffect(() => {
@@ -855,7 +849,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <Toast />
     </div>
   )
 }
