@@ -6,11 +6,48 @@ import Heatmap from '../../components/Heatmap'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './AnalyticsPage.module.css'
 
+// Backend API response interfaces
+interface AnalyticsDataPoint {
+  total: string
+  date: string
+}
+
+interface AnalyticsData {
+  label: string
+  data: AnalyticsDataPoint[]
+  percentageChange: number
+}
+
+interface WeeklyReachDto {
+  weekStart: string
+  reach: number
+}
+
+interface HeatmapSlotDto {
+  dayOfWeek: number
+  hour: number
+  score: number
+}
+
+interface WorkspaceAnalyticsSummaryDto {
+  totalReach: number
+  engagementRate: number
+  followerGrowth: number
+  totalPosts: number
+  weeklyReach: WeeklyReachDto[]
+}
+
+interface HeatmapDto {
+  slots: HeatmapSlotDto[]
+}
+
+// Frontend display interfaces
 interface AnalyticsOverviewDto {
   totalReach: number
   totalEngagement: number
   engagementRate: number
   totalPosts: number
+  followerGrowth: number
 }
 
 interface PlatformAnalyticsDto {
@@ -21,27 +58,10 @@ interface PlatformAnalyticsDto {
 }
 
 interface IntegrationDto {
+  id?: string
   platform?: string
   providerId?: string
   isActive?: boolean
-}
-
-interface ProviderErrorDto {
-  code?: string
-  message?: string
-}
-
-interface ProviderAnalyticsResultDto {
-  isSuccess?: boolean
-  providerId?: string
-  views?: number
-  likes?: number
-  comments?: number
-  shares?: number
-  impressions?: number
-  reach?: number
-  engagementRate?: number
-  error?: ProviderErrorDto
 }
 
 const INSIGHTS = [
@@ -51,19 +71,23 @@ const INSIGHTS = [
   { icon: '💡', text: 'Hashtag #contentcreator & #aitools mang lại reach cao nhất tháng này.' },
 ]
 
-const WEEKLY_BARS = [45, 60, 38, 85, 52, 90, 68]
+
 
 export default function AnalyticsPage() {
   const { activeWorkspace } = useWorkspace()
   const [overview, setOverview] = useState<AnalyticsOverviewDto | null>(null)
   const [platforms, setPlatforms] = useState<PlatformAnalyticsDto[]>([])
+  const [heatmapData, setHeatmapData] = useState<HeatmapDto | null>(null)
+  const [weeklyReach, setWeeklyReach] = useState<WeeklyReachDto[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       if (!activeWorkspace) {
-        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
+        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0, followerGrowth: 0 })
         setPlatforms([])
+        setHeatmapData(null)
+        setWeeklyReach([])
         setLoading(false)
         return
       }
@@ -71,75 +95,76 @@ export default function AnalyticsPage() {
       try {
         setLoading(true)
 
-        const endDate = new Date().toISOString()
-        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        // 1. Get workspace summary (overview + weekly reach + follower growth)
+        const summaryRes = await api.get<WorkspaceAnalyticsSummaryDto>(
+          `/workspaces/${activeWorkspace.id}/analytics/summary`,
+          { params: { date: 30 } }
+        )
+        const summary = summaryRes.data
 
+        // 2. Get heatmap data
+        const heatmapRes = await api.get<HeatmapDto>(
+          `/workspaces/${activeWorkspace.id}/analytics/heatmap`,
+          { params: { date: 90 } }
+        )
+        const heatmap = heatmapRes.data
+
+        // 3. Get integrations for platform analytics
         const integrationsRes = await api.get(`/workspaces/${activeWorkspace.id}/integrations`)
         const integrations = Array.isArray(integrationsRes.data) ? integrationsRes.data as IntegrationDto[] : []
 
-        const providerIds = integrations
-          .filter((i) => i?.isActive !== false)
-          .map((i) => (i.platform || i.providerId || '').toLowerCase())
-          .filter(Boolean)
+        const activeIntegrations = integrations.filter((i) => i?.isActive !== false && i.id)
 
-        if (providerIds.length === 0) {
-          setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
-          setPlatforms([])
-          return
-        }
-
-        const analyticsResults = await Promise.allSettled(
-          providerIds.map((providerId) =>
-            api.get<ProviderAnalyticsResultDto>(
-              `/workspaces/${activeWorkspace.id}/analytics/${providerId}/account`,
-              { params: { startDate, endDate } }
+        // 4. Get analytics for each integration
+        const platformAnalyticsResults = await Promise.allSettled(
+          activeIntegrations.map((integration) =>
+            api.get<AnalyticsData[]>(
+              `/workspaces/${activeWorkspace.id}/analytics/${integration.id}`,
+              { params: { date: 30 } }
             )
           )
         )
 
-        const mappedPlatforms: PlatformAnalyticsDto[] = analyticsResults
+        // 5. Map integration analytics to platform data
+        const mappedPlatforms: PlatformAnalyticsDto[] = platformAnalyticsResults
           .map((result, index): PlatformAnalyticsDto | null => {
             if (result.status !== 'fulfilled') return null
 
-            const providerId = providerIds[index]
-            const data = result.value.data || {}
-            if (data.isSuccess === false) {
-              console.warn(`Analytics fetch failed for ${providerId}: ${data.error?.message || 'unknown error'}`)
-              return null
-            }
+            const integration = activeIntegrations[index]
+            const analyticsData = result.value.data || []
 
-            const views = data.views || 0
-            const reach = data.reach || data.impressions || views
-            const likes = data.likes || 0
-            const comments = data.comments || 0
-            const shares = data.shares || 0
-            const engagement = likes + comments + shares
+            // Extract metrics from AnalyticsData labels
+            const reach = sumAnalyticsData(analyticsData, ['Page Impressions', 'Views'])
+            const engagement = sumAnalyticsData(analyticsData, ['Posts Engagement', 'Likes', 'Comments', 'Shares'])
+            const postCount = sumAnalyticsData(analyticsData, ['Posts']) // Assuming there's a Posts label
 
             return {
-              platform: providerId,
+              platform: integration.platform || integration.providerId || 'Unknown',
               reach,
               engagement,
-              // Account analytics API does not currently return post count.
-              postCount: 0,
+              postCount,
             }
           })
           .filter((p): p is PlatformAnalyticsDto => p !== null)
 
-        const totalReach = mappedPlatforms.reduce((sum, p) => sum + p.reach, 0)
-        const totalEngagement = mappedPlatforms.reduce((sum, p) => sum + p.engagement, 0)
-        const engagementRate = totalReach > 0 ? Number(((totalEngagement / totalReach) * 100).toFixed(2)) : 0
-
-        setPlatforms(mappedPlatforms)
+        // 6. Set state with real data
         setOverview({
-          totalReach,
-          totalEngagement,
-          engagementRate,
-          totalPosts: 0,
+          totalReach: summary.totalReach,
+          totalEngagement: Math.round(summary.totalReach * summary.engagementRate / 100), // Calculate from rate
+          engagementRate: summary.engagementRate,
+          totalPosts: summary.totalPosts,
+          followerGrowth: summary.followerGrowth,
         })
+        setPlatforms(mappedPlatforms)
+        setHeatmapData(heatmap)
+        setWeeklyReach(summary.weeklyReach || [])
+
       } catch (err) {
         console.error('Failed to fetch analytics', err)
-        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0 })
+        setOverview({ totalReach: 0, totalEngagement: 0, engagementRate: 0, totalPosts: 0, followerGrowth: 0 })
         setPlatforms([])
+        setHeatmapData(null)
+        setWeeklyReach([])
       } finally {
         setLoading(false)
       }
@@ -147,6 +172,14 @@ export default function AnalyticsPage() {
 
     fetchData()
   }, [activeWorkspace])
+
+  // Helper function to sum analytics data by labels
+  const sumAnalyticsData = (data: AnalyticsData[], labels: string[]): number => {
+    return data
+      .filter(d => labels.includes(d.label))
+      .flatMap(d => d.data)
+      .reduce((sum, point) => sum + (parseInt(point.total) || 0), 0)
+  }
 
   if (loading) {
     return <div style={{ padding: 40, color: '#fff' }}>Loading Analytics...</div>
@@ -167,7 +200,7 @@ export default function AnalyticsPage() {
         {[
           { icon: <Eye size={18} />, label: 'Total Reach', value: overview?.totalReach || 0, delta: '+24%', color: '#8b5cf6', isK: true },
           { icon: <Heart size={18} />, label: 'Avg. Engagement', value: overview?.engagementRate || 0, delta: '+11%', color: '#ec4899', isPercent: true },
-          { icon: <Users size={18} />, label: 'Follower Growth', value: 1240, delta: 'this month', color: '#22d3ee' },
+          { icon: <Users size={18} />, label: 'Follower Growth', value: overview?.followerGrowth || 0, delta: 'this month', color: '#22d3ee' },
           { icon: <BarChart3 size={18} />, label: 'Total Posts', value: overview?.totalPosts || 0, delta: 'across platforms', color: '#f59e0b' },
         ].map(m => (
           <div key={m.label} className={`glass-card ${styles.metricCard}`}>
@@ -196,17 +229,20 @@ export default function AnalyticsPage() {
             <h2 className={styles.cardTitle}>Reach theo tuần</h2>
             <span className={styles.cardSub}>7 ngày gần nhất</span>
           </div>
-          <div className={styles.chartWrap}>
-            <div className={styles.bars}>
-              {WEEKLY_BARS.map((h, i) => (
-                <div key={i} className={styles.barWrap}>
-                  <div className={styles.barVal}>{Math.round(h * 1.5)}K</div>
-                  <div className={styles.bar} style={{ height: `${h}%` }} />
-                  <span className={styles.barDay}>{['M','T','W','T','F','S','S'][i]}</span>
-                </div>
-              ))}
+            <div className={styles.chartWrap}>
+              <div className={styles.bars}>
+                {weeklyReach.slice(-7).map((week, i) => {
+                  const height = weeklyReach.length > 0 ? (week.reach / Math.max(...weeklyReach.map(w => w.reach))) * 100 : 0
+                  return (
+                    <div key={i} className={styles.barWrap}>
+                      <div className={styles.barVal}>{(week.reach / 1000).toFixed(1)}K</div>
+                      <div className={styles.bar} style={{ height: `${height}%` }} />
+                      <span className={styles.barDay}>{['M','T','W','T','F','S','S'][i]}</span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
         </div>
 
 
@@ -232,7 +268,7 @@ export default function AnalyticsPage() {
           <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
           <span className={styles.cardSub}>Phân tích dựa trên tương tác của audience</span>
         </div>
-        <Heatmap />
+        <Heatmap data={heatmapData || undefined} />
         <div className={styles.heatmapLegend}>
           <span>Less active</span>
           <div className={styles.legendBar} />
