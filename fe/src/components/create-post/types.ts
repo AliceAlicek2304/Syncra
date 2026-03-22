@@ -1,4 +1,4 @@
-import type { ToastItem } from '../Toast'
+import type { ToastItem } from '../../types/toast'
 import type { ScheduledPost } from '../../context/calendarContextBase'
 
 export type Platform = 'TikTok' | 'Instagram' | 'Facebook' | 'X'
