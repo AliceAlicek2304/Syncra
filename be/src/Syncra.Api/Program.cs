@@ -10,6 +10,8 @@ using Syncra.Infrastructure.Jobs;
 LoadDotEnv();
 
 var builder = WebApplication.CreateBuilder(args);
+var postgresConnectionString = builder.Configuration["Postgres:ConnectionString"];
+var canEnableHangfire = HasConnectionPassword(postgresConnectionString);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
@@ -22,7 +24,14 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApiServices(builder.Configuration);
 builder.Services.AddApiAuthentication(builder.Configuration);
-builder.Services.AddHangfireServices(builder.Configuration);
+if (canEnableHangfire)
+{
+    builder.Services.AddHangfireServices(builder.Configuration);
+}
+else
+{
+    Console.WriteLine("Hangfire disabled: Postgres:ConnectionString is missing or has no password.");
+}
 
 var app = builder.Build();
 
@@ -40,7 +49,10 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 
-    app.UseHangfireDashboard("/hangfire");
+    if (canEnableHangfire)
+    {
+        app.UseHangfireDashboard("/hangfire");
+    }
 }
 
 app.UseRouting();
@@ -53,9 +65,10 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Schedule recurring jobs
-using (var scope = app.Services.CreateScope())
+// Schedule recurring jobs only when Hangfire is enabled.
+if (canEnableHangfire)
 {
+    using var scope = app.Services.CreateScope();
     var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
     scheduler.ScheduleRecurringJob();
 
@@ -94,4 +107,14 @@ static void LoadDotEnv()
 
         current = current.Parent;
     }
+}
+
+static bool HasConnectionPassword(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return false;
+    }
+
+    return connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
 }
