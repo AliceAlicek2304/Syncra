@@ -10,7 +10,7 @@ Allowed edit scope:
 
 Done when:
 - prompt builder exists and is unit-testable.
-- parser/validator enforces 2..3 items and enum checks.
+- parser/validator enforces 2 to 3 items and enum checks.
 
 ## Slice 2: Wire Start Engine to Real Generation (Text only)
 Goal:
