@@ -51,20 +51,21 @@ const BACKEND_TO_BOARD_STATUS: Record<string, string> = {
 }
 
 const toBackendStatus = (boardStatus: string): string =>
-    BOARD_TO_BACKEND_STATUS[boardStatus] ?? 'Draft'
+    BOARD_TO_BACKEND_STATUS[boardStatus] ?? boardStatus
 
 const toBoardStatus = (backendStatus?: string): string => {
-    const normalized = backendStatus?.toLowerCase() ?? ''
-    return BACKEND_TO_BOARD_STATUS[normalized] ?? 'unassigned'
+    if (!backendStatus) return 'unassigned'
+    const normalized = backendStatus.toLowerCase()
+    return BACKEND_TO_BOARD_STATUS[normalized] ?? backendStatus
 }
 
 
-const mapPostToIdea = (post: any): Idea => ({
-    id: post.id,
-    title: post.title,
-    description: post.content,
-    status: toBoardStatus(post.status),
-    createdAt: new Date(post.createdAtUtc || post.publishedAtUtc || Date.now()).getTime()
+const mapPostToIdea = (ideaFromServer: any): Idea => ({
+    id: ideaFromServer.id,
+    title: ideaFromServer.title,
+    description: ideaFromServer.description || ideaFromServer.content,
+    status: toBoardStatus(ideaFromServer.status),
+    createdAt: new Date(ideaFromServer.createdAtUtc || ideaFromServer.publishedAtUtc || Date.now()).getTime()
 })
 
 interface Group {
@@ -389,15 +390,31 @@ export default function IdeasPage() {
     const [addingGroup, setAddingGroup] = useState(false)
     const [dragSourceStatus, setDragSourceStatus] = useState<string | null>(null)
 
-    // Fetch ideas
+    // Fetch ideas and groups
     useEffect(() => {
         if (!activeWorkspace) return
+        
+        // Load ideas
         api.get(`/workspaces/${activeWorkspace.id}/ideas`)
             .then((res: any) => {
                 const mapped = res.data.map(mapPostToIdea)
                 setIdeas(mapped)
             })
-            .catch((err: any) => console.error('Failed to load posts', err))
+            .catch((err: any) => console.error('Failed to load ideas', err))
+
+        // Load groups
+        api.get(`/workspaces/${activeWorkspace.id}/groups`)
+            .then((res: any) => {
+                if (res.data && res.data.length > 0) {
+                    setGroups(res.data)
+                } else {
+                    setGroups(DEFAULT_GROUPS)
+                }
+            })
+            .catch((err: any) => {
+                console.error('Failed to load groups', err)
+                setGroups(DEFAULT_GROUPS)
+            })
     }, [activeWorkspace])
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -494,9 +511,8 @@ export default function IdeasPage() {
             const normalizedContent = (title || 'Idea').trim()
             const res = await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
                 title,
-                content: normalizedContent,
-                status: toBackendStatus(groupId),
-                scheduledAtUtc: null
+                description: normalizedContent,
+                status: toBackendStatus(groupId)
             })
             // Replace temp id with real
             setIdeas(prev => prev.map(i => i.id === tempId ? mapPostToIdea(res.data) : i))
@@ -507,15 +523,35 @@ export default function IdeasPage() {
         }
     }
 
-    const handleSelectAIIdea = (generated: GeneratedIdea) => {
-        setIdeas(prev => [...prev, {
-            id: generated.id,
+    const handleSelectAIIdea = async (generated: GeneratedIdea) => {
+        if (!activeWorkspace) return
+        
+        const tempId = shortId()
+        const newIdea: Idea = {
+            id: tempId,
             title: generated.title,
             description: generated.description,
             status: 'unassigned',
             createdAt: Date.now(),
-        }])
+        }
+
+        // Optimistic UI update
+        setIdeas(prev => [...prev, newIdea])
         setShowAIModal(false)
+
+        try {
+            const res = await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
+                title: generated.title,
+                description: generated.description || generated.title,
+                status: toBackendStatus('unassigned')
+            })
+            // Replace temp id with real
+            setIdeas(prev => prev.map(i => i.id === tempId ? mapPostToIdea(res.data) : i))
+        } catch (err) {
+            console.error('Failed to auto-save AI idea', err)
+            // Revert on fail
+            setIdeas(prev => prev.filter(i => i.id !== tempId))
+        }
     }
 
     const saveIdea = async (updated: Idea) => {
@@ -528,9 +564,8 @@ export default function IdeasPage() {
             const normalizedContent = (updated.description || updated.title || 'Idea').trim()
             await api.put(`/workspaces/${activeWorkspace.id}/ideas/${updated.id}`, {
                 title: updated.title,
-                content: normalizedContent,
-                status: toBackendStatus(updated.status),
-                scheduledAtUtc: null
+                description: normalizedContent,
+                status: toBackendStatus(updated.status)
             })
         } catch (err) {
             console.error('Failed to update idea', err)
@@ -558,29 +593,62 @@ export default function IdeasPage() {
             const normalizedContent = (idea.description || idea.title || 'Idea').trim()
             await api.put(`/workspaces/${activeWorkspace.id}/ideas/${id}`, {
                 title: idea.title,
-                content: normalizedContent,
-                status: toBackendStatus(groupId),
-                scheduledAtUtc: null
+                description: normalizedContent,
+                status: toBackendStatus(groupId)
             })
         } catch (err) {
              console.error('Failed to move idea', err)
         }
     }
 
-    const addGroup = () => {
-        if (!newGroupName.trim()) return
-        setGroups(prev => [...prev, { id: shortId(), name: newGroupName.trim() }])
+    const addGroup = async () => {
+        if (!newGroupName.trim() || !activeWorkspace) return
+        
+        const tempId = shortId()
+        const newName = newGroupName.trim()
+        
+        // Optimistic UI
+        setGroups(prev => [...prev, { id: tempId, name: newName }])
         setNewGroupName('')
         setAddingGroup(false)
+
+        try {
+            const res = await api.post(`/workspaces/${activeWorkspace.id}/groups`, { name: newName })
+            setGroups(prev => prev.map(g => g.id === tempId ? res.data : g))
+        } catch (err) {
+            console.error('Failed to create group', err)
+            setGroups(prev => prev.filter(g => g.id !== tempId))
+        }
     }
 
-    const renameGroup = (id: string, name: string) => {
+    const renameGroup = async (id: string, name: string) => {
+        if (!activeWorkspace) return
+        
+        // Optimistic UI
         setGroups(prev => prev.map(g => g.id === id ? { ...g, name } : g))
+
+        try {
+            await api.put(`/workspaces/${activeWorkspace.id}/groups/${id}`, { name })
+        } catch (err) {
+            console.error('Failed to rename group', err)
+            // Ideally revert here, but requires original name
+        }
     }
 
-    const deleteGroup = (id: string) => {
+    const deleteGroup = async (id: string) => {
+        if (!activeWorkspace) return
+        if (defaultGroupIds.includes(id)) return // Prevent deleting default groups if they are purely UI
+        if (!confirm('Are you sure you want to delete this group? All ideas in it will be unassigned.')) return
+
+        // Optimistic UI
         setGroups(prev => prev.filter(g => g.id !== id))
         setIdeas(prev => prev.map(i => i.status === id ? { ...i, status: 'unassigned' } : i))
+
+        try {
+            await api.delete(`/workspaces/${activeWorkspace.id}/groups/${id}`)
+        } catch (err) {
+            console.error('Failed to delete group', err)
+        }
     }
 
     const defaultGroupIds = DEFAULT_GROUPS.map(g => g.id)

@@ -4,7 +4,7 @@ import { useCalendar } from '../../context/calendarContextBase'
 import { getMockResults } from '../../data/mockAI'
 import type { AIGenerateInput } from '../../data/mockAI'
 import { shortId } from '../../utils/shortId'
-import { PLATFORMS, getConnectedPlatforms, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
+import { PLATFORMS, getActivePlatformIds, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 import { api } from '../../api/axios'
 import { mediaApi } from '../../api/media'
 import { postsApi, type CreatePostPayload } from '../../api/posts'
@@ -25,17 +25,21 @@ export function convertCaptionForPlatform(base: string, _platform: Platform, max
 export function useCreatePostState(props: CreatePostModalProps) {
   const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
   const { user } = useAuth()
-  const { updatePost, refreshPosts } = useCalendar()
+  const { updatePost, removePost, refreshPosts } = useCalendar()
   const { activeWorkspace } = useWorkspace()
   const { integrations } = useIntegrations()
 
   const isEditMode = !!editPost
 
   // Get connected platforms from integrations
-  const connectedPlatforms = getConnectedPlatforms(integrations)
+  const connectedPlatformIds = getActivePlatformIds(integrations)
   
-  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : [])
-  const [activeTab, setActiveTab] = useState<Platform>(connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok')
+  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(
+    editPost ? [editPost.platform as Platform] : (connectedPlatformIds.length > 0 ? [PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok'] : ['TikTok'])
+  )
+  const [activeTab, setActiveTab] = useState<Platform>(
+    editPost ? (editPost.platform as Platform) : (connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok')
+  )
 
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
     TikTok: '', Instagram: '', Facebook: '', X: ''
@@ -98,7 +102,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     setTimeout(() => {
       let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
-      let initPlatforms: Platform[] = connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : []
+      let initPlatforms: Platform[] = connectedPlatformIds.length > 0 ? [PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok'] : ['TikTok']
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
@@ -176,8 +180,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
-      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : connectedPlatforms)
-      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : (connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok'))
+      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
+      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : (connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok'))
       setMedia(initMedia)
 
       // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
@@ -185,7 +189,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
         media: initMedia,
-        activePlatforms: initPlatforms.length > 0 ? initPlatforms : connectedPlatforms,
+        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
       })
@@ -234,8 +238,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : [])
-    setActiveTab(connectedPlatforms.length > 0 ? connectedPlatforms[0] : 'TikTok')
+    setActivePlatforms(['TikTok'])
+    setActiveTab(connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok')
     setAiPrompt('')
     setAiResults([])
     setAiIsGenerating(false)
@@ -243,7 +247,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     initialSnapshotRef.current = null
     didInitRef.current = false
-  }, [connectedPlatforms])
+  }, [connectedPlatformIds])
 
   // We should NOT store `isDirty` as a ref that we update during render.
   // We can just return it from the hook. But to keep the same signature without refactoring too much:
@@ -377,10 +381,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
       return
     }
     if (!hasIntegration) {
-      onToast?.({ 
-        message: `Please connect at least one platform first. Missing: ${missingIntegrationPlatforms.join(', ')}`, 
-        type: 'error' 
-      })
+      // In flexible mode, we allow scheduling but with a strong warning
+      // However, if the user really wants to schedule to database, we can let them
+      // But they can't publish yet.
+      setShowPublishConfirmDialog(true)
       return
     }
     setShowPublishConfirmDialog(true)
@@ -759,6 +763,20 @@ export function useCreatePostState(props: CreatePostModalProps) {
     return [...existingIds, ...newIds]
   }, [media, activeWorkspace])
 
+  const handleDelete = useCallback(async () => {
+    if (!editPost) return
+    if (!confirm('Are you sure you want to delete this post?')) return
+    
+    try {
+      await removePost(editPost.id)
+      onToast?.({ message: 'Post deleted successfully', type: 'success' })
+      onClose()
+    } catch (error) {
+      onToast?.({ message: 'Failed to delete post', type: 'error' })
+      console.error(error)
+    }
+  }, [editPost, removePost, onToast, onClose])
+
   const applyAISuggestion = (suggestion: string) => {
     setActiveCaption(suggestion)
   }
@@ -780,7 +798,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
       hasIntegration, missingIntegrationPlatforms,
-      currentSnapshot, isEditMode, editPost, connectedPlatforms
+      currentSnapshot, isEditMode, editPost, connectedPlatformIds
     },
     refs,
     actions: {
@@ -793,7 +811,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       handleSchedule, confirmPublishNow, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
       handleDragStart, handleDragOver, handleDropOnThumb, handleDragEnd,
       handleReplaceVideo, handleReplaceFile, handleEditorSave, insertAtCursor,
-      handleGenerateAI, applyAISuggestion
+      handleGenerateAI, applyAISuggestion, handleDelete
     }
   }
 }

@@ -13,6 +13,7 @@ interface WeekViewProps {
   onDayClick: (year: number, month: number, day: number) => void
   onCreatePost: (year: number, month: number, day: number) => void
   onEditPost: (post: CalPost) => void
+  onDeletePost: (id: string) => void
   onDragOver: (e: React.DragEvent, key: string) => void
   onDrop: (e: React.DragEvent, targetYear: number, targetMonth: number, targetDay: number) => void
   dragOverKey: string | null
@@ -20,6 +21,7 @@ interface WeekViewProps {
   dragPostId: string | null
   currentTimePosition: number | null
   selectedPosts: CalPost[]
+  showDetailPanel: boolean
   onShowDetailPanel: (show: boolean) => void
 }
 
@@ -31,6 +33,7 @@ export default function WeekView({
   onDayClick,
   onCreatePost,
   onEditPost,
+  onDeletePost,
   onDragOver,
   onDrop,
   dragOverKey,
@@ -38,6 +41,7 @@ export default function WeekView({
   dragPostId,
   currentTimePosition,
   selectedPosts,
+  showDetailPanel,
   onShowDetailPanel
 }: WeekViewProps) {
   const [today] = useState(() => new Date())
@@ -59,10 +63,10 @@ export default function WeekView({
         </h3>
         <button
           className={styles.detailPanelToggle}
-          onClick={() => onShowDetailPanel(!selectedPosts.length)}
+          onClick={() => onShowDetailPanel(!showDetailPanel)}
           title="Toggle detail panel"
         >
-          {selectedPosts.length ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          {showDetailPanel ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
         </button>
       </div>
       <div className={styles.weekHeader} role="row">
@@ -122,6 +126,7 @@ export default function WeekView({
                     <VisualCard
                       key={p.id}
                       post={p}
+                      onDelete={() => onDeletePost(p.id)}
                       onClick={(e) => {
                         e.stopPropagation()
                         if (p.isMock) return

@@ -160,9 +160,7 @@ export default function CalendarPage() {
   }, [filteredPostsByKey, navigation.year, navigation.month, navigation.selectedDay])
 
 
-
-
-
+  const { removePost } = useCalendar()
 
 
   return (
@@ -193,16 +191,17 @@ export default function CalendarPage() {
             month={navigation.month}
             selectedDay={navigation.selectedDay}
             filteredPostsByKey={filteredPostsByKey}
-            onDayClick={navigation.setSelectedDay}
+            onDayClick={(d) => navigation.goToDate(navigation.year, navigation.month, d)}
             onCreatePost={openCreateForDay}
             onEditPost={handleOpenEditPost}
+            onDeletePost={removePost}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             dragOverKey={dragOverKey}
             setDragOverKey={setDragOverKey}
             dragPostId={dragPostId}
             onTooltipData={setTooltipData}
-            compactMode={compactMode}
+            compactMode={true}
           />
         )}
         {view.viewMode === 'week' && (
@@ -214,12 +213,16 @@ export default function CalendarPage() {
             onDayClick={navigation.goToDate}
             onCreatePost={openCreateForDay}
             onEditPost={handleOpenEditPost}
+            onDeletePost={removePost}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             dragOverKey={dragOverKey}
             setDragOverKey={setDragOverKey}
             dragPostId={dragPostId}
             currentTimePosition={currentTimePosition}
+            selectedPosts={selectedPosts}
+            showDetailPanel={showDetailPanel}
+            onShowDetailPanel={setShowDetailPanel}
           />
         )}
         {view.viewMode === 'day' && (
@@ -230,16 +233,20 @@ export default function CalendarPage() {
             filteredPostsByKey={filteredPostsByKey}
             onCreatePost={openCreateForDay}
             onEditPost={handleOpenEditPost}
+            onDeletePost={removePost}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             dragOverKey={dragOverKey}
             setDragOverKey={setDragOverKey}
             dragPostId={dragPostId}
             currentTimePosition={currentTimePosition}
+            selectedPosts={selectedPosts}
+            showDetailPanel={showDetailPanel}
+            onShowDetailPanel={setShowDetailPanel}
           />
         )}
 
-        {view.viewMode === 'month' && (
+        {showDetailPanel && (
           <CalendarDetailPanel
             selectedDay={navigation.selectedDay}
             month={navigation.month}
@@ -247,6 +254,7 @@ export default function CalendarPage() {
             selectedPosts={selectedPosts}
             onCreatePost={openCreateForDay}
             onEditPost={handleOpenEditPost}
+            onDeletePost={removePost}
           />
         )}
       </div>

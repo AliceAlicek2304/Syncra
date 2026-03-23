@@ -9,18 +9,38 @@ import styles from '../CreatePostModal.module.css'
 type SidebarProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
 export function PlatformTabs({ state, actions }: SidebarProps) {
+  const connectedIds = state.connectedPlatformIds.map(p => p.toLowerCase())
+
   return (
     <div className={styles.platformTabs}>
-      {PLATFORMS.filter(p => state.activePlatforms.includes(p.id)).map(p => (
-        <button
-          key={p.id}
-          className={`${styles.platformTab} ${state.activeTab === p.id ? styles.platformTabActive : ''}`}
-          onClick={() => actions.setActiveTab(p.id)}
-        >
-          <span><PlatformIcon platform={p.id} size={16} /></span>
-          {p.label}
-        </button>
-      ))}
+      {PLATFORMS.filter((p: any) => state.activePlatforms.includes(p.id)).map((p: any) => {
+        const isConnected = connectedIds.includes(p.id.toLowerCase())
+        return (
+          <button
+            key={p.id}
+            className={`${styles.platformTab} ${state.activeTab === p.id ? styles.platformTabActive : ''}`}
+            onClick={() => actions.setActiveTab(p.id)}
+            style={{ opacity: isConnected ? 1 : 0.7 }}
+          >
+            <span style={{ position: 'relative' }}>
+              <PlatformIcon platform={p.id} size={16} />
+              {!isConnected && (
+                <div style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#f59e0b',
+                  border: '1.5px solid var(--glass-bg)'
+                }} title="Not connected" />
+              )}
+            </span>
+            {p.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -183,12 +203,40 @@ export function RightPanel({ state, actions }: SidebarProps) {
     )
   }
 
+  const isCurrentPlatformConnected = state.connectedPlatformIds.some(
+    (p: string) => p.toLowerCase() === state.activeTab.toLowerCase()
+  )
+
+  const renderConnectionWarning = () => {
+    if (isCurrentPlatformConnected || !state.hasPlatforms) return null
+    return (
+      <div style={{
+        margin: '12px 16px 0',
+        padding: '10px 12px',
+        borderRadius: '8px',
+        background: 'rgba(245, 158, 11, 0.1)',
+        border: '1px solid rgba(245, 158, 11, 0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#f59e0b' }}>
+          <Settings2 size={14} /> Account Not Connected
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+          This platform is not connected. You can draft and plan, but automatic publishing is disabled.
+        </div>
+      </div>
+    )
+  }
+
   if (state.showAI) {
     return (
       <div className={styles.preview}>
         <div className={styles.previewHeader}>
           <Sparkles size={16} style={{ marginRight: 6 }} /> AI Assistant
         </div>
+        {renderConnectionWarning()}
         <div className={styles.previewBody}>
           {!state.hasPlatforms ? (
             <div className={styles.previewEmpty}>
@@ -254,6 +302,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
         <div className={styles.previewHeader}>
           <span>{state.activeTab}</span> Preview
         </div>
+        {renderConnectionWarning()}
         <div className={styles.previewBody}>
           {!state.hasPlatforms ? (
             <div className={styles.previewEmpty}>

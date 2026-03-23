@@ -1,4 +1,4 @@
-import { CheckCircle, Play } from 'lucide-react'
+import { CheckCircle, Play, Trash2 } from 'lucide-react'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import type { CalPost } from '../../types/calendar'
 import { getStatusLabel } from '../../types/calendar'
@@ -7,9 +7,17 @@ import styles from '../../pages/app/CalendarPage.module.css'
 interface PostCardProps {
   post: CalPost
   onClick: () => void
+  onDelete?: () => void
 }
 
-export default function PostCard({ post, onClick }: PostCardProps) {
+export default function PostCard({ post, onClick, onDelete }: PostCardProps) {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm('Are you sure you want to delete this post?')) {
+      onDelete?.()
+    }
+  }
+
   return (
     <div
       className={styles.postCard}
@@ -22,7 +30,18 @@ export default function PostCard({ post, onClick }: PostCardProps) {
             {getStatusLabel(post.status)}
           </span>
         </div>
-        <span className={styles.postCardTime}>{post.time}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={styles.postCardTime}>{post.time}</span>
+          {onDelete && (
+            <button 
+              className={styles.postCardDeleteBtn} 
+              onClick={handleDelete}
+              title="Delete post"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={styles.postCardBody}>

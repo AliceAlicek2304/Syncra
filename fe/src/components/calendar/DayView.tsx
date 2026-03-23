@@ -11,6 +11,7 @@ interface DayViewProps {
   filteredPostsByKey: Record<string, CalPost[]>
   onCreatePost: (year: number, month: number, day: number) => void
   onEditPost: (post: CalPost) => void
+  onDeletePost: (id: string) => void
   onDragOver: (e: React.DragEvent, key: string) => void
   onDrop: (e: React.DragEvent, targetYear: number, targetMonth: number, targetDay: number) => void
   dragOverKey: string | null
@@ -18,6 +19,7 @@ interface DayViewProps {
   dragPostId: string | null
   currentTimePosition: number | null
   selectedPosts: CalPost[]
+  showDetailPanel: boolean
   onShowDetailPanel: (show: boolean) => void
 }
 
@@ -28,12 +30,16 @@ export default function DayView({
   filteredPostsByKey,
   onCreatePost,
   onEditPost,
+  onDeletePost,
   onDragOver,
   onDrop,
   dragOverKey,
   setDragOverKey,
   dragPostId,
-  currentTimePosition
+  currentTimePosition,
+  selectedPosts,
+  showDetailPanel,
+  onShowDetailPanel
 }: DayViewProps) {
   const [now] = useState(() => new Date())
   const d = selectedDay ?? now.getDate()
@@ -70,6 +76,7 @@ export default function DayView({
                     <VisualCard
                       key={p.id}
                       post={p}
+                      onDelete={() => onDeletePost(p.id)}
                       onClick={(e) => {
                         e.stopPropagation()
                         if (p.isMock) return

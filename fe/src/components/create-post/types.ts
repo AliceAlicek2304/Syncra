@@ -30,14 +30,15 @@ export const PLATFORMS: { id: Platform; label: string; maxChars: number }[] = [
   { id: 'X', label: 'Twitter/X', maxChars: 280 },
 ]
 
-export function getConnectedPlatforms(integrations: Array<{ platform: string; isActive: boolean }>): Platform[] {
-  const connectedPlatformIds = integrations
+export function getConnectedPlatforms(_integrations: Array<{ platform: string; isActive: boolean }>): Platform[] {
+  // We now return all platforms to allow drafting even without integration
+  return PLATFORMS.map(p => p.id)
+}
+
+export function getActivePlatformIds(integrations: Array<{ platform: string; isActive: boolean }>): string[] {
+  return integrations
     .filter(i => i.isActive)
-    .map(i => i.platform)
-  
-  return PLATFORMS
-    .filter(p => connectedPlatformIds.some(id => id.toLowerCase() === p.id.toLowerCase()))
-    .map(p => p.id)
+    .map(i => i.platform.toLowerCase())
 }
 
 export const PLATFORM_ICONS: Record<Platform, string> = {

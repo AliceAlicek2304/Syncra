@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import type { CalPost } from '../../types/calendar'
 import { PLATFORM_GRADIENTS } from '../../types/calendar'
@@ -10,6 +11,7 @@ interface VisualCardProps {
   isDragging: boolean
   onDragStart: () => void
   onDragEnd: () => void
+  onDelete?: (e: React.MouseEvent) => void
   compact?: boolean // Compact mode for week/day views
   showTime?: boolean // Show time in the card
 }
@@ -20,6 +22,7 @@ const VisualCard = React.memo(function VisualCard({
   isDragging,
   onDragStart,
   onDragEnd,
+  onDelete,
   compact = false,
   showTime = true,
 }: VisualCardProps) {
@@ -65,6 +68,21 @@ const VisualCard = React.memo(function VisualCard({
             {post.platform}
           </span>
         </div>
+        {onDelete && (
+          <button 
+            className={styles.postCardDeleteBtn} 
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm('Are you sure you want to delete this post?')) {
+                onDelete(e)
+              }
+            }}
+            title="Delete post"
+            style={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 0.2s' }}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Clock, Play } from 'lucide-react'
+import { Clock, Play, Trash2 } from 'lucide-react'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import type { CalPost } from '../../types/calendar'
 import styles from '../../pages/app/CalendarPage.module.css'
@@ -12,6 +12,7 @@ interface PostChipProps {
   isDragging?: boolean
   onDragStart?: () => void
   onDragEnd?: () => void
+  onDelete?: (e: React.MouseEvent) => void
   compact?: boolean // For compact mode in dense calendars
 }
 
@@ -23,6 +24,7 @@ export default function PostChip({
   isDragging = false,
   onDragStart,
   onDragEnd,
+  onDelete,
   compact = false
 }: PostChipProps) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -77,10 +79,24 @@ export default function PostChip({
                 {post.caption.length > 60 ? `${post.caption.substring(0, 60)}...` : post.caption}
               </div>
             )}
-            <div className={styles.chipExpandedActions}>
+            <div className={styles.chipExpandedActions} style={{ display: 'flex', gap: '8px' }}>
               <button className={styles.chipEditBtn} onClick={onClick}>
                 Edit Post
               </button>
+              {onDelete && (
+                <button 
+                  className={styles.chipEditBtn} 
+                  style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (confirm('Are you sure you want to delete this post?')) {
+                      onDelete(e)
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -122,6 +138,21 @@ export default function PostChip({
         {post.caption && <span className={styles.chipHasCaption}>💬</span>}
         {(post.platform === 'YouTube' || post.platform === 'TikTok') && (
           <Play size={10} className={styles.chipVideoIcon} />
+        )}
+        {onDelete && (
+          <button 
+            className={styles.postCardDeleteBtn} 
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm('Are you sure you want to delete this post?')) {
+                onDelete(e)
+              }
+            }}
+            title="Delete post"
+            style={{ marginLeft: 4 }}
+          >
+            <Trash2 size={10} />
+          </button>
         )}
       </div>
     </div>

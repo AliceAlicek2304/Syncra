@@ -1250,6 +1250,8 @@
   border: 1px solid var(--border-glass, rgba(255,255,255,0.06));
   transition: background 0.15s;
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .postCard:hover {
@@ -1298,6 +1300,8 @@
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  min-width: 0;
+  width: 100%;
 }
 
 .postCardThumbnail {
@@ -1565,4 +1569,97 @@
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.postCard {
+  background: var(--glass-bg-lighter, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.postCard:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.postCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.postCardStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.postCardStatusIcon {
+  color: #22c55e;
+}
+
+.postCardStatusText {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #22c55e;
+}
+
+.postCardStatusTextScheduled {
+  color: #eab308;
+}
+
+.postCardTime {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.postCardDeleteBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+  opacity: 0.6;
+}
+
+.postCardDeleteBtn:hover {
+  opacity: 1;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.postCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.postCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.postCardPlatform {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }

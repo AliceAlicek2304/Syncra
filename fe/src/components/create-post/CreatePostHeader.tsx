@@ -21,7 +21,7 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
       </span>
 
       <div className={styles.platformChips}>
-        {PLATFORMS.filter(p => state.connectedPlatforms.includes(p.id)).map(p => (
+        {PLATFORMS.map(p => (
           <button
             key={p.id}
             className={`${styles.chip} ${CHIP_CLASS[p.id]} ${state.activePlatforms.includes(p.id) ? styles.chipActive : ''}`}

@@ -1,5 +1,5 @@
 
-import { Clock, Plus } from 'lucide-react'
+import { Clock, Plus, Trash2 } from 'lucide-react'
 import type { CalPost } from '../../types/calendar'
 import { MONTHS } from '../../types/calendar'
 import PostCard from './PostCard'
@@ -12,6 +12,7 @@ interface CalendarDetailPanelProps {
   selectedPosts: CalPost[]
   onCreatePost: (year: number, month: number, day: number) => void
   onEditPost: (post: CalPost) => void
+  onDeletePost: (id: string) => void
 }
 
 export default function CalendarDetailPanel({
@@ -20,7 +21,8 @@ export default function CalendarDetailPanel({
   year,
   selectedPosts,
   onCreatePost,
-  onEditPost
+  onEditPost,
+  onDeletePost
 }: CalendarDetailPanelProps) {
   return (
     <div className={`glass-card ${styles.detailCard}`}>
@@ -55,11 +57,13 @@ export default function CalendarDetailPanel({
           ) : (
             <div className={styles.postList}>
               {selectedPosts.map(p => (
-                <PostCard
-                  key={p.id}
-                  post={p}
-                  onClick={() => onEditPost(p)}
-                />
+                <div key={p.id} className={styles.postCardWrapper}>
+                  <PostCard
+                    post={p}
+                    onClick={() => onEditPost(p)}
+                    onDelete={() => onDeletePost(p.id)}
+                  />
+                </div>
               ))}
             </div>
           )}

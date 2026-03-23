@@ -13,6 +13,7 @@ interface MonthViewProps {
   onDayClick: (day: number) => void
   onCreatePost: (year: number, month: number, day: number) => void
   onEditPost: (post: CalPost) => void
+  onDeletePost: (id: string) => void
   onDragOver: (e: React.DragEvent, key: string) => void
   onDrop: (e: React.DragEvent, targetYear: number, targetMonth: number, targetDay: number) => void
   dragOverKey: string | null
@@ -30,6 +31,7 @@ export default function MonthView({
   onDayClick,
   onCreatePost,
   onEditPost,
+  onDeletePost,
   onDragOver,
   onDrop,
   dragOverKey,
@@ -103,6 +105,7 @@ export default function MonthView({
                     key={p.id}
                     post={p}
                     onClick={e => { e.stopPropagation(); onEditPost(p) }}
+                    onDelete={() => onDeletePost(p.id)}
                     onMouseEnter={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       onTooltipData({ post: p, x: rect.left + rect.width / 2, y: rect.top })

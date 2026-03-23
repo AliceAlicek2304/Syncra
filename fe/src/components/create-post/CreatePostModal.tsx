@@ -151,16 +151,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
 
         <div className={styles.body}>
           <div className={styles.composer}>
-            {state.connectedPlatforms.length === 0 ? (
-              <div className={styles.composerEmpty}>
-                <div className={styles.previewEmptyIcon}>
-                  <ImageIcon size={28} style={{ color: 'var(--text-muted)' }} />
-                </div>
-                <span className={styles.previewEmptyText}>
-                  No connected platforms. Please connect at least one social media account in Settings.
-                </span>
-              </div>
-            ) : !state.hasPlatforms ? (
+            {!state.hasPlatforms ? (
               <div className={styles.composerEmpty}>
                 <div className={styles.previewEmptyIcon}>
                   <ImageIcon size={28} style={{ color: 'var(--text-muted)' }} />
