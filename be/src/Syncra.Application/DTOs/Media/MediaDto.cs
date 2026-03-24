@@ -9,6 +9,7 @@ public record MediaDto(
     string MimeType,
     long SizeBytes,
     Guid? PostId,
+    Guid? IdeaId,
     DateTime CreatedAtUtc);
 
 public record MediaListDto(

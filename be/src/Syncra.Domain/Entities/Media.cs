@@ -7,6 +7,7 @@ public sealed class Media : WorkspaceEntityBase
 {
     // Properties with private setters
     public Guid? PostId { get; private set; }
+    public Guid? IdeaId { get; private set; }
     public string FileName { get; private set; } = string.Empty;
     public string FileUrl { get; private set; } = string.Empty;
     public string MediaType { get; private set; } = string.Empty;
@@ -15,6 +16,7 @@ public sealed class Media : WorkspaceEntityBase
 
     // Navigation properties
     public Post? Post { get; set; }
+    public Idea? Idea { get; set; }
     public Workspace Workspace { get; set; } = null!;
 
     // Private parameterless constructor for EF Core
@@ -64,6 +66,32 @@ public sealed class Media : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void AttachToIdea(Guid ideaId)
+    {
+        if (IdeaId.HasValue && IdeaId != ideaId)
+        {
+            throw new DomainException(
+                "invalid_operation",
+                "Media is already attached to another idea.");
+        }
+
+        IdeaId = ideaId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void DetachFromIdea()
+    {
+        if (!IdeaId.HasValue)
+        {
+            throw new DomainException(
+                "invalid_operation",
+                "Media is not attached to any idea.");
+        }
+
+        IdeaId = null;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void DetachFromPost()
     {
         if (!PostId.HasValue)
@@ -104,4 +132,4 @@ public sealed class Media : WorkspaceEntityBase
             _ => "other"
         };
     }
-}
+}

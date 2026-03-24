@@ -29,5 +29,5 @@ public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaListDto>
     }
 
     private static MediaDto ToDto(MediaEntity m) =>
-        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
+        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.IdeaId, m.CreatedAtUtc);
 }

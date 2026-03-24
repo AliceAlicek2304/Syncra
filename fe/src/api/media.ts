@@ -9,15 +9,17 @@ export interface MediaDto {
   url: string
   storageType: string
   postId: string | null
+  ideaId?: string | null
   createdAtUtc: string
   updatedAtUtc: string
 }
 
 export const mediaApi = {
-  upload: (workspaceId: string, file: File, postId?: string) => {
+  upload: (workspaceId: string, file: File, postId?: string, ideaId?: string) => {
     const formData = new FormData()
     formData.append('file', file)
     if (postId) formData.append('postId', postId)
+    if (ideaId) formData.append('ideaId', ideaId)
     return api.post<MediaDto>(`/workspaces/${workspaceId}/media/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

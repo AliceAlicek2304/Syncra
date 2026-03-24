@@ -20,14 +20,14 @@ public class MediaController : ControllerBase
     public class GetMediaUrlsRequest { public Guid[] MediaIds { get; set; } = Array.Empty<Guid>(); }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload(Guid workspaceId, [FromForm] IFormFile file, [FromForm] Guid? postId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Upload(Guid workspaceId, [FromForm] IFormFile file, [FromForm] Guid? postId, [FromForm] Guid? ideaId, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
             return BadRequest("File is required.");
 
         await using var stream = file.OpenReadStream();
         var result = await _mediator.Send(
-            new UploadMediaCommand(workspaceId, stream, file.FileName, file.ContentType, file.Length, postId),
+            new UploadMediaCommand(workspaceId, stream, file.FileName, file.ContentType, file.Length, postId, ideaId),
             cancellationToken);
 
         return CreatedAtAction(nameof(List), new { workspaceId }, result);

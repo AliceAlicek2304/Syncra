@@ -9,4 +9,5 @@ public record UploadMediaCommand(
     string FileName,
     string ContentType,
     long SizeBytes,
-    Guid? PostId) : IRequest<MediaDto>;
+    Guid? PostId,
+    Guid? IdeaId) : IRequest<MediaDto>;

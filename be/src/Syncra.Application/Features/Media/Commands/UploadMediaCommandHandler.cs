@@ -52,6 +52,11 @@ public class UploadMediaCommandHandler : IRequestHandler<UploadMediaCommand, Med
             media.AttachToPost(request.PostId.Value);
         }
 
+        if (request.IdeaId.HasValue)
+        {
+            media.AttachToIdea(request.IdeaId.Value);
+        }
+
         await _mediaRepository.AddAsync(media);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -59,5 +64,5 @@ public class UploadMediaCommandHandler : IRequestHandler<UploadMediaCommand, Med
     }
 
     private static MediaDto ToDto(MediaEntity m) =>
-        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
+        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.IdeaId, m.CreatedAtUtc);
 }

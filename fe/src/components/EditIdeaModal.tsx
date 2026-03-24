@@ -196,7 +196,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                 const mediaList = await mediaApi.list(activeWorkspace.id)
                 if (!mounted) return
                 const matched = mediaList
-                    .filter(m => m.postId === idea.id)
+                    .filter(m => m.postId === idea.id || m.ideaId === idea.id)
                     .map(m => ({ id: shortId(), url: m.url, type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video', name: m.fileName }))
                 setMedia(matched)
             } catch (e) {
@@ -234,14 +234,27 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
     }, [showEmoji])
 
     // ── Media ────────────────────────────────────────────────────────────
-    const handleFiles = useCallback((files: FileList | null) => {
-        if (!files) return
-        Array.from(files).forEach(file => {
-            const url = URL.createObjectURL(file)
+    const handleFiles = useCallback(async (files: FileList | null) => {
+        if (!files || !activeWorkspace) return
+
+        // For each file: show local preview immediately, then upload to server with ideaId
+        for (const file of Array.from(files)) {
+            const tempId = shortId()
+            const previewUrl = URL.createObjectURL(file)
             const type = file.type.startsWith('video') ? 'video' : 'image'
-            setMedia(prev => [...prev, { id: shortId(), url, type, name: file.name }])
-        })
-    }, [])
+            setMedia(prev => [...prev, { id: tempId, url: previewUrl, type, name: file.name }])
+
+            try {
+                const res = await mediaApi.upload(activeWorkspace.id, file, undefined, idea.id)
+                const dto = res.data
+                // replace temp preview with server entry
+                setMedia(prev => prev.map(m => m.id === tempId ? { id: dto.id, url: dto.url, type: dto.contentType?.startsWith('video') ? 'video' : 'image', name: dto.fileName } : m))
+            } catch (err) {
+                // upload failed: remove preview
+                setMedia(prev => prev.filter(m => m.id !== tempId))
+            }
+        }
+    }, [activeWorkspace, idea.id])
 
     const onDrop = (e: React.DragEvent) => {
         e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files)
