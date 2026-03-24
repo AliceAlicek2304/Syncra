@@ -30,7 +30,7 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
             return null;
         }
 
-        // Use domain entity behavior for updating content
+        
         post.UpdateContent(request.Title, request.Content);
 
         // Handle scheduling
@@ -53,13 +53,30 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
             post.TransitionTo(newStatus);
         }
 
-        // Handle media changes using domain behavior
+        
         if (request.MediaIds != null)
         {
+            
+            var existing = post.Media.ToList();
+            foreach (var m in existing)
+            {
+                try
+                {
+                    m.DetachFromPost();
+                    await _mediaRepository.UpdateAsync(m);
+                }
+                catch
+                {
+                }
+            }
+
             post.ClearMedia();
+
             var mediaItems = await _mediaRepository.GetByIdsAsync(request.MediaIds);
             foreach (var media in mediaItems)
-            {
+                {
+                media.AttachToPost(post.Id);
+                await _mediaRepository.UpdateAsync(media);
                 post.AddMedia(media);
             }
         }

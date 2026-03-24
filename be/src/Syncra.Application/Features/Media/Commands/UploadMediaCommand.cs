@@ -8,4 +8,5 @@ public record UploadMediaCommand(
     Stream FileStream,
     string FileName,
     string ContentType,
-    long SizeBytes) : IRequest<MediaDto>;
+    long SizeBytes,
+    Guid? PostId) : IRequest<MediaDto>;

@@ -33,6 +33,14 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
         _httpClient = httpClient;
         _mediaRepository = mediaRepository;
         _storageOptions = storageOptions.Value;
+        if (string.IsNullOrWhiteSpace(_storageOptions.LocalRootPath))
+        {
+            _storageOptions.LocalRootPath = Path.GetTempPath();
+        }
+        if (string.IsNullOrWhiteSpace(_storageOptions.PublicBaseUrl))
+        {
+            _storageOptions.PublicBaseUrl = "http://localhost:5260/media";
+        }
         _logger = logger;
     }
 
@@ -65,7 +73,6 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
                 };
             }
 
-            // Use page access token if provided, otherwise fall back to user access token
             var pageAccessToken = request.Metadata.GetValueOrDefault("pageAccessToken") ?? accessToken;
 
             if (request.MediaIds.Count == 0)
@@ -187,7 +194,7 @@ public sealed class FacebookPublishAdapter : IPublishAdapter
             return MapFacebookError(response, responseBody);
 
         var postResponse = JsonSerializer.Deserialize<FacebookPostResponse>(responseBody, JsonOptions);
-        // Prefer post_id (the page post) over photo id
+        
         var postId = postResponse?.PostId ?? postResponse?.Id;
 
         return new PublishResult

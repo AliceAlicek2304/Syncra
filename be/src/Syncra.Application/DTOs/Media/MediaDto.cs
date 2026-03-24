@@ -4,7 +4,7 @@ public record MediaDto(
     Guid Id,
     Guid WorkspaceId,
     string FileName,
-    string FileUrl,
+    string Url,
     string MediaType,
     string MimeType,
     long SizeBytes,

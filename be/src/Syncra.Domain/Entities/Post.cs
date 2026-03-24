@@ -8,35 +8,35 @@ public sealed class Post : WorkspaceEntityBase
 {
     public const int PublishLastErrorMaxLength = 500;
 
-    // Value Objects - with private setters for encapsulation
+    
     public PostTitle Title { get; private set; } = PostTitle.Empty;
     public PostContent Content { get; private set; } = PostContent.Empty;
     public ScheduledTime ScheduledAt { get; private set; } = ScheduledTime.None;
 
-    // Primitive properties - still with private setters
+    
     public Guid UserId { get; private set; }
     public DateTime? PublishedAtUtc { get; private set; }
     public PostStatus Status { get; private set; } = PostStatus.Draft;
 
     public Guid? IntegrationId { get; private set; }
 
-    // Publishing result
+    
     public string? PublishExternalId { get; private set; }
     public string? PublishExternalUrl { get; private set; }
     public DateTime? PublishLastAttemptAtUtc { get; private set; }
     public string? PublishLastError { get; private set; }
     public string? PublishProviderResponseMetadata { get; private set; }
 
-    // Navigation properties
+    
     public Workspace Workspace { get; set; } = null!;
     public User User { get; set; } = null!;
     public Integration? Integration { get; set; }
     public ICollection<Media> Media { get; set; } = new List<Media>();
 
-    // Private parameterless constructor for EF Core
+    
     private Post() { }
 
-    // Factory method - Create a new post in Draft status
+    
     public static Post Create(
         Guid workspaceId,
         Guid userId,
@@ -66,7 +66,7 @@ public sealed class Post : WorkspaceEntityBase
         };
     }
 
-    // Domain behaviors - mutation methods
+    
 
     public void UpdateContent(string title, string content)
     {
@@ -195,10 +195,14 @@ public sealed class Post : WorkspaceEntityBase
 
     public bool CanBePublished()
     {
-        return Status is PostStatus.Draft or PostStatus.Scheduled or PostStatus.Publishing
+        // A post can be published if it's in Draft, Scheduled or Publishing,
+        // has an integration configured, and is not scheduled for the future.
+        // ScheduledAt may be null for immediate publishes.
+        var notScheduledInFuture = ScheduledAt is null || !ScheduledAt.IsInFuture;
+
+        return (Status is PostStatus.Draft or PostStatus.Scheduled or PostStatus.Publishing)
             && IntegrationId.HasValue
-            && ScheduledAt is not null
-            && !ScheduledAt.IsInFuture;
+            && notScheduledInFuture;
     }
 
     public bool CanTransitionTo(PostStatus requestedStatus)
@@ -312,9 +316,8 @@ public sealed class Post : WorkspaceEntityBase
             return null;
         }
 
-        // Truncate to same length as error for consistency
         return metadata.Length <= PublishLastErrorMaxLength
             ? metadata
             : metadata[..PublishLastErrorMaxLength];
     }
-}
+}

@@ -109,7 +109,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initMedia: MediaFile[] = []
 
       // Edit mode - load from existing post
-      if (editPost) {
+        if (editPost) {
         nextCaptions = {
           TikTok: editPost.caption,
           Instagram: editPost.caption,
@@ -123,12 +123,11 @@ export function useCreatePostState(props: CreatePostModalProps) {
         const dd = String(editPost.day).padStart(2, '0')
         initSchTime = `${editPost.year}-${mm}-${dd}T${editPost.time}`
 
-        // Load media from mediaIds (async) - always fetch from backend for edit mode
         if (editPost.mediaIds && editPost.mediaIds.length > 0 && activeWorkspace) {
           ;(async () => {
             try {
-              const res = await mediaApi.list(activeWorkspace.id)
-              const matchedMedia = res.data
+              const mediaList = await mediaApi.list(activeWorkspace.id)
+              const matchedMedia = mediaList
                 .filter(m => editPost.mediaIds?.includes(m.id))
                 .map(m => ({
                   id: shortId(),
@@ -139,10 +138,29 @@ export function useCreatePostState(props: CreatePostModalProps) {
                 }))
               setMedia(matchedMedia)
             } catch (e) {
-              console.error('Failed to load media for post', e)
+              // failed to load media for post
             }
           })()
         }
+          else if (activeWorkspace) {
+            ;(async () => {
+              try {
+                const mediaList = await mediaApi.list(activeWorkspace.id)
+                const matchedMedia = mediaList
+                  .filter(m => m.postId === editPost.id)
+                  .map(m => ({
+                    id: shortId(),
+                    url: m.url,
+                    type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video',
+                    name: m.fileName,
+                    backendId: m.id
+                  }))
+                setMedia(matchedMedia)
+              } catch (e) {
+                // failed to load media for post (fallback)
+              }
+            })()
+          }
       }
       else if (!initialContent && !initialDate) {
         try {
@@ -156,7 +174,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
             loadedFromDraft = true
           }
         } catch (e) {
-          console.error('Failed to parse draft', e)
         }
       }
 
@@ -530,7 +547,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
         // If scheduling, update the post with integration and scheduled time via the publish endpoint
         if (integration) {
           await api.post(`/workspaces/${activeWorkspace?.id}/posts/${editPost.id}/publish`, {
-            scheduledAtUtc: scheduleDate.toISOString()
+            scheduledAtUtc: scheduleDate.toISOString(),
+            integrationId: integration?.id
           })
         }
         onToast?.({ message: 'Post updated successfully!', type: 'success' })
@@ -745,7 +763,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
         const file = new File([blob], mediaItem.name, { type: mediaItem.type === 'image' ? 'image/jpeg' : 'video/mp4' })
 
         // Upload to backend
-        const uploadResult = await mediaApi.upload(activeWorkspace!.id, file)
+        const uploadResult = await mediaApi.upload(activeWorkspace!.id, file, editPost?.id)
         const backendId = uploadResult.data.id
 
         // Update media with backend ID

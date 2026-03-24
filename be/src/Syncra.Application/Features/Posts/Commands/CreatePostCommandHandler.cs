@@ -23,7 +23,7 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
 
     public async Task<PostDto> Handle(CreatePostCommand request, CancellationToken cancellationToken)
     {
-        // Use domain entity factory method
+        
         var post = Post.Create(
             request.WorkspaceId,
             request.UserId,
@@ -32,7 +32,7 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
             request.ScheduledAtUtc,
             request.IntegrationId);
 
-        // Attach media using domain behavior
+        
         if (request.MediaIds != null && request.MediaIds.Count > 0)
         {
             var mediaItems = await _mediaRepository.GetByIdsAsync(request.MediaIds);
@@ -44,6 +44,18 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
 
         await _postRepository.AddAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        
+        if (request.MediaIds != null && request.MediaIds.Count > 0)
+        {
+            var mediaItems = await _mediaRepository.GetByIdsAsync(request.MediaIds);
+            foreach (var media in mediaItems)
+            {
+                media.AttachToPost(post.Id);
+                await _mediaRepository.UpdateAsync(media);
+            }
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return PostMapper.ToDto(post);
     }

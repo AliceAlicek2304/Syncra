@@ -71,10 +71,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (!activeWorkspace) return
     try {
       const res = await api.get(`/workspaces/${activeWorkspace.id}/posts`)
-      const mapped = res.data.map((dto: any) => mapPostToScheduled(dto, integrations))
-      setPosts(mapped)
+      const dtos: any[] = res.data
+      const mapped = dtos.map((dto: any) => mapPostToScheduled(dto, integrations))
+
+      const withImages = await Promise.all(mapped.map(async (p) => {
+        if (!p.mediaIds || p.mediaIds.length === 0) return p
+        try {
+          const urlsRes = await api.post(`/workspaces/${activeWorkspace.id}/media/urls`, { mediaIds: p.mediaIds })
+          const items: { id: string; url: string }[] = urlsRes.data
+          if (items && items.length > 0) {
+            return { ...p, image: items[0].url }
+          }
+        } catch (err) {
+        
+        }
+        return p
+      }))
+
+      setPosts(withImages)
     } catch (e) {
-      console.error('Failed to load scheduled posts', e)
     }
   }, [activeWorkspace, integrations])
 
@@ -98,7 +113,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       })
       await refreshPosts()
     } catch (e) {
-      console.error('Failed to add post', e)
     }
   }, [activeWorkspace, refreshPosts])
 
@@ -122,7 +136,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       })
       await refreshPosts()
     } catch (e) {
-      console.error('Failed to update post', e)
     }
   }, [activeWorkspace, posts, refreshPosts])
 
@@ -132,7 +145,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       await api.delete(`/workspaces/${activeWorkspace.id}/posts/${id}`)
       await refreshPosts()
     } catch (e) {
-      console.error('Failed to remove post', e)
     }
   }, [activeWorkspace, refreshPosts])
 

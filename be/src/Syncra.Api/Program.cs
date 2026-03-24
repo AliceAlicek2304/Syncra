@@ -6,6 +6,8 @@ using Syncra.Api.Middleware;
 using Syncra.Application;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +27,25 @@ builder.Services.AddHangfireServices(builder.Configuration);
 var app = builder.Build();
 
 app.UseStaticFiles();
+
+try
+{
+    var storageSection = app.Configuration.GetSection("Storage");
+    var localRoot = storageSection.GetValue<string>("LocalRootPath");
+    if (string.IsNullOrWhiteSpace(localRoot)) localRoot = Path.GetTempPath();
+
+    if (Directory.Exists(localRoot))
+    {
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(localRoot),
+            RequestPath = "/media"
+        });
+    }
+}
+catch
+{
+}
 
 app.UseCors("AllowFrontend");
 

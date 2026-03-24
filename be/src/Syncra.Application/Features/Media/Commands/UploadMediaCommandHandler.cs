@@ -47,6 +47,11 @@ public class UploadMediaCommandHandler : IRequestHandler<UploadMediaCommand, Med
             request.ContentType,
             request.SizeBytes);
 
+        if (request.PostId.HasValue)
+        {
+            media.AttachToPost(request.PostId.Value);
+        }
+
         await _mediaRepository.AddAsync(media);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

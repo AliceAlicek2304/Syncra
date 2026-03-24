@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
@@ -15,17 +16,20 @@ public sealed class PublishService : IPublishService
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublishAdapterRegistry _publishAdapterRegistry;
+    private readonly ILogger<PublishService> _logger;
 
     public PublishService(
         IPostRepository postRepository,
         IIntegrationRepository integrationRepository,
         IUnitOfWork unitOfWork,
-        IPublishAdapterRegistry publishAdapterRegistry)
+        IPublishAdapterRegistry publishAdapterRegistry,
+        ILogger<PublishService> logger)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
         _unitOfWork = unitOfWork;
         _publishAdapterRegistry = publishAdapterRegistry;
+        _logger = logger;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -98,6 +102,7 @@ public sealed class PublishService : IPublishService
         if (adapter is null)
         {
             var errorMessage = $"Social provider '{integration.Platform}' is not registered.";
+            _logger.LogWarning("{ErrorMessage} for integration {IntegrationId} when publishing post {PostId}", errorMessage, integration.Id, post.Id);
             post.MarkPublishFailure(utcNow, errorMessage);
             await _postRepository.UpdateAsync(post);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -122,6 +127,7 @@ public sealed class PublishService : IPublishService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Exception from adapter when publishing post {PostId}: {Message}", post.Id, ex.Message);
             post.MarkPublishFailure(utcNow, ex.Message);
             await _postRepository.UpdateAsync(post);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -160,6 +166,7 @@ public sealed class PublishService : IPublishService
         }
 
         var errorText = FormatProviderError(providerResult);
+        _logger.LogWarning("Publish failed for post {PostId}. ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}", post.Id, providerResult.Error?.Code, errorText);
 
         post.MarkPublishFailure(
             utcNow,

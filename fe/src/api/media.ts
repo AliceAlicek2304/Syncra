@@ -14,9 +14,10 @@ export interface MediaDto {
 }
 
 export const mediaApi = {
-  upload: (workspaceId: string, file: File) => {
+  upload: (workspaceId: string, file: File, postId?: string) => {
     const formData = new FormData()
     formData.append('file', file)
+    if (postId) formData.append('postId', postId)
     return api.post<MediaDto>(`/workspaces/${workspaceId}/media/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -25,7 +26,7 @@ export const mediaApi = {
   },
 
   list: (workspaceId: string, params?: { mediaType?: string; isAttached?: boolean; page?: number; pageSize?: number }) =>
-    api.get<MediaDto[]>(`/workspaces/${workspaceId}/media`, { params }),
+    api.get(`/workspaces/${workspaceId}/media`, { params }).then(res => res.data.items as MediaDto[]),
 
   delete: (workspaceId: string, mediaId: string) =>
     api.delete(`/workspaces/${workspaceId}/media/${mediaId}`),

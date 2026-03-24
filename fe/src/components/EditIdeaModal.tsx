@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import { shortId } from '../utils/shortId'
 import { useCreatePostModal } from '../context/createPostModalContext'
+import { useWorkspace } from '../context/WorkspaceContext'
+import { mediaApi } from '../api/media'
 import IdeaAIAssistantPanel from './IdeaAIAssistantPanel'
 import styles from './EditIdeaModal.module.css'
 
@@ -184,6 +186,25 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
     const [editingId, setEditingId] = useState<string | null>(null)
 
     const { openCreatePost } = useCreatePostModal()
+    const { activeWorkspace } = useWorkspace()
+
+    useEffect(() => {
+        let mounted = true
+        if (!activeWorkspace) return
+        ;(async () => {
+            try {
+                const mediaList = await mediaApi.list(activeWorkspace.id)
+                if (!mounted) return
+                const matched = mediaList
+                    .filter(m => m.postId === idea.id)
+                    .map(m => ({ id: shortId(), url: m.url, type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video', name: m.fileName }))
+                setMedia(matched)
+            } catch (e) {
+                // failed to load media
+            }
+        })()
+        return () => { mounted = false }
+    }, [activeWorkspace, idea.id])
 
     const fileInputRef = useRef<HTMLInputElement>(null)
     const replaceInputRef = useRef<HTMLInputElement>(null)

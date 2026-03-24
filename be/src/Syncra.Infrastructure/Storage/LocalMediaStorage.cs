@@ -23,16 +23,26 @@ public class LocalMediaStorage : IStorageService
     public async Task<StorageUploadResult> SaveAsync(Stream stream, string fileName, string mimeType)
     {
         var storageKey = $"{Path.GetRandomFileName()}_{fileName}";
-        var filePath = Path.Combine(_options.LocalRootPath, storageKey);
+
+        
+        var localRoot = string.IsNullOrWhiteSpace(_options.LocalRootPath)
+            ? Path.GetTempPath()
+            : _options.LocalRootPath;
+
+        var filePath = Path.Combine(localRoot, storageKey);
 
         try
         {
-            Directory.CreateDirectory(_options.LocalRootPath);
+            Directory.CreateDirectory(localRoot);
 
             await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
             await stream.CopyToAsync(fileStream);
 
-            var publicUrl = $"{_options.PublicBaseUrl.TrimEnd('/')}/{storageKey}";
+            var publicBase = string.IsNullOrWhiteSpace(_options.PublicBaseUrl)
+                ? "http://localhost:5260/media"
+                : _options.PublicBaseUrl;
+
+            var publicUrl = $"{publicBase.TrimEnd('/')}/{storageKey}";
 
             return new StorageUploadResult
             {
@@ -49,7 +59,8 @@ public class LocalMediaStorage : IStorageService
 
     public Task DeleteAsync(string storageKey)
     {
-        var filePath = Path.Combine(_options.LocalRootPath, storageKey);
+        var localRoot = string.IsNullOrWhiteSpace(_options.LocalRootPath) ? Path.GetTempPath() : _options.LocalRootPath;
+        var filePath = Path.Combine(localRoot, storageKey);
 
         try
         {
