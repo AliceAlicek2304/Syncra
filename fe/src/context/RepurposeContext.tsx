@@ -10,6 +10,7 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
         sourceText: '',
         targetPlatforms: ['LinkedIn', 'X'],
         tone: 'default',
+        length: 'medium',
         extractAtoms: false
     })
     const [isGenerating, setIsGenerating] = useState(false)

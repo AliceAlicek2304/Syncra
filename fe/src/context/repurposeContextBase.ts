@@ -6,6 +6,7 @@ export interface RepurposeConfig {
     sourceText: string
     targetPlatforms: RepurposePlatform[]
     tone: string
+    length: 'short' | 'medium' | 'long'
     extractAtoms: boolean
 }
 

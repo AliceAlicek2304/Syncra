@@ -7,7 +7,7 @@ import { useRepurpose } from '../../context/repurposeContextBase'
 
 export default function RepurposePage() {
   const { results, isGenerating, error } = useRepurpose()
-  const hasOutput = results.length > 0 || isGenerating
+  const hasOutput = results.length > 0 || isGenerating || !!error
 
   return (
     <div className={styles.page}>

@@ -695,10 +695,39 @@
     color: var(--text-primary);
 }
 
+.exportBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.exportActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selectedCounter {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
 .resultsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
+}
+
+.repurposeError {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* ================================================
@@ -766,6 +795,38 @@
     transform: translateY(-3px);
     border-color: var(--card-color, rgba(139,92,246,0.3));
     box-shadow: 0 12px 36px rgba(0,0,0,0.28);
+}
+
+.atomCardSelectable {
+    cursor: pointer;
+}
+
+.atomCardSelected {
+    border-color: var(--card-color, var(--purple-400));
+    box-shadow: 0 0 0 1px var(--card-color, var(--purple-400));
+}
+
+.selectionCheckbox {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 2;
+}
+
+.selectionCheckboxActive {
+    background: var(--card-color, var(--purple-500));
+    border-color: var(--card-color, var(--purple-500));
 }
 
 /* Left accent bar */

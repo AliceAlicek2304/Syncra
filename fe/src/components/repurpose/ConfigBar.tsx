@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import { api } from '../../api/axios'
-import { useWorkspace } from '../../context/WorkspaceContext'
-import type { RepurposePlatform, RepurposeAtom } from '../../data/mockAI'
+import type { RepurposePlatform } from '../../data/mockAI'
+import { generateRepurpose } from '../../data/repurposeService'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
@@ -37,12 +35,8 @@ const LENGTHS = [
     { id: 'long', label: 'Dài' },
 ]
 
-const MIN_SOURCE_LENGTH = 5
-
 export default function ConfigBar() {
-    const { activeWorkspace } = useWorkspace()
     const { config, setConfig, isGenerating, setIsGenerating, setResults, setError } = useRepurpose()
-    const [contentLength, setContentLength] = useState('medium')
 
     const togglePlatform = (p: RepurposePlatform) => {
         setConfig(prev => {
@@ -56,32 +50,21 @@ export default function ConfigBar() {
 
     const handleGenerate = async () => {
         if (!config.sourceText.trim()) return
-        if (config.sourceText.trim().length < MIN_SOURCE_LENGTH) {
-            setError(`Nội dung nguồn cần ít nhất ${MIN_SOURCE_LENGTH} ký tự.`)
-            return
-        }
-        if (!activeWorkspace) {
-            setError('Không tìm thấy workspace đang hoạt động.')
-            return
-        }
-
         setIsGenerating(true)
         setError(null)
         try {
-            const response = await api.post<{ atoms: RepurposeAtom[] }>(`/workspaces/${activeWorkspace.id}/ai/repurpose/generate`, {
+            const response = await generateRepurpose({
                 sourceText: config.sourceText,
                 platforms: config.targetPlatforms,
                 tone: config.tone,
+                length: config.length,
                 extractAtoms: config.extractAtoms,
-                length: contentLength,
             })
-            setResults(response.data.atoms)
-        } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data?.title ||
-                'Không thể repurpose nội dung lúc này. Vui lòng thử lại.'
-            setError(message)
+            setResults(response.atoms)
+        } catch (err) {
+            console.error('Repurpose generation failed:', err)
+            const details = err instanceof Error ? err.message : ''
+            setError(details ? `Tạo nội dung thất bại: ${details}` : 'Tạo nội dung thất bại: Không xác định được nguyên nhân.')
         } finally {
             setIsGenerating(false)
         }
@@ -148,8 +131,8 @@ export default function ConfigBar() {
                         {LENGTHS.map(l => (
                             <button
                                 key={l.id}
-                                className={`${styles.tonePill} ${contentLength === l.id ? styles.tonePillActive : ''}`}
-                                onClick={() => setContentLength(l.id)}
+                                className={`${styles.tonePill} ${config.length === l.id ? styles.tonePillActive : ''}`}
+                                onClick={() => setConfig(prev => ({ ...prev, length: l.id as 'short' | 'medium' | 'long' }))}
                             >
                                 {l.label}
                             </button>
@@ -179,7 +162,7 @@ export default function ConfigBar() {
                 <button
                     className={styles.generateBtn}
                     onClick={handleGenerate}
-                    disabled={!config.sourceText.trim() || config.sourceText.trim().length < MIN_SOURCE_LENGTH || isGenerating || config.targetPlatforms.length === 0}
+                    disabled={!config.sourceText.trim() || isGenerating || config.targetPlatforms.length === 0}
                 >
                     <div className={styles.generateBtnShimmer} />
                     {isGenerating ? <Loader2 className={styles.spinning} size={16} /> : <Sparkles size={16} />}
@@ -187,9 +170,6 @@ export default function ConfigBar() {
                 </button>
                 {config.targetPlatforms.length === 0 && (
                     <p className={styles.generateHint}>Hãy chọn ít nhất 1 nền tảng</p>
-                )}
-                {config.sourceText.trim().length > 0 && config.sourceText.trim().length < MIN_SOURCE_LENGTH && (
-                    <p className={styles.generateHint}>Nội dung cần ít nhất {MIN_SOURCE_LENGTH} ký tự</p>
                 )}
             </div>
         </div>

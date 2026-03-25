@@ -202,6 +202,7 @@ export interface GenerateRepurposeRequest {
   sourceText: string
   platforms: RepurposePlatform[]
   tone: string
+  length: 'short' | 'medium' | 'long'
   extractAtoms: boolean
 }
 

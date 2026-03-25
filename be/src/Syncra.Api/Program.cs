@@ -9,7 +9,15 @@ using Syncra.Infrastructure.Jobs;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 
+LoadDotEnv();
+
 var builder = WebApplication.CreateBuilder(args);
+var postgresConnectionString = builder.Configuration["Postgres:ConnectionString"];
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    postgresConnectionString = "Host=127.0.0.1;Port=5432;Database=syncra_db;Username=postgres;Password=1234567890";
+}
+var canEnableHangfire = HasConnectionPassword(postgresConnectionString);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
@@ -22,7 +30,14 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApiServices(builder.Configuration);
 builder.Services.AddApiAuthentication(builder.Configuration);
-builder.Services.AddHangfireServices(builder.Configuration);
+if (canEnableHangfire)
+{
+    builder.Services.AddHangfireServices(builder.Configuration);
+}
+else
+{
+    Console.WriteLine("Hangfire disabled: Postgres:ConnectionString is missing or has no password.");
+}
 
 var app = builder.Build();
 
@@ -61,7 +76,10 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 
-    app.UseHangfireDashboard("/hangfire");
+    if (canEnableHangfire)
+    {
+        app.UseHangfireDashboard("/hangfire");
+    }
 }
 
 app.UseRouting();
@@ -74,9 +92,10 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Schedule recurring jobs
-using (var scope = app.Services.CreateScope())
+// Schedule recurring jobs only when Hangfire is enabled.
+if (canEnableHangfire)
 {
+    using var scope = app.Services.CreateScope();
     var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
     scheduler.ScheduleRecurringJob();
 
@@ -85,3 +104,44 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+static void LoadDotEnv()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    for (var i = 0; i < 8 && current is not null; i++)
+    {
+        var candidate = Path.Combine(current.FullName, ".env");
+        if (File.Exists(candidate))
+        {
+            foreach (var line in File.ReadAllLines(candidate))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) continue;
+
+                var separator = trimmed.IndexOf('=');
+                if (separator <= 0) continue;
+
+                var key = trimmed[..separator].Trim();
+                var value = trimmed[(separator + 1)..].Trim().Trim('"');
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+                {
+                    Environment.SetEnvironmentVariable(key, value);
+                }
+            }
+            break;
+        }
+
+        current = current.Parent;
+    }
+}
+
+static bool HasConnectionPassword(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return false;
+    }
+
+    return connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
+}
