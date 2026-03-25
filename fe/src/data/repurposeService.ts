@@ -14,9 +14,9 @@ const VALID_ATOM_TYPES: AtomType[] = ['POST', 'THREAD', 'CAROUSEL', 'INSIGHT', '
 const VALID_PLATFORMS: RepurposePlatform[] = ['LinkedIn', 'X', 'Instagram', 'Newsletter']
 const MAX_SOURCE_TEXT_LENGTH = 20000
 const REPURPOSE_API_URL = (import.meta.env.VITE_REPURPOSE_API_URL as string | undefined)?.trim()
-  || 'http://localhost:5000/api/v1/repurpose/generate'
+  || 'http://localhost:5260/api/v1/repurpose/generate'
 
-function toLengthInstruction(length: RepurposeLength): string {
+function toLengthInstruction(length: RepurposeLength): string {   
   if (length === 'short') return 'short form'
   if (length === 'long') return 'long form'
   return 'medium form'

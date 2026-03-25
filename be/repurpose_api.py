@@ -193,4 +193,4 @@ def generate_repurpose():
 
 if __name__ == "__main__":
     load_env_file()
-    app.run(host="0.0.0.0", port=int(os.getenv("REPURPOSE_API_PORT", "5000")), debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("REPURPOSE_API_PORT", "5260")), debug=True)
