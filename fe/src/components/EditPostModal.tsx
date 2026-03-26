@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Clock, Check } from 'lucide-react'
 import type { ScheduledPost } from '../context/calendarContextBase'
+import { useIntegrations } from '../hooks/useIntegrations'
 import styles from './EditPostModal.module.css'
 
 const PLATFORM_OPTIONS = [
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete }: Props) {
+  const { integrations } = useIntegrations()
   const [title, setTitle] = useState('')
   const [caption, setCaption] = useState('')
   const [platform, setPlatform] = useState('TikTok')
@@ -39,12 +41,22 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
   const [month, setMonth] = useState(0)
   const [year, setYear] = useState(new Date().getFullYear())
 
+  const connectedPlatformIds = integrations
+    .filter(i => i.isActive)
+    .map(i => i.platform.toLowerCase())
+
+  const connectedPlatformOptions = PLATFORM_OPTIONS.filter(p =>
+    connectedPlatformIds.includes(p.id.toLowerCase())
+  )
+  const hasConnectedPlatforms = connectedPlatformOptions.length > 0
+
   useEffect(() => {
     if (post) {
       /* eslint-disable react-hooks/set-state-in-effect */
       setTitle(post.title)
       setCaption(post.caption)
-      setPlatform(post.platform)
+      const isPostPlatformConnected = connectedPlatformOptions.some(p => p.id === post.platform)
+      setPlatform(isPostPlatformConnected ? post.platform : (connectedPlatformOptions[0]?.id ?? 'TikTok'))
       setStatus(post.status)
       setTime(post.time === '—' ? '09:00' : post.time)
       setDay(post.day)
@@ -52,7 +64,14 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
       setYear(post.year)
       /* eslint-enable react-hooks/set-state-in-effect */
     }
-  }, [post])
+  }, [post, connectedPlatformOptions])
+
+  useEffect(() => {
+    if (!hasConnectedPlatforms) return
+    if (!connectedPlatformOptions.some(p => p.id === platform)) {
+      setPlatform(connectedPlatformOptions[0].id)
+    }
+  }, [platform, connectedPlatformOptions, hasConnectedPlatforms])
 
   useEffect(() => {
     if (!isOpen) return
@@ -65,11 +84,13 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
 
   if (!isOpen || !post) return null
 
-  const platformColor = PLATFORM_OPTIONS.find(p => p.id === platform)?.color ?? '#8b5cf6'
+  const platformColor = connectedPlatformOptions.find(p => p.id === platform)?.color ?? '#8b5cf6'
 
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   const handleSave = () => {
+    if (!hasConnectedPlatforms) return
+
     onSave(post.id, {
       title,
       caption,
@@ -120,8 +141,11 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
           {/* Platform */}
           <div className={styles.field}>
             <label className={styles.label}>Platform</label>
-            <div className={styles.platformChips}>
-              {PLATFORM_OPTIONS.map(p => (
+            {!hasConnectedPlatforms ? (
+              <div className={styles.input}>Connect at least one platform to edit this post.</div>
+            ) : (
+              <div className={styles.platformChips}>
+                {connectedPlatformOptions.map(p => (
                 <button
                   key={p.id}
                   className={`${styles.platformChip} ${platform === p.id ? styles.platformChipActive : ''}`}
@@ -131,7 +155,8 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
                   {p.label}
                 </button>
               ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Status */}
@@ -219,7 +244,7 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
           <button className={styles.deleteBtn} onClick={handleDelete}>Delete</button>
           <div className={styles.footerSpacer} />
           <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-          <button className={styles.saveBtn} onClick={handleSave}>Save Changes</button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={!hasConnectedPlatforms}>Save Changes</button>
         </div>
       </div>
     </div>

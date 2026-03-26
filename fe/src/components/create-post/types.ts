@@ -31,8 +31,15 @@ export const PLATFORMS: { id: Platform; label: string; maxChars: number }[] = [
 ]
 
 export function getConnectedPlatforms(_integrations: Array<{ platform: string; isActive: boolean }>): Platform[] {
-  // We now return all platforms to allow drafting even without integration
-  return PLATFORMS.map(p => p.id)
+  const connectedIds = new Set(
+    _integrations
+      .filter(i => i.isActive)
+      .map(i => i.platform.toLowerCase())
+  )
+
+  return PLATFORMS
+    .filter(p => connectedIds.has(p.id.toLowerCase()))
+    .map(p => p.id)
 }
 
 export function getActivePlatformIds(integrations: Array<{ platform: string; isActive: boolean }>): string[] {

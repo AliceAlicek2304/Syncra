@@ -33,12 +33,20 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   // Get connected platforms from integrations
   const connectedPlatformIds = getActivePlatformIds(integrations)
+  const connectedPlatforms = PLATFORMS
+    .filter(p => connectedPlatformIds.includes(p.id.toLowerCase()))
+    .map(p => p.id)
+  const defaultPlatform = connectedPlatforms[0] ?? PLATFORMS[0].id
   
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(
-    editPost ? [editPost.platform as Platform] : (connectedPlatformIds.length > 0 ? [PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok'] : ['TikTok'])
+    editPost
+      ? (connectedPlatforms.includes(editPost.platform as Platform) ? [editPost.platform as Platform] : (connectedPlatforms.length > 0 ? [defaultPlatform] : []))
+      : (connectedPlatforms.length > 0 ? [defaultPlatform] : [])
   )
   const [activeTab, setActiveTab] = useState<Platform>(
-    editPost ? (editPost.platform as Platform) : (connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok')
+    editPost
+      ? (connectedPlatforms.includes(editPost.platform as Platform) ? (editPost.platform as Platform) : defaultPlatform)
+      : defaultPlatform
   )
 
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
@@ -102,7 +110,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     setTimeout(() => {
       let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
-      let initPlatforms: Platform[] = connectedPlatformIds.length > 0 ? [PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok'] : ['TikTok']
+      let initPlatforms: Platform[] = connectedPlatforms.length > 0 ? [defaultPlatform] : []
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
@@ -116,7 +124,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
           Facebook: editPost.caption,
           X: editPost.caption
         }
-        initPlatforms = [editPost.platform as Platform]
+        initPlatforms = connectedPlatforms.includes(editPost.platform as Platform)
+          ? [editPost.platform as Platform]
+          : (connectedPlatforms.length > 0 ? [defaultPlatform] : [])
 
         initSchMode = true
         const mm = String(editPost.month + 1).padStart(2, '0')
@@ -168,7 +178,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
           if (draftStr) {
             const parsed = JSON.parse(draftStr)
             if (parsed.captionsByPlatform) nextCaptions = parsed.captionsByPlatform
-            if (parsed.activePlatforms) initPlatforms = parsed.activePlatforms
+            if (parsed.activePlatforms) {
+              initPlatforms = parsed.activePlatforms.filter((p: Platform) => connectedPlatforms.includes(p))
+            }
             if (parsed.scheduleMode !== undefined) initSchMode = parsed.scheduleMode
             if (parsed.scheduleTime) initSchTime = parsed.scheduleTime
             loadedFromDraft = true
@@ -197,8 +209,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
-      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
-      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : (connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok'))
+      setActivePlatforms(initPlatforms)
+      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : defaultPlatform)
       setMedia(initMedia)
 
       // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
@@ -206,14 +218,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
         media: initMedia,
-        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
+        activePlatforms: initPlatforms,
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
       })
     }, 0)
 
     didInitRef.current = true
-  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost])
+  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost, connectedPlatforms, defaultPlatform, activeWorkspace])
 
   const caption = captionsByPlatform[activeTab] ?? ''
   
@@ -255,8 +267,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(['TikTok'])
-    setActiveTab(connectedPlatformIds.length > 0 ? (PLATFORMS.find(p => p.id.toLowerCase() === connectedPlatformIds[0])?.id ?? 'TikTok') : 'TikTok')
+    setActivePlatforms([])
+    setActiveTab(defaultPlatform)
     setAiPrompt('')
     setAiResults([])
     setAiIsGenerating(false)
@@ -264,7 +276,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     initialSnapshotRef.current = null
     didInitRef.current = false
-  }, [connectedPlatformIds])
+  }, [defaultPlatform])
 
   // We should NOT store `isDirty` as a ref that we update during render.
   // We can just return it from the hook. But to keep the same signature without refactoring too much:
@@ -625,6 +637,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }, [showEmoji])
 
   const togglePlatform = (p: Platform) => {
+    if (!connectedPlatforms.includes(p)) return
+
     setActivePlatforms(prev => {
       const next = prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
       if (!next.includes(activeTab) && next.length > 0) {
@@ -816,7 +830,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
       hasIntegration, missingIntegrationPlatforms,
-      currentSnapshot, isEditMode, editPost, connectedPlatformIds
+      currentSnapshot, isEditMode, editPost, connectedPlatformIds, connectedPlatforms
     },
     refs,
     actions: {
