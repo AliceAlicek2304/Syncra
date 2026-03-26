@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { RepurposeContext } from './repurposeContextBase'
 import type { RepurposeConfig } from './repurposeContextBase'
-import type { RepurposeAtom } from '../data/mockAI'
+import type { RepurposeAtom } from '../types/ai'
 
 
 export function RepurposeProvider({ children }: { children: ReactNode }) {

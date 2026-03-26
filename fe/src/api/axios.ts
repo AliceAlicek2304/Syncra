@@ -90,7 +90,8 @@ api.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post<AuthResponse>(`${BASE_URL}/auth/refresh`, { refreshToken });
+        // Backend expects a RefreshDto(record Token, RefreshToken) — include both fields.
+        const response = await axios.post<AuthResponse>(`${BASE_URL}/auth/refresh`, { Token: null, RefreshToken: refreshToken });
         
         const newAccessToken = response.data.token ?? response.data.accessToken;
         const newRefreshToken = response.data.refreshToken;

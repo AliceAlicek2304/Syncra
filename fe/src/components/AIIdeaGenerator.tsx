@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Sparkles, X, Check, ChevronRight, ChevronDown, Upload, FileText, Trash2 } from 'lucide-react'
-import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
+import type { ContentIdea, AIGenerateInput } from '../types/ai'
 import { shortId } from '../utils/shortId'
 import { api } from '../api/axios'
 import { useWorkspace } from '../context/WorkspaceContext'

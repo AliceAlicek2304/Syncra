@@ -1,8 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useCalendar } from '../../context/calendarContextBase'
-import { getMockResults } from '../../data/mockAI'
-import type { AIGenerateInput } from '../../data/mockAI'
 import { shortId } from '../../utils/shortId'
 import { PLATFORMS, getActivePlatformIds, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 import { api } from '../../api/axios'
@@ -751,11 +749,11 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const handleGenerateAI = () => {
     if (aiPrompt.trim() === '') return
     setAiIsGenerating(true)
-    const input: AIGenerateInput = { topic: aiPrompt, niche: '', audience: '', goal: '', tone: tone }
+    // No local mock AI: clear results (placeholder for real AI integration)
     setTimeout(() => {
-      setAiResults(getMockResults(input).slice(0, 4))
+      setAiResults([])
       setAiIsGenerating(false)
-    }, 800)
+    }, 300)
   }
 
   // Upload all media files that haven't been uploaded yet and return their backend GUIDs

@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Sparkles, X, TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './AICoach.module.css'
-import { TREND_TIPS } from '../data/mockCoachTrends'
+
+const TREND_TIPS = [
+  { id: 't1', category: 'Tips', title: 'Tiêu đề ngắn gọn', text: 'Tạo tiêu đề hấp dẫn trong 3 từ.', topic: 'tiêu đề ngắn', action: 'Dùng đề xuất' },
+  { id: 't2', category: 'Emoji', title: 'Dùng emoji', text: 'Sử dụng emoji để tăng tương tác.', topic: 'emoji', action: 'Thêm emoji' },
+  { id: 't3', category: 'CTA', title: 'Kêu gọi hành động', text: 'Đưa ra CTA rõ ràng: follow, share, comment.', topic: 'CTA', action: 'Thêm CTA' },
+]
 import AIIdeaGenerator from './AIIdeaGenerator'
 
 export default function AICoach() {

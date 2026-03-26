@@ -1,7 +1,8 @@
 import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import type { RepurposePlatform } from '../../data/mockAI'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import type { RepurposePlatform } from '../../types/ai'
 import { generateRepurpose } from '../../data/repurposeService'
 import styles from './RepurposeComponents.module.css'
 
@@ -48,19 +49,22 @@ export default function ConfigBar() {
         })
     }
 
+    const { activeWorkspace } = useWorkspace()
+
     const handleGenerate = async () => {
         if (!config.sourceText.trim()) return
         setIsGenerating(true)
         setError(null)
         try {
-            const response = await generateRepurpose({
+            if (!activeWorkspace) throw new Error('No active workspace')
+            const response = await generateRepurpose(activeWorkspace.id, {
                 sourceText: config.sourceText,
                 platforms: config.targetPlatforms,
                 tone: config.tone,
                 length: config.length,
                 extractAtoms: config.extractAtoms,
             })
-            setResults(response.atoms)
+            setResults(response.data.atoms)
         } catch (err) {
             console.error('Repurpose generation failed:', err)
             const details = err instanceof Error ? err.message : ''

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { RepurposePlatform, RepurposeAtom } from '../data/mockAI'
+import type { RepurposePlatform, RepurposeAtom } from '../types/ai'
 
 export interface RepurposeConfig {
     sourceText: string

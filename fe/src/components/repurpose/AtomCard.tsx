@@ -5,7 +5,7 @@ import {
     Linkedin, Instagram, Mail, FileText, AlignLeft,
     LayoutGrid, Lightbulb, Zap, Quote,
 } from 'lucide-react'
-import type { RepurposeAtom, AtomType } from '../../data/mockAI'
+import type { RepurposeAtom, AtomType } from '../../types/ai'
 import styles from './RepurposeComponents.module.css'
 
 interface Props {

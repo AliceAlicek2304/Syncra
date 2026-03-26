@@ -1,4 +1,4 @@
-import type { RepurposeAtom, RepurposePlatform } from '../../data/mockAI'
+import type { RepurposeAtom, RepurposePlatform } from '../../types/ai'
 
 export function buildRepurposeCardItems(
   atoms: RepurposeAtom[],
