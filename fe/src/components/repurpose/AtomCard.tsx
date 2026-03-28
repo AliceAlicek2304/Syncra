@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ElementType } from 'react'
 import {
-    Copy, Check, Calendar, RefreshCw, ChevronDown, ChevronUp,
+    Copy, Check, Calendar, RefreshCw, ChevronDown, 
     Linkedin, Instagram, Mail, FileText, AlignLeft,
     LayoutGrid, Lightbulb, Zap, Quote,
 } from 'lucide-react'
@@ -14,6 +14,7 @@ interface Props {
     selectionMode?: boolean
     selected?: boolean
     onToggleSelect?: (atomId: string) => void
+    onView?: () => void
 }
 
 interface PlatformCfg { icon?: ElementType; xText?: string; color: string; bg: string; border: string }
@@ -34,9 +35,8 @@ const TYPE_CFG: Record<AtomType, { icon: ElementType; label: string }> = {
     QUOTE:    { icon: Quote,       label: 'Quote' },
 }
 
-export default function AtomCard({ atom, index = 0, selectionMode = false, selected = false, onToggleSelect }: Props) {
+export default function AtomCard({ atom, index = 0, selectionMode = false, selected = false, onToggleSelect, onView }: Props) {
     const [copied, setCopied] = useState(false)
-    const [expanded, setExpanded] = useState(false)
 
     const platform = PLATFORM_CFG[atom.platform] ?? PLATFORM_CFG.LinkedIn
     const typeInfo = TYPE_CFG[atom.type]
@@ -57,8 +57,11 @@ export default function AtomCard({ atom, index = 0, selectionMode = false, selec
     }
 
     const handleCardClick = () => {
-        if (!selectionMode || !onToggleSelect) return
-        onToggleSelect(atom.id)
+        if (selectionMode && onToggleSelect) {
+            onToggleSelect(atom.id)
+            return
+        }
+        onView?.()
     }
 
     return (
@@ -115,13 +118,13 @@ export default function AtomCard({ atom, index = 0, selectionMode = false, selec
             {atom.title && <h3 className={styles.cardTitle}>{atom.title}</h3>}
 
             {/* Content */}
-            <p className={`${styles.cardContent} ${expanded ? styles.cardContentExpanded : ''}`}>
+            <p className={styles.cardContent}>
                 {atom.content}
             </p>
 
             {isLong && (
-                <button className={styles.expandBtn} onClick={(e) => { e.stopPropagation(); setExpanded(prev => !prev) }}>
-                    {expanded ? <><ChevronUp size={12} /> Thu gọn</> : <><ChevronDown size={12} /> Xem thêm</>}
+                <button className={styles.expandBtn} onClick={(e) => { e.stopPropagation(); onView?.() }}>
+                    <ChevronDown size={12} /> Xem chi tiết
                 </button>
             )}
 

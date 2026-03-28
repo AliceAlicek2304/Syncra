@@ -78,7 +78,7 @@
 
 .textarea {
     width: 100%;
-    min-height: 190px;
+    min-height: 220px;
     background: transparent;
     border: none;
     color: var(--text-primary);
@@ -428,7 +428,7 @@
 .configRow {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 16px;
     align-items: flex-start;
 }
 
@@ -589,13 +589,6 @@
     100% { left: 200%;  }
 }
 
-.spinning { animation: spin 0.9s linear infinite; }
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
 /* ================================================
    RESULTS SECTION
    ================================================ */
@@ -715,7 +708,7 @@
 
 .resultsGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
 }
 

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { FileText, Link2, Upload, Trash2, ClipboardPaste, File, X } from 'lucide-react'
+import { FileText, Upload, Trash2, ClipboardPaste, File, X } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import styles from './RepurposeComponents.module.css'
 
@@ -17,12 +17,12 @@ Here are the three pillars I use with every client:
 
 If you can produce content in all three pillars weekly, you'll see compounding growth within 90 days.`
 
-const ACCEPTED_TYPES = '.txt,.md,.docx,.pdf'
+const ACCEPTED_TYPES = '.txt,.md'
 const MAX_FILE_MB = 5
 
 export default function InputSection() {
     const { config, setConfig } = useRepurpose()
-    const [inputMode, setInputMode] = useState<'text' | 'url' | 'file'>('text')
+    const [inputMode, setInputMode] = useState<'text' | 'file'>('text')
     const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number } | null>(null)
     const [isDragging, setIsDragging] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -60,6 +60,8 @@ export default function InputSection() {
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
     const handleDragLeave = () => setIsDragging(false)
 
+
+
     const clearFile = () => {
         setUploadedFile(null)
         setConfig(prev => ({ ...prev, sourceText: '' }))
@@ -81,13 +83,6 @@ export default function InputSection() {
                 >
                     <FileText size={13} />
                     Dán văn bản
-                </button>
-                <button
-                    className={`${styles.modeTab} ${inputMode === 'url' ? styles.modeTabActive : ''}`}
-                    onClick={() => setInputMode('url')}
-                >
-                    <Link2 size={13} />
-                    Từ URL
                 </button>
                 <button
                     className={`${styles.modeTab} ${inputMode === 'file' ? styles.modeTabActive : ''}`}
@@ -135,17 +130,7 @@ export default function InputSection() {
                 </div>
             )}
 
-            {inputMode === 'url' && (
-                <div className={styles.urlInput}>
-                    <Link2 size={16} className={styles.urlIcon} />
-                    <input
-                        type="url"
-                        className={styles.urlField}
-                        placeholder="https://your-blog-post.com/article"
-                    />
-                    <button className={styles.fetchBtn}>Tải nội dung</button>
-                </div>
-            )}
+
 
             {inputMode === 'file' && (
                 <div className={styles.fileZone}>
@@ -191,10 +176,8 @@ export default function InputSection() {
                             <div className={styles.dropFormats}>
                                 <span>.TXT</span>
                                 <span>.MD</span>
-                                <span>.DOCX</span>
-                                <span>.PDF</span>
                             </div>
-                            <p className={styles.dropLimit}>Tối đa {MAX_FILE_MB}MB</p>
+                            <p className={styles.dropLimit}>Hỗ trợ tối đa {MAX_FILE_MB}MB (DOCX/PDF sắp hỗ trợ)</p>
                         </div>
                     )}
                     <input

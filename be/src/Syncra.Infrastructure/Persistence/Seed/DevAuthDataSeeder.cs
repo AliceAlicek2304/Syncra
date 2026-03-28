@@ -114,7 +114,26 @@ public static class DevAuthDataSeeder
 
         await db.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Seeded development auth data. Test accounts: {Emails}. Password: {Password}",
+        // Seed some common integrations for the development workspace
+        var platforms = new[] { "facebook", "instagram", "tiktok", "youtube", "linkedin", "x" };
+
+        foreach (var platform in platforms)
+        {
+            var existingIntegration = await db.Integrations
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.WorkspaceId == workspace.Id && i.Platform == platform, cancellationToken);
+
+            if (existingIntegration is null)
+            {
+                var integration = Integration.Create(workspace.Id, platform);
+                integration.Id = Guid.NewGuid();
+                await db.Integrations.AddAsync(integration, cancellationToken);
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Seeded development auth data and integrations. Test accounts: {Emails}. Password: {Password}",
             string.Join(", ", users.Select(u => u.Email)),
             DefaultPassword);
     }

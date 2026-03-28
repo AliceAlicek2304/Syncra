@@ -41,44 +41,42 @@ export default function RepurposePage() {
         </div>
       </div>
 
-      <div className={styles.inputArea}>
-        <InputSection />
-        <ConfigBar />
-      </div>
-
-      {error && (
-        <div style={{
-          marginTop: 12,
-          padding: '10px 12px',
-          borderRadius: 10,
-          border: '1px solid rgba(239,68,68,0.35)',
-          background: 'rgba(239,68,68,0.12)',
-          color: '#fecaca',
-          fontSize: 13,
-        }}>
-          {error}
-        </div>
-      )}
-
-      {hasOutput ? (
-        <ResultsGrid />
-      ) : (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyGlow} />
-          <Sparkles size={36} className={styles.emptyIcon} />
-          <p className={styles.emptyTitle}>Kết quả của bạn sẽ xuất hiện ở đây</p>
-          <p className={styles.emptyDesc}>
-            Dán nội dung, chọn nền tảng mục tiêu và nhấn <strong>Start Engine</strong> để AI phân tích &amp; tạo nội dung.
-          </p>
-          <div className={styles.formatHints}>
-            <span>Blog post</span>
-            <span>YouTube Script</span>
-            <span>Newsletter</span>
-            <span>Podcast Notes</span>
-            <span>Article</span>
+      <div className={styles.main}>
+        <div className={styles.leftPanel}>
+          <div className={styles.inputArea}>
+            <InputSection />
+            <ConfigBar />
           </div>
+
+          {error && (
+            <div className={styles.errorBox}>
+              {error}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className={styles.rightPanel}>
+          {hasOutput ? (
+            <ResultsGrid />
+          ) : (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyGlow} />
+              <Sparkles size={36} className={styles.emptyIcon} />
+              <p className={styles.emptyTitle}>Kết quả của bạn sẽ xuất hiện ở đây</p>
+              <p className={styles.emptyDesc}>
+                Dán nội dung, chọn nền tảng mục tiêu và nhấn <strong>Start Engine</strong> để AI phân tích &amp; tạo nội dung.
+              </p>
+              <div className={styles.formatHints}>
+                <span>Blog post</span>
+                <span>YouTube Script</span>
+                <span>Newsletter</span>
+                <span>Podcast Notes</span>
+                <span>Article</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

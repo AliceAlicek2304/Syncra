@@ -1,4 +1,4 @@
-import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
+import { Sparkles, Loader2, Linkedin, Instagram, Mail, Youtube } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -19,6 +19,9 @@ const PLATFORMS: PlatformDef[] = [
     { id: 'LinkedIn', icon: Linkedin, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.35)' },
     { id: 'X', xText: 'X', color: '#e2e8f0', bg: 'rgba(226,232,240,0.07)', border: 'rgba(226,232,240,0.25)' },
     { id: 'Instagram', icon: Instagram, color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.35)' },
+    { id: 'Facebook', xText: 'fb', color: '#1877F2', bg: 'rgba(24,119,242,0.08)', border: 'rgba(24,119,242,0.2)' },
+    { id: 'TikTok', xText: 'tt', color: '#000000', bg: 'rgba(0,0,0,0.06)', border: 'rgba(0,0,0,0.12)' },
+    { id: 'YouTube', icon: Youtube, color: '#FF0000', bg: 'rgba(255,0,0,0.06)', border: 'rgba(255,0,0,0.12)' },
     { id: 'Newsletter', icon: Mail, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.35)' },
 ]
 

@@ -12,7 +12,7 @@ namespace Syncra.Infrastructure.Services;
 public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
 {
     private static readonly string[] AllowedRepurposeTypes = ["POST", "THREAD", "CAROUSEL", "INSIGHT", "TIP", "QUOTE"];
-    private static readonly string[] AllowedRepurposePlatforms = ["LinkedIn", "X", "Instagram", "Newsletter"];
+    private static readonly string[] AllowedRepurposePlatforms = ["LinkedIn", "X", "Instagram", "Newsletter", "Facebook"];
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -276,16 +276,16 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
             _           => "CTA: ask a question to spark comments"
         };
 
-        return $"""
-        Write {count} Vietnamese social media post(s) about this topic.
+        return $$"""
+        Write {{count}} Vietnamese social media post(s) about this topic.
 
-        Topic: {request.Topic}
-        Niche: {request.Niche ?? "General"}
-        Audience: {request.Audience ?? "Vietnamese social media users"}
-        Goal: {request.Goal ?? "engagement"}
-        Tone: {request.Tone ?? "friendly and relatable"}
-        {ctaHint}
-        Reference files: {fileContext}
+        Topic: {{request.Topic}}
+        Niche: {{request.Niche ?? "General"}}
+        Audience: {{request.Audience ?? "Vietnamese social media users"}}
+        Goal: {{request.Goal ?? "engagement"}}
+        Tone: {{request.Tone ?? "friendly and relatable"}}
+        {{ctaHint}}
+        Reference files: {{fileContext}}
 
         Requirements:
         - caption must be AT LEAST 400 characters with \n\n between paragraphs.
@@ -296,42 +296,73 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         """;
     }
 
-        private static string BuildRepurposeSystemPrompt() =>
-                """
-                You are Syncra AI Repurpose Engine—an elite content transformer fluent in Vietnamese social media culture.
-                Your job: take one source text and re-create it as platform-native posts that feel authentic, not copy-pasted.
+    private static string BuildRepurposeSystemPrompt() =>
+        """
+        You are Syncra AI Repurpose Engine—an elite content strategist and master storyteller fluent in Vietnamese social media culture.
+        Your mission: Transform raw source text into long-form, high-impact, publication-ready Vietnamese posts.
 
-                === FIELD DEFINITIONS ===
-                - **content**: The FULL, complete post body for the platform. Must be long (200–500 words for Facebook/LinkedIn). For X (Twitter), keep it under 280 chars. For TikTok use script format.
-                - **title**: Short descriptor (internal label, not a headline).
-                - **suggestedHashtags**: 3–6 relevant hashtags.
-                - **suggestedCta**: A strong, specific call to action.
+        === NON-NEGOTIABLE RULES ===
+        1. SOURCE LOYALTY: 100% of your content must be derived from the source text. Do NOT invent topics.
+        2. NO PLACEHOLDERS: Never write "Nội dung đầy đủ", "[content here]", or any placeholder text. Write the ACTUAL post.
+        3. WORD COUNT ENFORCEMENT (this is mandatory, not a suggestion):
+           - POST for Facebook or LinkedIn: MINIMUM 350 words. Aim for 500+.
+           - TIP or INSIGHT: MINIMUM 120 words. Must include numbered steps or a concrete example.
+           - QUOTE: 1-3 powerful sentences. Must be thought-provoking or contrarian.
+           - Instagram: 100-200 words, emoji-rich.
+           - X/Twitter: Under 250 chars per tweet.
+        4. QUALITY GATE: If your generated content is under the minimum word count, you have FAILED. Expand it.
+        5. TECHNICAL DEPTH: Extract and use a minimum of 5 specific terms, names, or data points from the source.
 
-                === PLATFORM-NATIVE RULES ===
-                - **Facebook/LinkedIn**: Deep storytelling. Open with a hook sentence, build with context and value, close with a question or CTA. Use \n for spacing. Must feel like it was written specifically for that platform, NOT recycled.
-                - **X (Twitter)**: One powerful standalone tweet OR numbered thread. Each tweet max 280 chars. Write in Vietnamese.
-                - **Instagram**: Conversational caption. Emoji-rich. Start strong. End with: "Lưu bài này lại để xem sau! 🔖"
-                - **Newsletter**: Professional tone. Include a subject-line-quality title. Structured paragraphs.
+        === HOW TO WRITE A GREAT POST (FORMULA) ===
+        Hook (1-2 lines that demand attention) ->
+        Context (Why does this matter? What problem does it solve?) ->
+        Core Value (The detailed, expert breakdown with examples, steps, or analogies) ->
+        Takeaway (The concrete lesson or insight) ->
+        CTA (A specific, strong call to action)
 
-                === TECHNICAL RULES ===
-                - Return ONLY valid JSON. No markdown fences.
-                - ALL newlines inside JSON strings MUST be escaped as '\n'. No literal newline characters inside strings.
-                - Write in Vietnamese. Use English only for industry-specific terms.
+        === PLATFORM REWRITING GUIDE ===
+        - Facebook: Community tone. Open with a story or bold statement. Use \n\n between paragraphs. End with a question.
+        - LinkedIn: Authority tone. Professional language. Use bullet points (•) for key insights.
+        - Instagram: Fun, personal. Heavy emojis. End with "Lưu bài này lại! 🔖"
+        - X: Punchy. Contrarian. No fluff.
+        - Newsletter: Structured. Use headers (##) and paragraph breaks.
 
-                === SCHEMA ===
+        === FEW-SHOT EXAMPLES ===
+
+        [EXAMPLE - Facebook POST - ~400 words]
+        {
+          "type": "POST", "platform": "Facebook",
+          "title": "Microservices vs Monolith",
+          "content": "Năm 2018, tôi đã sai khi chia một hệ thống thành 47 microservices chỉ sau 3 tháng.\n\nKết quả? Server dều. Team mệt. Bugs tra tấn mọi cuộc họp.\n\nSự thật về Microservices mà không ai nói với bạn khi mới học:\n\nMicroservices KHÔNG phải mặc định tốt hơn Monolith. Chúng chỉ tốt hơn trong bối cảnh đúng.\n\nĐây là framework tôi dùng để quyết định:\n\n✅ Dùng Microservices khi:\n• Đội ngũ > 20 người, cần deploy độc lập từng module.\n• Hệ thống cần scale riêng lẻ từng phần (ví dụ: checkout cần scale x10 hơn login).\n• Đã có Monolith hoạt động ổn, có đủ observability & CI/CD pipeline.\n\n❌ Đừng dùng Microservices khi:\n• Team < 5 người và product chưa tìm được Product-Market Fit.\n• Chưa hiểu rõ domain boundaries — sẽ phân tách sai và phải refactor đau.\n• Không có infrastructure để monitor distributed tracing (Jaeger, Zipkin).\n\nMartin Fowler từng viết: 'Don't start with microservices.' Và ông ấy đúng.\n\nMonolith được thiết kế tốt, với clear module boundaries và good test coverage, vẫn có thể serve hàng triệu users.\n\nBài học đắt giá nhất trong 6 năm làm backend: Architecture phải phục vụ business, không phải để CV đẹp.\n\nBạn đang dùng Monolith hay Microservices? Chia sẻ bên dưới để cùng thảo luận nhé 👇",
+          "suggestedHashtags": ["#softwaredevelopment", "#microservices", "#systemdesign", "#backend", "#lậptrình"],
+          "suggestedCta": "Comment kinh nghiệm của bạn bên dưới!"
+        }
+
+        [EXAMPLE - TIP - ~150 words]
+        {
+          "type": "TIP", "platform": "LinkedIn",
+          "title": "5 nguyên tắc thiết kế API sạch",
+          "content": "5 nguyên tắc giúp API của bạn không bao giờ làm đồng nghiệp ghét:\n\n1. Đặt tên endpoint theo hành động (noun/verb), không theo implementation.\n   ✅ /users/{id}/activate — ❌ /runUserActivationScript\n\n2. Trả về lỗi có nghĩa. Status code 200 với body 'error: true' là tội ác.\n   Dùng đúng 4xx/5xx + message rõ ràng.\n\n3. Versioning từ ngày đầu (/api/v1/). Không ai muốn breaking change lúc 2 giờ sáng.\n\n4. Rate limiting và caching từ bản thiết kế, không phải sau khi bị DDoS.\n\n5. Document bằng OpenAPI/Swagger. Code không có doc = kỹ năng giao tiếp kém.\n\nMột API tốt là API mà junior developer đọc và hiểu ngay trong 5 phút.\n\nBạn đang vi phạm điều nào trong số này? 😅",
+          "suggestedHashtags": ["#api", "#backenddev", "#cleancode"],
+          "suggestedCta": "Save bài này để reference lần sau!"
+        }
+
+        Only output the JSON object. Do not include any explanation or markdown outside the JSON.
+
+        === SCHEMA ===
+        {
+            "atoms": [
                 {
-                    "atoms": [
-                        {
-                            "type": "POST|THREAD|CAROUSEL|INSIGHT|TIP|QUOTE",
-                            "title": "string",
-                            "content": "string (FULL post body)",
-                            "platform": "Facebook|LinkedIn|X|Instagram|Newsletter",
-                            "suggestedHashtags": ["#tag1", "#tag2"],
-                            "suggestedCta": "string"
-                        }
-                    ]
+                    "type": "POST|THREAD|CAROUSEL|INSIGHT|TIP|QUOTE",
+                    "title": "Short topic label (3-7 words)",
+                    "content": "THE FULL, COMPLETE, POLISHED VIETNAMESE BODY — NO SHORTCUTS",
+                    "platform": "Facebook|LinkedIn|X|Instagram|Newsletter",
+                    "suggestedHashtags": ["#specific1", "#specific2", "#specific3"],
+                    "suggestedCta": "Specific action-driven CTA"
                 }
-                """;
+            ]
+        }
+        """;
 
     private static string BuildRepurposeUserPrompt(GenerateRepurposeRequestDto request)
     {
@@ -340,22 +371,26 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
             ? "INSIGHTS MODE: prioritize atomized nuggets (INSIGHT/TIP/QUOTE)."
             : "FULL MODE: mix long output formats (POST/THREAD/CAROUSEL) with concise atoms.";
 
-        return $"""
-                Repurpose this content into platform-native posts in Vietnamese.
+        return $$"""
+                Repurpose this content into high-impact, platform-native posts in Vietnamese.
 
                 === CONFIGURATION ===
-                Target Platforms: {platforms}
-                Tone: {request.Tone ?? "Adaptive – match the platform culture"}
-                Desired Length: {request.Length ?? "medium"}
-                Mode: {mode}
+                Target Platforms: {{platforms}}
+                Tone: {{request.Tone ?? "Adaptive – match the platform culture"}}
+                Desired Length: {{request.Length ?? "medium"}}
+                Mode: {{mode}}
 
                 === SOURCE CONTENT ===
-                {request.SourceText}
+                {{request.SourceText}}
 
-                === MANDATORY REMINDER ===
-                - 'content' field = FULL post body (not a summary). Write it as if you're posting it yourself.
-                - Adapt the style for EACH platform. A Facebook post and a LinkedIn post from the same source should look VERY different.
-                - Minimum: 150 words per atom for Facebook/LinkedIn.
+                === MANDATORY INSTRUCTIONS ===
+                1. SOURCE LOYALTY: Your output MUST be 100% based on the "SOURCE CONTENT" above. 
+                2. NO HALLUCINATIONS: If the source content is about "Software Architecture", your posts MUST be about Software Architecture. DO NOT write about unrelated topics like "Reading Books" or "Weight Loss".
+                3. DEPTH & QUALITY: For EACH platform ({{platforms}}), generate AT LEAST 2 unique, high-quality atoms.
+                4. DATA EXTRACTION: Extract and use specific names, technical terms, or steps found in the source.
+                5. LENGTH: Facebook and LinkedIn posts must be substantial (300+ words).
+
+                If the SOURCE CONTENT is unreadable, empty, or binary junk, simply return: {"atoms": []}.
 
                 Return only the JSON object.
                 """;
@@ -590,6 +625,7 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
             "twitter" => "X",
             "instagram" => "Instagram",
             "newsletter" => "Newsletter",
+            "facebook" => "Facebook",
             _ => AllowedRepurposePlatforms.FirstOrDefault(p => p.Equals(platform.Trim(), StringComparison.OrdinalIgnoreCase)) ?? string.Empty
         };
     }

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Download, Sparkles, Linkedin, Instagram, Mail } from 'lucide-react'
+import { Download, Sparkles, Linkedin, Instagram, Mail, Facebook } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import type { RepurposePlatform } from '../../types/ai'
+import type { RepurposePlatform, RepurposeAtom } from '../../types/ai'
 import AtomCard from './AtomCard.tsx'
+import RepurposeDetailModal from './RepurposeDetailModal.tsx'
 import { buildRepurposeCardItems } from './cardBuilder'
 import styles from './RepurposeComponents.module.css'
 
@@ -14,6 +15,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     LinkedIn: { icon: Linkedin, color: '#60a5fa' },
     X: { color: '#e2e8f0' },
     Instagram: { icon: Instagram, color: '#f472b6' },
+    Facebook: { icon: Facebook, color: '#1877F2' },
     Newsletter: { icon: Mail, color: '#fbbf24' },
 }
 
@@ -34,16 +36,23 @@ function SkeletonCard() {
 }
 
 export default function ResultsGrid() {
-    const { results, isGenerating, error, config } = useRepurpose()
+    const { results, setResults, isGenerating, error, config } = useRepurpose()
     const [activeFilter, setActiveFilter] = useState<RepurposePlatform | 'All'>('All')
     const [selectionMode, setSelectionMode] = useState(false)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [viewingAtom, setViewingAtom] = useState<RepurposeAtom | null>(null)
 
     const selectedPlatforms = config.targetPlatforms
     const filterTabs = ['All', ...selectedPlatforms] as (RepurposePlatform | 'All')[]
     const effectiveFilter = activeFilter !== 'All' && !selectedPlatforms.includes(activeFilter) ? 'All' : activeFilter
     const filtered = buildRepurposeCardItems(results, effectiveFilter)
     const selectedCount = results.filter((atom) => selectedIds.includes(atom.id)).length
+
+    const handleUpdateAtom = (id: string, updates: Partial<RepurposeAtom>) => {
+        setResults((prev) => prev.map((atom) => 
+            atom.id === id ? { ...atom, ...updates } : atom
+        ))
+    }
 
     const toggleCardSelection = (atomId: string) => {
         setSelectedIds((prev) => prev.includes(atomId) ? prev.filter(id => id !== atomId) : [...prev, atomId])
@@ -157,10 +166,18 @@ export default function ResultsGrid() {
                             selectionMode={selectionMode}
                             selected={selectedIds.includes(atom.id)}
                             onToggleSelect={toggleCardSelection}
+                            onView={() => setViewingAtom(atom)}
                         />
                     ))}
                 </div>
             )}
+
+            <RepurposeDetailModal
+                atom={viewingAtom}
+                isOpen={!!viewingAtom}
+                onClose={() => setViewingAtom(null)}
+                onSave={handleUpdateAtom}
+            />
         </div>
     )
 }
