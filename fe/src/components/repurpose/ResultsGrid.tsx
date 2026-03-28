@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Download, Sparkles, Linkedin, Instagram, Mail, Facebook } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
+import { useCreatePostModal } from '../../context/createPostModalContext'
 import type { RepurposePlatform, RepurposeAtom } from '../../types/ai'
 import AtomCard from './AtomCard.tsx'
 import RepurposeDetailModal from './RepurposeDetailModal.tsx'
@@ -37,6 +38,7 @@ function SkeletonCard() {
 
 export default function ResultsGrid() {
     const { results, setResults, isGenerating, error, config } = useRepurpose()
+    const { openCreatePost } = useCreatePostModal()
     const [activeFilter, setActiveFilter] = useState<RepurposePlatform | 'All'>('All')
     const [selectionMode, setSelectionMode] = useState(false)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -177,6 +179,9 @@ export default function ResultsGrid() {
                 isOpen={!!viewingAtom}
                 onClose={() => setViewingAtom(null)}
                 onSave={handleUpdateAtom}
+                onCreatePost={(content, _title) => {
+                    openCreatePost({ initialContent: content, source: 'repurpose' })
+                }}
             />
         </div>
     )

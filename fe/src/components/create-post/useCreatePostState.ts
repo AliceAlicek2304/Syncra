@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useCalendar } from '../../context/calendarContextBase'
 import { shortId } from '../../utils/shortId'
@@ -30,11 +30,21 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const isEditMode = !!editPost
 
   // Get connected platforms from integrations
-  const connectedPlatformIds = getActivePlatformIds(integrations)
-  const connectedPlatforms = PLATFORMS
-    .filter(p => connectedPlatformIds.includes(p.id.toLowerCase()))
-    .map(p => p.id)
-  const defaultPlatform = connectedPlatforms[0] ?? PLATFORMS[0].id
+  // MUST be memoized — a new array reference every render would trigger useEffect re-init,
+  // resetting activePlatforms/activeTab while the user is editing (e.g. changing schedule time).
+  const connectedPlatformIds = useMemo(
+    () => getActivePlatformIds(integrations),
+    [integrations]
+  )
+
+  const connectedPlatforms = useMemo(() => {
+    return PLATFORMS.filter(p => connectedPlatformIds.includes(p.id.toLowerCase())).map(p => p.id)
+  }, [connectedPlatformIds])
+
+  const defaultPlatform = useMemo(
+    () => connectedPlatforms[0] ?? PLATFORMS[0].id,
+    [connectedPlatforms]
+  )
   
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(
     editPost
@@ -86,7 +96,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const prevEditPostIdRef = useRef<string | null>(null)
 
-  // Initialize state when modal opens or when editing a different post
+  // Keep stable refs so the init effect below doesn't need them as deps.
+  const connectedPlatformsRef = useRef(connectedPlatforms)
+  connectedPlatformsRef.current = connectedPlatforms
+  const defaultPlatformRef = useRef(defaultPlatform)
+  defaultPlatformRef.current = defaultPlatform
+
+  // Initialize state when modal opens or when editing a different post.
+  // NOTE: connectedPlatforms / defaultPlatform are intentionally read via refs
+  // so that a change in integrations never re-triggers init while the modal is open.
   useEffect(() => {
     if (!isOpen) {
       didInitRef.current = false
@@ -107,6 +125,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
     if (didInitRef.current) return
 
     setTimeout(() => {
+      const connectedPlatforms = connectedPlatformsRef.current
+      const defaultPlatform = defaultPlatformRef.current
+
       let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
       let initPlatforms: Platform[] = connectedPlatforms.length > 0 ? [defaultPlatform] : []
       let initSchMode = false
@@ -211,8 +232,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : defaultPlatform)
       setMedia(initMedia)
 
-      // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
-      // Điều này đảm bảo khi có initialContent, trạng thái sẽ bị đánh dấu là Dirty (chưa lưu) ngay lập tức.
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
         media: initMedia,
@@ -223,7 +242,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }, 0)
 
     didInitRef.current = true
-  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost, connectedPlatforms, defaultPlatform, activeWorkspace])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost, activeWorkspace])
 
   const caption = captionsByPlatform[activeTab] ?? ''
   

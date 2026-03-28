@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Check, Copy, Sparkles, Linkedin, Instagram, Mail, Facebook, Plus, Smile, Hash } from 'lucide-react'
+import { X, Check, Copy, Sparkles, Linkedin, Instagram, Mail, Facebook, Plus, Smile, Hash, Send, BookOpen, Loader2 } from 'lucide-react'
 import type { RepurposeAtom, MediaFile } from '../../types/ai'
 import { shortId } from '../../utils/shortId'
+import { api } from '../../api/axios'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './RepurposeDetailModal.module.css'
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
   isOpen: boolean
   onClose: () => void
   onSave: (id: string, updates: Partial<RepurposeAtom>) => void
+  onCreatePost?: (content: string, title: string) => void
 }
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -20,22 +23,26 @@ const PLATFORM_ICONS: Record<string, any> = {
 
 const COMMON_EMOJIS = ['😊', '🔥', '💡', '🚀', '✅', '💬', '👇', '❤️', '🎯', '💪', '📊', '🌟', '😂', '👏', '🙌', '💼', '🎉', '✨', '📱', '💰']
 
-export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave }: Props) {
+export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, onCreatePost }: Props) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<MediaFile[]>([])
   const [copied, setCopied] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiRef = useRef<HTMLDivElement>(null)
+  const { activeWorkspace } = useWorkspace()
 
   useEffect(() => {
     if (atom) {
       setTitle(atom.title || '')
       setContent(atom.content)
       setMedia(atom.media || [])
+      setSaveSuccess(false)
     }
   }, [atom])
 
@@ -82,8 +89,43 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave }: 
     })
   }
 
-  const handleSave = () => {
+  // Save edits back to the card (local state)
+  const handleLocalSave = () => {
     onSave(atom.id, { title, content, media })
+  }
+
+  // Save as Idea (unassigned) via API
+  const handleSaveAsIdea = async () => {
+    if (!activeWorkspace) return
+    setSaving(true)
+    try {
+      const ideaTitle = title.trim() || atom.type + ' – ' + atom.platform
+      const ideaDesc = content.trim()
+      await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
+        title: ideaTitle,
+        description: ideaDesc,
+        status: 'Draft',   // maps to 'unassigned' board column
+      })
+      // Also update local atom
+      handleLocalSave()
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to save idea', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Open CreatePost modal with current content pre-filled
+  const handleCreatePost = () => {
+    handleLocalSave()
+    if (onCreatePost) {
+      const fullContent = title.trim()
+        ? `${title.trim()}\n\n${content}`
+        : content
+      onCreatePost(fullContent, title.trim())
+    }
     onClose()
   }
 
@@ -160,8 +202,7 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave }: 
                 </div>
               )}
             </div>
-            <button className={styles.toolbarBtn} title="Hashtag"
-              onClick={() => insertAtCursor(' #')}>
+            <button className={styles.toolbarBtn} title="Hashtag" onClick={() => insertAtCursor(' #')}>
               <Hash size={17} />
             </button>
             <div className={styles.toolbarSpacer} />
@@ -228,17 +269,47 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave }: 
 
         {/* Footer */}
         <div className={styles.footer}>
+          {/* Copy feedback */}
           {copied && (
             <div className={styles.copyFeedback}>
               <Check size={13} /><span>Đã sao chép!</span>
             </div>
           )}
+          {/* Save success feedback */}
+          {saveSuccess && (
+            <div className={styles.saveFeedback}>
+              <Check size={13} /><span>Đã lưu vào Ideas!</span>
+            </div>
+          )}
+
           <button className={styles.cancelBtn} onClick={handleCopy}>
             <Copy size={13} style={{ marginRight: 5 }} />Sao chép
           </button>
+
           <div className={styles.footerSpacer} />
+
           <button className={styles.cancelBtn} onClick={onClose}>Hủy</button>
-          <button className={styles.saveBtn} onClick={handleSave}>Lưu thay đổi</button>
+
+          {/* Save to Ideas */}
+          <button
+            className={styles.saveIdeaBtn}
+            onClick={handleSaveAsIdea}
+            disabled={saving}
+            title="Lưu vào Ideas để chỉnh sửa tiếp"
+          >
+            {saving ? <Loader2 size={13} className={styles.spinIcon} /> : <BookOpen size={13} />}
+            Lưu vào Ideas
+          </button>
+
+          {/* Create Post */}
+          <button
+            className={styles.saveBtn}
+            onClick={handleCreatePost}
+            title="Đăng bài hoặc lên lịch ngay"
+          >
+            <Send size={13} />
+            Đăng bài
+          </button>
         </div>
       </div>
     </div>
