@@ -41,6 +41,9 @@ else
 
 var app = builder.Build();
 
+// CORS must run before static files so /media responses include ACAO headers.
+app.UseCors("AllowFrontend");
+
 app.UseStaticFiles();
 
 try
@@ -54,15 +57,22 @@ try
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(localRoot),
-            RequestPath = "/media"
+            RequestPath = "/media",
+            OnPrepareResponse = context =>
+            {
+                var origin = context.Context.Request.Headers.Origin.ToString();
+                if (origin == "http://localhost:5173" || origin == "http://localhost:3000")
+                {
+                    context.Context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+                    context.Context.Response.Headers["Vary"] = "Origin";
+                }
+            }
         });
     }
 }
 catch
 {
 }
-
-app.UseCors("AllowFrontend");
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { AxiosError } from 'axios'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../context/AuthContext'
 import styles from './AuthModal.module.css'
 
@@ -82,7 +83,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }
   }
 
-  return (
+  const modalContent = (
     <div className={styles.overlay} onClick={handleClose} role="presentation">
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Authentication">
         <button type="button" className={styles.closeButton} onClick={handleClose} aria-label="Close authentication dialog">
@@ -196,4 +197,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       </div>
     </div>
   )
+
+  // Render outside Navbar DOM tree so fixed positioning is not affected by navbar filters.
+  return createPortal(modalContent, document.body)
 }

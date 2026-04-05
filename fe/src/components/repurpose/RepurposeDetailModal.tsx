@@ -3,6 +3,7 @@ import { X, Check, Copy, Sparkles, Linkedin, Instagram, Mail, Facebook, Plus, Sm
 import type { RepurposeAtom, MediaFile } from '../../types/ai'
 import { shortId } from '../../utils/shortId'
 import { api } from '../../api/axios'
+import { mediaApi } from '../../api/media'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './RepurposeDetailModal.module.css'
 
@@ -26,7 +27,7 @@ const COMMON_EMOJIS = ['😊', '🔥', '💡', '🚀', '✅', '💬', '👇', '�
 export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, onCreatePost }: Props) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [media, setMedia] = useState<MediaFile[]>([])
+  const [media, setMedia] = useState<Array<MediaFile & { backendId?: string }>>([])
   const [copied, setCopied] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
@@ -41,7 +42,7 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, on
     if (atom) {
       setTitle(atom.title || '')
       setContent(atom.content)
-      setMedia(atom.media || [])
+      setMedia((atom.media || []).map(m => ({ ...m, backendId: isGuid(m.id) ? m.id : undefined })))
       setSaveSuccess(false)
     }
   }, [atom])
@@ -74,6 +75,40 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, on
     setMedia(prev => [...prev, ...newMedia])
   }, [])
 
+  const isGuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+  const uploadMediaForIdea = async (ideaId: string) => {
+    if (!activeWorkspace || media.length === 0) return
+
+    for (const item of media) {
+      if ((item.backendId && isGuid(item.backendId)) || isGuid(item.id)) continue
+
+      const response = await fetch(item.url)
+      const blob = await response.blob()
+      const fallbackType = item.type === 'video' ? 'video/mp4' : 'image/jpeg'
+      const file = new File([blob], item.name || `media-${shortId()}`, {
+        type: blob.type || fallbackType,
+      })
+
+      const upload = await mediaApi.upload(activeWorkspace.id, file, undefined, ideaId)
+      const backendId = upload.data.id
+
+      setMedia(prev => prev.map(m =>
+        m.id === item.id
+          ? {
+              ...m,
+              id: backendId,
+              url: upload.data.url,
+              name: upload.data.fileName,
+              type: upload.data.contentType?.startsWith('video') ? 'video' : 'image',
+              backendId,
+            }
+          : m
+      ))
+    }
+  }
+
   if (!isOpen || !atom) return null
 
   const Icon = PLATFORM_ICONS[atom.platform] || Sparkles
@@ -91,7 +126,8 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, on
 
   // Save edits back to the card (local state)
   const handleLocalSave = () => {
-    onSave(atom.id, { title, content, media })
+    const normalizedMedia: MediaFile[] = media.map(({ id, url, type, name }) => ({ id, url, type, name }))
+    onSave(atom.id, { title, content, media: normalizedMedia })
   }
 
   // Save as Idea (unassigned) via API
@@ -101,11 +137,14 @@ export default function RepurposeDetailModal({ atom, isOpen, onClose, onSave, on
     try {
       const ideaTitle = title.trim() || atom.type + ' – ' + atom.platform
       const ideaDesc = content.trim()
-      await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
+      const ideaRes = await api.post(`/workspaces/${activeWorkspace.id}/ideas`, {
         title: ideaTitle,
         description: ideaDesc,
         status: 'Draft',   // maps to 'unassigned' board column
       })
+
+      await uploadMediaForIdea(ideaRes.data.id)
+
       // Also update local atom
       handleLocalSave()
       setSaveSuccess(true)

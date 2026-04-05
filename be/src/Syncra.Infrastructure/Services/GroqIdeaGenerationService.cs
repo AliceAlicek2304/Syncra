@@ -12,7 +12,7 @@ namespace Syncra.Infrastructure.Services;
 public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
 {
     private static readonly string[] AllowedRepurposeTypes = ["POST", "THREAD", "CAROUSEL", "INSIGHT", "TIP", "QUOTE"];
-    private static readonly string[] AllowedRepurposePlatforms = ["LinkedIn", "X", "Instagram", "Newsletter", "Facebook"];
+    private static readonly string[] AllowedRepurposePlatforms = ["LinkedIn", "X", "Instagram", "Newsletter", "Facebook", "TikTok", "YouTube"];
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -96,10 +96,40 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
             throw new InvalidOperationException("Groq API key is not configured. Set Groq__ApiKey in your environment.");
         }
 
-        var completion = await SendGroqJsonAsync(
-            BuildRepurposeSystemPrompt(),
-            BuildRepurposeUserPrompt(request),
-            cancellationToken);
+        var normalizedPlatforms = request.Platforms
+            .Select(NormalizeRepurposePlatform)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (normalizedPlatforms.Count == 0)
+        {
+            throw new ArgumentException("At least one valid target platform is required.", nameof(request));
+        }
+
+        var safeRequest = request with { Platforms = normalizedPlatforms };
+
+        GroqChatCompletionResponse? completion;
+        try
+        {
+            completion = await SendGroqJsonAsync(
+                BuildRepurposeSystemPrompt(),
+                BuildRepurposeUserPrompt(safeRequest),
+                cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex,
+                "Groq repurpose failed on primary prompt. Retrying with compact prompt. WorkspaceId={WorkspaceId}, UserId={UserId}, Platforms={Platforms}",
+                workspaceId,
+                userId,
+                string.Join(",", normalizedPlatforms));
+
+            completion = await SendGroqJsonAsync(
+                BuildRepurposeFallbackSystemPrompt(),
+                BuildRepurposeFallbackUserPrompt(safeRequest),
+                cancellationToken);
+        }
 
         var content = completion?.Choices?.FirstOrDefault()?.Message?.Content;
         if (string.IsNullOrWhiteSpace(content))
@@ -110,7 +140,7 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
         var json = ExtractJson(content);
         var sanitizedJson = SanitizeJson(json);
         var parsed = JsonSerializer.Deserialize<RepurposeEnvelope>(sanitizedJson, JsonOptions);
-        var atoms = NormalizeRepurposeAtoms(parsed?.Atoms, request.Platforms, request.ExtractAtoms);
+        var atoms = NormalizeRepurposeAtoms(parsed?.Atoms, safeRequest.Platforms, safeRequest.ExtractAtoms);
 
         if (atoms.Count == 0)
         {
@@ -356,13 +386,34 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
                     "type": "POST|THREAD|CAROUSEL|INSIGHT|TIP|QUOTE",
                     "title": "Short topic label (3-7 words)",
                     "content": "THE FULL, COMPLETE, POLISHED VIETNAMESE BODY — NO SHORTCUTS",
-                    "platform": "Facebook|LinkedIn|X|Instagram|Newsletter",
+                    "platform": "Facebook|LinkedIn|X|Instagram|Newsletter|TikTok|YouTube",
                     "suggestedHashtags": ["#specific1", "#specific2", "#specific3"],
                     "suggestedCta": "Specific action-driven CTA"
                 }
             ]
         }
         """;
+
+        private static string BuildRepurposeFallbackSystemPrompt() =>
+                """
+                You are Syncra AI Repurpose Engine. Return ONLY valid JSON with schema:
+                {
+                    "atoms": [
+                        {
+                            "type": "POST|THREAD|CAROUSEL|INSIGHT|TIP|QUOTE",
+                            "title": "string",
+                            "content": "string",
+                            "platform": "Facebook|LinkedIn|X|Instagram|Newsletter|TikTok|YouTube",
+                            "suggestedHashtags": ["#tag"],
+                            "suggestedCta": "string"
+                        }
+                    ]
+                }
+                Requirements:
+                - Vietnamese language.
+                - Each requested platform must have at least 1 atom.
+                - No markdown, no code fence.
+                """;
 
     private static string BuildRepurposeUserPrompt(GenerateRepurposeRequestDto request)
     {
@@ -393,6 +444,27 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
                 If the SOURCE CONTENT is unreadable, empty, or binary junk, simply return: {"atoms": []}.
 
                 Return only the JSON object.
+                """;
+    }
+
+    private static string BuildRepurposeFallbackUserPrompt(GenerateRepurposeRequestDto request)
+    {
+        var platforms = string.Join(", ", request.Platforms);
+        var source = request.SourceText.Length > 6000
+            ? request.SourceText[..6000]
+            : request.SourceText;
+
+        return $$"""
+                Repurpose this Vietnamese source content.
+                Target platforms: {{platforms}}
+                Tone: {{request.Tone ?? "Adaptive"}}
+                Length: {{request.Length ?? "medium"}}
+                ExtractAtoms: {{request.ExtractAtoms}}
+
+                Source:
+                {{source}}
+
+                Return JSON only.
                 """;
     }
 
@@ -620,12 +692,16 @@ public sealed class GroqIdeaGenerationService : IAiIdeaGenerationService
 
         return val switch
         {
+            "fb" => "Facebook",
             "linkedin" => "LinkedIn",
             "x" => "X",
             "twitter" => "X",
             "instagram" => "Instagram",
             "newsletter" => "Newsletter",
             "facebook" => "Facebook",
+            "tiktok" => "TikTok",
+            "youtube" => "YouTube",
+            "yt" => "YouTube",
             _ => AllowedRepurposePlatforms.FirstOrDefault(p => p.Equals(platform.Trim(), StringComparison.OrdinalIgnoreCase)) ?? string.Empty
         };
     }

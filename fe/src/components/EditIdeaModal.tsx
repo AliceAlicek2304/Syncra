@@ -197,7 +197,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                 if (!mounted) return
                 const matched = mediaList
                     .filter(m => m.postId === idea.id || m.ideaId === idea.id)
-                    .map(m => ({ id: shortId(), url: m.url, type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video', name: m.fileName }))
+                    .map(m => ({ id: m.id, url: m.url, type: m.contentType?.startsWith('video') ? 'video' : 'image' as 'image' | 'video', name: m.fileName }))
                 setMedia(matched)
             } catch (e) {
                 // failed to load media
@@ -260,8 +260,23 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
         e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files)
     }
 
-    const removeMedia = (id: string) => {
-        setMedia(prev => { const item = prev.find(m => m.id === id); if (item) URL.revokeObjectURL(item.url); return prev.filter(m => m.id !== id) })
+    const isGuid = (value: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+    const removeMedia = async (id: string) => {
+        if (activeWorkspace && isGuid(id)) {
+            try {
+                await mediaApi.delete(activeWorkspace.id, id)
+            } catch {
+                return
+            }
+        }
+
+        setMedia(prev => {
+            const item = prev.find(m => m.id === id)
+            if (item) URL.revokeObjectURL(item.url)
+            return prev.filter(m => m.id !== id)
+        })
         setEditingId(prev => prev === id ? null : prev)
     }
 
@@ -436,7 +451,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                                                     type="button"
                                                     className={`${styles.thumbBtn} ${styles.thumbBtnDelete}`}
                                                     title="Remove"
-                                                    onClick={() => removeMedia(m.id)}
+                                                    onClick={() => { void removeMedia(m.id) }}
                                                 ><X size={11} /></button>
                                             </div>
                                             {media[0]?.id === m.id && <span className={styles.thumbCoverBadge}>Cover</span>}
