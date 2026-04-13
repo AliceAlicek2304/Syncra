@@ -4,6 +4,7 @@ using Syncra.Api;
 using Syncra.Api.Logging;
 using Syncra.Api.Middleware;
 using Syncra.Application;
+using Syncra.Application.Options;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
 using Microsoft.Extensions.FileProviders;
@@ -12,12 +13,9 @@ using System.IO;
 LoadDotEnv();
 
 var builder = WebApplication.CreateBuilder(args);
-var postgresConnectionString = builder.Configuration["Postgres:ConnectionString"];
-if (string.IsNullOrWhiteSpace(postgresConnectionString))
-{
-    postgresConnectionString = "Host=127.0.0.1;Port=5432;Database=syncra_db;Username=postgres;Password=1234567890";
-}
-var canEnableHangfire = HasConnectionPassword(postgresConnectionString);
+var postgresOptions = builder.Configuration.GetSection(PostgresOptions.SectionName).Get<PostgresOptions>()
+    ?? new PostgresOptions();
+var canEnableHangfire = !string.IsNullOrWhiteSpace(postgresOptions.Password);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
@@ -36,7 +34,7 @@ if (canEnableHangfire)
 }
 else
 {
-    Console.WriteLine("Hangfire disabled: Postgres:ConnectionString is missing or has no password.");
+    Console.WriteLine("Hangfire disabled: Postgres password is missing.");
 }
 
 var app = builder.Build();
@@ -113,6 +111,16 @@ if (canEnableHangfire)
     duePostScheduler.ScheduleRecurringJob();
 }
 
+if (args.Contains("--seed"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<Syncra.Infrastructure.Persistence.AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await Syncra.Infrastructure.Persistence.Seed.DevAuthDataSeeder.SeedAsync(db, logger);
+    Console.WriteLine("Database seeding completed.");
+    return;
+}
+
 app.Run();
 
 static void LoadDotEnv()
@@ -146,12 +154,3 @@ static void LoadDotEnv()
     }
 }
 
-static bool HasConnectionPassword(string? connectionString)
-{
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        return false;
-    }
-
-    return connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
-}

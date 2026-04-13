@@ -20,16 +20,10 @@ namespace Syncra.Infrastructure;
 
 public static class DependencyInjection
 {
-    private const string LocalPostgresFallbackConnectionString =
-        "Host=127.0.0.1;Port=5432;Database=syncra_db;Username=postgres;Password=1234567890";
-
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         var postgresOptions = configuration.GetSection(PostgresOptions.SectionName).Get<PostgresOptions>() 
             ?? new PostgresOptions();
-        var resolvedConnectionString = HasPassword(postgresOptions.ConnectionString)
-            ? postgresOptions.ConnectionString
-            : LocalPostgresFallbackConnectionString;
 
         services.AddHttpContextAccessor();
         services.AddScoped<AuditInterceptor>();
@@ -41,7 +35,7 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
-            options.UseNpgsql(resolvedConnectionString);
+            options.UseNpgsql(postgresOptions.ConnectionString);
             options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
         });
 
@@ -99,11 +93,5 @@ public static class DependencyInjection
         });
 
         return services;
-    }
-
-    private static bool HasPassword(string? connectionString)
-    {
-        return !string.IsNullOrWhiteSpace(connectionString)
-               && connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
     }
 }

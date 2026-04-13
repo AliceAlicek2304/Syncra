@@ -108,8 +108,15 @@ public static class DevAuthDataSeeder
                 continue;
             }
 
-            existingMember.ChangeRole(seedUser.Role.ToString());
-            existingMember.Activate();
+            if (existingMember.Role != seedUser.Role && existingMember.Role != WorkspaceMemberRole.Owner)
+            {
+                existingMember.ChangeRole(seedUser.Role.ToString());
+            }
+
+            if (existingMember.Status == WorkspaceMemberStatus.Pending)
+            {
+                existingMember.Activate();
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);
