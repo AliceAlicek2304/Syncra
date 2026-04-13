@@ -3,9 +3,21 @@ import { Settings, Sparkles, Save, ShieldCheck, Twitter, Facebook, Youtube, Musi
 import RadarChart from '../../components/RadarChart'
 import DisconnectConfirm from '../../components/DisconnectConfirm'
 import FacebookConnectModal from '../../components/FacebookConnectModal'
+import { api } from '../../api/axios'
 import { useIntegrations } from '../../hooks/useIntegrations'
 import { useToast } from '../../context/ToastContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import styles from './SettingsPage.module.css'
+
+const normalizeIntegrationError = (raw: string): string => {
+  if (!raw) return 'Lỗi kết nối mạng xã hội không xác định.'
+
+  if (raw.includes('Syncra.Domain.Models.Social.ProviderError')) {
+    return 'Lỗi xác thực từ nhà cung cấp mạng xã hội. Vui lòng thử kết nối lại.'
+  }
+
+  return raw
+}
 
 const PLATFORMS = [
   { id: 'facebook', name: 'Facebook', icon: Facebook, color: '#1877f2', bg: 'rgba(24,119,242,0.12)' },
@@ -21,6 +33,14 @@ const PLATFORMS = [
   comingSoon?: boolean
 }>
 
+type CurrentSubscriptionDto = {
+  status: string
+  planCode: string | null
+  planName: string | null
+  maxSocialAccounts: number | null
+  isDefault: boolean
+}
+
 export default function SettingsPage() {
   const [brandTone, setBrandTone] = useState({
     professional: 0.8,
@@ -30,37 +50,81 @@ export default function SettingsPage() {
     creative: 0.9,
     minimalist: 0.5
   })
-  const [disconnectTarget, setDisconnectTarget] = useState<{ id: string; name: string } | null>(null)
+  const [disconnectTarget, setDisconnectTarget] = useState<
+    | { scope: 'provider'; providerId: string; name: string }
+    | { scope: 'integration'; integrationId: string; providerId: string; name: string }
+    | null
+  >(null)
   const [showFacebookModal, setShowFacebookModal] = useState(false)
+  const [subscription, setSubscription] = useState<CurrentSubscriptionDto | null>(null)
 
   const { addToast } = useToast()
+  const { activeWorkspace } = useWorkspace()
   const {
     isConnecting,
     isDisconnecting,
+    isUpdatingPage,
     error,
     connect,
     disconnect,
+    disconnectById,
+    setActivePage,
+    getIntegrations,
+    getPagesForIntegration,
+    loadPagesForIntegration,
+    isLoadingPages,
     getIntegration,
     getIntegrationStatus,
   } = useIntegrations()
 
   useEffect(() => {
+    const activeFacebookConnections = getIntegrations('facebook').filter(i => i.isActive)
+    activeFacebookConnections.forEach(conn => {
+      void loadPagesForIntegration(conn.id)
+    })
+  }, [getIntegrations, loadPagesForIntegration])
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!activeWorkspace) {
+        setSubscription(null)
+        return
+      }
+
+      try {
+        const res = await api.get<CurrentSubscriptionDto>(`/workspaces/${activeWorkspace.id}/subscription`)
+        setSubscription(res.data)
+      } catch {
+        setSubscription(null)
+      }
+    }
+
+    fetchSubscription()
+  }, [activeWorkspace])
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const connected = params.get('connected')
+    const integrationId = params.get('integrationId')
     if (connected) {
       const platform = PLATFORMS.find(p => p.id === connected)
       addToast({
-        message: `${platform?.name ?? connected} connected successfully!`,
+        message: integrationId
+          ? `Đã thêm kết nối ${platform?.name ?? connected} thành công!`
+          : `Đã kết nối ${platform?.name ?? connected} thành công!`,
         type: 'success',
       })
       window.history.replaceState({}, '', '/Syncra/app/settings')
     }
     const integrationError = params.get('integration_error')
     if (integrationError) {
-      addToast({ message: `Failed to connect: ${integrationError}`, type: 'error' })
+      addToast({ message: `Kết nối thất bại: ${normalizeIntegrationError(integrationError)}`, type: 'error' })
       window.history.replaceState({}, '', '/Syncra/app/settings')
     }
   }, [addToast])
+
+  const maxSocialAccounts = subscription?.maxSocialAccounts ?? 1
+  const planName = subscription?.planName ?? 'Free'
 
   const radarData = [
     { label: 'Professional', value: brandTone.professional },
@@ -80,8 +144,7 @@ export default function SettingsPage() {
       setShowFacebookModal(true)
       return
     }
-    // Coming soon platforms - show toast
-    addToast({ message: `${providerId} integration coming soon!`, type: 'info' })
+    addToast({ message: `Tích hợp ${providerId} sẽ sớm ra mắt!`, type: 'info' })
   }
 
   const handleFacebookConfirm = async () => {
@@ -91,7 +154,7 @@ export default function SettingsPage() {
         window.location.href = result.data.url
       }
     } catch {
-      addToast({ message: 'Failed to connect. Please try again.', type: 'error' })
+      addToast({ message: 'Kết nối thất bại. Vui lòng thử lại.', type: 'error' })
     } finally {
       setShowFacebookModal(false)
     }
@@ -100,13 +163,17 @@ export default function SettingsPage() {
   const handleDisconnectConfirm = async () => {
     if (!disconnectTarget) return
     try {
-      await disconnect(disconnectTarget.id)
+      if (disconnectTarget.scope === 'provider') {
+        await disconnect(disconnectTarget.providerId)
+      } else {
+        await disconnectById(disconnectTarget.integrationId)
+      }
       addToast({
-        message: `${disconnectTarget.name} disconnected successfully.`,
+        message: `Đã ngắt kết nối ${disconnectTarget.name} thành công.`,
         type: 'success',
       })
     } catch {
-      addToast({ message: 'Failed to disconnect. Please try again.', type: 'error' })
+      addToast({ message: 'Ngắt kết nối thất bại. Vui lòng thử lại.', type: 'error' })
     } finally {
       setDisconnectTarget(null)
     }
@@ -114,9 +181,9 @@ export default function SettingsPage() {
 
   const getHealthLabel = (status: string) => {
     switch (status) {
-      case 'Healthy': return 'Healthy'
-      case 'NeedsRefresh': return 'Needs refresh'
-      case 'Failed': return 'Error'
+      case 'Healthy': return 'Ổn định'
+      case 'NeedsRefresh': return 'Cần làm mới'
+      case 'Failed': return 'Lỗi'
       default: return null
     }
   }
@@ -127,7 +194,7 @@ export default function SettingsPage() {
         <div className={styles.headerIcon}><Settings size={22} /></div>
         <div>
           <h1 className={styles.title}>Settings</h1>
-          <p className={styles.subtitle}>Thiet lap danh tinh thuong hieu va ket noi nen tang</p>
+          <p className={styles.subtitle}>Thiết lập danh tính thương hiệu và kết nối nền tảng</p>
         </div>
       </div>
 
@@ -138,7 +205,7 @@ export default function SettingsPage() {
             <div className={styles.sectionHeader}>
               <div className={styles.sectionInfo}>
                 <h2 className={styles.sectionTitle}><Sparkles size={18} /> Brand Voice Radar</h2>
-                <p className={styles.sectionDesc}>Phac hoa tinh cach thuong hieu cua ban de AI toi uu hoa noi dung.</p>
+                <p className={styles.sectionDesc}>Phác họa tính cách thương hiệu của bạn để AI tối ưu hóa nội dung.</p>
               </div>
               <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
                 <Save size={14} /> Save Changes
@@ -177,7 +244,10 @@ export default function SettingsPage() {
             <div className={styles.sectionHeader}>
               <div className={styles.sectionInfo}>
                 <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Linked Accounts</h2>
-                <p className={styles.sectionDesc}>Ket noi va quan ly cac nen tang mang xa hoi cua ban.</p>
+                <p className={styles.sectionDesc}>Kết nối và quản lý các nền tảng mạng xã hội của bạn.</p>
+                <div className={styles.planPill}>
+                  Gói hiện tại: {planName} - Tối đa {maxSocialAccounts} tài khoản mạng xã hội
+                </div>
               </div>
             </div>
 
@@ -189,14 +259,19 @@ export default function SettingsPage() {
 
             <div className={styles.socialGrid}>
               {PLATFORMS.map(platform => {
+                const providerIntegrations = getIntegrations(platform.id)
+                const activeIntegrations = providerIntegrations.filter(i => i.isActive)
                 const integration = getIntegration(platform.id)
                 const status = getIntegrationStatus(platform.id)
                 const isActive = status === 'connected'
                 const isExpired = status === 'expired'
-                const isPending = isConnecting === platform.id || isDisconnecting === platform.id
+                const isPending = isConnecting === platform.id || isDisconnecting === `provider:${platform.id}`
                 const healthStatus = integration?.tokenRefreshHealthStatus
                 const username = integration?.metadata?.['username'] ?? integration?.metadata?.['name']
                 const isComingSoon = platform.comingSoon ?? false
+                const isFacebook = platform.id === 'facebook'
+                const facebookLimitReached = isFacebook && activeIntegrations.length >= maxSocialAccounts
+                const canAddFacebookAccount = isFacebook && !isComingSoon && !facebookLimitReached
 
                 return (
                   <div key={platform.id} className={styles.socialCard}>
@@ -219,26 +294,34 @@ export default function SettingsPage() {
                       </span>
                       {!isComingSoon && (
                         <span className={styles.socialStatus}>
-                          {isActive && (
+                          {isFacebook && (
+                            <>
+                              <span className={styles.statusDot} data-status={activeIntegrations.length > 0 ? 'connected' : 'disconnected'} />
+                              {activeIntegrations.length}/{maxSocialAccounts} tài khoản Facebook
+                            </>
+                          )}
+                          {!isFacebook && isActive && (
                             <>
                               <span className={styles.statusDot} data-status="connected" />
-                              {username
+                              {providerIntegrations.length > 1
+                                ? `${providerIntegrations.length} kết nối`
+                                : username
                                 ? `@${username}`
                                 : isExpired
-                                ? 'Connection expired'
-                                : 'Connected'}
+                                ? 'Kết nối đã hết hạn'
+                                : 'Đã kết nối'}
                             </>
                           )}
                           {isExpired && !isActive && (
                             <>
                               <span className={styles.statusDot} data-status="expired" />
-                              Connection expired
+                              Kết nối đã hết hạn
                             </>
                           )}
                           {!isActive && !isExpired && (
                             <>
                               <span className={styles.statusDot} data-status="disconnected" />
-                              Not connected
+                              Chưa kết nối
                             </>
                           )}
                         </span>
@@ -252,25 +335,98 @@ export default function SettingsPage() {
                     </div>
 
                     <button
-                      className={`${styles.socialAction} ${isActive ? styles.actionDisconnect : styles.actionConnect}`}
+                      className={`${styles.socialAction} ${(isFacebook || !isActive) ? styles.actionConnect : styles.actionDisconnect}`}
                       onClick={() =>
-                        isActive
-                          ? setDisconnectTarget({ id: platform.id, name: platform.name })
+                        isFacebook
+                          ? handleConnect(platform.id)
+                          : isActive
+                          ? setDisconnectTarget({ scope: 'provider', providerId: platform.id, name: `${platform.name} (all connections)` })
                           : handleConnect(platform.id)
                       }
-                      disabled={isPending || isComingSoon}
+                      disabled={isPending || isComingSoon || (isFacebook && !canAddFacebookAccount)}
                       aria-label={isActive ? `Disconnect ${platform.name}` : `Connect ${platform.name}`}
                     >
                       {isPending ? (
                         <span className={styles.spinner} />
                       ) : isComingSoon ? (
-                        'Soon'
+                        'Sớm'
+                      ) : isFacebook ? (
+                        canAddFacebookAccount
+                          ? activeIntegrations.length > 0
+                            ? 'Thêm tài khoản'
+                            : 'Kết nối'
+                          : 'Đã đạt giới hạn'
                       ) : isActive ? (
-                        isExpired ? 'Reconnect' : 'Disconnect'
+                        isExpired ? 'Kết nối lại' : 'Ngắt kết nối'
                       ) : (
-                        'Connect'
+                        'Kết nối'
                       )}
                     </button>
+
+                    {!isComingSoon && platform.id === 'facebook' && activeIntegrations.length > 0 && (
+                      <div className={styles.connectionList}>
+                        {activeIntegrations.map(conn => {
+                          const accountName = conn.metadata?.['name']
+                            ?? conn.metadata?.['username']
+                            ?? conn.externalAccountId
+                            ?? `Tài khoản Facebook ${conn.id.slice(0, 6)}`
+                          const itemPending = isDisconnecting === `integration:${conn.id}`
+                          const pages = getPagesForIntegration(conn.id)
+                          const loadingPages = isLoadingPages[conn.id] === true
+
+                          return (
+                            <div key={conn.id} className={styles.connectionItem}>
+                              <div className={styles.connectionMain}>
+                                <div className={styles.connectionText}>
+                                  <span className={styles.connectionTitle}>{accountName}</span>
+                                  <span className={styles.connectionSub}>Mã kết nối: {conn.id.slice(0, 8)}</span>
+                                </div>
+                                {pages.length > 0 && (
+                                  <div className={styles.pageList}>
+                                    {pages.map(page => {
+                                      const switching = isUpdatingPage === `${conn.id}:${page.pageId}`
+                                      return (
+                                        <button
+                                          key={page.pageId}
+                                          className={`${styles.pageChip} ${page.isActive ? styles.pageChipActive : ''}`}
+                                          onClick={() => setActivePage(conn.id, page.pageId)}
+                                          disabled={switching}
+                                          title={page.category ?? undefined}
+                                        >
+                                          {switching ? 'Đang chuyển...' : page.pageName ?? page.pageId}
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                                {loadingPages && pages.length === 0 && (
+                                  <span className={styles.connectionSub}>
+                                    Đang tải danh sách trang Facebook...
+                                  </span>
+                                )}
+                                {!loadingPages && pages.length === 0 && (
+                                  <span className={styles.connectionSub}>
+                                    Chưa đồng bộ danh sách trang. Hãy kết nối lại Facebook để tải Pages.
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                className={`${styles.socialAction} ${styles.actionDisconnect} ${styles.connectionAction}`}
+                                onClick={() => setDisconnectTarget({
+                                  scope: 'integration',
+                                  integrationId: conn.id,
+                                  providerId: platform.id,
+                                  name: `${platform.name} connection ${accountName}`
+                                })}
+                                disabled={itemPending}
+                              >
+                                {itemPending ? <span className={styles.spinner} /> : 'Ngắt kết nối'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}

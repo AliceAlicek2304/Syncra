@@ -32,6 +32,7 @@ public sealed class GetCurrentSubscriptionQueryHandler
         Status = subscription.Status.ToString(),
         PlanCode = subscription.Plan?.Code,
         PlanName = subscription.Plan?.Name,
+        MaxSocialAccounts = subscription.Plan?.MaxSocialAccounts,
         StartedAtUtc = subscription.StartsAtUtc,
         EndsAtUtc = subscription.EndsAtUtc,
         TrialEndsAtUtc = subscription.TrialEndsAtUtc,

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.Timeout;
 using Syncra.Application.Options;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
@@ -10,6 +11,11 @@ namespace Syncra.Infrastructure.Social.Providers;
 
 public class FacebookProvider : ISocialProvider
 {
+    private static readonly HttpClient RawOAuthHttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(120)
+    };
+
     private readonly HttpClient _httpClient;
     private readonly OAuthProviderOptions _options;
     private readonly ILogger<FacebookProvider> _logger;
@@ -27,7 +33,6 @@ public class FacebookProvider : ISocialProvider
     {
         const string authUrl = "https://www.facebook.com/v25.0/dialog/oauth";
 
-        // MVP: Only support Facebook Pages
         var scopes = new List<string>
         {
             "pages_manage_posts",
@@ -53,21 +58,16 @@ public class FacebookProvider : ISocialProvider
     {
         var effectiveRedirectUri = redirectUri ?? _options.CallbackUrl;
 
-        var requestData = new Dictionary<string, string>
-        {
-            { "client_id", _options.ClientId },
-            { "client_secret", _options.ClientSecret },
-            { "redirect_uri", effectiveRedirectUri },
-            { "code", code },
-            { "grant_type", "authorization_code" }
-        };
-
         try
         {
-            // Step 1: Exchange code for short-lived token
-            var content = new FormUrlEncodedContent(requestData);
-            var response = await _httpClient.PostAsync("https://graph.facebook.com/v20.0/oauth/access_token", content, cancellationToken);
-            var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
+            var tokenExchangeUrl = "https://graph.facebook.com/v25.0/oauth/access_token" +
+                                   $"?client_id={Uri.EscapeDataString(_options.ClientId)}" +
+                                   $"&client_secret={Uri.EscapeDataString(_options.ClientSecret)}" +
+                                   $"&redirect_uri={Uri.EscapeDataString(effectiveRedirectUri)}" +
+                                   $"&code={Uri.EscapeDataString(code)}";
+
+            var response = await RawOAuthHttpClient.GetAsync(tokenExchangeUrl, CancellationToken.None);
+            var responseString = await response.Content.ReadAsStringAsync(CancellationToken.None);
 
             JsonNode? tokenResponse = null;
             try { tokenResponse = JsonSerializer.Deserialize<JsonNode>(responseString); } catch { }
@@ -88,29 +88,49 @@ public class FacebookProvider : ISocialProvider
             }
 
             var shortLivedToken = tokenResponse!["access_token"]?.ToString();
+            if (string.IsNullOrWhiteSpace(shortLivedToken))
+            {
+                return new AuthResult
+                {
+                    IsSuccess = false,
+                    Error = new ProviderError
+                    {
+                        Code = "token_exchange_failed",
+                        Message = "Facebook did not return an access token.",
+                        Details = responseString
+                    }
+                };
+            }
 
-            // Step 2: Exchange short-lived token for long-lived token (60 days)
-            // Matches Potiz facebook.provider.ts authenticate() — fb_exchange_token step
-            var longLivedUrl = "https://graph.facebook.com/v20.0/oauth/access_token" +
-                               "?grant_type=fb_exchange_token" +
-                               $"&client_id={Uri.EscapeDataString(_options.ClientId)}" +
-                               $"&client_secret={Uri.EscapeDataString(_options.ClientSecret)}" +
-                               $"&fb_exchange_token={Uri.EscapeDataString(shortLivedToken ?? "")}";
+            var accessToken = shortLivedToken;
+            try
+            {
+                var longLivedUrl = "https://graph.facebook.com/v20.0/oauth/access_token" +
+                                   "?grant_type=fb_exchange_token" +
+                                   $"&client_id={Uri.EscapeDataString(_options.ClientId)}" +
+                                   $"&client_secret={Uri.EscapeDataString(_options.ClientSecret)}" +
+                                   $"&fb_exchange_token={Uri.EscapeDataString(shortLivedToken)}";
 
-            var longLivedResponse = await _httpClient.GetAsync(longLivedUrl, cancellationToken);
-            var longLivedString = await longLivedResponse.Content.ReadAsStringAsync(cancellationToken);
+                var longLivedResponse = await RawOAuthHttpClient.GetAsync(longLivedUrl, CancellationToken.None);
+                var longLivedString = await longLivedResponse.Content.ReadAsStringAsync(CancellationToken.None);
 
-            JsonNode? longLivedJson = null;
-            try { longLivedJson = JsonSerializer.Deserialize<JsonNode>(longLivedString); } catch { }
+                JsonNode? longLivedJson = null;
+                try { longLivedJson = JsonSerializer.Deserialize<JsonNode>(longLivedString); } catch { }
 
-            // Use long-lived token if exchange succeeded, otherwise fall back to short-lived
-            var accessToken = longLivedJson?["access_token"]?.ToString() ?? shortLivedToken;
+                accessToken = longLivedJson?["access_token"]?.ToString() ?? shortLivedToken;
+            }
+            catch (TimeoutRejectedException)
+            {
+            }
+            catch (Exception)
+            {
+            }
 
             var result = new AuthResult
             {
                 IsSuccess = true,
                 AccessToken = accessToken,
-                RefreshToken = accessToken, // Facebook uses same token for refresh via fb_exchange_token
+                RefreshToken = accessToken,
                 ExpiresAt = DateTimeOffset.UtcNow.AddDays(59)
             };
 
@@ -121,6 +141,32 @@ public class FacebookProvider : ISocialProvider
             }
 
             return result;
+        }
+        catch (TimeoutRejectedException)
+        {
+            return new AuthResult
+            {
+                IsSuccess = false,
+                Error = new ProviderError
+                {
+                    Code = "provider_timeout",
+                    Message = "Facebook phản hồi quá chậm. Vui lòng thử kết nối lại.",
+                    IsTransient = true
+                }
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            return new AuthResult
+            {
+                IsSuccess = false,
+                Error = new ProviderError
+                {
+                    Code = "provider_timeout",
+                    Message = "Facebook phản hồi quá chậm ở bước đổi mã xác thực. Vui lòng thử kết nối lại.",
+                    IsTransient = true
+                }
+            };
         }
         catch (Exception ex)
         {
@@ -134,7 +180,6 @@ public class FacebookProvider : ISocialProvider
 
     public async Task<AuthResult> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        // Facebook uses fb_exchange_token to get a new long-lived token
         var url = "https://graph.facebook.com/v25.0/oauth/access_token" +
                   $"?grant_type=fb_exchange_token" +
                   $"&client_id={Uri.EscapeDataString(_options.ClientId)}" +
@@ -207,7 +252,6 @@ public class FacebookProvider : ISocialProvider
         }
         catch
         {
-            // Profile enrichment — never block auth flow
         }
     }
 
@@ -215,7 +259,6 @@ public class FacebookProvider : ISocialProvider
     {
         try
         {
-            // Must explicitly request access_token field — Facebook won't return it otherwise
             var url = $"https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token,category&access_token={Uri.EscapeDataString(userAccessToken)}";
             var response = await _httpClient.GetAsync(url, cancellationToken);
             var responseString = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -235,11 +278,36 @@ public class FacebookProvider : ISocialProvider
                 return;
             }
 
-            var page = data[0];
-            var pageId = page?["id"]?.ToString();
-            var pageName = page?["name"]?.ToString();
-            var pageAccessToken = page?["access_token"]?.ToString();
-            var pageCategory = page?["category"]?.ToString();
+            var pages = new List<FacebookPageMetadata>();
+            foreach (var item in data)
+            {
+                var id = item?["id"]?.ToString();
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                pages.Add(new FacebookPageMetadata(
+                    id,
+                    item?["name"]?.ToString(),
+                    item?["access_token"]?.ToString(),
+                    item?["category"]?.ToString()));
+            }
+
+            if (pages.Count == 0)
+            {
+                _logger.LogWarning("Facebook /me/accounts returned entries without valid page id.");
+                return;
+            }
+
+            result.Metadata["pagesJson"] = JsonSerializer.Serialize(pages);
+            result.Metadata["pageCount"] = pages.Count.ToString();
+
+            var page = pages[0];
+            var pageId = page.Id;
+            var pageName = page.Name;
+            var pageAccessToken = page.AccessToken;
+            var pageCategory = page.Category;
 
             _logger.LogInformation("Facebook page metadata: pageId={PageId} pageName={PageName} hasPageToken={HasToken}",
                 pageId, pageName, !string.IsNullOrEmpty(pageAccessToken));
@@ -254,6 +322,8 @@ public class FacebookProvider : ISocialProvider
             _logger.LogWarning(ex, "Exception fetching Facebook page metadata.");
         }
     }
+
+    private sealed record FacebookPageMetadata(string Id, string? Name, string? AccessToken, string? Category);
 
     public async Task<bool> RevokeTokenAsync(string accessToken, CancellationToken cancellationToken = default)
     {

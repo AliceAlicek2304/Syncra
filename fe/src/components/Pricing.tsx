@@ -8,14 +8,16 @@ const PLANS = [
     name: 'Basic',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 99, yearly: 79 },
-    desc: 'Perfect for testing the platform.',
+    desc: 'For solo creators starting with Facebook.',
     features: [
-      '20 Social Media Connections',
+      'Facebook only: 1 platform',
+      '1 Facebook account',
+      '1 Facebook Page per account',
       'Unlimited scheduled posts',
       'Basic analytics',
       'Content editor',
       'Community support',
-      "AI assistant (limited)",
+      'AI usage cap (monthly limit)',
     ],
     cta: 'Start 14-day trial',
     highlight: false,
@@ -24,15 +26,17 @@ const PLANS = [
     name: 'Pro',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 149, yearly: 119 },
-    desc: 'For serious content creators.',
+    desc: 'For growing teams managing multiple Facebook assets.',
     features: [
-      'Up to 50 Social Media Connections',
+      'Facebook only: 1 platform',
+      'Up to 5 Facebook accounts',
+      'Up to 5 Facebook Pages per account',
       'Unlimited scheduled posts',
       'Advanced analytics',
       'Best-time scheduling',
       'Content recycling',
       'Priority support',
-      'AI assistant',
+      'AI usage cap (monthly limit)',
     ],
     cta: 'Start 14-day trial',
     highlight: true,
@@ -42,15 +46,18 @@ const PLANS = [
     name: 'Max',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
     price: { monthly: 199, yearly: 159 },
-    desc: 'For teams & power creators.',
+    desc: 'For power users operating at larger Facebook scale.',
     features: [
-      'Everything in Pro',
+      'Facebook only: 1 platform',
+      'Up to 10 Facebook accounts',
+      'Up to 10 Facebook Pages per account',
       'Up to 10 team members',
       'Custom brand kits',
       'White-label reports',
       'API access',
       'Dedicated support',
       'Custom integrations',
+      'AI usage cap (monthly limit)',
     ],
     cta: 'Start 14-day trial',
     highlight: false,
@@ -70,7 +77,7 @@ export default function Pricing() {
             <span className="gradient-text">Scale when you're ready.</span>
           </h2>
           <p className="section-sub" style={{ marginTop: 16, textAlign: 'center' }}>
-            Start with a 14-day free trial. No credit card required. Cancel anytime.
+            Start with a 14-day free trial. All plans include monthly AI usage limits and clear Facebook account/Page quotas.
           </p>
 
           {/* Toggle */}

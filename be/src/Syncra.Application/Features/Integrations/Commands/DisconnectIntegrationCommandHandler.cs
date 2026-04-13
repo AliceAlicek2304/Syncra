@@ -20,21 +20,23 @@ public sealed class DisconnectIntegrationCommandHandler : IRequestHandler<Discon
 
     public async Task<bool> Handle(DisconnectIntegrationCommand request, CancellationToken cancellationToken)
     {
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(
+        var integrations = await _integrationRepository.GetByWorkspaceAndPlatformAllAsync(
             request.WorkspaceId, 
             request.ProviderId);
 
-        if (integration == null)
+        if (integrations.Count == 0)
         {
             throw new DomainException(
                 "not_found",
                 "Integration not found for this provider.");
         }
 
-        // Use domain entity behavior
-        integration.Deactivate();
+        foreach (var integration in integrations.Where(i => i.IsActive))
+        {
+            integration.Deactivate();
+            await _integrationRepository.UpdateAsync(integration);
+        }
 
-        await _integrationRepository.UpdateAsync(integration);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;

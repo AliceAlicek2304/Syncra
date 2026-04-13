@@ -23,6 +23,11 @@ public class CurrentSubscriptionDto
     public string? PlanName { get; set; }
 
     /// <summary>
+    /// Maximum number of social accounts allowed by the current plan.
+    /// </summary>
+    public int? MaxSocialAccounts { get; set; }
+
+    /// <summary>
     /// When the subscription started (UTC).
     /// </summary>
     public DateTime? StartedAtUtc { get; set; }
@@ -73,6 +78,7 @@ public class CurrentSubscriptionDto
             Status = "Free",
             PlanCode = "free",
             PlanName = "Free",
+            MaxSocialAccounts = 1,
             IsDefault = true
         };
     }

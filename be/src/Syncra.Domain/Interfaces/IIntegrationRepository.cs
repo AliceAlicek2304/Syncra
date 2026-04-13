@@ -10,6 +10,8 @@ public interface IIntegrationRepository
     Task UpdateAsync(Integration entity);
     Task DeleteAsync(Guid id);
     Task<IEnumerable<Integration>> GetByWorkspaceIdAsync(Guid workspaceId);
+    Task<IReadOnlyList<Integration>> GetByWorkspaceAndPlatformAllAsync(Guid workspaceId, string platform);
     Task<Integration?> GetByWorkspaceAndPlatformAsync(Guid workspaceId, string platform);
+    Task<Integration?> GetByWorkspacePlatformAndExternalAccountIdAsync(Guid workspaceId, string platform, string externalAccountId);
     Task<IReadOnlyList<Integration>> GetAllAsync();
 }

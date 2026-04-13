@@ -12,6 +12,13 @@ export interface IntegrationDto {
   metadata: Record<string, string> | null
 }
 
+export interface IntegrationPageDto {
+  pageId: string
+  pageName: string | null
+  category: string | null
+  isActive: boolean
+}
+
 export interface ConnectResponse {
   url: string
 }
@@ -19,7 +26,8 @@ export interface ConnectResponse {
 export interface DisconnectResponse {
   message: string
   workspaceId: string
-  providerId: string
+  providerId?: string
+  integrationId?: string
 }
 
 export interface ConnectOptions {
@@ -31,6 +39,9 @@ export const integrationsApi = {
   list: (workspaceId: string) =>
     api.get<IntegrationDto[]>(`/workspaces/${workspaceId}/integrations`),
 
+  listByProvider: (workspaceId: string, providerId: string) =>
+    api.get<IntegrationDto[]>(`/workspaces/${workspaceId}/integrations/${providerId}/connections`),
+
   connect: (workspaceId: string, providerId: string, options?: ConnectOptions) =>
     api.post<ConnectResponse>(
       `/workspaces/${workspaceId}/integrations/${providerId}/connect`,
@@ -41,6 +52,18 @@ export const integrationsApi = {
   disconnect: (workspaceId: string, providerId: string) =>
     api.delete<DisconnectResponse>(`/workspaces/${workspaceId}/integrations/${providerId}`),
 
+  disconnectById: (workspaceId: string, integrationId: string) =>
+    api.delete<DisconnectResponse>(`/workspaces/${workspaceId}/integrations/${integrationId}`),
+
   health: (workspaceId: string, providerId: string) =>
     api.get(`/workspaces/${workspaceId}/integrations/${providerId}/health`),
+
+  healthById: (workspaceId: string, integrationId: string) =>
+    api.get(`/workspaces/${workspaceId}/integrations/${integrationId}/health`),
+
+  pages: (workspaceId: string, integrationId: string) =>
+    api.get<IntegrationPageDto[]>(`/workspaces/${workspaceId}/integrations/${integrationId}/pages`),
+
+  setActivePage: (workspaceId: string, integrationId: string, pageId: string) =>
+    api.put(`/workspaces/${workspaceId}/integrations/${integrationId}/pages/active`, { pageId }),
 }

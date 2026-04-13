@@ -71,7 +71,7 @@ public class IntegrationsController : ControllerBase
                 cancellationToken);
 
             // Redirect back to frontend app with success parameter
-            var redirectUrl = $"{frontendRedirectUri}?connected={providerId}";
+            var redirectUrl = $"{frontendRedirectUri}?connected={providerId}&integrationId={result.IntegrationId}";
             return Redirect(redirectUrl);
         }
         catch (Exception ex)
@@ -99,6 +99,20 @@ public class IntegrationsController : ControllerBase
     }
 
     /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/integrations/{providerId}/connections
+    /// Lists all connections for a specific provider (e.g., all Facebook accounts in a workspace).
+    /// </summary>
+    [HttpGet("{providerId}/connections")]
+    public async Task<IActionResult> ListProviderConnections(
+        Guid workspaceId,
+        string providerId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetProviderIntegrationsQuery(workspaceId, providerId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// DELETE /api/v1/workspaces/{workspaceId}/integrations/{providerId}
     /// Disconnects a specific provider from the workspace.
     /// </summary>
@@ -110,6 +124,20 @@ public class IntegrationsController : ControllerBase
     {
         await _mediator.Send(new DisconnectIntegrationCommand(workspaceId, providerId), cancellationToken);
         return Ok(new { message = "Disconnected successfully", workspaceId, providerId });
+    }
+
+    /// <summary>
+    /// DELETE /api/v1/workspaces/{workspaceId}/integrations/{integrationId}
+    /// Disconnects a specific integration by id. Supports multiple connections per provider.
+    /// </summary>
+    [HttpDelete("{integrationId:guid}")]
+    public async Task<IActionResult> DisconnectById(
+        Guid workspaceId,
+        Guid integrationId,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DisconnectIntegrationByIdCommand(workspaceId, integrationId), cancellationToken);
+        return Ok(new { message = "Disconnected successfully", workspaceId, integrationId });
     }
 
     /// <summary>
@@ -125,4 +153,49 @@ public class IntegrationsController : ControllerBase
         var result = await _mediator.Send(new GetIntegrationHealthQuery(workspaceId, providerId), cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/integrations/{integrationId}/health
+    /// Returns health status of a specific integration id.
+    /// </summary>
+    [HttpGet("{integrationId:guid}/health")]
+    public async Task<IActionResult> HealthById(
+        Guid workspaceId,
+        Guid integrationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetIntegrationHealthByIdQuery(workspaceId, integrationId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// GET /api/v1/workspaces/{workspaceId}/integrations/{integrationId}/pages
+    /// Returns all pages available for a specific Facebook integration.
+    /// </summary>
+    [HttpGet("{integrationId:guid}/pages")]
+    public async Task<IActionResult> GetIntegrationPages(
+        Guid workspaceId,
+        Guid integrationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetIntegrationPagesQuery(workspaceId, integrationId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// PUT /api/v1/workspaces/{workspaceId}/integrations/{integrationId}/pages/active
+    /// Sets the active page for a specific Facebook integration.
+    /// </summary>
+    [HttpPut("{integrationId:guid}/pages/active")]
+    public async Task<IActionResult> SetActivePage(
+        Guid workspaceId,
+        Guid integrationId,
+        [FromBody] SetActivePageRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new SetIntegrationActivePageCommand(workspaceId, integrationId, request.PageId), cancellationToken);
+        return Ok(new { message = "Active page updated", workspaceId, integrationId, request.PageId });
+    }
+
+    public sealed record SetActivePageRequest(string PageId);
 }

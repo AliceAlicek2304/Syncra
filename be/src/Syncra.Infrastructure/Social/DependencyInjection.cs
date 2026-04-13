@@ -37,10 +37,10 @@ public static class DependencyInjection
         services.AddHttpClient<ISocialProvider, Providers.YouTubeProvider>()
             .AddPolicyHandler(retryPolicy)
             .AddPolicyHandler(timeoutPolicy);
-        
+
         services.AddHttpClient<ISocialProvider, Providers.FacebookProvider>()
-            .AddPolicyHandler(retryPolicy)
-            .AddPolicyHandler(timeoutPolicy);
+            .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(120))
+            .AddPolicyHandler(retryPolicy);
 
         // TikTok API Client
         services.AddHttpClient<Publishing.Adapters.TikTok.ITikTokApiClient, Publishing.Adapters.TikTok.TikTokApiClient>()

@@ -34,9 +34,29 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
         var result = await provider.ExchangeCodeAsync(request.Code, request.RedirectUri, request.State, cancellationToken);
 
         if (!result.IsSuccess)
-            throw new DomainException("oauth_failed", result.Error?.ToString() ?? "OAuth exchange failed.");
+            throw new DomainException("oauth_failed", BuildProviderErrorMessage(result.Error));
 
-        var integration = await _integrationRepository.GetByWorkspaceAndPlatformAsync(request.WorkspaceId, request.ProviderId);
+        Integration? integration = null;
+
+        if (!string.IsNullOrWhiteSpace(result.ExternalUserId))
+        {
+            integration = await _integrationRepository.GetByWorkspacePlatformAndExternalAccountIdAsync(
+                request.WorkspaceId,
+                request.ProviderId,
+                result.ExternalUserId);
+        }
+
+        if (integration is null && string.IsNullOrWhiteSpace(result.ExternalUserId))
+        {
+            // Backward compatibility: if provider does not return an external account id,
+            // only reuse the legacy integration when there is exactly one entry on that platform.
+            var platformIntegrations = await _integrationRepository.GetByWorkspaceAndPlatformAllAsync(request.WorkspaceId, request.ProviderId);
+            if (platformIntegrations.Count == 1)
+            {
+                integration = platformIntegrations[0];
+            }
+        }
+
         if (integration == null)
         {
             integration = Integration.Create(
@@ -105,4 +125,33 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
     private ISocialProvider GetProvider(string providerId) =>
         _providers.FirstOrDefault(p => string.Equals(p.ProviderId, providerId, StringComparison.OrdinalIgnoreCase))
         ?? throw new KeyNotFoundException($"Social provider '{providerId}' is not registered.");
+
+    private static string BuildProviderErrorMessage(Domain.Models.Social.ProviderError? error)
+    {
+        if (error is null)
+        {
+            return "OAuth exchange failed.";
+        }
+
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(error.Code))
+        {
+            parts.Add(error.Code);
+        }
+
+        if (!string.IsNullOrWhiteSpace(error.Message))
+        {
+            parts.Add(error.Message);
+        }
+
+        var message = parts.Count > 0 ? string.Join(": ", parts) : "OAuth exchange failed.";
+
+        if (!string.IsNullOrWhiteSpace(error.Details))
+        {
+            var details = error.Details.Length > 300 ? error.Details[..300] + "..." : error.Details;
+            message = $"{message} (details: {details})";
+        }
+
+        return message;
+    }
 }
