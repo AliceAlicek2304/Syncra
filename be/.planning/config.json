@@ -1,0 +1,14 @@
+{
+  "project_name": "Syncra.NET",
+  "autonomy_level": "strict",
+  "priority": "Stability & Tech Debt",
+  "workflow": {
+    "research_first": true,
+    "detailed_plans": true,
+    "review_required": true
+  },
+  "docs": {
+    "source_of_truth": "docs/PRD-Syncra-DotNet-Backend.md",
+    "codebase_map": ".planning/codebase/"
+  }
+}

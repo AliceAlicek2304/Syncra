@@ -1,0 +1,24 @@
+# Roadmap: Syncra.NET Stability Phase
+
+## Phase 1: Security & Multi-tenancy Hardening
+*Goal: Secure the billing pipeline and optimize the request-response cycle.*
+
+- [ ] **Task 1.1:** Implement Stripe Webhook Idempotency.
+- [ ] **Task 1.2:** Refactor Stripe Service to remove global configuration.
+- [ ] **Task 1.3:** Implement Redis caching for `TenantResolutionMiddleware`.
+- [ ] **Task 1.4:** Add Integration tests for multi-tenancy validation.
+
+## Phase 2: Architectural Refinement & Performance
+*Goal: Move processing to the database and decouple service logic.*
+
+- [ ] **Task 2.1:** Refactor `PostRepository` to use database-level filtering.
+- [ ] **Task 2.2:** Refactor Analytics Service error handling (Result pattern).
+- [ ] **Task 2.3:** Decouple services from environment variables via Options pattern.
+- [ ] **Task 2.4:** Implement Plan Lookup service for Subscriptions.
+
+## Phase 3: Quality & Observability
+*Goal: Ensure long-term stability through testing and health tracking.*
+
+- [ ] **Task 3.1:** Implement OAuth health tracking and auditing.
+- [ ] **Task 3.2:** Complete test suite for Analytics and Stripe controllers.
+- [ ] **Task 3.3:** Final stability audit and documentation update.
