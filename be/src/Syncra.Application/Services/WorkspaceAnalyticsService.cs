@@ -4,6 +4,7 @@ using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Models.Social;
+using Syncra.Domain.Common;
 
 namespace Syncra.Application.Services;
 
@@ -29,7 +30,7 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         _logger = logger;
     }
 
-    public async Task<WorkspaceAnalyticsSummaryDto> GetSummaryAsync(
+    public async Task<Result<WorkspaceAnalyticsSummaryDto>> GetSummaryAsync(
         Guid workspaceId,
         int date = 30,
         CancellationToken cancellationToken = default)
@@ -42,23 +43,33 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         if (!integrations.Any())
         {
             _logger.LogInformation("No active integrations found for workspace {WorkspaceId}", workspaceId);
-            return new WorkspaceAnalyticsSummaryDto(
+            return Result.Success(new WorkspaceAnalyticsSummaryDto(
                 TotalReach: 0,
                 EngagementRate: 0,
                 FollowerGrowth: 0,
                 TotalPosts: 0,
-                WeeklyReach: Array.Empty<WeeklyReachDto>());
+                WeeklyReach: Array.Empty<WeeklyReachDto>()));
         }
 
         // 2. Gọi analytics song song cho từng integration
-        var analyticsResults = await Task.WhenAll(
-            integrations.Select(i =>
-                _integrationAnalyticsService.CheckAnalyticsAsync(workspaceId, i.Id, date, cancellationToken)
-                    .ContinueWith(t => t.IsCompletedSuccessfully ? t.Result : new List<AnalyticsData>(),
-                        TaskContinuationOptions.None)));
+        var analyticsTasks = integrations.Select(i =>
+            _integrationAnalyticsService.CheckAnalyticsAsync(workspaceId, i.Id, date, cancellationToken));
+        
+        var results = await Task.WhenAll(analyticsTasks);
 
         // 3. Aggregate
-        var allData = analyticsResults.SelectMany(r => r).ToList();
+        var allData = new List<AnalyticsData>();
+        foreach (var result in results)
+        {
+            if (result.IsSuccess)
+            {
+                allData.AddRange(result.Value);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to fetch analytics for an integration: {Error}", result.Error);
+            }
+        }
 
         var totalReach = SumLabel(allData, "Page Impressions", "Views");
         var totalEngagements = SumLabel(allData, "Posts Engagement", "Likes", "Comments", "Shares");
@@ -77,12 +88,12 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         // 5. Weekly reach — aggregate Page Impressions + Views theo tuần
         var weeklyReach = BuildWeeklyReach(allData, date);
 
-        return new WorkspaceAnalyticsSummaryDto(
+        return Result.Success(new WorkspaceAnalyticsSummaryDto(
             TotalReach: totalReach,
             EngagementRate: engagementRate,
             FollowerGrowth: followerGrowth,
             TotalPosts: totalPosts,
-            WeeklyReach: weeklyReach);
+            WeeklyReach: weeklyReach));
     }
 
     // Cộng tổng tất cả data points của các labels chỉ định
@@ -120,7 +131,7 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         return grouped;
     }
 
-    public async Task<HeatmapDto> GetHeatmapAsync(
+    public async Task<Result<HeatmapDto>> GetHeatmapAsync(
         Guid workspaceId,
         int date = 90,
         CancellationToken cancellationToken = default)
@@ -153,7 +164,7 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
                 Score: g.Count()))
             .ToList();
 
-        return new HeatmapDto(Slots: grouped);
+        return Result.Success(new HeatmapDto(Slots: grouped));
     }
 
     // Try to get ICT timezone, with fallback for different OS

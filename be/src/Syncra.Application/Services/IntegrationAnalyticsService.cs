@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Syncra.Application.Interfaces;
+using Syncra.Domain.Common;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
@@ -47,7 +48,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
     /// Matches Potiz integration.service.ts:329 checkAnalytics().
     /// Cache key: integration:{workspaceId}:{integrationId}:{date}
     /// </summary>
-    public async Task<List<AnalyticsData>> CheckAnalyticsAsync(
+    public async Task<Result<List<AnalyticsData>>> CheckAnalyticsAsync(
         Guid workspaceId,
         Guid integrationId,
         int date,
@@ -55,11 +56,11 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
     {
         var integration = await _integrationRepository.GetByIdAsync(integrationId);
         if (integration == null || integration.WorkspaceId != workspaceId)
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("Integration not found or workspace mismatch.");
 
         var adapter = _analyticsRegistry.GetAdapterOrDefault(integration.Platform);
         if (adapter == null)
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>($"No analytics adapter registered for platform '{integration.Platform}'.");
 
         // Token refresh if expired — matches Potiz integration.service.ts:374
         var accessToken = integration.AccessToken!;
@@ -67,11 +68,11 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         {
             var refreshed = await _tokenRefreshService.RefreshExpiringIntegrationsAsync(cancellationToken);
             if (refreshed.Failed > 0)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Failed to refresh expiring integration tokens.");
 
             integration = await _integrationRepository.GetByIdAsync(integrationId);
             if (integration?.AccessToken == null)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Integration token is missing after refresh.");
 
             accessToken = integration.AccessToken;
         }
@@ -80,7 +81,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         var cacheKey = $"integration:{workspaceId}:{integrationId}:{date}";
         var cached = await _cache.GetAsync(cacheKey, cancellationToken);
         if (cached != null)
-            return JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new();
+            return Result.Success(JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new());
 
         try
         {
@@ -94,7 +95,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
 
             // Redis cache write — matches Potiz integration.service.ts:388
             await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), CacheTtl, cancellationToken);
-            return result;
+            return Result.Success(result);
         }
         catch (RefreshTokenException)
         {
@@ -104,26 +105,28 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
 
             integration = await _integrationRepository.GetByIdAsync(integrationId);
             if (integration?.AccessToken == null)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Integration token is missing after manual refresh retry.");
 
             try
             {
-                return await adapter.GetAnalyticsAsync(
+                var result = await adapter.GetAnalyticsAsync(
                     integration.Metadata ?? string.Empty,
                     integration.AccessToken,
                     date,
                     cancellationToken);
+                
+                return Result.Success(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Analytics retry failed for integration {Id}.", integrationId);
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Analytics retry failed.");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching analytics for integration {Id}.", integrationId);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("An unexpected error occurred while fetching analytics.");
         }
     }
 
@@ -131,7 +134,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
     /// Matches Potiz posts.service.ts:132 checkPostAnalytics().
     /// Cache key: integration:{workspaceId}:{postId}:{date}
     /// </summary>
-    public async Task<List<AnalyticsData>> CheckPostAnalyticsAsync(
+    public async Task<Result<List<AnalyticsData>>> CheckPostAnalyticsAsync(
         Guid workspaceId,
         Guid postId,
         int date,
@@ -142,7 +145,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         {
             _logger.LogWarning("[PostAnalytics] Post {PostId} not found or workspace mismatch (expected {WorkspaceId}, got {ActualWorkspaceId})",
                 postId, workspaceId, post?.WorkspaceId);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("Post not found or workspace mismatch.");
         }
 
         _logger.LogInformation("[PostAnalytics] Post {PostId} status={Status} PublishExternalId={ExternalId} IntegrationId={IntegrationId}",
@@ -152,14 +155,14 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         if (string.IsNullOrEmpty(post.PublishExternalId))
         {
             _logger.LogWarning("[PostAnalytics] Post {PostId} has no PublishExternalId — not yet published.", postId);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("Post has no external ID (not yet published).");
         }
 
         var integration = post.Integration;
         if (integration == null)
         {
             _logger.LogWarning("[PostAnalytics] Post {PostId} has no Integration loaded.", postId);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("Integration not found for this post.");
         }
 
         // If integration metadata is missing pageAccessToken, try to find the active integration
@@ -201,7 +204,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         if (adapter == null)
         {
             _logger.LogWarning("[PostAnalytics] No analytics adapter registered for platform '{Platform}'.", integration.Platform);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>($"No analytics adapter registered for platform '{integration.Platform}'.");
         }
 
         var accessToken = integration.AccessToken!;
@@ -211,11 +214,11 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         {
             var refreshed = await _tokenRefreshService.RefreshExpiringIntegrationsAsync(cancellationToken);
             if (refreshed.Failed > 0)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Failed to refresh expiring integration tokens.");
 
             integration = await _integrationRepository.GetByIdAsync(integration.Id);
             if (integration?.AccessToken == null)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Integration token is missing after refresh.");
 
             accessToken = integration.AccessToken;
         }
@@ -224,7 +227,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         var cacheKey = $"integration:{workspaceId}:{postId}:{date}";
         var cached = await _cache.GetAsync(cacheKey, cancellationToken);
         if (cached != null)
-            return JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new();
+            return Result.Success(JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new());
 
         try
         {
@@ -236,7 +239,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
                 cancellationToken);
 
             await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), CacheTtl, cancellationToken);
-            return result;
+            return Result.Success(result);
         }
         catch (RefreshTokenException)
         {
@@ -246,27 +249,29 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
 
             integration = await _integrationRepository.GetByIdAsync(integration.Id);
             if (integration?.AccessToken == null)
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Integration token is missing after manual refresh retry.");
 
             try
             {
-                return await adapter.GetPostAnalyticsAsync(
+                var result = await adapter.GetPostAnalyticsAsync(
                     integration.Metadata ?? string.Empty,
                     integration.AccessToken,
                     post.PublishExternalId,
                     date,
                     cancellationToken);
+                
+                return Result.Success(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Post analytics retry failed for post {Id}.", postId);
-                return new List<AnalyticsData>();
+                return Result.Failure<List<AnalyticsData>>("Post analytics retry failed.");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching post analytics for post {Id}.", postId);
-            return new List<AnalyticsData>();
+            return Result.Failure<List<AnalyticsData>>("An unexpected error occurred while fetching post analytics.");
         }
     }
 }
