@@ -17,6 +17,12 @@
 ## Phase 2: Architectural Refinement & Performance
 *Goal: Move processing to the database and decouple service logic.*
 
+**Plans:** 4 plans
+- [ ] 02-01-PLAN.md — Refactor PostRepository to use database-level filtering.
+- [ ] 02-02-PLAN.md — Implement Result pattern and refactor Analytics Services.
+- [ ] 02-03-PLAN.md — Decouple analytics from environment variables via Options.
+- [ ] 02-04-PLAN.md — Update Plan entity with Stripe identifiers.
+
 - [ ] **Task 2.1:** Refactor `PostRepository` to use database-level filtering.
 - [ ] **Task 2.2:** Refactor Analytics Service error handling (Result pattern).
 - [ ] **Task 2.3:** Decouple services from environment variables via Options pattern.
