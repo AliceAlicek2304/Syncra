@@ -79,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<IStorageService, LocalMediaStorage>();
         services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
+        services.Configure<AnalyticsOptions>(configuration.GetSection(AnalyticsOptions.SectionName));
         services.AddScoped<IStripeService, StripeService>();
 
         return services;
