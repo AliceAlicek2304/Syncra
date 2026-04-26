@@ -18,15 +18,15 @@
 *Goal: Move processing to the database and decouple service logic.*
 
 **Plans:** 5 plans
-- [ ] 02-01-PLAN.md — Refactor PostRepository to use database-level filtering.
+- [x] 02-01-PLAN.md — Refactor PostRepository to use database-level filtering.
 - [x] 02-02-PLAN.md — Implement Result pattern and refactor Analytics Services.
-- [ ] 02-03-PLAN.md — Decouple analytics from environment variables via Options.
+- [x] 02-03-PLAN.md — Decouple analytics from environment variables via Options.
 - [x] 02-04-PLAN.md — Update Plan entity with Stripe identifiers.
 - [x] 02-05-PLAN.md — Implement Plan Repository and lookup logic.
 
-- [ ] **Task 2.1:** Refactor `PostRepository` to use database-level filtering.
+- [x] **Task 2.1:** Refactor `PostRepository` to use database-level filtering.
 - [x] **Task 2.2:** Refactor Analytics Service error handling (Result pattern).
-- [ ] **Task 2.3:** Decouple services from environment variables via Options pattern.
+- [x] **Task 2.3:** Decouple services from environment variables via Options pattern.
 - [x] **Task 2.4:** Implement Plan Lookup service for Subscriptions.
 
 ## Phase 3: Quality & Observability
