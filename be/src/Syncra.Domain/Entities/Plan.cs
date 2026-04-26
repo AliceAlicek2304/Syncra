@@ -10,6 +10,8 @@ public sealed class Plan : EntityBase
     public int MaxMembers { get; set; }
     public int MaxSocialAccounts { get; set; }
     public int MaxScheduledPostsPerMonth { get; set; }
+    public string? StripeProductId { get; set; }
+    public string? StripePriceId { get; set; }
     public bool IsActive { get; set; }
     public int SortOrder { get; set; }
 }
