@@ -19,10 +19,13 @@ public class PlanConfiguration : BaseEntityConfiguration<Plan>
         builder.Property(e => e.MaxMembers).HasColumnName("max_members");
         builder.Property(e => e.MaxSocialAccounts).HasColumnName("max_social_accounts");
         builder.Property(e => e.MaxScheduledPostsPerMonth).HasColumnName("max_scheduled_posts_per_month");
+        builder.Property(e => e.StripeProductId).HasMaxLength(100).HasColumnName("stripe_product_id");
+        builder.Property(e => e.StripePriceId).HasMaxLength(100).HasColumnName("stripe_price_id");
         builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
         builder.Property(e => e.SortOrder).HasColumnName("sort_order");
 
         builder.HasIndex(e => e.Code).IsUnique();
+        builder.HasIndex(e => e.StripePriceId).IsUnique().HasFilter("stripe_price_id IS NOT NULL");
     }
 }
 
