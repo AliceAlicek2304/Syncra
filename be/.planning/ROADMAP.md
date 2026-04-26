@@ -22,7 +22,7 @@
 - [x] 02-02-PLAN.md — Implement Result pattern and refactor Analytics Services.
 - [ ] 02-03-PLAN.md — Decouple analytics from environment variables via Options.
 - [x] 02-04-PLAN.md — Update Plan entity with Stripe identifiers.
-- [ ] 02-05-PLAN.md — Implement Plan Repository and lookup logic.
+- [x] 02-05-PLAN.md — Implement Plan Repository and lookup logic.
 
 - [ ] **Task 2.1:** Refactor `PostRepository` to use database-level filtering.
 - [x] **Task 2.2:** Refactor Analytics Service error handling (Result pattern).
