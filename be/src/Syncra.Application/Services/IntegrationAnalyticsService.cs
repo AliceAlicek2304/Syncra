@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Syncra.Application.Interfaces;
+using Syncra.Application.Options;
 using Syncra.Domain.Common;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
@@ -20,13 +22,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
     private readonly IIntegrationTokenRefreshService _tokenRefreshService;
     private readonly IAnalyticsCache _cache;
     private readonly ILogger<IntegrationAnalyticsService> _logger;
-
-    // Dev: 1s TTL, Prod: 1h TTL — matches Potiz integration.service.ts:388
-    private static readonly TimeSpan CacheTtl = string.Equals(
-        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development",
-        StringComparison.OrdinalIgnoreCase)
-        ? TimeSpan.FromSeconds(1)
-        : TimeSpan.FromHours(1);
+    private readonly IOptions<AnalyticsOptions> _options;
 
     public IntegrationAnalyticsService(
         IIntegrationRepository integrationRepository,
@@ -34,7 +30,8 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         IAnalyticsAdapterRegistry analyticsRegistry,
         IIntegrationTokenRefreshService tokenRefreshService,
         IAnalyticsCache cache,
-        ILogger<IntegrationAnalyticsService> logger)
+        ILogger<IntegrationAnalyticsService> logger,
+        IOptions<AnalyticsOptions> options)
     {
         _integrationRepository = integrationRepository;
         _postRepository = postRepository;
@@ -42,6 +39,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
         _tokenRefreshService = tokenRefreshService;
         _cache = cache;
         _logger = logger;
+        _options = options;
     }
 
     /// <summary>
@@ -94,7 +92,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
                 cancellationToken);
 
             // Redis cache write — matches Potiz integration.service.ts:388
-            await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), CacheTtl, cancellationToken);
+            await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), _options.Value.CacheTtl, cancellationToken);
             return Result.Success(result);
         }
         catch (RefreshTokenException)
@@ -238,7 +236,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
                 date,
                 cancellationToken);
 
-            await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), CacheTtl, cancellationToken);
+            await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), _options.Value.CacheTtl, cancellationToken);
             return Result.Success(result);
         }
         catch (RefreshTokenException)
