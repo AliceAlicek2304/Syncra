@@ -6,11 +6,11 @@
 **Plans:** 4 plans
 - [ ] 01-01-PLAN.md — Establishment of baseline integration tests for Webhooks and Middleware.
 - [ ] 01-02-PLAN.md — Implementation of Stripe Webhook Idempotency.
-- [ ] 01-03-PLAN.md — Refactor of Stripe Service to remove global state.
+- [x] 01-03-PLAN.md — Refactor of Stripe Service to remove global state.
 - [ ] 01-04-PLAN.md — Implementation of Redis caching for Tenant Resolution.
 
 - [ ] **Task 1.1:** Implement Stripe Webhook Idempotency.
-- [ ] **Task 1.2:** Refactor Stripe Service to remove global configuration.
+- [x] **Task 1.2:** Refactor Stripe Service to remove global configuration.
 - [ ] **Task 1.3:** Implement Redis caching for `TenantResolutionMiddleware`.
 - [ ] **Task 1.4:** Add Integration tests for multi-tenancy validation.
 
