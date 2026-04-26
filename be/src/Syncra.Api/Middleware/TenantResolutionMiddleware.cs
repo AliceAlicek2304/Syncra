@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Syncra.Infrastructure.Persistence;
 
 namespace Syncra.Api.Middleware;
@@ -22,15 +23,18 @@ public class TenantResolutionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<TenantResolutionMiddleware> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IDistributedCache _cache;
 
     public TenantResolutionMiddleware(
         RequestDelegate next,
         ILogger<TenantResolutionMiddleware> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IDistributedCache cache)
     {
         _next = next;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _cache = cache;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -66,12 +70,30 @@ public class TenantResolutionMiddleware
             return;
         }
 
-        // Validate membership using a scoped DB context
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Try to get from cache
+        var cacheKey = $"tenant_cache:{userId}:{workspaceId}";
+        var cachedMembership = await _cache.GetStringAsync(cacheKey);
 
-        var isMember = await db.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId);
+        bool isMember;
+        if (cachedMembership != null)
+        {
+            isMember = bool.Parse(cachedMembership);
+        }
+        else
+        {
+            // Validate membership using a scoped DB context
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            isMember = await db.WorkspaceMembers
+                .AnyAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId);
+
+            // Cache the result for 1 hour
+            await _cache.SetStringAsync(cacheKey, isMember.ToString(), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
+            });
+        }
 
         if (!isMember)
         {
