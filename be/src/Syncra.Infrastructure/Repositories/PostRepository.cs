@@ -83,34 +83,14 @@ public class PostRepository : Repository<Post>, IPostRepository
             query = query.Where(p => p.Status == status.Value);
         }
 
-        // For scheduled time filtering, we need to handle the value object
-        // Use a projection to handle ScheduledTime
-        if (scheduledFromUtc.HasValue || scheduledToUtc.HasValue)
+        if (scheduledFromUtc.HasValue)
         {
-            // Get all and filter in memory for now (value object comparison)
-            // In production, consider using raw SQL or computed columns
-            var allPosts = await query.ToListAsync(cancellationToken);
+            query = query.Where(p => (DateTime?)p.ScheduledAt >= scheduledFromUtc.Value);
+        }
 
-            var filtered = allPosts.Where(p =>
-            {
-                var scheduled = p.ScheduledAt.UtcValue;
-                if (scheduledFromUtc.HasValue && scheduled < scheduledFromUtc.Value)
-                    return false;
-                if (scheduledToUtc.HasValue && scheduled > scheduledToUtc.Value)
-                    return false;
-                return true;
-            }).ToList();
-
-            var total = filtered.Count;
-            var skip = (page - 1) * pageSize;
-            var items = filtered
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .ThenByDescending(p => (DateTime?)p.ScheduledAt)
-                .Skip(skip)
-                .Take(pageSize)
-                .ToList();
-
-            return ((IReadOnlyList<Post>)items, total);
+        if (scheduledToUtc.HasValue)
+        {
+            query = query.Where(p => (DateTime?)p.ScheduledAt <= scheduledToUtc.Value);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
