@@ -1,10 +1,11 @@
 using MediatR;
 using Syncra.Application.DTOs.Analytics;
 using Syncra.Application.Interfaces;
+using Syncra.Domain.Common;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
-public sealed class GetWorkspaceHeatmapQueryHandler : IRequestHandler<GetWorkspaceHeatmapQuery, HeatmapDto>
+public sealed class GetWorkspaceHeatmapQueryHandler : IRequestHandler<GetWorkspaceHeatmapQuery, Result<HeatmapDto>>
 {
     private readonly IWorkspaceAnalyticsService _workspaceAnalyticsService;
 
@@ -13,7 +14,7 @@ public sealed class GetWorkspaceHeatmapQueryHandler : IRequestHandler<GetWorkspa
         _workspaceAnalyticsService = workspaceAnalyticsService;
     }
 
-    public Task<HeatmapDto> Handle(
+    public Task<Result<HeatmapDto>> Handle(
         GetWorkspaceHeatmapQuery request,
         CancellationToken cancellationToken)
         => _workspaceAnalyticsService.GetHeatmapAsync(request.WorkspaceId, request.Date, cancellationToken);

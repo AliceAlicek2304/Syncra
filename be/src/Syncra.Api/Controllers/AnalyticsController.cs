@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.Features.Analytics.Queries;
 using MediatR;
+using Syncra.Api.Common;
 
 namespace Syncra.Api.Controllers;
 
@@ -27,7 +28,7 @@ public class AnalyticsController : ControllerBase
         var result = await _mediator.Send(
             new GetIntegrationAnalyticsQuery(workspaceId, integrationId, date),
             cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("post/{postId:guid}")]
@@ -40,7 +41,7 @@ public class AnalyticsController : ControllerBase
         var result = await _mediator.Send(
             new GetPostAnalyticsQuery(workspaceId, postId, date),
             cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("post/{postId:guid}/debug")]
@@ -68,7 +69,7 @@ public class AnalyticsController : ControllerBase
         var result = await _mediator.Send(
             new GetWorkspaceSummaryQuery(workspaceId, date),
             cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("heatmap")]
@@ -80,6 +81,6 @@ public class AnalyticsController : ControllerBase
         var result = await _mediator.Send(
             new GetWorkspaceHeatmapQuery(workspaceId, date),
             cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 }
