@@ -319,6 +319,28 @@ http://localhost:5260/api/v1
 | DELETE | `/workspaces/{workspaceId}/integrations/{providerId}` | Disconnect integration | Settings Page |
 | GET | `/workspaces/{workspaceId}/integrations/{providerId}/health` | Check integration status | Settings Page |
 
+#### Integration Health Statuses
+
+When calling `GET /workspaces/{workspaceId}/integrations/{providerId}/health`, the response contains a `status` field. These statuses indicate the operational state of the connection:
+
+| Status | Meaning | Operational Impact |
+|--------|---------|-------------------|
+| `ok` | Connection is healthy. | All features available. |
+| `warning` | Minor issue detected (e.g., nearing rate limit). | Features available but may be slow. |
+| `token_expired` | Access token has expired. | Background refresh will be attempted. |
+| `needs_reauth` | Connection broken; user must reconnect. | Posting and Analytics are **blocked**. |
+| `error` | Critical platform error or API downtime. | Features temporarily unavailable. |
+| `disconnected` | User has explicitly disconnected. | No features available. |
+
+**Precedence Ordering:**
+When multiple health checks are performed, the most severe status is reported according to this order (highest severity first):
+1. `disconnected`
+2. `error`
+3. `needs_reauth`
+4. `token_expired`
+5. `warning`
+6. `ok`
+
 **Supported Providers:**
 - `x` - Twitter/X
 - `tiktok` - TikTok
