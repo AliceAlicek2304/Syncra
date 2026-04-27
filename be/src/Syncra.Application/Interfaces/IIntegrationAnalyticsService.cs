@@ -1,3 +1,4 @@
+using Syncra.Domain.Common;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Application.Interfaces;
@@ -7,13 +8,13 @@ namespace Syncra.Application.Interfaces;
 /// </summary>
 public interface IIntegrationAnalyticsService
 {
-    Task<List<AnalyticsData>> CheckAnalyticsAsync(
+    Task<Result<List<AnalyticsData>>> CheckAnalyticsAsync(
         Guid workspaceId,
         Guid integrationId,
         int date,
         CancellationToken cancellationToken = default);
 
-    Task<List<AnalyticsData>> CheckPostAnalyticsAsync(
+    Task<Result<List<AnalyticsData>>> CheckPostAnalyticsAsync(
         Guid workspaceId,
         Guid postId,
         int date,

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Syncra.Domain.Exceptions;
 
 namespace Syncra.Domain.ValueObjects;
 
@@ -16,14 +17,14 @@ public sealed class Email : IEquatable<Email>
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException("Email cannot be empty.", nameof(value));
+            throw new ValidationException("InvalidEmail", "Email cannot be empty.");
         }
 
         var trimmed = value.Trim();
 
         if (!EmailRegex.IsMatch(trimmed))
         {
-            throw new ArgumentException("Invalid email format.", nameof(value));
+            throw new ValidationException("InvalidEmail", "Invalid email format.");
         }
 
         return new Email(trimmed.ToLowerInvariant());

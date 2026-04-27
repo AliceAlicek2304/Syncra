@@ -29,9 +29,14 @@ public class StripeService : IStripeService
         _workspaceRepository = workspaceRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+    }
 
-        // Set the Stripe API key globally
-        StripeConfiguration.ApiKey = _stripeOptions.SecretKey;
+    private RequestOptions GetRequestOptions()
+    {
+        return new RequestOptions
+        {
+            ApiKey = _stripeOptions.SecretKey
+        };
     }
 
     public async Task<StripeCustomerDto> GetOrCreateCustomerAsync(Workspace workspace, CancellationToken cancellationToken = default)
@@ -42,7 +47,7 @@ public class StripeService : IStripeService
             try
             {
                 var customerService = new CustomerService();
-                var existingCustomer = await customerService.GetAsync(workspace.StripeCustomerId, cancellationToken: cancellationToken);
+                var existingCustomer = await customerService.GetAsync(workspace.StripeCustomerId, requestOptions: GetRequestOptions(), cancellationToken: cancellationToken);
                 _logger.LogInformation("Retrieved existing Stripe customer {CustomerId} for workspace {WorkspaceId}",
                     workspace.StripeCustomerId, workspace.Id);
                 return MapToDto(existingCustomer);
@@ -66,7 +71,7 @@ public class StripeService : IStripeService
         };
 
         var customerService2 = new CustomerService();
-        var customer = await customerService2.CreateAsync(customerOptions, cancellationToken: cancellationToken);
+        var customer = await customerService2.CreateAsync(customerOptions, requestOptions: GetRequestOptions(), cancellationToken: cancellationToken);
 
         // Save the Stripe customer ID to the workspace
         workspace.SetStripeCustomerId(customer.Id);
@@ -112,7 +117,7 @@ public class StripeService : IStripeService
         };
 
         var sessionService = new SessionService();
-        var session = await sessionService.CreateAsync(sessionOptions, cancellationToken: cancellationToken);
+        var session = await sessionService.CreateAsync(sessionOptions, requestOptions: GetRequestOptions(), cancellationToken: cancellationToken);
 
         _logger.LogInformation("Created Stripe checkout session {SessionId} for workspace {WorkspaceId} with price {PriceId}",
             session.Id, workspace.Id, priceId);
@@ -154,7 +159,7 @@ public class StripeService : IStripeService
             ReturnUrl = returnUrl,
         };
         var service = new Stripe.BillingPortal.SessionService();
-        var session = await service.CreateAsync(options, cancellationToken: cancellationToken);
+        var session = await service.CreateAsync(options, requestOptions: GetRequestOptions(), cancellationToken: cancellationToken);
 
         return session.Url;
     }

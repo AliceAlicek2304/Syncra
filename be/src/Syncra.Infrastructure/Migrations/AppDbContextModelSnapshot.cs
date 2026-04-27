@@ -364,6 +364,12 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("refresh_token");
 
+                    b.Property<int>("TokenRefreshConsecutiveFailures")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("token_refresh_consecutive_failures");
+
                     b.Property<string>("TokenRefreshHealthStatus")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
@@ -543,6 +549,16 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("sort_order");
 
+                    b.Property<string>("StripePriceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_price_id");
+
+                    b.Property<string>("StripeProductId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_product_id");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
@@ -556,6 +572,10 @@ namespace Syncra.Infrastructure.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("StripePriceId")
+                        .IsUnique()
+                        .HasFilter("stripe_price_id IS NOT NULL");
 
                     b.ToTable("plans", (string)null);
 
@@ -574,6 +594,8 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 0m,
                             PriceYearly = 0m,
                             SortOrder = 1,
+                            StripePriceId = "price_placeholder_free",
+                            StripeProductId = "prod_placeholder_free",
                             Version = 1L
                         },
                         new
@@ -590,6 +612,8 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 19.99m,
                             PriceYearly = 199.99m,
                             SortOrder = 2,
+                            StripePriceId = "price_placeholder_pro",
+                            StripeProductId = "prod_placeholder_pro",
                             Version = 1L
                         },
                         new
@@ -606,6 +630,8 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 49.99m,
                             PriceYearly = 499.99m,
                             SortOrder = 3,
+                            StripePriceId = "price_placeholder_team",
+                            StripeProductId = "prod_placeholder_team",
                             Version = 1L
                         });
                 });
@@ -665,7 +691,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at_utc");
 
-                    b.Property<DateTime>("ScheduledAt")
+                    b.Property<DateTime?>("ScheduledAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at_utc");
 

@@ -1,11 +1,12 @@
 using MediatR;
 using Syncra.Application.Interfaces;
+using Syncra.Domain.Common;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
 public sealed class GetIntegrationAnalyticsQueryHandler
-    : IRequestHandler<GetIntegrationAnalyticsQuery, List<AnalyticsData>>
+    : IRequestHandler<GetIntegrationAnalyticsQuery, Result<List<AnalyticsData>>>
 {
     private readonly IIntegrationAnalyticsService _analyticsService;
 
@@ -14,7 +15,7 @@ public sealed class GetIntegrationAnalyticsQueryHandler
         _analyticsService = analyticsService;
     }
 
-    public Task<List<AnalyticsData>> Handle(
+    public Task<Result<List<AnalyticsData>>> Handle(
         GetIntegrationAnalyticsQuery request,
         CancellationToken cancellationToken)
         => _analyticsService.CheckAnalyticsAsync(

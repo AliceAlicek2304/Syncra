@@ -26,6 +26,7 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
             .HasConversion(ValueObjectConverters.PostContentConverter);
 
         builder.Property(e => e.ScheduledAt)
+            .IsRequired(false)
             .HasColumnName("scheduled_at_utc")
             .HasConversion(ValueObjectConverters.ScheduledTimeConverter);
 

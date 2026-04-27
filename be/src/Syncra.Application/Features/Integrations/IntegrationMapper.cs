@@ -29,7 +29,7 @@ public static class IntegrationMapper
             integration.IsActive,
             integration.ExpiresAtUtc,
             integration.TokenRefreshLastSuccessAtUtc,
-            integration.TokenRefreshHealthStatus?.ToString().ToLower(),
+            integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.NeedsReauth ? "needs_reauth" : integration.TokenRefreshHealthStatus?.ToString().ToLowerInvariant(),
             metadata);
     }
 }
