@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
-using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Application.Services;
@@ -18,15 +18,18 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IReadOnlyList<ISocialProvider> _providers;
+    private readonly ILogger<IntegrationTokenRefreshService> _logger;
 
     public IntegrationTokenRefreshService(
         IIntegrationRepository integrationRepository,
         IUnitOfWork unitOfWork,
-        IEnumerable<ISocialProvider> providers)
+        IEnumerable<ISocialProvider> providers,
+        ILogger<IntegrationTokenRefreshService> logger)
     {
         _integrationRepository = integrationRepository;
         _unitOfWork = unitOfWork;
         _providers = providers.ToList();
+        _logger = logger;
     }
 
     public async Task<RefreshIntegrationTokensResult> RefreshExpiringIntegrationsAsync(
@@ -72,7 +75,9 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
 
             try
             {
+                integration.MarkTokenRefreshAttempt(utcNow);
                 var result = await provider.RefreshTokenAsync(integration.RefreshToken!, cancellationToken);
+                
                 if (result.IsSuccess)
                 {
                     integration.UpdateTokens(
@@ -81,11 +86,20 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
                         expiresAtUtc: result.ExpiresAt?.UtcDateTime);
                     integration.MarkTokenRefreshSuccess(utcNow);
                     refreshed++;
+                    
+                    _logger.LogInformation(
+                        "Token refresh attempt: IntegrationId={IntegrationId}, WorkspaceId={WorkspaceId}, Platform={Platform}, AttemptAt={AttemptAt}, Result={Result}, StatusAfter={StatusAfter}, ConsecutiveFailuresAfter={ConsecutiveFailuresAfter}",
+                        integration.Id, integration.WorkspaceId, integration.Platform, utcNow, "Success", integration.TokenRefreshHealthStatus, integration.TokenRefreshConsecutiveFailures);
                 }
                 else
                 {
-                    integration.MarkTokenRefreshFailure(utcNow, FormatProviderError(result));
+                    bool isTerminal = IsTerminalError(result.Error);
+                    integration.MarkTokenRefreshFailure(utcNow, FormatProviderError(result), isTerminal);
                     failed++;
+                    
+                    _logger.LogWarning(
+                        "Token refresh attempt: IntegrationId={IntegrationId}, WorkspaceId={WorkspaceId}, Platform={Platform}, AttemptAt={AttemptAt}, Result={Result}, StatusAfter={StatusAfter}, ConsecutiveFailuresAfter={ConsecutiveFailuresAfter}",
+                        integration.Id, integration.WorkspaceId, integration.Platform, utcNow, "Failure", integration.TokenRefreshHealthStatus, integration.TokenRefreshConsecutiveFailures);
                 }
 
                 await _integrationRepository.UpdateAsync(integration);
@@ -93,8 +107,14 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
             catch (Exception ex)
             {
                 integration.MarkTokenRefreshFailure(utcNow, ex.Message);
-                await _integrationRepository.UpdateAsync(integration);
                 failed++;
+                
+                _logger.LogError(
+                    ex,
+                    "Token refresh attempt: IntegrationId={IntegrationId}, WorkspaceId={WorkspaceId}, Platform={Platform}, AttemptAt={AttemptAt}, Result={Result}, StatusAfter={StatusAfter}, ConsecutiveFailuresAfter={ConsecutiveFailuresAfter}",
+                    integration.Id, integration.WorkspaceId, integration.Platform, utcNow, "Failure", integration.TokenRefreshHealthStatus, integration.TokenRefreshConsecutiveFailures);
+                    
+                await _integrationRepository.UpdateAsync(integration);
             }
         }
 
@@ -114,10 +134,17 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
 
     private static bool IsEligible(Integration integration) =>
         integration.IsActive &&
-        !string.IsNullOrWhiteSpace(integration.RefreshToken);
+        !string.IsNullOrWhiteSpace(integration.RefreshToken) &&
+        integration.TokenRefreshHealthStatus != Syncra.Domain.Enums.IntegrationRefreshHealthStatus.NeedsReauth;
 
     private static bool NeedsRefresh(Integration integration, DateTime refreshBeforeUtc)
     {
+        if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.Warning ||
+            integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.Error)
+        {
+            return true;
+        }
+
         if (!integration.ExpiresAtUtc.HasValue)
         {
             return true;
@@ -145,5 +172,20 @@ public sealed class IntegrationTokenRefreshService : IIntegrationTokenRefreshSer
             ? result.Error.Code
             : $"{result.Error.Code}: {result.Error.Message}";
     }
-}
 
+    private static bool IsTerminalError(ProviderError? error)
+    {
+        if (error is null) return false;
+        
+        var code = error.Code?.ToLowerInvariant();
+        var message = error.Message?.ToLowerInvariant();
+        
+        if (code == "invalid_grant" || code == "invalid_token" || code == "token_revoked" ||
+            (message != null && (message.Contains("invalid_grant") || message.Contains("invalid_token") || message.Contains("token_revoked"))))
+        {
+            return true;
+        }
+        
+        return false;
+    }
+}
