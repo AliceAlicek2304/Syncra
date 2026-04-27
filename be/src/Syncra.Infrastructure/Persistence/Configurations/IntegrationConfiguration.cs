@@ -30,6 +30,9 @@ public class IntegrationConfiguration : BaseWorkspaceEntityConfiguration<Integra
             .HasMaxLength(20)
             .HasConversion<string>()
             .HasColumnName("token_refresh_health_status");
+        builder.Property(e => e.TokenRefreshConsecutiveFailures)
+            .HasDefaultValue(0)
+            .HasColumnName("token_refresh_consecutive_failures");
 
         // Relationships
         builder.HasOne(e => e.Workspace)

@@ -21,6 +21,7 @@ public sealed class Integration : WorkspaceEntityBase
     public DateTime? TokenRefreshLastSuccessAtUtc { get; private set; }
     public string? TokenRefreshLastError { get; private set; }
     public IntegrationRefreshHealthStatus? TokenRefreshHealthStatus { get; private set; }
+    public int TokenRefreshConsecutiveFailures { get; private set; }
 
     // Navigation properties
     public Workspace Workspace { get; set; } = null!;
@@ -142,14 +143,29 @@ public sealed class Integration : WorkspaceEntityBase
         TokenRefreshLastSuccessAtUtc = utcNow;
         TokenRefreshLastError = null;
         TokenRefreshHealthStatus = IntegrationRefreshHealthStatus.Ok;
+        TokenRefreshConsecutiveFailures = 0;
         UpdatedAtUtc = utcNow;
     }
 
-    public void MarkTokenRefreshFailure(DateTime utcNow, string? error, IntegrationRefreshHealthStatus status = IntegrationRefreshHealthStatus.Error)
+    public void MarkTokenRefreshFailure(DateTime utcNow, string? error, bool isTerminal = false)
     {
         TokenRefreshLastAttemptAtUtc = utcNow;
         TokenRefreshLastError = TruncateError(error);
-        TokenRefreshHealthStatus = status;
+        TokenRefreshConsecutiveFailures++;
+
+        if (isTerminal || TokenRefreshConsecutiveFailures >= 3)
+        {
+            TokenRefreshHealthStatus = IntegrationRefreshHealthStatus.NeedsReauth;
+        }
+        else if (TokenRefreshConsecutiveFailures == 2)
+        {
+            TokenRefreshHealthStatus = IntegrationRefreshHealthStatus.Error;
+        }
+        else
+        {
+            TokenRefreshHealthStatus = IntegrationRefreshHealthStatus.Warning;
+        }
+
         UpdatedAtUtc = utcNow;
     }
 
