@@ -1,10 +1,14 @@
 using System.Net;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,6 +17,7 @@ using Syncra.Application.DTOs.Analytics;
 using Syncra.Application.Features.Analytics.Queries;
 using Syncra.Domain.Common;
 using Syncra.Domain.Models.Social;
+using Syncra.Infrastructure.Persistence;
 using Xunit;
 
 namespace Syncra.UnitTests.Api;
@@ -26,8 +31,39 @@ public class AnalyticsControllerTests : IClassFixture<WebApplicationFactory<Prog
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.ConfigureAppConfiguration((context, configBuilder) =>
+            {
+                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Sentry:Dsn"] = "",
+                    ["Jwt:Secret"] = "super_secret_test_key_at_least_32_characters_long",
+                    ["Jwt:Issuer"] = "Syncra",
+                    ["Jwt:Audience"] = "Syncra"
+                });
+            });
+
             builder.ConfigureTestServices(services =>
             {
+                var dbDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+                if (dbDescriptor != null) services.Remove(dbDescriptor);
+
+                services.AddDbContext<AppDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("AnalyticsControllerTestDb");
+                });
+
+                var cacheDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDistributedCache));
+                if (cacheDescriptor != null) services.Remove(cacheDescriptor);
+                services.AddSingleton(new Mock<IDistributedCache>().Object);
+
+                services.AddSingleton(new Mock<IGlobalConfiguration>().Object);
+                services.AddSingleton(new Mock<IBackgroundJobClient>().Object);
+                services.AddSingleton(new Mock<IRecurringJobManager>().Object);
+                services.AddSingleton(new Mock<JobStorage>().Object);
+
+                services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IIntegrationTokenRefreshJobScheduler>());
+                services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IDuePostPublishJobScheduler>());
+
                 // Replace IMediator with mock
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IMediator));
                 if (descriptor != null) services.Remove(descriptor);

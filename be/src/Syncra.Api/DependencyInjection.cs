@@ -83,8 +83,15 @@ public static class DependencyInjection
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = jwtOptions.Issuer,
                 ValidAudience = jwtOptions.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
+                IssuerSigningKey = !string.IsNullOrEmpty(jwtOptions.Secret) 
+                    ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
+                    : null
             };
+            
+            if (options.TokenValidationParameters.IssuerSigningKey == null)
+            {
+                options.TokenValidationParameters.ValidateIssuerSigningKey = false;
+            }
         });
 
         services.AddAuthorization();

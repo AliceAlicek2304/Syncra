@@ -335,9 +335,9 @@ When calling `GET /workspaces/{workspaceId}/integrations/{providerId}/health`, t
 **Precedence Ordering:**
 When multiple health checks are performed, the most severe status is reported according to this order (highest severity first):
 1. `disconnected`
-2. `error`
+2. `token_expired`
 3. `needs_reauth`
-4. `token_expired`
+4. `error`
 5. `warning`
 6. `ok`
 

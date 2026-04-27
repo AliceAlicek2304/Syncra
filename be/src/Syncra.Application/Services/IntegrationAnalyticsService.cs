@@ -194,6 +194,12 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
             if (activeIntegration != null) integration = activeIntegration;
         }
 
+        if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.NeedsReauth)
+        {
+            _logger.LogWarning("[PostAnalytics] Integration {IntId} is in needs_reauth state.", integration.Id);
+            return Result.Failure<List<AnalyticsData>>("Integration requires reauthentication before analytics can be fetched.");
+        }
+
         _logger.LogInformation("[PostAnalytics] Integration platform={Platform} ExternalAccountId={AccountId} HasToken={HasToken} ExpiresAt={ExpiresAt}",
             integration.Platform, integration.ExternalAccountId ?? "(null)",
             !string.IsNullOrEmpty(integration.AccessToken), integration.ExpiresAtUtc?.ToString("o") ?? "(null)");

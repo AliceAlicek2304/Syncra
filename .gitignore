@@ -96,7 +96,7 @@ GEMINI.md
 .claude
 .aider*
 .github/copilot-instructions.md
-.planning/
+**/.planning/
 .kilocode 
 .specify
 .antigravity

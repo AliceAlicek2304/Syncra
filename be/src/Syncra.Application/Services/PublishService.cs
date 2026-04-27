@@ -74,6 +74,11 @@ public sealed class PublishService : IPublishService
             throw new InvalidOperationException("Integration is not active.");
         }
 
+        if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.NeedsReauth)
+        {
+            throw new InvalidOperationException("Integration requires reauthentication before publishing.");
+        }
+
         if (string.IsNullOrWhiteSpace(integration.AccessToken))
         {
             throw new InvalidOperationException("Integration access token is missing.");
