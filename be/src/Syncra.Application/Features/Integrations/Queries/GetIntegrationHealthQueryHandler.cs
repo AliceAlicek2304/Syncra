@@ -27,13 +27,31 @@ public sealed class GetIntegrationHealthQueryHandler : IRequestHandler<GetIntegr
 
         var isTokenExpired = integration.IsTokenExpired;
 
-        string status = !integration.IsActive
-            ? "disconnected"
-            : isTokenExpired
-                ? "token_expired"
-                : integration.IsTokenRefreshHealthy
-                    ? "ok"
-                    : "error";
+        string status;
+        if (!integration.IsActive)
+        {
+            status = "disconnected";
+        }
+        else if (isTokenExpired)
+        {
+            status = "token_expired";
+        }
+        else if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.NeedsReauth)
+        {
+            status = "needs_reauth";
+        }
+        else if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.Error)
+        {
+            status = "error";
+        }
+        else if (integration.TokenRefreshHealthStatus == Syncra.Domain.Enums.IntegrationRefreshHealthStatus.Warning)
+        {
+            status = "warning";
+        }
+        else
+        {
+            status = "ok";
+        }
 
         Dictionary<string, string>? metadata = null;
         if (!string.IsNullOrEmpty(integration.Metadata))
