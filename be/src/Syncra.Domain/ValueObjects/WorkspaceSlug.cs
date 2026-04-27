@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Syncra.Domain.Exceptions;
 
 namespace Syncra.Domain.ValueObjects;
 
@@ -17,19 +18,19 @@ public sealed class WorkspaceSlug : IEquatable<WorkspaceSlug>
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException("Workspace slug cannot be empty.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceSlug", "Workspace slug cannot be empty.");
         }
 
         var normalized = Normalize(value.Trim());
 
         if (normalized.Length < MinLength || normalized.Length > MaxLength)
         {
-            throw new ArgumentException($"Workspace slug must be between {MinLength} and {MaxLength} characters.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceSlug", $"Workspace slug must be between {MinLength} and {MaxLength} characters.");
         }
 
         if (!SlugRegex.IsMatch(normalized))
         {
-            throw new ArgumentException("Workspace slug can only contain lowercase letters, numbers, and hyphens. It must start and end with a letter or number.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceSlug", "Workspace slug can only contain lowercase letters, numbers, and hyphens. It must start and end with a letter or number.");
         }
 
         return new WorkspaceSlug(normalized);

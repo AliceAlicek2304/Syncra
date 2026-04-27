@@ -1,3 +1,5 @@
+using Syncra.Domain.Exceptions;
+
 namespace Syncra.Domain.ValueObjects;
 
 public sealed class WorkspaceName : IEquatable<WorkspaceName>
@@ -15,19 +17,19 @@ public sealed class WorkspaceName : IEquatable<WorkspaceName>
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException("Workspace name cannot be empty.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceName", "Workspace name cannot be empty.");
         }
 
         var trimmed = value.Trim();
 
         if (trimmed.Length < MinLength || trimmed.Length > MaxLength)
         {
-            throw new ArgumentException($"Workspace name must be between {MinLength} and {MaxLength} characters.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceName", $"Workspace name must be between {MinLength} and {MaxLength} characters.");
         }
 
         if (trimmed.IndexOfAny(InvalidChars) >= 0)
         {
-            throw new ArgumentException("Workspace name contains invalid characters.", nameof(value));
+            throw new ValidationException("InvalidWorkspaceName", "Workspace name contains invalid characters.");
         }
 
         return new WorkspaceName(trimmed);
