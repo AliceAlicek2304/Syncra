@@ -21,7 +21,7 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var providerMock = new Mock<IPaymentProvider>();
 
         var workspace = Workspace.Create(Guid.NewGuid(), "Acme", "acme");
-        var plan = new Plan { Code = "pro", IsActive = true, StripePriceId = "price_123" };
+        var plan = new Plan { Code = "pro", IsActive = true, StripeMonthlyPriceId = "price_123" };
 
         workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         subscriptionRepositoryMock.Setup(x => x.GetByWorkspaceIdAsync(workspace.Id)).ReturnsAsync((Subscription?)null);
@@ -42,7 +42,7 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             resolverMock.Object);
 
         var result = await sut.Handle(
-            new CreateCheckoutSessionByPlanCommand(workspace.Id, "pro", null, null),
+            new CreateCheckoutSessionByPlanCommand(workspace.Id, "pro", "month", null, null),
             CancellationToken.None);
 
         Assert.Equal("https://checkout", result.CheckoutUrl);
@@ -71,6 +71,6 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             resolverMock.Object);
 
         await Assert.ThrowsAsync<DomainException>(() =>
-            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, "missing", null, null), CancellationToken.None));
+            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, "missing", "month", null, null), CancellationToken.None));
     }
 }

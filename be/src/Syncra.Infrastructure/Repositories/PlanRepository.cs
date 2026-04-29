@@ -19,7 +19,7 @@ public class PlanRepository : IPlanRepository
     public async Task<Plan?> GetByStripePriceIdAsync(string stripePriceId, CancellationToken cancellationToken = default)
     {
         return await _context.Plans
-            .FirstOrDefaultAsync(p => p.StripePriceId == stripePriceId, cancellationToken);
+            .FirstOrDefaultAsync(p => p.StripeMonthlyPriceId == stripePriceId || p.StripeYearlyPriceId == stripePriceId, cancellationToken);
     }
 
     public async Task<Plan?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
