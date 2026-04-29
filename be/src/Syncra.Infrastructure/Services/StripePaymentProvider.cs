@@ -265,6 +265,29 @@ public sealed class StripePaymentProvider : IPaymentProvider
                 }
             }
         }
+        else if (stripeEvent.Data.Object is Stripe.Product product)
+        {
+            webhookEvent.Metadata["ProductId"] = product.Id;
+            webhookEvent.Metadata["Name"] = product.Name ?? string.Empty;
+            webhookEvent.Metadata["Description"] = product.Description ?? string.Empty;
+            webhookEvent.Metadata["Active"] = product.Active.ToString();
+
+            if (product.Metadata != null)
+            {
+                foreach (var (key, value) in product.Metadata)
+                {
+                    webhookEvent.Metadata[key] = value;
+                }
+            }
+        }
+        else if (stripeEvent.Data.Object is Stripe.Price price)
+        {
+            webhookEvent.Metadata["PriceId"] = price.Id;
+            webhookEvent.Metadata["ProductId"] = price.ProductId ?? string.Empty;
+            webhookEvent.Metadata["UnitAmount"] = price.UnitAmount?.ToString() ?? "0";
+            webhookEvent.Metadata["Interval"] = price.Recurring?.Interval ?? string.Empty;
+            webhookEvent.Metadata["Active"] = price.Active.ToString();
+        }
 
         return webhookEvent;
     }
