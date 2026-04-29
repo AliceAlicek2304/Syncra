@@ -34,8 +34,25 @@ v1.0 focused on hardening the foundation: Stripe billing pipeline security, tena
 
 ## Next Milestone Goals (v1.1)
 
-_TBD — run `/gsd-new-milestone` to define v1.1 scope_
+**Milestone:** v1.1 “Reliable Payments & Provider Abstraction”
+**Target:** 2026-05-15
+
+**Must-haves:**
+- Define `IPaymentProvider` and implement a registry pattern to support multiple gateways later.
+- Synchronize Stripe logic (Plan mapping, Customer/Subscription IDs) to ensure local DB consistency with Stripe Dashboard.
+- Thoroughly address Stripe webhooks with an idempotency mechanism to avoid duplicate payment event processing.
+- Complete Checkout + Customer Portal flow on the frontend so users can manage service packages.
+- Update technical documentation in `.planning` to reflect the payment module structure.
+
+**Non-goals:**
+- No second payment gateway integration (MoMo, PayPal, etc.).
+- No complex promotions logic (coupons/vouchers).
+
+**Constraints:**
+- Keep the current Stripe API version.
+- Ensure backward compatibility with existing users in the database.
+- Use React Context or a unified state management system for the frontend billing UI.
 
 ---
 
-*Last updated: 2026-04-27 after v1.0 milestone*
+*Last updated: 2026-04-28 after v1.1 milestone kickoff*

@@ -15,6 +15,8 @@ public class WorkspaceConfiguration : BaseEntityConfiguration<Workspace>
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100).HasColumnName("name").HasConversion(ValueObjectConverters.WorkspaceNameConverter);
         builder.Property(e => e.Slug).IsRequired().HasMaxLength(50).HasColumnName("slug").HasConversion(ValueObjectConverters.WorkspaceSlugConverter);
         builder.Property(e => e.OwnerUserId).HasColumnName("owner_user_id");
+        builder.Property(e => e.BillingProvider).HasMaxLength(50).HasColumnName("billing_provider");
+        builder.Property(e => e.BillingCustomerId).HasMaxLength(200).HasColumnName("billing_customer_id");
 
         builder.HasIndex(e => e.Slug).IsUnique();
 

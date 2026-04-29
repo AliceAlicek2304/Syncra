@@ -124,7 +124,7 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
         _mediatorMock.Verify(m => m.Send(
-            It.Is<UpdateSubscriptionCommand>(c => c.WorkspaceId == workspaceId.ToString() && c.SubscriptionId == subscriptionId),
+            It.Is<UpdateSubscriptionCommand>(c => c.WorkspaceId == workspaceId.ToString() && c.ProviderSubscriptionId == subscriptionId && c.Provider == "stripe"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -287,7 +287,7 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         _mediatorMock.Verify(m => m.Send(
-            It.Is<UpdateSubscriptionCommand>(c => c.WorkspaceId == workspaceId), 
+            It.Is<UpdateSubscriptionCommand>(c => c.WorkspaceId == workspaceId && c.Provider == "stripe"), 
             It.IsAny<CancellationToken>()), Times.Once);
 
         using (var scope = _factory.Services.CreateScope())

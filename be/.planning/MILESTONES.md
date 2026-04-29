@@ -1,5 +1,25 @@
 # Milestones: Syncra.NET
 
+## v1.1 — Reliable Payments & Provider Abstraction
+
+**Target:** 2026-05-15
+**Status:** Planning
+
+**Must-haves:**
+
+1. Payment-provider abstraction (`IPaymentProvider` + registry)
+2. Stripe/local DB data consistency (plans, customers, subscriptions)
+3. Webhook reliability with idempotent processing
+4. Frontend Checkout + Customer Portal flow for billing management
+5. `.planning` documentation updated for the payment module
+
+**Non-goals:**
+
+1. No second payment gateway
+2. No complex promotions logic
+
+---
+
 ## v1.0 — Stability
 
 **Shipped:** 2026-04-27

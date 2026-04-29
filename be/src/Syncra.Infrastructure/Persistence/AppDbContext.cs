@@ -38,5 +38,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         
         PlanSeedData.Seed(modelBuilder);
+        // User seed data is handled via SQL in migration (User entity has private setters)
     }
 }

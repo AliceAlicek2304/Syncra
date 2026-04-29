@@ -10,6 +10,6 @@ public interface ISubscriptionRepository
     Task UpdateAsync(Subscription entity);
     Task DeleteAsync(Guid id);
     Task<Subscription?> GetCurrentForWorkspaceAsync(Guid workspaceId);
-    Task<Subscription> GetByWorkspaceIdAsync(Guid workspaceId);
-    Task<Subscription> GetByStripeSubscriptionIdAsync(string stripeSubscriptionId);
+    Task<Subscription?> GetByWorkspaceIdAsync(Guid workspaceId);
+    Task<Subscription?> GetByProviderSubscriptionIdAsync(string provider, string providerSubscriptionId);
 }

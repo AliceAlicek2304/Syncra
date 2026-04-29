@@ -11,6 +11,8 @@ public sealed class Workspace : EntityBase
 
     // Primitive properties
     public Guid OwnerUserId { get; private set; }
+    public string? BillingProvider { get; private set; }
+    public string? BillingCustomerId { get; private set; }
     public string? StripeCustomerId { get; private set; }
 
     // Navigation properties
@@ -60,6 +62,32 @@ public sealed class Workspace : EntityBase
     public void SetStripeCustomerId(string customerId)
     {
         StripeCustomerId = customerId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetBillingIdentity(string provider, string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            throw new InvalidOperationException("Billing provider is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            throw new InvalidOperationException("Billing customer id is required.");
+        }
+
+        var normalizedProvider = provider.Trim().ToLowerInvariant();
+        var normalizedCustomerId = customerId.Trim();
+
+        BillingProvider = normalizedProvider;
+        BillingCustomerId = normalizedCustomerId;
+
+        if (normalizedProvider == "stripe")
+        {
+            StripeCustomerId = normalizedCustomerId;
+        }
+
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

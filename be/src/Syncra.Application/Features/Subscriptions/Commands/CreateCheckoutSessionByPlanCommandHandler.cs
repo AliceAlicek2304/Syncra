@@ -7,25 +7,28 @@ using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Subscriptions.Commands;
 
-public sealed class CreatePortalSessionCommandHandler
-    : IRequestHandler<CreatePortalSessionCommand, CreatePortalSessionResponse>
+public sealed class CreateCheckoutSessionByPlanCommandHandler
+    : IRequestHandler<CreateCheckoutSessionByPlanCommand, CreateCheckoutSessionResponse>
 {
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IPlanRepository _planRepository;
     private readonly IPaymentProviderResolver _paymentProviderResolver;
 
-    public CreatePortalSessionCommandHandler(
+    public CreateCheckoutSessionByPlanCommandHandler(
         IWorkspaceRepository workspaceRepository,
         ISubscriptionRepository subscriptionRepository,
+        IPlanRepository planRepository,
         IPaymentProviderResolver paymentProviderResolver)
     {
         _workspaceRepository = workspaceRepository;
         _subscriptionRepository = subscriptionRepository;
+        _planRepository = planRepository;
         _paymentProviderResolver = paymentProviderResolver;
     }
 
-    public async Task<CreatePortalSessionResponse> Handle(
-        CreatePortalSessionCommand request,
+    public async Task<CreateCheckoutSessionResponse> Handle(
+        CreateCheckoutSessionByPlanCommand request,
         CancellationToken cancellationToken)
     {
         var workspace = await _workspaceRepository.GetByIdAsync(request.WorkspaceId)
@@ -38,15 +41,43 @@ public sealed class CreatePortalSessionCommandHandler
                 ? workspace.BillingProvider
                 : _paymentProviderResolver.GetDefaultProviderKey();
 
+        var plan = await _planRepository.GetByCodeAsync(request.PlanCode, cancellationToken);
+        if (plan == null)
+        {
+            throw new DomainException("not_found", $"Plan '{request.PlanCode}' was not found.");
+        }
+
+        if (!plan.IsActive)
+        {
+            throw new DomainException("plan_inactive", $"Plan '{request.PlanCode}' is not active.");
+        }
+
+        var priceId = providerKey.Equals("stripe", StringComparison.OrdinalIgnoreCase)
+            ? plan.StripePriceId
+            : null;
+
+        if (string.IsNullOrWhiteSpace(priceId))
+        {
+            throw new DomainException(
+                "billing_plan_price_missing",
+                $"Plan '{request.PlanCode}' does not have a configured price for provider '{providerKey}'.");
+        }
+
         var provider = _paymentProviderResolver.GetRequiredProvider(providerKey);
-        var portalResult = await provider.CreatePortalSessionAsync(
-            new PaymentPortalSessionRequest(
+        var session = await provider.CreateCheckoutSessionAsync(
+            new PaymentCheckoutSessionRequest(
                 WorkspaceId: workspace.Id,
                 WorkspaceName: workspace.Name.ToString(),
                 ProviderCustomerId: workspace.BillingCustomerId ?? workspace.StripeCustomerId,
-                ReturnUrl: request.ReturnUrl ?? string.Empty),
+                PriceId: priceId,
+                SuccessUrl: request.SuccessUrl ?? string.Empty,
+                CancelUrl: request.CancelUrl ?? string.Empty),
             cancellationToken);
 
-        return new CreatePortalSessionResponse(portalResult.PortalUrl);
+        return new CreateCheckoutSessionResponse(
+            session.CheckoutUrl,
+            session.SessionId,
+            session.ProviderCustomerId,
+            session.ClientReferenceId);
     }
 }

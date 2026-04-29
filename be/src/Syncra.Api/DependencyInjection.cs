@@ -59,6 +59,7 @@ public static class DependencyInjection
 
         // Filters
         services.AddScoped<Filters.IdempotencyFilter>();
+        services.AddScoped<Controllers.PaymentWebhookOrchestrator>();
 
         return services;
     }
