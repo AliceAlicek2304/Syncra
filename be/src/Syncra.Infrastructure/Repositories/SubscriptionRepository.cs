@@ -24,13 +24,13 @@ public class SubscriptionRepository : Repository<Subscription>, ISubscriptionRep
         return subscriptions.FirstOrDefault();
     }
 
-    public async Task<Subscription> GetByWorkspaceIdAsync(Guid workspaceId)
+    public async Task<Subscription?> GetByWorkspaceIdAsync(Guid workspaceId)
     {
         return await _dbSet.FirstOrDefaultAsync(s => s.WorkspaceId == workspaceId);
     }
 
-    public async Task<Subscription> GetByStripeSubscriptionIdAsync(string stripeSubscriptionId)
+    public async Task<Subscription?> GetByProviderSubscriptionIdAsync(string provider, string providerSubscriptionId)
     {
-        return await _dbSet.FirstOrDefaultAsync(s => s.ProviderSubscriptionId == stripeSubscriptionId);
+        return await _dbSet.FirstOrDefaultAsync(s => s.Provider == provider && s.ProviderSubscriptionId == providerSubscriptionId);
     }
 }

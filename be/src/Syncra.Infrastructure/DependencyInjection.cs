@@ -78,8 +78,11 @@ public static class DependencyInjection
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IStorageService, LocalMediaStorage>();
         services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
+        services.Configure<PaymentOptions>(configuration.GetSection(PaymentOptions.SectionName));
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.Configure<AnalyticsOptions>(configuration.GetSection(AnalyticsOptions.SectionName));
+        services.AddScoped<IPaymentProvider, StripePaymentProvider>();
+        services.AddScoped<IPaymentProviderResolver, PaymentProviderResolver>();
         services.AddScoped<IStripeService, StripeService>();
 
         return services;

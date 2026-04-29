@@ -4,11 +4,13 @@ namespace Syncra.Application.Features.Subscriptions.Commands
 {
     public class CancelSubscriptionCommand : IRequest
     {
-        public string SubscriptionId { get; }
+        public string Provider { get; }
+        public string ProviderSubscriptionId { get; }
 
-        public CancelSubscriptionCommand(string subscriptionId)
+        public CancelSubscriptionCommand(string provider, string providerSubscriptionId)
         {
-            SubscriptionId = subscriptionId;
+            Provider = provider;
+            ProviderSubscriptionId = providerSubscriptionId;
         }
     }
 }

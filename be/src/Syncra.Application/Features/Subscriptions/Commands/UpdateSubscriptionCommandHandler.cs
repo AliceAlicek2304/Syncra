@@ -30,16 +30,19 @@ namespace Syncra.Application.Features.Subscriptions.Commands
                     // Defaulting to PRO plan for now to satisfy foreign key constraint.
                     // In a real scenario, this would be looked up by the Stripe Price ID.
                     PlanId = Guid.Parse("00000000-0000-0000-0000-000000000002"),
-                    StripeSubscriptionId = request.SubscriptionId,
+                    ProviderSubscriptionId = request.ProviderSubscriptionId,
+                    ProviderCustomerId = request.ProviderCustomerId,
                     Status = Domain.Enums.SubscriptionStatus.Active,
                     StartsAtUtc = DateTime.UtcNow,
-                    Provider = "stripe"
+                    Provider = request.Provider
                 };
                 await _subscriptionRepository.AddAsync(subscription);
             }
             else
             {
-                subscription.StripeSubscriptionId = request.SubscriptionId;
+                subscription.ProviderSubscriptionId = request.ProviderSubscriptionId;
+                subscription.ProviderCustomerId = request.ProviderCustomerId;
+                subscription.Provider = request.Provider;
                 subscription.Status = Domain.Enums.SubscriptionStatus.Active;
                 await _subscriptionRepository.UpdateAsync(subscription);
             }

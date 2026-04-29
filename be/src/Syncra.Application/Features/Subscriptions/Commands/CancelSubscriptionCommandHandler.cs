@@ -18,7 +18,7 @@ namespace Syncra.Application.Features.Subscriptions.Commands
 
         public async Task Handle(CancelSubscriptionCommand request, CancellationToken cancellationToken)
         {
-            var subscription = await _subscriptionRepository.GetByStripeSubscriptionIdAsync(request.SubscriptionId);
+            var subscription = await _subscriptionRepository.GetByProviderSubscriptionIdAsync(request.Provider, request.ProviderSubscriptionId);
 
             if (subscription != null)
             {

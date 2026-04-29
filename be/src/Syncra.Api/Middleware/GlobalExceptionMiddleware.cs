@@ -65,6 +65,15 @@ public class GlobalExceptionMiddleware
                 await context.Response.WriteAsJsonAsync(new { code = "not_found", message = keyEx.Message });
                 break;
 
+            case Stripe.StripeException stripeEx:
+                context.Response.StatusCode = StatusCodes.Status502BadGateway;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "provider_error",
+                    message = stripeEx.StripeError?.Message ?? stripeEx.Message
+                });
+                break;
+
             default:
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 await context.Response.WriteAsJsonAsync(new

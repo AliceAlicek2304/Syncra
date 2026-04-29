@@ -21,4 +21,10 @@ public class PlanRepository : IPlanRepository
         return await _context.Plans
             .FirstOrDefaultAsync(p => p.StripePriceId == stripePriceId, cancellationToken);
     }
+
+    public async Task<Plan?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        return await _context.Plans
+            .FirstOrDefaultAsync(p => p.Code == code, cancellationToken);
+    }
 }

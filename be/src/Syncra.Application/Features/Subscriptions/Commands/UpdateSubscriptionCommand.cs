@@ -4,13 +4,17 @@ namespace Syncra.Application.Features.Subscriptions.Commands
 {
     public class UpdateSubscriptionCommand : IRequest
     {
+        public string Provider { get; }
         public string WorkspaceId { get; }
-        public string SubscriptionId { get; }
+        public string ProviderSubscriptionId { get; }
+        public string? ProviderCustomerId { get; }
 
-        public UpdateSubscriptionCommand(string workspaceId, string subscriptionId)
+        public UpdateSubscriptionCommand(string provider, string workspaceId, string providerSubscriptionId, string? providerCustomerId)
         {
+            Provider = provider;
             WorkspaceId = workspaceId;
-            SubscriptionId = subscriptionId;
+            ProviderSubscriptionId = providerSubscriptionId;
+            ProviderCustomerId = providerCustomerId;
         }
     }
 }

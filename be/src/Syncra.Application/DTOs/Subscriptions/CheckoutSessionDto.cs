@@ -5,6 +5,11 @@ public record CreateCheckoutSessionRequest(
     string? SuccessUrl,
     string? CancelUrl);
 
+public record CreateCheckoutSessionByPlanRequest(
+    string PlanCode,
+    string? SuccessUrl,
+    string? CancelUrl);
+
 public record CreateCheckoutSessionResponse(
     string CheckoutUrl,
     string SessionId,

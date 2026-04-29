@@ -14,6 +14,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8080:8080"  
+
   redis:
     image: redis:7-alpine
     container_name: syncra-redis

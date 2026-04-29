@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<Interfaces.IPublishService, Services.PublishService>();
         services.AddScoped<Interfaces.IIntegrationAnalyticsService, Services.IntegrationAnalyticsService>();
         services.AddScoped<Interfaces.IWorkspaceAnalyticsService, Services.WorkspaceAnalyticsService>();
+        services.AddScoped<Payments.IPaymentWebhookEventDispatcher, Payments.PaymentWebhookEventDispatcher>();
         return services;
     }
 }
