@@ -251,6 +251,18 @@ public sealed class StripePaymentProvider : IPaymentProvider
             webhookEvent.ProviderCustomerId = subscription.CustomerId;
             webhookEvent.ProviderSubscriptionId = subscription.Id;
 
+            webhookEvent.Metadata["SubscriptionStatus"] = subscription.Status ?? string.Empty;
+            webhookEvent.Metadata["CanceledAt"] = subscription.CanceledAt?.ToString("O") ?? string.Empty;
+            webhookEvent.Metadata["TrialEnd"] = subscription.TrialEnd?.ToString("O") ?? string.Empty;
+
+            if (subscription.Items?.Data?.Count > 0)
+            {
+                var firstItem = subscription.Items.Data[0];
+                webhookEvent.Metadata["PriceId"] = firstItem.Price?.Id ?? string.Empty;
+                webhookEvent.Metadata["CurrentPeriodStart"] = firstItem.CurrentPeriodStart.ToString("O");
+                webhookEvent.Metadata["CurrentPeriodEnd"] = firstItem.CurrentPeriodEnd.ToString("O");
+            }
+
             if (subscription.Metadata != null)
             {
                 foreach (var (key, value) in subscription.Metadata)
