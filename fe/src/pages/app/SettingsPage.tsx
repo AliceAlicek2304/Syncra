@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck } from 'lucide-react'
 import RadarChart from '../../components/RadarChart'
+import BillingSection from '../../components/billing/BillingSection'
 import styles from './SettingsPage.module.css'
 
 export default function SettingsPage() {
@@ -105,6 +106,9 @@ export default function SettingsPage() {
               ))}
             </div>
           </section>
+
+          {/* Billing Section */}
+          <BillingSection />
         </div>
       </div>
     </div>
