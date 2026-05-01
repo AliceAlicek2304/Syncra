@@ -6,6 +6,7 @@ using Syncra.Application.Features.Subscriptions.Commands;
 using Syncra.Application.Features.Subscriptions.Queries;
 using MediatR;
 using Syncra.Api.Middleware;
+using Syncra.Shared.Extensions;
 
 namespace Syncra.Api.Controllers;
 
@@ -60,8 +61,15 @@ public class SubscriptionsController : ControllerBase
             return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
         }
 
+        var userId = User.GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
         var command = new CreateCheckoutSessionCommand(
             workspaceId,
+            userId.Value,
             request.PriceId,
             request.SuccessUrl,
             request.CancelUrl);
@@ -88,7 +96,13 @@ public class SubscriptionsController : ControllerBase
             return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
         }
 
-        var command = new CreatePortalSessionCommand(workspaceId, request.ReturnUrl);
+        var userId = User.GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
+        var command = new CreatePortalSessionCommand(workspaceId, userId.Value, request.ReturnUrl);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }
