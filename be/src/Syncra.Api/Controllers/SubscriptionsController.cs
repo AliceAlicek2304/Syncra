@@ -5,6 +5,7 @@ using Syncra.Application.DTOs.Subscriptions;
 using Syncra.Application.Features.Subscriptions.Commands;
 using Syncra.Application.Features.Subscriptions.Queries;
 using MediatR;
+using Syncra.Api.Middleware;
 
 namespace Syncra.Api.Controllers;
 
@@ -26,6 +27,16 @@ public class SubscriptionsController : ControllerBase
         Guid workspaceId,
         CancellationToken cancellationToken)
     {
+        if (!HttpContext.Items.TryGetValue(TenantResolutionMiddleware.WorkspaceIdKey, out var tenantId) || tenantId is not Guid validatedWorkspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id header is required." });
+        }
+
+        if (validatedWorkspaceId != workspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
+        }
+
         var result = await _mediator.Send(new GetCurrentSubscriptionQuery(workspaceId), cancellationToken);
         return Ok(result);
     }
@@ -39,6 +50,16 @@ public class SubscriptionsController : ControllerBase
         [FromBody] CreateCheckoutSessionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!HttpContext.Items.TryGetValue(TenantResolutionMiddleware.WorkspaceIdKey, out var tenantId) || tenantId is not Guid validatedWorkspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id header is required." });
+        }
+
+        if (validatedWorkspaceId != workspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
+        }
+
         var command = new CreateCheckoutSessionCommand(
             workspaceId,
             request.PriceId,
@@ -57,6 +78,16 @@ public class SubscriptionsController : ControllerBase
         [FromBody] CreatePortalSessionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!HttpContext.Items.TryGetValue(TenantResolutionMiddleware.WorkspaceIdKey, out var tenantId) || tenantId is not Guid validatedWorkspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id header is required." });
+        }
+
+        if (validatedWorkspaceId != workspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
+        }
+
         var command = new CreatePortalSessionCommand(workspaceId, request.ReturnUrl);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);

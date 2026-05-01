@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs.Subscriptions;
 using Syncra.Application.Features.Subscriptions.Commands;
+using Syncra.Api.Middleware;
 
 namespace Syncra.Api.Controllers;
 
@@ -27,6 +28,16 @@ public class SubscriptionsV2Controller : ControllerBase
         [FromBody] CreateCheckoutSessionByPlanRequest request,
         CancellationToken cancellationToken)
     {
+        if (!HttpContext.Items.TryGetValue(TenantResolutionMiddleware.WorkspaceIdKey, out var tenantId) || tenantId is not Guid validatedWorkspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id header is required." });
+        }
+
+        if (validatedWorkspaceId != workspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
+        }
+
         var command = new CreateCheckoutSessionByPlanCommand(
             workspaceId,
             request.PlanCode,
