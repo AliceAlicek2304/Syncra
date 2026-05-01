@@ -40,6 +40,17 @@ public sealed class StripePriceWebhookHandlers : IPaymentWebhookHandler
             return;
         }
 
+        // Timestamp guard (D-05, D-06): skip if we already have a newer event
+        if (plan.LastEventTimestampUtc.HasValue
+            && webhookEvent.EventCreatedAtUtc.HasValue
+            && webhookEvent.EventCreatedAtUtc.Value < plan.LastEventTimestampUtc.Value)
+        {
+            _logger.LogInformation(
+                "Skipping stale price event {EventId} — local timestamp {Local} > event timestamp {Event}",
+                webhookEvent.EventId, plan.LastEventTimestampUtc, webhookEvent.EventCreatedAtUtc);
+            return;
+        }
+
         if (webhookEvent.EventType == "price.deleted")
         {
             if (plan.StripeMonthlyPriceId == priceId)
@@ -47,6 +58,7 @@ public sealed class StripePriceWebhookHandlers : IPaymentWebhookHandler
             if (plan.StripeYearlyPriceId == priceId)
                 plan.StripeYearlyPriceId = null;
 
+            plan.LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc;
             await _planRepository.UpdateAsync(plan);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return;
@@ -73,6 +85,7 @@ public sealed class StripePriceWebhookHandlers : IPaymentWebhookHandler
             plan.StripeMonthlyPriceId = priceId;
         }
 
+        plan.LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc;
         await _planRepository.UpdateAsync(plan);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }

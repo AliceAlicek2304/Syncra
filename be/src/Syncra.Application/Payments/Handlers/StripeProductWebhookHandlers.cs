@@ -35,11 +35,24 @@ public sealed class StripeProductWebhookHandlers : IPaymentWebhookHandler
 
         var plan = await _planRepository.GetByStripeProductIdAsync(productId, cancellationToken);
 
+        // Timestamp guard (D-05, D-06): skip if we already have a newer event
+        if (plan != null
+            && plan.LastEventTimestampUtc.HasValue
+            && webhookEvent.EventCreatedAtUtc.HasValue
+            && webhookEvent.EventCreatedAtUtc.Value < plan.LastEventTimestampUtc.Value)
+        {
+            _logger.LogInformation(
+                "Skipping stale product event {EventId} — local timestamp {Local} > event timestamp {Event}",
+                webhookEvent.EventId, plan.LastEventTimestampUtc, webhookEvent.EventCreatedAtUtc);
+            return;
+        }
+
         if (webhookEvent.EventType == "product.deleted")
         {
             if (plan != null)
             {
                 plan.IsActive = false;
+                plan.LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc;
                 await _planRepository.UpdateAsync(plan);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
@@ -76,6 +89,7 @@ public sealed class StripeProductWebhookHandlers : IPaymentWebhookHandler
             await _planRepository.UpdateAsync(plan);
         }
 
+        plan.LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -99,13 +99,25 @@ public sealed class StripeSubscriptionWebhookHandlers : IPaymentWebhookHandler
                 StartsAtUtc = periodStart ?? DateTime.UtcNow,
                 EndsAtUtc = periodEnd,
                 CanceledAtUtc = canceledAt,
-                TrialEndsAtUtc = trialEnd
+                TrialEndsAtUtc = trialEnd,
+                LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc
             };
 
             await _subscriptionRepository.AddAsync(subscription);
         }
         else
         {
+            // Timestamp guard (D-05): skip if we already have a newer event
+            if (existing.LastEventTimestampUtc.HasValue
+                && webhookEvent.EventCreatedAtUtc.HasValue
+                && webhookEvent.EventCreatedAtUtc.Value < existing.LastEventTimestampUtc.Value)
+            {
+                _logger.LogInformation(
+                    "Skipping stale subscription event {EventId} — local timestamp {Local} > event timestamp {Event}",
+                    webhookEvent.EventId, existing.LastEventTimestampUtc, webhookEvent.EventCreatedAtUtc);
+                return;
+            }
+
             if (resolvedPlanId.HasValue)
                 existing.PlanId = resolvedPlanId.Value;
 
@@ -115,6 +127,7 @@ public sealed class StripeSubscriptionWebhookHandlers : IPaymentWebhookHandler
             existing.EndsAtUtc = periodEnd;
             existing.CanceledAtUtc = canceledAt;
             existing.TrialEndsAtUtc = trialEnd;
+            existing.LastEventTimestampUtc = webhookEvent.EventCreatedAtUtc;
 
             await _subscriptionRepository.UpdateAsync(existing);
         }
