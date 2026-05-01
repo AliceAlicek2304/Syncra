@@ -52,8 +52,9 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
             throw new DomainException("plan_inactive", $"Plan '{request.PlanCode}' is not active.");
         }
 
+        var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
         var priceId = providerKey.Equals("stripe", StringComparison.OrdinalIgnoreCase)
-            ? plan.StripePriceId
+            ? (isYearly ? plan.StripeYearlyPriceId : plan.StripeMonthlyPriceId)
             : null;
 
         if (string.IsNullOrWhiteSpace(priceId))

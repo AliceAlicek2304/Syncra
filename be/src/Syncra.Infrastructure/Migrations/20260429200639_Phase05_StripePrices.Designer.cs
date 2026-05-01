@@ -12,8 +12,8 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260429173710_AddTestUserSeedData")]
-    partial class AddTestUserSeedData
+    [Migration("20260429200639_Phase05_StripePrices")]
+    partial class Phase05_StripePrices
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -552,15 +552,20 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("sort_order");
 
-                    b.Property<string>("StripePriceId")
+                    b.Property<string>("StripeMonthlyPriceId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("stripe_price_id");
+                        .HasColumnName("stripe_monthly_price_id");
 
                     b.Property<string>("StripeProductId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("stripe_product_id");
+
+                    b.Property<string>("StripeYearlyPriceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_yearly_price_id");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -576,9 +581,13 @@ namespace Syncra.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("StripePriceId")
+                    b.HasIndex("StripeMonthlyPriceId")
                         .IsUnique()
-                        .HasFilter("stripe_price_id IS NOT NULL");
+                        .HasFilter("stripe_monthly_price_id IS NOT NULL");
+
+                    b.HasIndex("StripeYearlyPriceId")
+                        .IsUnique()
+                        .HasFilter("stripe_yearly_price_id IS NOT NULL");
 
                     b.ToTable("plans", (string)null);
 
@@ -597,7 +606,7 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 0m,
                             PriceYearly = 0m,
                             SortOrder = 1,
-                            StripePriceId = "price_placeholder_free",
+                            StripeMonthlyPriceId = "price_placeholder_free",
                             StripeProductId = "prod_placeholder_free",
                             Version = 1L
                         },
@@ -615,7 +624,7 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 19.99m,
                             PriceYearly = 199.99m,
                             SortOrder = 2,
-                            StripePriceId = "price_placeholder_pro",
+                            StripeMonthlyPriceId = "price_placeholder_pro",
                             StripeProductId = "prod_placeholder_pro",
                             Version = 1L
                         },
@@ -633,7 +642,7 @@ namespace Syncra.Infrastructure.Migrations
                             PriceMonthly = 49.99m,
                             PriceYearly = 499.99m,
                             SortOrder = 3,
-                            StripePriceId = "price_placeholder_team",
+                            StripeMonthlyPriceId = "price_placeholder_team",
                             StripeProductId = "prod_placeholder_team",
                             Version = 1L
                         });

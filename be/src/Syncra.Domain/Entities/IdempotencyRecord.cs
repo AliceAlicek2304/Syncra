@@ -16,4 +16,6 @@ public sealed class IdempotencyRecord : EntityBase
     public DateTime? LockedUntilUtc { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
     public DateTime ExpiresAtUtc { get; set; }
+    public int AttemptCount { get; set; }
+    public string? LastError { get; set; }
 }

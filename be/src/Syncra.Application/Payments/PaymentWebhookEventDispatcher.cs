@@ -3,23 +3,40 @@ using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Payments;
 using Syncra.Application.Features.Subscriptions.Commands;
 
+using Syncra.Application.Payments.Handlers;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Syncra.Application.Payments;
 
 public sealed class PaymentWebhookEventDispatcher : IPaymentWebhookEventDispatcher
 {
     private readonly IMediator _mediator;
+    private readonly IEnumerable<IPaymentWebhookHandler> _handlers;
     private readonly ILogger<PaymentWebhookEventDispatcher> _logger;
 
     public PaymentWebhookEventDispatcher(
         IMediator mediator,
+        IEnumerable<IPaymentWebhookHandler> handlers,
         ILogger<PaymentWebhookEventDispatcher> logger)
     {
         _mediator = mediator;
+        _handlers = handlers;
         _logger = logger;
     }
 
     public async Task DispatchAsync(PaymentWebhookEvent webhookEvent, CancellationToken cancellationToken = default)
     {
+        var handlers = _handlers.Where(h => h.SupportedEvents.Contains(webhookEvent.EventType)).ToList();
+        if (handlers.Any())
+        {
+            foreach (var handler in handlers)
+            {
+                await handler.HandleAsync(webhookEvent, cancellationToken);
+            }
+            return;
+        }
+
         switch (webhookEvent.EventType)
         {
             case "checkout.session.completed":

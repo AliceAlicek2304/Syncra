@@ -7,6 +7,7 @@ public record CreateCheckoutSessionRequest(
 
 public record CreateCheckoutSessionByPlanRequest(
     string PlanCode,
+    string? Interval,
     string? SuccessUrl,
     string? CancelUrl);
 

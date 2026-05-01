@@ -30,6 +30,7 @@ public class SubscriptionsV2Controller : ControllerBase
         var command = new CreateCheckoutSessionByPlanCommand(
             workspaceId,
             request.PlanCode,
+            request.Interval,
             request.SuccessUrl,
             request.CancelUrl);
 

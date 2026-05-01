@@ -20,12 +20,15 @@ public class PlanConfiguration : BaseEntityConfiguration<Plan>
         builder.Property(e => e.MaxSocialAccounts).HasColumnName("max_social_accounts");
         builder.Property(e => e.MaxScheduledPostsPerMonth).HasColumnName("max_scheduled_posts_per_month");
         builder.Property(e => e.StripeProductId).HasMaxLength(100).HasColumnName("stripe_product_id");
-        builder.Property(e => e.StripePriceId).HasMaxLength(100).HasColumnName("stripe_price_id");
+        builder.Property(e => e.StripeMonthlyPriceId).HasMaxLength(100).HasColumnName("stripe_monthly_price_id");
+        builder.Property(e => e.StripeYearlyPriceId).HasMaxLength(100).HasColumnName("stripe_yearly_price_id");
         builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
         builder.Property(e => e.SortOrder).HasColumnName("sort_order");
+        builder.Property(e => e.LastEventTimestampUtc).HasColumnName("last_event_timestamp_utc");
 
         builder.HasIndex(e => e.Code).IsUnique();
-        builder.HasIndex(e => e.StripePriceId).IsUnique().HasFilter("stripe_price_id IS NOT NULL");
+        builder.HasIndex(e => e.StripeMonthlyPriceId).IsUnique().HasFilter("stripe_monthly_price_id IS NOT NULL");
+        builder.HasIndex(e => e.StripeYearlyPriceId).IsUnique().HasFilter("stripe_yearly_price_id IS NOT NULL");
     }
 }
 
@@ -45,6 +48,7 @@ public class SubscriptionConfiguration : BaseWorkspaceEntityConfiguration<Subscr
         builder.Property(e => e.EndsAtUtc).HasColumnName("ends_at_utc");
         builder.Property(e => e.TrialEndsAtUtc).HasColumnName("trial_ends_at_utc");
         builder.Property(e => e.CanceledAtUtc).HasColumnName("canceled_at_utc");
+        builder.Property(e => e.LastEventTimestampUtc).HasColumnName("last_event_timestamp_utc");
 
         builder.HasIndex(e => e.WorkspaceId).HasDatabaseName("ix_subscriptions_workspace_id");
 

@@ -14,6 +14,7 @@ public sealed class Subscription : WorkspaceEntityBase
     public DateTime? EndsAtUtc { get; set; }
     public DateTime? TrialEndsAtUtc { get; set; }
     public DateTime? CanceledAtUtc { get; set; }
+    public DateTime? LastEventTimestampUtc { get; set; }
 
     public Workspace Workspace { get; set; } = null!;
     public Plan Plan { get; set; } = null!;

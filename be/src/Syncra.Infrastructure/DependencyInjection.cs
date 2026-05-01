@@ -13,6 +13,7 @@ using Syncra.Application.Common.Interfaces;
 using Syncra.Infrastructure.Social;
 using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Storage;
+using StackExchange.Redis;
 using Syncra.Application.Interfaces;
 
 namespace Syncra.Infrastructure;
@@ -74,6 +75,18 @@ public static class DependencyInjection
         {
             services.AddDistributedMemoryCache();
         }
+
+        // Redis connection multiplexer for distributed locking (webhook concurrency)
+        if (!string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+                ConnectionMultiplexer.Connect(redisOptions.ConnectionString));
+        }
+        else
+        {
+            services.AddSingleton<IConnectionMultiplexer?>(sp => null);
+        }
+        services.AddScoped<IDistributedLockService, RedisDistributedLockService>();
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IStorageService, LocalMediaStorage>();

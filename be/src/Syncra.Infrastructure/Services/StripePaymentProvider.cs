@@ -225,6 +225,7 @@ public sealed class StripePaymentProvider : IPaymentProvider
             Provider = "stripe",
             EventId = stripeEvent.Id,
             EventType = stripeEvent.Type,
+            EventCreatedAtUtc = stripeEvent.Created,
             Metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         };
 
@@ -251,6 +252,18 @@ public sealed class StripePaymentProvider : IPaymentProvider
             webhookEvent.ProviderCustomerId = subscription.CustomerId;
             webhookEvent.ProviderSubscriptionId = subscription.Id;
 
+            webhookEvent.Metadata["SubscriptionStatus"] = subscription.Status ?? string.Empty;
+            webhookEvent.Metadata["CanceledAt"] = subscription.CanceledAt?.ToString("O") ?? string.Empty;
+            webhookEvent.Metadata["TrialEnd"] = subscription.TrialEnd?.ToString("O") ?? string.Empty;
+
+            if (subscription.Items?.Data?.Count > 0)
+            {
+                var firstItem = subscription.Items.Data[0];
+                webhookEvent.Metadata["PriceId"] = firstItem.Price?.Id ?? string.Empty;
+                webhookEvent.Metadata["CurrentPeriodStart"] = firstItem.CurrentPeriodStart.ToString("O");
+                webhookEvent.Metadata["CurrentPeriodEnd"] = firstItem.CurrentPeriodEnd.ToString("O");
+            }
+
             if (subscription.Metadata != null)
             {
                 foreach (var (key, value) in subscription.Metadata)
@@ -264,6 +277,30 @@ public sealed class StripePaymentProvider : IPaymentProvider
                     webhookEvent.WorkspaceId = workspaceId;
                 }
             }
+        }
+        else if (stripeEvent.Data.Object is Stripe.Product product)
+        {
+            webhookEvent.Metadata["ProductId"] = product.Id;
+            webhookEvent.Metadata["Name"] = product.Name ?? string.Empty;
+            webhookEvent.Metadata["Description"] = product.Description ?? string.Empty;
+            webhookEvent.Metadata["Active"] = product.Active.ToString();
+
+            if (product.Metadata != null)
+            {
+                foreach (var (key, value) in product.Metadata)
+                {
+                    webhookEvent.Metadata[key] = value;
+                }
+            }
+        }
+        else if (stripeEvent.Data.Object is Stripe.Price price)
+        {
+            webhookEvent.Metadata["PriceId"] = price.Id;
+            webhookEvent.Metadata["ProductId"] = price.ProductId ?? string.Empty;
+            webhookEvent.Metadata["UnitAmount"] = price.UnitAmount?.ToString() ?? "0";
+            webhookEvent.Metadata["Interval"] = price.Recurring?.Interval ?? string.Empty;
+            webhookEvent.Metadata["Active"] = price.Active.ToString();
+            webhookEvent.Metadata["Currency"] = price.Currency ?? string.Empty;
         }
 
         return webhookEvent;

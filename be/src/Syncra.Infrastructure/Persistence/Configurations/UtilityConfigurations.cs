@@ -64,6 +64,8 @@ public class IdempotencyRecordConfiguration : BaseEntityConfiguration<Idempotenc
         builder.Property(e => e.LockedUntilUtc).HasColumnName("locked_until_utc");
         builder.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
         builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+        builder.Property(e => e.AttemptCount).HasDefaultValue(0).HasColumnName("attempt_count");
+        builder.Property(e => e.LastError).HasColumnType("jsonb").HasColumnName("last_error");
 
         builder.HasIndex(e => e.Key).IsUnique();
         builder.HasIndex(e => e.ExpiresAtUtc);

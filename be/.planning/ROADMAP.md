@@ -25,13 +25,13 @@
 <summary>🚧 v1.1 Reliable Payments & Provider Abstraction (Phases 4-7) — TARGET 2026-05-15</summary>
 
 ### Phase 4: Payment Provider Abstraction
-- [ ] Phase 4 — planned
+- [x] Phase 4 (3/3 plans) — completed 2026-04-30 (PR #15)
 
 ### Phase 5: Stripe Data Consistency & Mapping
-- [ ] Phase 5 — planned
+- [x] Phase 5 (3/3 plans) — shipped 2026-05-01 (PR #16)
 
 ### Phase 6: Webhook Reliability & Idempotency
-- [ ] Phase 6 — planned
+- [x] Phase 6 (4/4 plans) — completed 2026-05-01
 
 ### Phase 7: Billing UX (Checkout + Customer Portal) & Documentation
 - [ ] Phase 7 — planned

@@ -4,5 +4,6 @@ public enum IdempotencyStatus
 {
     Pending = 1,
     Success = 2,
-    Failure = 3
+    Failure = 3,
+    PermanentFailure = 4
 }
