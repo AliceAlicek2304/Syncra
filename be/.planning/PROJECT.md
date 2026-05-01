@@ -26,6 +26,9 @@ v1.0 focused on hardening the foundation: Stripe billing pipeline security, tena
 | IOptions<T> for configuration | Good | Testable, environment-agnostic services |
 | Precedence-based health reporting | Good | Clear operational signals |
 | ValidationException for value objects | Good | Consistent domain validation |
+| Distributed locking for webhook idempotency | Good | Prevents concurrent event processing via Redis + Lua |
+| Webhook failure ladder (5 attempts) | Good | Prevents infinite retries, logs structured errors |
+| Timestamp-based stale event detection | Good | Prevents out-of-order overwrites using EventCreatedAtUtc |
 
 ## Constraints
 - Multi-tenant architecture (Workspace-scoped data)
@@ -38,9 +41,8 @@ v1.0 focused on hardening the foundation: Stripe billing pipeline security, tena
 **Target:** 2026-05-15
 
 **Must-haves:**
+- ✓ Thoroughly address Stripe webhooks with an idempotency mechanism — Phase 06
 - Define `IPaymentProvider` and implement a registry pattern to support multiple gateways later.
-- Synchronize Stripe logic (Plan mapping, Customer/Subscription IDs) to ensure local DB consistency with Stripe Dashboard.
-- Thoroughly address Stripe webhooks with an idempotency mechanism to avoid duplicate payment event processing.
 - Complete Checkout + Customer Portal flow on the frontend so users can manage service packages.
 - Update technical documentation in `.planning` to reflect the payment module structure.
 
@@ -55,4 +57,4 @@ v1.0 focused on hardening the foundation: Stripe billing pipeline security, tena
 
 ---
 
-*Last updated: 2026-04-28 after v1.1 milestone kickoff*
+*Last updated: 2026-05-01 after Phase 06*
