@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Stripe;
+using Syncra.Application.Options;
 using Syncra.Infrastructure.Persistence;
 using System.Linq;
 using System.Threading;
@@ -14,23 +15,38 @@ namespace Syncra.Api.Controllers;
 public class AdminStripeSyncController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly StripeOptions _stripeOptions;
 
-    public AdminStripeSyncController(AppDbContext dbContext)
+    public AdminStripeSyncController(AppDbContext dbContext, IOptions<StripeOptions> stripeOptions)
     {
         _dbContext = dbContext;
+        _stripeOptions = stripeOptions.Value;
     }
 
     [HttpPost("sync-plans")]
     public async Task<IActionResult> SyncPlans(CancellationToken cancellationToken)
     {
+        Console.WriteLine("[AdminStripeSync] Starting plan sync...");
+        var requestOptions = new RequestOptions { ApiKey = _stripeOptions.SecretKey };
         var productService = new ProductService();
         var priceService = new PriceService();
 
-        var products = await productService.ListAsync(new ProductListOptions { Active = true }, cancellationToken: cancellationToken);
+        var products = await productService.ListAsync(
+            new ProductListOptions { Active = true }, 
+            requestOptions: requestOptions,
+            cancellationToken: cancellationToken);
+
+        Console.WriteLine($"[AdminStripeSync] Found {products.Count()} products in Stripe.");
+
+        int added = 0;
+        int updated = 0;
 
         foreach (var product in products)
         {
-            var prices = await priceService.ListAsync(new PriceListOptions { Product = product.Id, Active = true }, cancellationToken: cancellationToken);
+            var prices = await priceService.ListAsync(
+                new PriceListOptions { Product = product.Id, Active = true }, 
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
 
             var monthlyPrice = prices.FirstOrDefault(p => p.Recurring?.Interval == "month");
             var yearlyPrice = prices.FirstOrDefault(p => p.Recurring?.Interval == "year");
@@ -49,6 +65,11 @@ public class AdminStripeSyncController : ControllerBase
                     IsActive = true
                 };
                 _dbContext.Plans.Add(plan);
+                added++;
+            }
+            else
+            {
+                updated++;
             }
 
             plan.Name = product.Name;
@@ -67,7 +88,8 @@ public class AdminStripeSyncController : ControllerBase
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        Console.WriteLine($"[AdminStripeSync] Sync completed. Added: {added}, Updated: {updated}.");
 
-        return Ok();
+        return Ok(new { Added = added, Updated = updated });
     }
 }

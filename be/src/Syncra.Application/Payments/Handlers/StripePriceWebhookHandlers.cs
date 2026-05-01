@@ -54,10 +54,13 @@ public sealed class StripePriceWebhookHandlers : IPaymentWebhookHandler
 
         var unitAmountStr = webhookEvent.Metadata.TryGetValue("UnitAmount", out var ua) ? ua : "0";
         var interval = webhookEvent.Metadata.TryGetValue("Interval", out var i) ? i : "month";
+        var currency = webhookEvent.Metadata.TryGetValue("Currency", out var c) ? c.ToLowerInvariant() : "usd";
+        
         if (!decimal.TryParse(unitAmountStr, out var unitAmount))
             unitAmount = 0;
 
-        var priceDecimal = unitAmount / 100m;
+        var isZeroDecimal = currency == "vnd" || currency == "jpy" || currency == "krw"; // Add others if necessary
+        var priceDecimal = isZeroDecimal ? unitAmount : unitAmount / 100m;
 
         if (interval == "year")
         {

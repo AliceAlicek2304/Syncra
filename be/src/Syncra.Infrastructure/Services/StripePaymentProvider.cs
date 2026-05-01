@@ -299,6 +299,7 @@ public sealed class StripePaymentProvider : IPaymentProvider
             webhookEvent.Metadata["UnitAmount"] = price.UnitAmount?.ToString() ?? "0";
             webhookEvent.Metadata["Interval"] = price.Recurring?.Interval ?? string.Empty;
             webhookEvent.Metadata["Active"] = price.Active.ToString();
+            webhookEvent.Metadata["Currency"] = price.Currency ?? string.Empty;
         }
 
         return webhookEvent;
