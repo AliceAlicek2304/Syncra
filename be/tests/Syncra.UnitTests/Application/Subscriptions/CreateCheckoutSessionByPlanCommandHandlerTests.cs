@@ -20,7 +20,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var resolverMock = new Mock<IPaymentProviderResolver>();
         var providerMock = new Mock<IPaymentProvider>();
 
-        var workspace = Workspace.Create(Guid.NewGuid(), "Acme", "acme");
+        var ownerId = Guid.NewGuid();
+        var workspace = Workspace.Create(ownerId, "Acme", "acme");
         var plan = new Plan { Code = "pro", IsActive = true, StripeMonthlyPriceId = "price_123" };
 
         workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
@@ -42,7 +43,7 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             resolverMock.Object);
 
         var result = await sut.Handle(
-            new CreateCheckoutSessionByPlanCommand(workspace.Id, "pro", "month", null, null),
+            new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "pro", "month", null, null),
             CancellationToken.None);
 
         Assert.Equal("https://checkout", result.CheckoutUrl);
@@ -58,7 +59,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var planRepositoryMock = new Mock<IPlanRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
 
-        var workspace = Workspace.Create(Guid.NewGuid(), "Acme", "acme");
+        var ownerId = Guid.NewGuid();
+        var workspace = Workspace.Create(ownerId, "Acme", "acme");
         workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         subscriptionRepositoryMock.Setup(x => x.GetByWorkspaceIdAsync(workspace.Id)).ReturnsAsync((Subscription?)null);
         resolverMock.Setup(x => x.GetDefaultProviderKey()).Returns("stripe");
@@ -71,6 +73,33 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             resolverMock.Object);
 
         await Assert.ThrowsAsync<DomainException>(() =>
-            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, "missing", "month", null, null), CancellationToken.None));
+            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "missing", "month", null, null), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Throws_forbidden_when_user_is_not_workspace_owner()
+    {
+        var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
+        var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
+        var planRepositoryMock = new Mock<IPlanRepository>();
+        var resolverMock = new Mock<IPaymentProviderResolver>();
+
+        var ownerId = Guid.NewGuid();
+        var nonOwnerId = Guid.NewGuid();
+        var workspace = Workspace.Create(ownerId, "Acme", "acme");
+
+        workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
+
+        var sut = new CreateCheckoutSessionByPlanCommandHandler(
+            workspaceRepositoryMock.Object,
+            subscriptionRepositoryMock.Object,
+            planRepositoryMock.Object,
+            resolverMock.Object);
+
+        var exception = await Assert.ThrowsAsync<DomainException>(() =>
+            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, nonOwnerId, "pro", "month", null, null), CancellationToken.None));
+
+        Assert.Equal("forbidden", exception.Code);
+        Assert.Contains("Only the workspace owner can manage billing.", exception.Message);
     }
 }

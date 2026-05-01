@@ -31,6 +31,11 @@ public sealed class CreatePortalSessionCommandHandler
         var workspace = await _workspaceRepository.GetByIdAsync(request.WorkspaceId)
             ?? throw new DomainException("not_found", "Workspace not found.");
 
+        if (workspace.OwnerUserId != request.UserId)
+        {
+            throw new DomainException("forbidden", "Only the workspace owner can manage billing.");
+        }
+
         var subscription = await _subscriptionRepository.GetByWorkspaceIdAsync(workspace.Id);
         var providerKey = !string.IsNullOrWhiteSpace(subscription?.Provider)
             ? subscription.Provider!

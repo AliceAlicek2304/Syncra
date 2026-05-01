@@ -17,6 +17,7 @@ import Footer from './components/Footer'
 import { CalendarProvider } from './context/CalendarContext'
 import { RepurposeProvider } from './context/RepurposeContext'
 import { CreatePostModalProvider } from './context/createPostModalContext'
+import { BillingProvider } from './context/BillingContext'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
@@ -58,13 +59,15 @@ const router = createBrowserRouter(
       path: '/app',
       element: (
         <ProtectedRoute>
-          <CalendarProvider>
-            <RepurposeProvider>
-              <CreatePostModalProvider>
-                <AppLayout />
-              </CreatePostModalProvider>
-            </RepurposeProvider>
-          </CalendarProvider>
+          <BillingProvider>
+            <CalendarProvider>
+              <RepurposeProvider>
+                <CreatePostModalProvider>
+                  <AppLayout />
+                </CreatePostModalProvider>
+              </RepurposeProvider>
+            </CalendarProvider>
+          </BillingProvider>
         </ProtectedRoute>
       ),
       children: [

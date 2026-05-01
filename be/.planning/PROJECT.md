@@ -5,9 +5,12 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 
 ## Current State
 
-**Shipped:** v1.0 Stability (2026-04-27)
+**Shipped:** v1.1 Reliable Payments & Provider Abstraction (2026-05-01)
 
-v1.0 focused on hardening the foundation: Stripe billing pipeline security, tenant resolution optimization, database-level query performance, and comprehensive test coverage. All 9 requirements validated. 95 tests passing.
+v1.1 delivered a robust billing engine with IPaymentProvider abstraction, Redis-backed webhook idempotency, and a complete frontend Billing UX.
+
+**Previous Releases:**
+- <details><summary>v1.0 Stability (2026-04-27)</summary>Hardened foundation, tenant resolution optimization, and comprehensive test coverage.</details>
 
 ## Core Tech Stack
 - **Framework:** .NET 8 / ASP.NET Core
@@ -16,45 +19,37 @@ v1.0 focused on hardening the foundation: Stripe billing pipeline security, tena
 - **Security:** JWT + OAuth 2.0
 - **Integrations:** Stripe (Billing), OpenAI (AI Features), Cloudflare R2 (Media)
 
+## Requirements
+
+### Validated
+- ? REQ-1.1: Payment Provider Abstraction ó v1.1
+- ? REQ-2.1: Stripe Data Consistency ó v1.1
+- ? REQ-3.1: Webhook Reliability & Idempotency ó v1.1
+- ? REQ-4.1: Frontend Billing UX ó v1.1
+- ? REQ-5.1: Technical Documentation ó v1.1
+- ? Foundation Hardening ó v1.0
+- ? Tenant Resolution ó v1.0
+
+### Active
+- [ ] v1.2 Performance & Analytics Optimization (Planned)
+- [ ] Social Media Integration Expansion
+
 ## Key Decisions
 
 | Decision | Status | Outcome |
 |----------|--------|---------|
+| IPaymentProvider abstraction | Good | Flexible multi-provider support |
+| Redis distributed locking | Good | Atomic webhook processing |
+| Timestamp event guards | Good | Prevents out-of-order event processing |
+| Settings -> Billing UI | Good | Unified management entry point |
 | IdempotencyRecord for Stripe events | Good | Prevents duplicate webhook processing |
 | Redis-cached tenant resolution | Good | Reduces DB load significantly |
 | Result<T> pattern for analytics | Good | Explicit error handling, clean controller code |
-| IOptions<T> for configuration | Good | Testable, environment-agnostic services |
-| Precedence-based health reporting | Good | Clear operational signals |
-| ValidationException for value objects | Good | Consistent domain validation |
-| Distributed locking for webhook idempotency | Good | Prevents concurrent event processing via Redis + Lua |
-| Webhook failure ladder (5 attempts) | Good | Prevents infinite retries, logs structured errors |
-| Timestamp-based stale event detection | Good | Prevents out-of-order overwrites using EventCreatedAtUtc |
 
 ## Constraints
 - Multi-tenant architecture (Workspace-scoped data)
 - OAuth token refresh must not silently fail
 - Stripe webhooks must be idempotent
 
-## Next Milestone Goals (v1.1)
-
-**Milestone:** v1.1 ‚ÄúReliable Payments & Provider Abstraction‚Äù
-**Target:** 2026-05-15
-
-**Must-haves:**
-- ‚úì Thoroughly address Stripe webhooks with an idempotency mechanism ‚Äî Phase 06
-- Define `IPaymentProvider` and implement a registry pattern to support multiple gateways later.
-- Complete Checkout + Customer Portal flow on the frontend so users can manage service packages.
-- Update technical documentation in `.planning` to reflect the payment module structure.
-
-**Non-goals:**
-- No second payment gateway integration (MoMo, PayPal, etc.).
-- No complex promotions logic (coupons/vouchers).
-
-**Constraints:**
-- Keep the current Stripe API version.
-- Ensure backward compatibility with existing users in the database.
-- Use React Context or a unified state management system for the frontend billing UI.
-
 ---
-
-*Last updated: 2026-05-01 after Phase 06*
+*Last updated: 2026-05-01 after v1.1 milestone*

@@ -18,6 +18,9 @@ using Syncra.Domain.Enums;
 using Syncra.Infrastructure.Persistence;
 using Xunit;
 
+using Syncra.Application.Interfaces;
+using Syncra.Api.Controllers;
+
 namespace Syncra.UnitTests.Api;
 
 public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<Program>>
@@ -67,6 +70,13 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
                 services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IIntegrationTokenRefreshJobScheduler>());
                 services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IDuePostPublishJobScheduler>());
 
+                // Mock Distributed Lock to avoid Redis dependency
+                var lockMock = new Mock<IDistributedLockService>();
+                var lockHandleMock = new Mock<IDistributedLock>();
+                lockMock.Setup(x => x.TryAcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(lockHandleMock.Object);
+                services.AddScoped(_ => lockMock.Object);
+
                 // Mock Authentication
                 services.AddAuthentication(options =>
                 {
@@ -78,7 +88,7 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
         });
     }
 
-    private class TestAuthHandler : Microsoft.AspNetCore.Authentication.AuthenticationHandler<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions>
+    public class TestAuthHandler : Microsoft.AspNetCore.Authentication.AuthenticationHandler<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions>
     {
         public TestAuthHandler(IOptionsMonitor<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions> options,
             ILoggerFactory logger, System.Text.Encodings.Web.UrlEncoder encoder)
