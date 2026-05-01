@@ -15,4 +15,5 @@ public sealed class Plan : EntityBase
     public string? StripeYearlyPriceId { get; set; }
     public bool IsActive { get; set; }
     public int SortOrder { get; set; }
+    public DateTime? LastEventTimestampUtc { get; set; }
 }

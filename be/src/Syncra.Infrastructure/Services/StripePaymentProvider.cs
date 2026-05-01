@@ -225,6 +225,7 @@ public sealed class StripePaymentProvider : IPaymentProvider
             Provider = "stripe",
             EventId = stripeEvent.Id,
             EventType = stripeEvent.Type,
+            EventCreatedAtUtc = stripeEvent.Created,
             Metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         };
 

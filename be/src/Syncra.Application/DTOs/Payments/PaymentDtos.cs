@@ -37,6 +37,7 @@ public sealed class PaymentWebhookEvent
     public string? ProviderCustomerId { get; set; }
     public string? ProviderSubscriptionId { get; set; }
     public Dictionary<string, string> Metadata { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public DateTime? EventCreatedAtUtc { get; set; }
 }
 
 public sealed record PaymentWebhookParseResult(
