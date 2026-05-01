@@ -5,6 +5,7 @@ namespace Syncra.Application.Features.Subscriptions.Commands;
 
 public record CreateCheckoutSessionCommand(
     Guid WorkspaceId,
+    Guid UserId,
     string PriceId,
     string? SuccessUrl,
     string? CancelUrl) : IRequest<CreateCheckoutSessionResponse>;

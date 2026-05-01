@@ -1,37 +1,40 @@
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using MediatR;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
+using Syncra.Api.Middleware;
 using Syncra.Application.Features.Subscriptions.Commands;
-using Syncra.Application.Options;
 using Syncra.Infrastructure.Persistence;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
+using Syncra.Application.Interfaces;
+
+using Microsoft.Extensions.Configuration;
+using Syncra.Application.Options;
 
 namespace Syncra.UnitTests.Api;
 
 public sealed class PaymentsWebhookControllerTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
-    private readonly Mock<IMediator> _mediatorMock = new();
+    private readonly Mock<MediatR.IMediator> _mediatorMock = new();
     private const string WebhookSecret = "whsec_test_secret";
 
     public PaymentsWebhookControllerTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((context, configBuilder) =>
+            builder.ConfigureAppConfiguration((context, config) =>
             {
-                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Sentry:Dsn"] = "",
-                    ["Jwt:Secret"] = "super_secret_test_key_at_least_32_characters_long",
+                    ["Stripe:WebhookSecret"] = WebhookSecret,
+                    ["Jwt:Secret"] = "super-secret-key-that-is-at-least-32-characters-long",
                     ["Jwt:Issuer"] = "Syncra",
                     ["Jwt:Audience"] = "Syncra"
                 });
@@ -39,20 +42,22 @@ public sealed class PaymentsWebhookControllerTests : IClassFixture<WebApplicatio
 
             builder.ConfigureTestServices(services =>
             {
+                // Replace DbContext with In-Memory
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
+                if (descriptor != null) services.Remove(descriptor);
+                
                 services.AddDbContext<AppDbContext>(options =>
                 {
                     options.UseInMemoryDatabase("PaymentsWebhookTestDb");
                 });
 
                 services.AddScoped(_ => _mediatorMock.Object);
-                services.Configure<StripeOptions>(options => options.WebhookSecret = WebhookSecret);
+                services.Configure<StripeOptions>(options =>
+                {
+                    options.WebhookSecret = WebhookSecret;
+                });
 
+                // Mock Hangfire and Schedulers to avoid DB connection issues
                 services.AddSingleton(new Mock<Hangfire.IGlobalConfiguration>().Object);
                 services.AddSingleton(new Mock<Hangfire.IBackgroundJobClient>().Object);
                 services.AddSingleton(new Mock<Hangfire.IRecurringJobManager>().Object);
@@ -60,6 +65,21 @@ public sealed class PaymentsWebhookControllerTests : IClassFixture<WebApplicatio
 
                 services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IIntegrationTokenRefreshJobScheduler>());
                 services.AddScoped(_ => Mock.Of<Syncra.Infrastructure.Jobs.IDuePostPublishJobScheduler>());
+
+                // Mock Distributed Lock to avoid Redis dependency
+                var lockMock = new Mock<IDistributedLockService>();
+                var lockHandleMock = new Mock<IDistributedLock>();
+                lockMock.Setup(x => x.TryAcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(lockHandleMock.Object);
+                services.AddScoped(_ => lockMock.Object);
+
+                // Mock Authentication
+                services.AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = "Test";
+                    options.DefaultChallengeScheme = "Test";
+                })
+                .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, StripeWebhookControllerTests.TestAuthHandler>("Test", options => { });
             });
         });
     }

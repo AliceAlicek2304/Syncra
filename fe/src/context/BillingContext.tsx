@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { apiFetch } from '../utils/api';
-import { 
+import type{ 
   CurrentSubscriptionDto, 
   CreateCheckoutSessionByPlanRequest, 
   CreateCheckoutSessionResponse,
