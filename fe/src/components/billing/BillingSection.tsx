@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   CreditCard, 
-  Calendar, 
-  Shield, 
   Check, 
   ExternalLink, 
   X, 
@@ -70,7 +68,6 @@ export default function BillingSection() {
   } = useBilling();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [yearly, setYearly] = useState(false);
   const [banner, setBanner] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
 
@@ -85,20 +82,22 @@ export default function BillingSection() {
   useEffect(() => {
     const billingStatus = searchParams.get('billing');
     if (billingStatus) {
-      if (billingStatus === 'success') {
-        setBanner({ type: 'success', message: 'Subscription updated successfully! Your new features are now active.' });
-        loadCurrentSubscription();
-      } else if (billingStatus === 'cancel') {
-        setBanner({ type: 'info', message: 'Checkout canceled. Your current plan remains unchanged.' });
-      } else if (billingStatus === 'portal_return') {
-        setBanner({ type: 'success', message: 'Returned from billing management. Subscription state refreshed.' });
-        loadCurrentSubscription();
-      }
+      setTimeout(() => {
+        if (billingStatus === 'success') {
+          setBanner({ type: 'success', message: 'Subscription updated successfully! Your new features are now active.' });
+          loadCurrentSubscription();
+        } else if (billingStatus === 'cancel') {
+          setBanner({ type: 'info', message: 'Checkout canceled. Your current plan remains unchanged.' });
+        } else if (billingStatus === 'portal_return') {
+          setBanner({ type: 'success', message: 'Returned from billing management. Subscription state refreshed.' });
+          loadCurrentSubscription();
+        }
 
-      // Remove the query param without refreshing
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('billing');
-      setSearchParams(newParams, { replace: true });
+        // Remove the query param without refreshing
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('billing');
+        setSearchParams(newParams, { replace: true });
+      }, 0);
     }
   }, [searchParams, setSearchParams, loadCurrentSubscription]);
 
@@ -149,7 +148,7 @@ export default function BillingSection() {
       </div>
 
       {banner && (
-        <div className={`${styles.banner} ${styles[`banner${banner.type.charAt(0).toUpperCase() + banner.type.slice(1)}` as any]}`}>
+        <div className={`${styles.banner} ${styles[`banner${banner.type.charAt(0).toUpperCase() + banner.type.slice(1)}` as keyof typeof styles]}`}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {banner.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
             <span>{banner.message}</span>
@@ -181,7 +180,7 @@ export default function BillingSection() {
         <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Status</span>
           <div className={styles.summaryValue}>
-            <span className={`${styles.statusBadge} ${styles[`status${displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}` as any] || ''}`}>
+            <span className={`${styles.statusBadge} ${styles[`status${displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}` as keyof typeof styles] || ''}`}>
               {displayStatus.toUpperCase()}
             </span>
           </div>
