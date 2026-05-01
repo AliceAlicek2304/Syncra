@@ -1,4 +1,4 @@
-﻿# Requirements: Syncra
+# Requirements: Syncra
 
 **Defined:** 2026-05-02
 **Core Value:** Streamline social media content creation and management through intelligent AI assistance and multi-platform orchestration.
@@ -68,7 +68,7 @@
 | CAL-03 | Phase 3 | Pending |
 | CAL-04 | Phase 2 | Pending |
 | AI-01 | Phase 1 | Pending |
-| AI-02 | Phase 3 | Pending |
+| AI-02 | Phase 2 | Pending |
 | AI-03 | Phase 2 | Pending |
 | ANA-01 | Phase 3 | Pending |
 | ANA-02 | Phase 3 | Pending |
@@ -76,7 +76,7 @@
 **Coverage:**
 - v1 requirements: 16 total
 - Mapped to phases: 16
-- Unmapped: 0 âœ“
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-02*
