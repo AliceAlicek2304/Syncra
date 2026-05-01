@@ -167,9 +167,9 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Index_DuplicateEventPending_ReturnsConflict()
+    public async Task Index_DuplicateEventPending_ProcessesAnyway()
     {
-        // Arrange
+        // Arrange — Pending events are now retried (stale lock scenario)
         var client = _factory.CreateClient();
         var eventId = "evt_pending_123";
         
@@ -183,7 +183,7 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
                 Endpoint = "/api/stripe/webhook",
                 Method = "POST",
                 Status = IdempotencyStatus.Pending,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(7)
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(30)
             });
             await dbContext.SaveChangesAsync();
         }
@@ -200,8 +200,8 @@ public class StripeWebhookControllerTests : IClassFixture<WebApplicationFactory<
         // Act
         var response = await client.SendAsync(request);
 
-        // Assert
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        // Assert — new behavior: pending events are processed (returns 200 OK)
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
