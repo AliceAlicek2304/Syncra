@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: Reliable Payments & Provider Abstraction
 current_phase: 07
 status: "Phase 06 shipped — PR #16"
-last_updated: "2026-05-01T17:05:00.000Z"
+last_updated: "2026-05-01T17:18:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -69,6 +69,12 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 - Precedence-based integration health reporting (disconnected > error > needs_reauth > token_expired > warning > ok).
 - Hardened `StripeWebhookController` by explicitly rejecting missing `Stripe-Signature` headers with 400.
 - Standardized `ValidationException` for domain value object invariants.
+
+## Quick Tasks Completed
+
+| ID | Task | Status | Date |
+|----|------|--------|------|
+| 260501-nzv | Configure GSD to respect .gitignore | Verified | 2026-05-01 |
 
 Last session: 2026-05-01
 Stopped at: Phase 06 shipped, PR #16 updated
