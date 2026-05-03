@@ -1,16 +1,18 @@
 export interface User {
-  id: string;
+  userId: string;
   email: string;
-  fullName: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
-  role: string;
-  tenantId?: string;
+  timezone?: string;
+  locale?: string;
 }
 
 export interface AuthResponse {
-  accessToken: string;
+  token: string;
   refreshToken: string;
-  user: User;
+  expiresAtUtc: string;
 }
 
 export interface LoginRequest {
@@ -20,12 +22,7 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   email: string;
-  fullName: string;
   password?: string;
-}
-
-export interface ApiError {
-  message: string;
-  code?: string;
-  errors?: Record<string, string[]>;
+  firstName: string;
+  lastName: string;
 }
