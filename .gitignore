@@ -94,6 +94,7 @@ CLAUDE.md
 GEMINI.md
 .agent
 .claude
+.gemini
 .aider*
 .github/copilot-instructions.md
 **/.planning/
