@@ -19,7 +19,7 @@ interface WorkspaceContextType {
   createWorkspace: (name: string) => Promise<void>
 }
 
-const WorkspaceContext = createContext<WorkspaceContextType | null>(null)
+export const WorkspaceContext = createContext<WorkspaceContextType | null>(null)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
@@ -84,4 +84,8 @@ export function useWorkspace() {
   const ctx = useContext(WorkspaceContext)
   if (!ctx) throw new Error('useWorkspace must be used inside WorkspaceProvider')
   return ctx
+}
+
+export function useOptionalWorkspace() {
+  return useContext(WorkspaceContext)
 }

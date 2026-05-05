@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
     id: 'f1',
     category: 'Tài khoản & Thanh toán',
     q: 'Tôi có thể dùng thử Syncra miễn phí không?',
-    a: 'Có! Syncra cung cấp gói Free với tối đa 5 bài/tháng, kết nối 2 nền tảng và truy cập tính năng AI cơ bản. Không cần thẻ tín dụng khi đăng ký.',
+    a: 'Có! Syncra có gói Free với tối đa 1 social account, 10 bài lên lịch mỗi tháng và AI usage giới hạn. Không cần thẻ tín dụng khi đăng ký.',
   },
   {
     id: 'f2',
@@ -56,13 +56,13 @@ const FAQ_ITEMS = [
     id: 'f8',
     category: 'Đăng bài & Lên lịch',
     q: 'Tôi có thể lên lịch bao nhiêu bài một lúc?',
-    a: 'Gói Creator cho phép lên lịch không giới hạn bài. Gói Free giới hạn 5 bài/tháng. Gói Studio dành cho team cho phép nhiều thành viên cùng lên lịch và phê duyệt nội dung.',
+    a: 'Gói Free cho phép tối đa 10 bài lên lịch/tháng, Pro tối đa 100 bài/tháng và Team tối đa 1000 bài/tháng. Các gói cao hơn cũng hỗ trợ nhiều social account hơn theo đúng quota của workspace.',
   },
   {
     id: 'f9',
     category: 'Analytics',
     q: 'Dữ liệu analytics của tôi được cập nhật bao lâu một lần?',
-    a: 'Với gói Creator trở lên, analytics được cập nhật mỗi 6 giờ. Gói Free cập nhật mỗi 24 giờ. Dữ liệu bao gồm reach, engagement rate, follower growth và best time to post.',
+    a: 'Analytics hiển thị dữ liệu theo workspace và tích hợp từ các nền tảng đã kết nối. Tần suất làm mới có thể thay đổi theo nền tảng và trạng thái đồng bộ, nhưng giao diện sẽ luôn phản ánh plan/quota hiện tại của bạn.',
   },
 ]
 

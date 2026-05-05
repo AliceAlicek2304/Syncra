@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useOptionalWorkspace } from '../context/WorkspaceContext'
 import AuthModal from './AuthModal'
 import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
@@ -25,8 +27,11 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [planName, setPlanName] = useState('Free Plan')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { user, logout } = useAuth()
+  const workspaceContext = useOptionalWorkspace()
+  const activeWorkspace = workspaceContext?.activeWorkspace ?? null
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -44,6 +49,24 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      if (!user || !activeWorkspace) {
+        setPlanName('Free Plan')
+        return
+      }
+
+      try {
+        const res = await api.get<{ planName?: string }>(`/workspaces/${activeWorkspace.id}/subscription`)
+        setPlanName(res.data.planName ?? 'Free Plan')
+      } catch {
+        setPlanName('Free Plan')
+      }
+    }
+
+    fetchPlan()
+  }, [user, activeWorkspace])
 
   const handleLoginClick = () => setAuthModalOpen(true)
 
@@ -85,7 +108,7 @@ export default function Navbar() {
                 </span>
                 <div className={styles.avatarInfo}>
                   <span className={styles.avatarName}>{user.displayName || 'Minh Anh'}</span>
-                  <span className={styles.avatarPlan}>Creator Plan</span>
+                  <span className={styles.avatarPlan}>{planName}</span>
                 </div>
               </button>
               {dropdownOpen && (

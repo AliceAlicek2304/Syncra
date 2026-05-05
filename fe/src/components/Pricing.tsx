@@ -5,61 +5,52 @@ import logo from '../assets/syncra-logo.png'
 
 const PLANS = [
   {
-    name: 'Basic',
+    name: 'Free',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
-    price: { monthly: 99, yearly: 79 },
-    desc: 'For solo creators starting with Facebook.',
+    price: { monthly: 0, yearly: 0 },
+    desc: 'Dành cho cá nhân bắt đầu quản lý nội dung Facebook.',
     features: [
-      'Facebook only: 1 platform',
-      '1 Facebook account',
-      '1 Facebook Page per account',
-      'Unlimited scheduled posts',
-      'Basic analytics',
-      'Content editor',
-      'Community support',
-      'AI usage cap (monthly limit)',
+      'Tối đa 1 thành viên workspace',
+      'Tối đa 1 social account',
+      'Tối đa 10 bài lên lịch / tháng',
+      'Đăng bài Facebook cơ bản',
+      'Phân tích dashboard cơ bản',
+      'Giới hạn AI usage theo tháng',
     ],
-    cta: 'Start 14-day trial',
+    cta: 'Bắt đầu miễn phí',
     highlight: false,
   },
   {
     name: 'Pro',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
-    price: { monthly: 149, yearly: 119 },
-    desc: 'For growing teams managing multiple Facebook assets.',
+    price: { monthly: 19.99, yearly: 199.99 },
+    desc: 'Dành cho creator/team nhỏ cần mở rộng số tài khoản và tần suất đăng.',
     features: [
-      'Facebook only: 1 platform',
-      'Up to 5 Facebook accounts',
-      'Up to 5 Facebook Pages per account',
-      'Unlimited scheduled posts',
-      'Advanced analytics',
-      'Best-time scheduling',
-      'Content recycling',
-      'Priority support',
-      'AI usage cap (monthly limit)',
+      'Tối đa 3 workspace members',
+      'Tối đa 5 social accounts',
+      'Tối đa 100 bài lên lịch / tháng',
+      'Quy trình đa tài khoản Facebook',
+      'Phân tích nâng cao hơn Free',
+      'Giới hạn AI usage theo tháng',
     ],
-    cta: 'Start 14-day trial',
+    cta: 'Dùng thử 14 ngày',
     highlight: true,
-    badge: 'Most popular',
+    badge: 'Phổ biến nhất',
   },
   {
-    name: 'Max',
+    name: 'Team',
     icon: <img src={logo} alt="Syncra" style={{ width: 30, height: 30}} />,
-    price: { monthly: 199, yearly: 159 },
-    desc: 'For power users operating at larger Facebook scale.',
+    price: { monthly: 49.99, yearly: 499.99 },
+    desc: 'Dành cho team/agencies quản lý nhiều tài khoản với sản lượng lớn.',
     features: [
-      'Facebook only: 1 platform',
-      'Up to 10 Facebook accounts',
-      'Up to 10 Facebook Pages per account',
-      'Up to 10 team members',
-      'Custom brand kits',
-      'White-label reports',
-      'API access',
-      'Dedicated support',
-      'Custom integrations',
-      'AI usage cap (monthly limit)',
+      'Tối đa 10 thành viên workspace',
+      'Tối đa 10 social accounts',
+      'Tối đa 1000 bài lên lịch / tháng',
+      'Quản trị tập trung đa tài khoản Facebook',
+      'Phân tích chuyên sâu cho team',
+      'Giới hạn AI usage theo tháng',
     ],
-    cta: 'Start 14-day trial',
+    cta: 'Mua gói Team',
     highlight: false,
   },
 ]
@@ -71,13 +62,13 @@ export default function Pricing() {
     <section id="pricing" className={styles.section}>
       <div className="container">
         <div className={styles.header}>
-          <span className="section-label">Pricing</span>
+          <span className="section-label">Bảng giá</span>
           <h2 className="section-title">
-            Simple, transparent pricing.<br />
-            <span className="gradient-text">Scale when you're ready.</span>
+            Bảng giá rõ ràng, minh bạch.<br />
+            <span className="gradient-text">Nâng cấp khi bạn sẵn sàng.</span>
           </h2>
           <p className="section-sub" style={{ marginTop: 16, textAlign: 'center' }}>
-            Start with a 14-day free trial. All plans include monthly AI usage limits and clear Facebook account/Page quotas.
+            Free là mặc định, Pro có thể dùng thử 14 ngày, còn Team là gói trả phí dành cho nhu cầu mở rộng.
           </p>
 
           {/* Toggle */}
@@ -115,9 +106,9 @@ export default function Pricing() {
 
               <div className={styles.priceRow}>
                 <span className={styles.price}>
-                  {yearly ? plan.price.yearly : plan.price.monthly}.000
+                  ${yearly ? plan.price.yearly : plan.price.monthly}
                 </span>
-                <span className={styles.period}> đ / tháng</span>
+                <span className={styles.period}>{yearly ? ' / năm' : ' / tháng'}</span>
               </div>
 
               <ul className={styles.featureList}>
@@ -134,14 +125,14 @@ export default function Pricing() {
                 className={plan.highlight ? 'btn-primary' : 'btn-ghost'}
                 style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
               >
-                  {plan.cta}
+                {plan.cta}
               </a>
             </div>
           ))}
         </div>
 
         <p className={styles.disclaimer}>
-          All plans include a 14-day money-back guarantee. No contracts.
+          Gói Free luôn dùng sẵn. Pro có trial 14 ngày. Team là gói trả phí và không có trial.
         </p>
       </div>
     </section>
