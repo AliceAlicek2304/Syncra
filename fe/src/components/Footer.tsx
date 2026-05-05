@@ -3,10 +3,10 @@ import styles from './Footer.module.css'
 import logo from '../assets/syncra-logo.png'
 
 const LINKS = {
-  Product: ['Features', 'Pricing', 'Changelog', 'Roadmap'],
-  Company: ['About', 'Blog', 'Careers', 'Press'],
-  Resources: ['Documentation', 'Help Center', 'Status', 'Community'],
-  Legal: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'],
+  'Sản phẩm': ['Tính năng', 'Bảng giá', 'Nhật ký thay đổi', 'Lộ trình'],
+  'Công ty': ['Giới thiệu', 'Blog', 'Tuyển dụng', 'Báo chí'],
+  'Tài nguyên': ['Tài liệu', 'Trung tâm trợ giúp', 'Trạng thái', 'Cộng đồng'],
+  'Pháp lý': ['Chính sách quyền riêng tư', 'Điều khoản dịch vụ', 'Chính sách cookie'],
 }
 
 export default function Footer() {
@@ -21,7 +21,7 @@ export default function Footer() {
               <span className={styles.logoText}>Syncra</span>
             </a>
             <p className={styles.tagline}>
-              The all-in-one platform for content creators to write, schedule, and publish everywhere — effortlessly.
+              Nền tảng tất cả trong một giúp creator viết, lên lịch và đăng bài khắp nơi một cách dễ dàng.
             </p>
             <div className={styles.socials}>
               <a href="#" aria-label="Twitter" className={styles.social}><Twitter size={16} /></a>
@@ -36,7 +36,7 @@ export default function Footer() {
             <div key={group} className={styles.linkGroup}>
               <h4 className={styles.groupTitle}>{group}</h4>
               <ul className={styles.linkList}>
-                {items.map(item => (
+                {items.map((item: string) => (
                   <li key={item}>
                     <a href="#" className={styles.link}>{item}</a>
                   </li>
@@ -48,10 +48,10 @@ export default function Footer() {
 
         <div className={styles.bottom}>
           <p className={styles.copy}>
-            © {new Date().getFullYear()} Syncra. All rights reserved.
+            © {new Date().getFullYear()} Syncra. Bảo lưu mọi quyền.
           </p>
           <p className={styles.madeWith}>
-            Made with ❤️ for creators everywhere
+            Được tạo ra cho creator ở khắp mọi nơi
           </p>
         </div>
       </div>

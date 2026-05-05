@@ -2,12 +2,12 @@ import { Shield, Lock, RefreshCcw, Headphones, Award, CreditCard } from 'lucide-
 import styles from './TrustBadges.module.css'
 
 const BADGES = [
-  { icon: <Shield size={20} />, label: 'SOC 2 Compliant' },
-  { icon: <Lock size={20} />, label: 'SSL Encrypted' },
-  { icon: <RefreshCcw size={20} />, label: '99.9% Uptime' },
-  { icon: <Headphones size={20} />, label: '24/7 Support' },
-  { icon: <Award size={20} />, label: 'GDPR Ready' },
-  { icon: <CreditCard size={20} />, label: 'No contracts' },
+  { icon: <Shield size={20} />, label: 'Tuân thủ SOC 2' },
+  { icon: <Lock size={20} />, label: 'Mã hoá SSL' },
+  { icon: <RefreshCcw size={20} />, label: 'Uptime 99.9%' },
+  { icon: <Headphones size={20} />, label: 'Hỗ trợ 24/7' },
+  { icon: <Award size={20} />, label: 'Sẵn sàng cho GDPR' },
+  { icon: <CreditCard size={20} />, label: 'Không ràng buộc hợp đồng' },
 ]
 
 const PLATFORMS = ['TikTok', 'Instagram', 'YouTube', 'LinkedIn', 'X (Twitter)', 'Facebook']
@@ -28,7 +28,7 @@ export default function TrustBadges() {
 
         {/* Platform logos strip */}
         <div className={styles.platformStrip}>
-          <p className={styles.stripLabel}>Works with all your favourite platforms</p>
+          <p className={styles.stripLabel}>Hoạt động với các nền tảng bạn dùng nhiều nhất</p>
           <div className={styles.platformList}>
             {PLATFORMS.map(p => (
               <div key={p} className={styles.platformChip}>{p}</div>
@@ -41,14 +41,14 @@ export default function TrustBadges() {
           <div className={styles.ctaGlow} />
           <div className={styles.ctaContent}>
             <h2 className={styles.ctaTitle}>
-              Ready to grow your audience <span className="gradient-text">10x faster?</span>
+              Sẵn sàng tăng trưởng tệp người xem <span className="gradient-text">nhanh hơn 10 lần?</span>
             </h2>
             <p className={styles.ctaSub}>
-              Join 2,400+ creators who already trust Syncra. Free plan — no credit card required.
+              Hơn 2.400 creator đã tin dùng Syncra. Gói Free không cần thẻ tín dụng.
             </p>
             <div className={styles.ctaActions}>
-              <a href="#pricing" className="btn-primary">Start for free today</a>
-              <a href="#features" className="btn-secondary">Explore features</a>
+              <a href="#pricing" className="btn-primary">Bắt đầu miễn phí</a>
+              <a href="#features" className="btn-secondary">Khám phá tính năng</a>
             </div>
           </div>
         </div>

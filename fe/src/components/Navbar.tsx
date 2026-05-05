@@ -9,10 +9,10 @@ import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Testimonials', href: '#testimonials' },
+  { label: 'Tính năng', href: '#features' },
+  { label: 'Cách hoạt động', href: '#how-it-works' },
+  { label: 'Bảng giá', href: '#pricing' },
+  { label: 'Đánh giá', href: '#testimonials' },
 ]
 
 const USER_MENU = [
@@ -141,9 +141,9 @@ export default function Navbar() {
                 style={{ padding: '10px 20px', fontSize: '14px' }}
                 onClick={handleLoginClick}
               >
-                Sign in
+                Đăng nhập
               </button>
-              <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Start free</a>
+              <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Bắt đầu miễn phí</a>
             </>
           )}
         </div>
@@ -169,7 +169,7 @@ export default function Navbar() {
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={() => { navigate('/app/dashboard'); setMenuOpen(false) }}
               >
-                Dashboard
+                Bảng điều khiển
               </button>
             ) : (
               <>
@@ -181,9 +181,9 @@ export default function Navbar() {
                     handleLoginClick()
                   }}
                 >
-                  Sign in
+                  Đăng nhập
                 </button>
-                <a href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</a>
+                <a href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Bắt đầu miễn phí</a>
               </>
             )}
           </div>

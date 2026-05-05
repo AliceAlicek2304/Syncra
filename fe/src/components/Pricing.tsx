@@ -33,7 +33,7 @@ const PLANS = [
       'Phân tích nâng cao hơn Free',
       'Giới hạn AI usage theo tháng',
     ],
-    cta: 'Dùng thử 14 ngày',
+    cta: 'Dùng thử 14 ngày, sau đó mua gói Pro',
     highlight: true,
     badge: 'Phổ biến nhất',
   },
@@ -68,7 +68,7 @@ export default function Pricing() {
             <span className="gradient-text">Nâng cấp khi bạn sẵn sàng.</span>
           </h2>
           <p className="section-sub" style={{ marginTop: 16, textAlign: 'center' }}>
-            Free là mặc định, Pro có thể dùng thử 14 ngày, còn Team là gói trả phí dành cho nhu cầu mở rộng.
+            Free là mặc định. Pro dùng thử 14 ngày rồi phải mua để tiếp tục. Team là gói trả phí dành cho nhu cầu mở rộng.
           </p>
 
           {/* Toggle */}
@@ -132,7 +132,7 @@ export default function Pricing() {
         </div>
 
         <p className={styles.disclaimer}>
-          Gói Free luôn dùng sẵn. Pro có trial 14 ngày. Team là gói trả phí và không có trial.
+          Gói Free luôn dùng sẵn. Pro chỉ là trial 14 ngày rồi cần nâng cấp trả phí. Team là gói trả phí ngay từ đầu.
         </p>
       </div>
     </section>
