@@ -622,6 +622,7 @@ export default function IdeasPage() {
             {/* AI Generator Modal */}
             {showAIModal && (
                 <AIIdeaGenerator
+                    workspaceId={workspaceId}
                     onSelectIdea={handleSelectAIIdea}
                     onClose={() => setShowAIModal(false)}
                 />

@@ -4,6 +4,7 @@ import styles from './AICoach.module.css'
 import { TREND_TIPS } from '../data/mockCoachTrends'
 import AIIdeaGenerator from './AIIdeaGenerator'
 import { useCreatePostModal } from '../context/createPostModalContext'
+import { useWorkspace } from '../context/WorkspaceContext'
 import type { ContentIdea } from '../data/mockAI'
 
 export default function AICoach() {
@@ -12,6 +13,8 @@ export default function AICoach() {
   const [generatorIdeas, setGeneratorIdeas] = useState<ContentIdea[] | null>(null)
   
   const { openCreatePost } = useCreatePostModal()
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id ?? ''
   
   // Carousel state
   const [slideIndex, setSlideIndex] = useState(1)
@@ -202,7 +205,8 @@ export default function AICoach() {
       {/* Embedded Generator Modal (when a trend is clicked) */}
       {generatorIdeas && (
         <AIIdeaGenerator
-          presetResults={generatorIdeas}
+          workspaceId={workspaceId}
+          presetResults={generatorIdeas as any}
           onClose={() => setGeneratorIdeas(null)}
           onSelectIdea={(idea) => {
             openCreatePost({ initialContent: idea.description, source: 'coach' })

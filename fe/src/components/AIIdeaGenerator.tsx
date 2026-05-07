@@ -1,7 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Sparkles, X, Check, ChevronRight, ChevronDown, Upload, FileText, Trash2 } from 'lucide-react'
-import { getMockResults } from '../data/mockAI'
-import type { ContentIdea, AIGenerateInput } from '../data/mockAI'
+import { useMutation } from '@tanstack/react-query'
+import { aiApi } from '../api/ai'
+import type { GeneratedIdea as ApiGeneratedIdea, AIGenerateRequest } from '../api/ai'
+import { useR2Upload } from '../hooks/useR2Upload'
+import { useToast } from '../context/ToastContext'
 import { shortId } from '../utils/shortId'
 import styles from './AIIdeaGenerator.module.css'
 
@@ -15,7 +18,8 @@ export interface GeneratedIdea {
 interface Props {
     onSelectIdea: (idea: GeneratedIdea) => void
     onClose: () => void
-    presetResults?: ContentIdea[]
+    workspaceId: string
+    presetResults?: ApiGeneratedIdea[]
 }
 
 interface UploadedFile {
@@ -43,20 +47,57 @@ const GOALS = [
 type Step = 'form' | 'loading' | 'results'
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }: Props) {
+export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, presetResults }: Props) {
     const [step, setStep] = useState<Step>(presetResults ? 'results' : 'form')
     const [topic, setTopic] = useState('')
     const [niche, setNiche] = useState('')
     const [audience, setAudience] = useState('')
     const [goal, setGoal] = useState('')
     const [tone, setTone] = useState('default')
-    const [results, setResults] = useState<ContentIdea[]>(presetResults || [])
+    const [results, setResults] = useState<ApiGeneratedIdea[]>(presetResults || [])
     const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([])
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
     const [dragOver, setDragOver] = useState(false)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const { success: toastSuccess, error: toastError } = useToast()
+    const { upload: uploadToR2, progress: uploadProgress } = useR2Upload()
+    const [cooldownUntil, setCooldownUntil] = useState(0)
+    const [remainingSeconds, setRemainingSeconds] = useState(0)
+
+    useEffect(() => {
+        if (cooldownUntil <= Date.now()) return
+        const interval = setInterval(() => {
+            const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000)
+            if (remaining <= 0) {
+                setRemainingSeconds(0)
+                clearInterval(interval)
+            } else {
+                setRemainingSeconds(remaining)
+            }
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [cooldownUntil])
+
+    const isCoolingDown = cooldownUntil > Date.now() && remainingSeconds > 0
+
+    const generateMutation = useMutation({
+        mutationFn: (req: AIGenerateRequest) => aiApi.generateIdeas(workspaceId, req),
+        onSuccess: (data) => {
+            setResults(data.ideas)
+            if (data.cooldownSeconds && data.cooldownSeconds > 0) {
+                setCooldownUntil(Date.now() + data.cooldownSeconds * 1000)
+                setRemainingSeconds(data.cooldownSeconds)
+            }
+            setStep('results')
+        },
+        onError: () => {
+            setStep('form')
+            toastError('Failed to generate ideas. Please try again.')
+        },
+    })
 
     const handleFiles = useCallback((files: FileList | null) => {
         if (!files) return
@@ -88,29 +129,37 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
         })
     }
 
-    const handleGenerate = () => {
-        if (!topic.trim()) return
+    const handleGenerate = async () => {
+        if (!topic.trim() || isCoolingDown || generateMutation.isPending) return
         setStep('loading')
         setSelectedIdeaIds([])
-        const input: AIGenerateInput = { 
-            topic, 
-            niche, 
-            audience, 
-            goal, 
-            tone,
-            files: uploadedFiles.length > 0 ? uploadedFiles.map(f => ({
-                name: f.file.name,
-                type: f.type,
-                caption: f.caption
-            })) : undefined
+
+        // D-02: Upload reference files to R2 before generating
+        let referenceAssetIds: string[] = []
+        if (uploadedFiles.length > 0) {
+            try {
+                referenceAssetIds = await Promise.all(
+                    uploadedFiles.map((f) => uploadToR2(f.file, workspaceId, f.id))
+                )
+            } catch {
+                toastError('Upload failed. Check your connection and try again.')
+                setStep('form')
+                return
+            }
         }
-        setTimeout(() => {
-            setResults(getMockResults(input))
-            setStep('results')
-        }, 1600)
+
+        // D-01: Only trigger generation — ideas stay in memory until user adds to board
+        generateMutation.mutate({
+            topic,
+            niche: niche || undefined,
+            audience: audience || undefined,
+            goal: goal || undefined,
+            tone: tone !== 'default' ? tone : undefined,
+            referenceAssetIds: referenceAssetIds.length > 0 ? referenceAssetIds : undefined,
+        })
     }
 
-    const toggleSelect = (idea: ContentIdea) => {
+    const toggleSelect = (idea: ApiGeneratedIdea) => {
         setSelectedIdeaIds(prev =>
             prev.includes(idea.id)
                 ? prev.filter(id => id !== idea.id)
@@ -234,6 +283,22 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
+                                                {uploadProgress[file.id] !== undefined && uploadProgress[file.id] < 100 && (
+                                                    <div className={styles.uploadProgressOverlay}>
+                                                        <svg width="32" height="32" viewBox="0 0 32 32">
+                                                            <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2"/>
+                                                            <circle
+                                                                cx="16" cy="16" r="12" fill="none"
+                                                                stroke="var(--purple-500)" strokeWidth="2"
+                                                                strokeDasharray={`${2 * Math.PI * 12}`}
+                                                                strokeDashoffset={`${2 * Math.PI * 12 * (1 - (uploadProgress[file.id] ?? 0) / 100)}`}
+                                                                strokeLinecap="round"
+                                                                transform="rotate(-90 16 16)"
+                                                                style={{ transition: 'stroke-dashoffset 200ms ease' }}
+                                                            />
+                                                        </svg>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -331,11 +396,17 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, presetResults }
                                 <button
                                     className={styles.generateIconBtn}
                                     onClick={handleGenerate}
-                                    disabled={!topic.trim()}
+                                    disabled={!topic.trim() || isCoolingDown || generateMutation.isPending}
                                     title="Generate (Ctrl+Enter)"
                                 >
                                     <Sparkles size={14} />
-                                    <span>Generate</span>
+                                    <span>
+                                        {isCoolingDown
+                                            ? `Wait ${remainingSeconds}s`
+                                            : generateMutation.isPending
+                                                ? 'Generating…'
+                                                : 'Generate'}
+                                    </span>
                                 </button>
                             </div>
                         </div>
