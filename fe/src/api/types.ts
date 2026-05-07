@@ -26,3 +26,14 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
 }
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+}
+
+export interface WorkspaceResponse {
+  workspaces: Workspace[];
+}

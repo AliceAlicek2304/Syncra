@@ -179,12 +179,18 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         {/* Author row */}
         <div className={styles.authorRow}>
           <div className={styles.avatarWrap}>
-            <div className={styles.avatarBubble}>{state.user?.avatar ?? 'U'}</div>
+            <div className={styles.avatarBubble}>
+              {state.user?.avatarUrl ? (
+                <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+              ) : (
+                (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+              )}
+            </div>
             <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[state.activeTab]}`}>
               <PlatformIcon platform={state.activeTab} size={12} />
             </div>
           </div>
-          <span className={styles.authorName}>{state.user?.name ?? 'You'}</span>
+          <span className={styles.authorName}>{state.user?.displayName || state.user?.firstName || 'You'}</span>
         </div>
 
         {/* Textarea */}

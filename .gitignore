@@ -92,6 +92,7 @@ fe/.claude/
 fullcode.txt
 CLAUDE.md
 GEMINI.md
+.agents
 .agent
 .claude
 .gemini
@@ -102,6 +103,8 @@ GEMINI.md
 .specify
 .antigravity
 specs/
+fe/test-results
+fe/playwright-report
 
 # knowns (ignore entire folder)
 .knowns/

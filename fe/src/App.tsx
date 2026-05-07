@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider, useAuth } from './context/AuthContext'
-import type { ReactNode } from 'react'
+import { AuthProvider } from './context/AuthContext'
 
 // Homepage components
 import Navbar from './components/Navbar'
@@ -19,6 +18,9 @@ import { CalendarProvider } from './context/CalendarContext'
 import { RepurposeProvider } from './context/RepurposeContext'
 import { CreatePostModalProvider } from './context/createPostModalContext'
 import { BillingProvider } from './context/BillingContext'
+import { WorkspaceProvider } from './context/WorkspaceContext'
+import { ToastProvider } from './context/ToastContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
@@ -29,7 +31,22 @@ import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
 import HelpPage from './pages/app/HelpPage'
 
+import { useLocation, useNavigate } from 'react-router-dom'
+import LoginModal from './components/auth/LoginModal'
+
 function Homepage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isLoginOpen = location.pathname === '/login'
+
+  const handleCloseLogin = () => {
+    navigate('/')
+  }
+
+  const handleLoginSuccess = () => {
+    navigate('/app/dashboard')
+  }
+
   return (
     <div style={{ position: 'relative' }}>
       <Navbar />
@@ -41,19 +58,25 @@ function Homepage() {
       <Testimonials />
       <TrustBadges />
       <Footer />
+      
+      {isLoginOpen && (
+        <LoginModal 
+          onClose={handleCloseLogin} 
+          onSuccess={handleLoginSuccess} 
+        />
+      )}
     </div>
   )
-}
-
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
-  return user ? <>{children}</> : <Navigate to="/" replace />
 }
 
 const router = createBrowserRouter(
   [
     {
       path: '/',
+      element: <Homepage />,
+    },
+    {
+      path: '/login',
       element: <Homepage />,
     },
     {
@@ -85,7 +108,7 @@ const router = createBrowserRouter(
     },
     { path: '*', element: <Navigate to="/" replace /> },
   ],
-  { basename: '/Syncra' },
+  { basename: '/Syncra/' },
 )
 
 const queryClient = new QueryClient()
@@ -94,7 +117,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <WorkspaceProvider>
+            <RouterProvider router={router} />
+          </WorkspaceProvider>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

@@ -77,6 +77,11 @@
   color: var(--purple-400);
 }
 
+.workspaceWrapper {
+  padding: 12px 10px 4px;
+  flex-shrink: 0;
+}
+
 /* ── New Post Button ── */
 .newPostWrap {
   padding: 10px 10px 4px;

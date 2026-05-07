@@ -11,10 +11,16 @@
 <details open>
 <summary>[ ] v1.2 Update the FE (Phases 8-11) – ACTIVE</summary>
 
-### Phase 8: Core API Integration & Auth
-- [ ] Implement API client (Axios/Fetch)
-- [ ] Connect Authentication & Tenant selection
-- [ ] Integrate Profile & Workspace settings
+### Phase 8: Core API Integration & Auth (7 plans)
+
+Plans:
+- [x] 08-01-PLAN.md — Implement API client (Axios)
+- [x] 08-02-PLAN.md — Auth flow & session persistence
+- [x] 08-03-PLAN.md — Workspace fetching & switching
+- [x] 08-04-PLAN.md — Profile settings form & update
+- [x] 08-05-PLAN.md — Workspace settings form & update
+- [x] 08-06-PLAN.md — Global error handling & toast notifications
+- [ ] 08-07-PLAN.md — E2E Verification Suite
 
 ### Phase 9: Feature Integration (Ideas & Posts)
 - [ ] Connect AI Idea Generator to Backend

@@ -1,8 +1,10 @@
 import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import OnboardingTour from '../../components/OnboardingTour'
 import CountingNumber from '../../components/CountingNumber'
+import Skeleton from '../../components/Skeleton'
 import styles from './DashboardPage.module.css'
 
 const QUICK_STATS = [
@@ -23,39 +25,57 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
+  // Simulate stats fetching
+  const { data: stats = QUICK_STATS, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      await new Promise(r => setTimeout(r, 1000));
+      return QUICK_STATS;
+    }
+  });
+
   return (
     <div className={styles.page}>
       {/* Welcome */}
       <div className={styles.welcome}>
         <div>
-          <h1 className={styles.title}>Chào buổi tối, {user?.name?.split(' ')[0]} 👋</h1>
+          <h1 className={styles.title}>
+            {isLoading ? <Skeleton width="200px" height="32px" /> : `Chào buổi tối, ${(user?.displayName || user?.firstName || user?.email || 'Creator')?.split(' ')[0]} 👋`}
+          </h1>
           <p className={styles.subtitle}>Đây là tổng quan hiệu suất content của bạn hôm nay.</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className={styles.statsGrid}>
-        {QUICK_STATS.map(s => (
-          <div key={s.label} className={`glass-card ${styles.statCard}`}>
-            <div className={styles.statIcon} style={{ color: s.color, background: `${s.color}18` }}>
-              {s.icon}
-            </div>
-            <div className={styles.statValue}>
-              <CountingNumber
-                value={s.value}
-                format={(v) => {
-                  if (s.isK) return `${(v / 1000).toFixed(1)}K`
-                  if (s.isPercent) return `${v}.4%`
-                  return v.toString()
-                }}
-              />
-            </div>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
-              {s.delta}
-            </div>
-          </div>
-        ))}
+        {isLoading 
+          ? Array(4).fill(0).map((_, i) => (
+              <div key={i} className={`glass-card ${styles.statCard}`}>
+                <Skeleton height="80px" />
+              </div>
+            ))
+          : stats.map(s => (
+              <div key={s.label} className={`glass-card ${styles.statCard}`}>
+                <div className={styles.statIcon} style={{ color: s.color, background: `${s.color}18` }}>
+                  {s.icon}
+                </div>
+                <div className={styles.statValue}>
+                  <CountingNumber
+                    value={s.value}
+                    format={(v) => {
+                      if (s.isK) return `${(v / 1000).toFixed(1)}K`
+                      if (s.isPercent) return `${v}.4%`
+                      return v.toString()
+                    }}
+                  />
+                </div>
+                <div className={styles.statLabel}>{s.label}</div>
+                <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
+                  {s.delta}
+                </div>
+              </div>
+            ))
+        }
       </div>
 
       {/* Recent posts */}
@@ -77,19 +97,26 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {RECENT_POSTS.map(p => (
-              <tr key={p.title}>
-                <td className={styles.postTitle}>{p.title}</td>
-                <td><span className={styles.platformTag}>{p.platform}</span></td>
-                <td>
-                  <span className={`${styles.status} ${styles[`status_${p.status}`]}`}>
-                    {p.status === 'published' ? '✅ Đã đăng' : p.status === 'scheduled' ? '⏰ Scheduled' : '📝 Draft'}
-                  </span>
-                </td>
-                <td className={styles.reach}>{p.reach}</td>
-                <td className={styles.date}>{p.date}</td>
-              </tr>
-            ))}
+            {isLoading 
+              ? Array(4).fill(0).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5}><Skeleton height="40px" /></td>
+                  </tr>
+                ))
+              : RECENT_POSTS.map(p => (
+                  <tr key={p.title}>
+                    <td className={styles.postTitle}>{p.title}</td>
+                    <td><span className={styles.platformTag}>{p.platform}</span></td>
+                    <td>
+                      <span className={`${styles.status} ${styles[`status_${p.status}`]}`}>
+                        {p.status === 'published' ? '✅ Đã đăng' : p.status === 'scheduled' ? '⏰ Scheduled' : '📝 Draft'}
+                      </span>
+                    </td>
+                    <td className={styles.reach}>{p.reach}</td>
+                    <td className={styles.date}>{p.date}</td>
+                  </tr>
+                ))
+            }
           </tbody>
         </table>
       </div>
