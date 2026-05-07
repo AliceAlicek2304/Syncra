@@ -20,9 +20,7 @@ import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check, MoreHorizontal } from 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { groupsApi } from '../../api/groups'
-import type { Group as ApiGroup } from '../../api/groups'
 import { ideasApi } from '../../api/ideas'
-import type { Idea as ApiIdea } from '../../api/ideas'
 import Skeleton from '../../components/Skeleton'
 
 import AIIdeaGenerator from '../../components/AIIdeaGenerator'
@@ -565,7 +563,7 @@ export default function IdeasPage() {
                     <div className={styles.board}>
                         {Array(4).fill(0).map((_, i) => (
                             <div key={i} className={styles.column}>
-                                <Skeleton height="40px" style={{ marginBottom: 12 }} />
+                                <Skeleton height="40px"  />
                                 <Skeleton height="120px" />
                             </div>
                         ))}
@@ -578,7 +576,7 @@ export default function IdeasPage() {
                                 <Column
                                     key={group.id}
                                     group={group}
-                                    ideas={groupIdeas}
+                                    ideas={groupIdeas as any}
                                     groups={groups}
                                     onAddIdea={id => setQuickAddGroupId(id)}
                                     onEditIdea={setEditingIdea}
@@ -615,7 +613,7 @@ export default function IdeasPage() {
                 )}
 
                 <DragOverlay>
-                    {activeIdea ? <OverlayCard idea={activeIdea} /> : null}
+                    {activeIdea ? <OverlayCard idea={activeIdea as any} /> : null}
                 </DragOverlay>
             </DndContext>
 
@@ -631,7 +629,7 @@ export default function IdeasPage() {
             {/* Edit Idea Modal */}
             {editingIdea && (
                 <EditIdeaModal
-                    idea={editingIdea}
+                    idea={editingIdea as any}
                     groups={groups}
                     onSave={saveIdea}
                     onDelete={deleteIdea}

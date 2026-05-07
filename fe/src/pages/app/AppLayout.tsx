@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -11,6 +11,7 @@ import CreatePostModal from '../../components/CreatePostModal'
 import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
+import WorkspaceSelector from '../../components/WorkspaceSelector'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
@@ -153,10 +154,6 @@ export default function AppLayout() {
       
       {/* Search & Actions Palette */}
       <CommandPalette onNewPost={() => openCreatePost({ source: 'command' })} />
-    </div>
-  )
-}
-t={() => openCreatePost({ source: 'command' })} />
     </div>
   )
 }

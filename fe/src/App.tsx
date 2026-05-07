@@ -24,6 +24,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
+import MediaLibraryPage from './pages/app/MediaLibraryPage'
 import CalendarPage from './pages/app/CalendarPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
@@ -128,4 +129,4 @@ function App() {
   )
 }
 
-export default Apppp
+export default App

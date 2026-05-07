@@ -62,7 +62,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const { success: toastSuccess, error: toastError } = useToast()
+    const { error: toastError } = useToast()
     const { upload: uploadToR2, progress: uploadProgress } = useR2Upload()
     const [cooldownUntil, setCooldownUntil] = useState(0)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
