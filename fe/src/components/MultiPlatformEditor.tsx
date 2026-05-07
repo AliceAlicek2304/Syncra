@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, RefreshCw, Smartphone, Globe, AlertCircle, Check, Calendar, Clock } from 'lucide-react'
 import styles from './MultiPlatformEditor.module.css'
-
-interface PlatformContent {
-  caption: string
-  hashtags: string[]
-}
+import { useMutation } from '@tanstack/react-query'
+import { postsApi } from '../api/posts'
+import type { PlatformContent } from '../api/posts'
+import { useWorkspace } from '../context/WorkspaceContext'
+import { useToast } from '../context/ToastContext'
 
 interface MultiPlatformEditorProps {
   initialContent: {
@@ -16,6 +16,7 @@ interface MultiPlatformEditorProps {
   platforms: string[]
   onClose: () => void
   onSave: (contents: Record<string, PlatformContent>) => void
+  postId?: string
 }
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -27,13 +28,23 @@ const PLATFORM_LIMITS: Record<string, number> = {
   Facebook: 63206,
 }
 
-export default function MultiPlatformEditor({ initialContent, platforms, onClose, onSave }: MultiPlatformEditorProps) {
-  const [activeTab, setActiveTab] = useState(platforms ? platforms[0] : '')
+export default function MultiPlatformEditor({ initialContent, platforms, onClose, onSave, postId }: MultiPlatformEditorProps) {
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id ?? ''
+  const { error: toastError } = useToast()
+
+  const [activePostId, setActivePostId] = useState<string | null>(postId ?? null)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+
+  const [activeTab, setActiveTab] = useState(platforms && platforms.length > 0 ? platforms[0] : '')
   const [contents, setContents] = useState<Record<string, PlatformContent>>(() => {
     const initial: Record<string, PlatformContent> = {}
     if (platforms) {
       platforms.forEach(p => {
         initial[p] = {
+          platform: p,
           caption: initialContent?.caption || '',
           hashtags: initialContent?.hashtags ? [...initialContent.hashtags] : []
         }
@@ -41,37 +52,131 @@ export default function MultiPlatformEditor({ initialContent, platforms, onClose
     }
     return initial
   })
-  const [isSaving, setIsSaving] = useState(false)
+  
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0])
   const [scheduledTime, setScheduledTime] = useState('10:00')
+
+  const createPostMutation = useMutation({
+    mutationFn: () => postsApi.createPost(workspaceId, {
+      title: 'Untitled',
+      status: 'draft',
+      platforms,
+    }),
+    onSuccess: (post) => setActivePostId(post.id),
+    onError: () => toastError('Failed to create draft. Changes may not be saved.'),
+  })
+
+  // Create Draft on mount if no postId provided
+  useEffect(() => {
+    if (!activePostId && workspaceId) {
+      createPostMutation.mutate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]) // only on mount
+
+  // Cleanup save timer on unmount
+  useEffect(() => {
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
+  }, [])
+
+  const updatePostMutation = useMutation({
+    mutationFn: (data: Parameters<typeof postsApi.updatePost>[2]) =>
+      postsApi.updatePost(workspaceId, activePostId!, data),
+  })
+
+  const autoSave = useCallback(
+    (updatedContents: Record<string, PlatformContent>) => {
+      if (!activePostId) return
+      setSaveStatus('saving')
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(async () => {
+        try {
+          const platformContents = Object.entries(updatedContents).map(([platform, content]) => ({
+            platform,
+            caption: content.caption,
+            hashtags: content.hashtags,
+          }))
+          await updatePostMutation.mutateAsync({
+            platformContents,
+            // D-07: do NOT change status here — let existing status remain
+          })
+          setSaveStatus('saved')
+          setTimeout(() => setSaveStatus('idle'), 2000)
+        } catch {
+          setSaveStatus('error')
+        }
+      }, 1500)
+    },
+    [activePostId, updatePostMutation]
+  )
 
   if (!platforms || platforms.length === 0) return null
 
   const handleCaptionChange = (platform: string, newCaption: string) => {
-    setContents(prev => ({
-      ...prev,
-      [platform]: { ...prev[platform], caption: newCaption }
-    }))
+    const updated = {
+      ...contents,
+      [platform]: { ...contents[platform], caption: newCaption }
+    }
+    setContents(updated)
+    autoSave(updated)
   }
 
   const syncFromMaster = (platform: string) => {
-    setContents(prev => ({
-      ...prev,
+    const updated = {
+      ...contents,
       [platform]: {
+        ...contents[platform],
         caption: initialContent.caption,
-        hashtags: [...initialContent.hashtags]
+        hashtags: initialContent.hashtags ? [...initialContent.hashtags] : []
       }
-    }))
+    }
+    setContents(updated)
+    autoSave(updated)
   }
 
-  const handleSave = () => {
-    if (isSaving) return
-    setIsSaving(true)
-    // Giả lập lưu dữ liệu
-    setTimeout(() => {
+  const handleSave = async () => {
+    if (!activePostId || updatePostMutation.isPending) return
+    setSaveStatus('saving')
+    try {
+      const platformContents = Object.entries(contents).map(([platform, content]) => ({
+        platform,
+        caption: content.caption,
+        hashtags: content.hashtags,
+      }))
+      await updatePostMutation.mutateAsync({
+        status: 'draft',
+        platformContents,
+      })
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
       onSave(contents)
-      // Chú ý: onSave trong AIAssistantPage sẽ gọi setEditingIdea(null) để đóng modal
-    }, 1000)
+    } catch {
+      setSaveStatus('error')
+      toastError('Something went wrong. Please try again.')
+    }
+  }
+
+  const handleSchedule = async () => {
+    if (!activePostId || updatePostMutation.isPending) return
+    const scheduledAtUtc = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString()
+    try {
+      const platformContents = Object.entries(contents).map(([platform, content]) => ({
+        platform,
+        caption: content.caption,
+        hashtags: content.hashtags,
+      }))
+      await updatePostMutation.mutateAsync({
+        status: 'scheduled',   // D-07: becomes scheduled, stays editable
+        scheduledAtUtc,
+        platformContents,
+      })
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+      onSave(contents)
+    } catch {
+      setSaveStatus('error')
+      toastError('Something went wrong. Please try again.')
+    }
   }
 
   const currentLimit = PLATFORM_LIMITS[activeTab] || 2200
@@ -90,9 +195,25 @@ export default function MultiPlatformEditor({ initialContent, platforms, onClose
               <p>Tùy chỉnh nội dung cho từng nền tảng</p>
             </div>
           </div>
-          <button className={styles.closeBtn} onClick={onClose}>
-            <X size={20} />
-          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {saveStatus !== 'idle' && (
+              <div className={styles.saveStatus}>
+                <span
+                  className={styles.saveStatusDot}
+                  data-status={saveStatus}
+                />
+                <span className={styles.saveStatusText}>
+                  {saveStatus === 'saving' ? 'Saving…'
+                   : saveStatus === 'saved' ? 'Saved'
+                   : 'Save failed'}
+                </span>
+              </div>
+            )}
+            <button className={styles.closeBtn} onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className={styles.content}>
@@ -139,7 +260,7 @@ export default function MultiPlatformEditor({ initialContent, platforms, onClose
             <div className={styles.hashtagSection}>
               <label>Hashtags ({activeTab})</label>
               <div className={styles.hashtagList}>
-                {currentContent.hashtags.map((h, idx) => (
+                {currentContent.hashtags && currentContent.hashtags.map((h, idx) => (
                   <span key={idx} className={styles.hashtag}>{h}</span>
                 ))}
                 <button className={styles.addHashtag}>+ Add</button>
@@ -183,13 +304,24 @@ export default function MultiPlatformEditor({ initialContent, platforms, onClose
             <button className="btn-secondary" onClick={onClose}>Hủy</button>
             <button 
               className={`btn-primary ${styles.saveBtn}`} 
-              onClick={handleSave}
-              disabled={isSaving}
+              onClick={handleSchedule}
+              disabled={updatePostMutation.isPending}
             >
-              {isSaving ? (
+              {updatePostMutation.isPending ? (
                 <><RefreshCw size={14} className={styles.spin} /> Đang lưu...</>
               ) : (
-                <><Check size={14} /> Lưu vào Calendar</>
+                <><Calendar size={14} /> Schedule Post</>
+              )}
+            </button>
+            <button 
+              className={`btn-primary ${styles.saveBtn}`} 
+              onClick={handleSave}
+              disabled={updatePostMutation.isPending}
+            >
+              {updatePostMutation.isPending ? (
+                <><RefreshCw size={14} className={styles.spin} /> Đang lưu...</>
+              ) : (
+                <><Check size={14} /> Lưu Draft</>
               )}
             </button>
           </div>
