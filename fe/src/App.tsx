@@ -98,6 +98,7 @@ const router = createBrowserRouter(
         { index: true, element: <Navigate to="dashboard" replace /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'ideas', element: <IdeasPage /> },
+        { path: 'media', element: <MediaLibraryPage /> },
         { path: 'calendar', element: <CalendarPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'trends', element: <TrendRadarPage /> },
@@ -127,4 +128,4 @@ function App() {
   )
 }
 
-export default App
+export default Apppp

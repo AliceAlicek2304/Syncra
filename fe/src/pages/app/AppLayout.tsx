@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -153,6 +153,10 @@ export default function AppLayout() {
       
       {/* Search & Actions Palette */}
       <CommandPalette onNewPost={() => openCreatePost({ source: 'command' })} />
+    </div>
+  )
+}
+t={() => openCreatePost({ source: 'command' })} />
     </div>
   )
 }
