@@ -47,11 +47,11 @@ export default function SettingsPage() {
     }
   })
 
-  const onProfileSubmit = (data: any) => {
+  const onProfileSubmit = (data: { displayName?: string; firstName?: string; lastName?: string; timezone?: string }) => {
     updateProfile.mutate(data)
   }
 
-  const onWorkspaceSubmit = (data: any) => {
+  const onWorkspaceSubmit = (data: { name: string }) => {
     if (activeWorkspace) {
       updateWorkspace.mutate({ id: activeWorkspace.id, data })
     }

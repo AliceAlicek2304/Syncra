@@ -3,6 +3,7 @@ import { Sparkles, X, TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from '
 import styles from './AICoach.module.css'
 import { TREND_TIPS } from '../data/mockCoachTrends'
 import AIIdeaGenerator from './AIIdeaGenerator'
+import type { GeneratedIdea as ApiGeneratedIdea } from '../api/ai'
 import { useCreatePostModal } from '../context/createPostModalContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import type { ContentIdea } from '../data/mockAI'
@@ -206,7 +207,7 @@ export default function AICoach() {
       {generatorIdeas && (
         <AIIdeaGenerator
           workspaceId={workspaceId}
-          presetResults={generatorIdeas as any}
+          presetResults={generatorIdeas as unknown as ApiGeneratedIdea[]}
           onClose={() => setGeneratorIdeas(null)}
           onSelectIdea={(idea) => {
             openCreatePost({ initialContent: idea.description, source: 'coach' })

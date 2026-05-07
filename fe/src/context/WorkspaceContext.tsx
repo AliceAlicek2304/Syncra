@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { workspacesApi } from '../api/workspaces';
@@ -16,7 +16,7 @@ const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
+  const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(localStorage.getItem('syncra_workspace_id'));
 
   const { data: workspaces = [], isLoading } = useQuery({
     queryKey: ['workspaces', user?.userId],
@@ -24,16 +24,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     enabled: !!user,
   });
 
-  useEffect(() => {
-    if (workspaces.length > 0 && !activeWorkspace) {
-      const savedId = localStorage.getItem('syncra_workspace_id');
-      const saved = workspaces.find(w => w.id === savedId);
-      setActiveWorkspaceState(saved || workspaces[0]);
-    }
-  }, [workspaces, activeWorkspace]);
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0] || null;
 
   const setActiveWorkspace = (workspace: Workspace) => {
-    setActiveWorkspaceState(workspace);
+    setActiveWorkspaceIdState(workspace.id);
     localStorage.setItem('syncra_workspace_id', workspace.id);
   };
 
@@ -44,6 +38,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWorkspace() {
   const context = useContext(WorkspaceContext);
   if (!context) {

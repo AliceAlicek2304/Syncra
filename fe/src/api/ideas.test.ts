@@ -11,7 +11,7 @@ vi.mock('../lib/axios', () => ({
   },
 }))
 
-const mockedApi = api as any
+const mockedApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>
 
 describe('ideasApi', () => {
   const workspaceId = 'ws-123'

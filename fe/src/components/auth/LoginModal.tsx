@@ -37,9 +37,10 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
     try {
       await login(data);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      showError(err.response?.data?.message || 'Invalid email or password');
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid email or password';
+      showError(message);
     } finally {
       setIsSubmitting(false);
     }

@@ -8,7 +8,7 @@ test.describe('Phase 9: Ideas Board Integration', () => {
     await expect(page.getByText('Ideas', { exact: true })).toBeVisible()
   })
 
-  test('Drag and drop triggers reorder/update (manual spec check)', async ({ page }) => {
+  test('Drag and drop triggers reorder/update (manual spec check)', async () => {
     // E2E DND is complex; verifying the page loads is step 1.
     // In actual UAT, we drag a card between columns and verify backend update.
     test.skip()
@@ -44,7 +44,7 @@ test.describe('Phase 9: Media Library', () => {
 })
 
 test.describe('Phase 9: Multi-platform Editor', () => {
-  test('Editor auto-save indicator renders after typing', async ({ page }) => {
+  test('Editor auto-save indicator renders after typing', async () => {
     // This test is a placeholder — full auto-save flow requires backend
     // Manual verification per 09-VALIDATION.md Manual-Only Verifications
     test.skip()

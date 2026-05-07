@@ -20,7 +20,9 @@ import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check, MoreHorizontal } from 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { groupsApi } from '../../api/groups'
+import type { Group } from '../../api/groups'
 import { ideasApi } from '../../api/ideas'
+import type { Idea } from '../../api/ideas'
 import Skeleton from '../../components/Skeleton'
 
 import AIIdeaGenerator from '../../components/AIIdeaGenerator'
@@ -28,20 +30,6 @@ import type { GeneratedIdea } from '../../components/AIIdeaGenerator'
 import EditIdeaModal from '../../components/EditIdeaModal'
 import DropdownPortal from '../../components/DropdownPortal'
 import styles from './IdeasPage.module.css'
-
-// ─── Types ─────────────────────────────────────────────────────────────────
-interface Idea {
-    id: string
-    title: string
-    description?: string
-    status: string
-    createdAt: number
-}
-
-interface Group {
-    id: string
-    name: string
-}
 
 // ─── Idea Card ──────────────────────────────────────────────────────────────
 interface IdeaCardProps {
@@ -123,7 +111,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
         setShowMoveMenu(false)
     }
 
-    const otherGroups = groups.filter(g => g.id !== idea.status)
+    const otherGroups = groups.filter(g => g.id !== idea.groupId)
 
     return (
         <div
@@ -445,10 +433,10 @@ export default function IdeasPage() {
                 const overIndex = prev.findIndex(i => i.id === overId)
                 const overIdea = prev[overIndex]
 
-                if (activeIdea.status !== overIdea.status) {
+                if (activeIdea.groupId !== overIdea.groupId) {
                     // Moving idea to a different column
                     const newIdeas = [...prev]
-                    newIdeas[activeIndex] = { ...activeIdea, status: overIdea.status }
+                    newIdeas[activeIndex] = { ...activeIdea, groupId: overIdea.groupId }
                     return arrayMove(newIdeas, activeIndex, overIndex)
                 } else {
                     // Reordering within the same column
@@ -459,9 +447,9 @@ export default function IdeasPage() {
             // Hovering over an empty Column
             if (isOverColumn) {
                 const overGroupId = String(overId)
-                if (activeIdea.status !== overGroupId) {
+                if (activeIdea.groupId !== overGroupId) {
                     const newIdeas = [...prev]
-                    newIdeas[activeIndex] = { ...activeIdea, status: overGroupId }
+                    newIdeas[activeIndex] = { ...activeIdea, groupId: overGroupId }
                     // Move it to the very end of the array, effectively putting it at the bottom of the column
                     return arrayMove(newIdeas, activeIndex, newIdeas.length - 1)
                 }
@@ -571,12 +559,12 @@ export default function IdeasPage() {
                 ) : (
                     <div className={styles.board}>
                         {groups.map(group => {
-                            const groupIdeas = ideas.filter(i => i.status === group.id)
+                            const groupIdeas = ideas.filter(i => i.groupId === group.id)
                             return (
                                 <Column
                                     key={group.id}
                                     group={group}
-                                    ideas={groupIdeas as any}
+                                    ideas={groupIdeas}
                                     groups={groups}
                                     onAddIdea={id => setQuickAddGroupId(id)}
                                     onEditIdea={setEditingIdea}
@@ -613,7 +601,7 @@ export default function IdeasPage() {
                 )}
 
                 <DragOverlay>
-                    {activeIdea ? <OverlayCard idea={activeIdea as any} /> : null}
+                    {activeIdea ? <OverlayCard idea={activeIdea} /> : null}
                 </DragOverlay>
             </DndContext>
 
@@ -629,7 +617,7 @@ export default function IdeasPage() {
             {/* Edit Idea Modal */}
             {editingIdea && (
                 <EditIdeaModal
-                    idea={editingIdea as any}
+                    idea={editingIdea}
                     groups={groups}
                     onSave={saveIdea}
                     onDelete={deleteIdea}

@@ -6,7 +6,7 @@ vi.mock('../lib/axios', () => ({
   default: { post: vi.fn() },
 }))
 
-const mockedApi = api as any
+const mockedApi = api as unknown as { post: ReturnType<typeof vi.fn> }
 
 describe('aiApi', () => {
   const workspaceId = 'ws-123'

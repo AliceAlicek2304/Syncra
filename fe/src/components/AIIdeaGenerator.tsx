@@ -81,7 +81,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
         return () => clearInterval(interval)
     }, [cooldownUntil])
 
-    const isCoolingDown = cooldownUntil > Date.now() && remainingSeconds > 0
+    const isCoolingDown = remainingSeconds > 0
 
     const generateMutation = useMutation({
         mutationFn: (req: AIGenerateRequest) => aiApi.generateIdeas(workspaceId, req),

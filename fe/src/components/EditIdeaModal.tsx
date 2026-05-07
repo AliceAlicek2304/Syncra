@@ -6,18 +6,9 @@ import {
 import { shortId } from '../utils/shortId'
 import { useCreatePostModal } from '../context/createPostModalContext'
 import IdeaAIAssistantPanel from './IdeaAIAssistantPanel'
+import type { Idea } from '../api/ideas'
+import type { Group } from '../api/groups'
 import styles from './EditIdeaModal.module.css'
-
-// ── Types ──────────────────────────────────────────────────────────────────
-interface Group { id: string; name: string }
-
-interface Idea {
-    id: string
-    title: string
-    description?: string
-    status: string
-    createdAt: number
-}
 
 interface MediaFile { id: string; url: string; type: 'image' | 'video'; name: string }
 
@@ -174,7 +165,7 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
 export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Props, 'onDelete'> & { onDelete?: (id: string) => void }) {
     const [title, setTitle] = useState(idea.title)
     const [content, setContent] = useState(idea.description ?? '')
-    const [status, setStatus] = useState(idea.status)
+    const [groupId, setGroupId] = useState(idea.groupId)
     const [showAI, setShowAI] = useState(false)
     const [showEmoji, setShowEmoji] = useState(false)
     const [media, setMedia] = useState<MediaFile[]>([])
@@ -275,7 +266,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
 
     // ── Save ─────────────────────────────────────────────────────────────
     const handleSave = () => {
-        onSave({ ...idea, title: title.trim() || idea.title, description: content, status })
+        onSave({ ...idea, title: title.trim() || idea.title, description: content, groupId })
         onClose()
     }
 
@@ -313,8 +304,8 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                     <div className={styles.groupSelect}>
                         <select
                             className={styles.groupSelectInput}
-                            value={status}
-                            onChange={e => setStatus(e.target.value)}
+                            value={groupId}
+                            onChange={e => setGroupId(e.target.value)}
                         >
                             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                         </select>

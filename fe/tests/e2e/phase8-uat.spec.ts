@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 // Mock helper
-const mockAuth = async (page: any) => {
-  await page.route('**/api/v1/auth/me', async (route: any) => {
+const mockAuth = async (page: Page) => {
+  await page.route('**/api/v1/auth/me', async (route: Route) => {
     await route.fulfill({ status: 200, body: JSON.stringify({ userId: '1', email: 'test@a.com', displayName: 'Test User', firstName: 'Test', lastName: 'User' }) });
   });
   await page.context().addInitScript(() => localStorage.setItem('syncra_access_token', 'mock-token'));
@@ -13,7 +13,7 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
   // ✅ Test 3: Workspace Selection & Persistence
   test('3. Workspace Selection & Persistence', async ({ page }) => {
     await mockAuth(page);
-    await page.route('**/api/v1/workspaces', async (route: any) => {
+    await page.route('**/api/v1/workspaces', async (route: Route) => {
       await route.fulfill({ status: 200, body: JSON.stringify([
         { id: 'w1', name: 'Personal', slug: 'personal' },
         { id: 'w2', name: 'Work', slug: 'work' }
@@ -44,7 +44,7 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
   // ✅ Test 5: Profile Settings Persistence
   test('5. Profile Settings Persistence', async ({ page }) => {
     await mockAuth(page);
-    await page.route('**/api/v1/users/me', async (route: any) => {
+    await page.route('**/api/v1/users/me', async (route: Route) => {
       await route.fulfill({ status: 200, body: JSON.stringify({ userId: '1', email: 'test@a.com', firstName: 'Updated', lastName: 'Name' }) });
     });
 
@@ -61,10 +61,10 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
   // ✅ Test 6: Workspace Settings Persistence
   test('6. Workspace Settings Persistence', async ({ page }) => {
     await mockAuth(page);
-    await page.route('**/api/v1/workspaces', async (route: any) => {
+    await page.route('**/api/v1/workspaces', async (route: Route) => {
       await route.fulfill({ status: 200, body: JSON.stringify([{ id: 'w1', name: 'NewName', slug: 'new' }]) });
     });
-    await page.route('**/api/v1/workspaces/w1', async (route: any) => {
+    await page.route('**/api/v1/workspaces/w1', async (route: Route) => {
       await route.fulfill({ status: 200, body: JSON.stringify({ id: 'w1', name: 'NewName', slug: 'new' }) });
     });
 
@@ -79,7 +79,7 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
   test('7. Global Error Notifications', async ({ page }) => {
     await mockAuth(page);
     // Mock the profile update to fail
-    await page.route('**/api/v1/users/me', async (route: any) => {
+    await page.route('**/api/v1/users/me', async (route: Route) => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({ status: 500, body: JSON.stringify({ message: 'Failed to update profile' }) });
       } else {
@@ -97,7 +97,7 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
   // ✅ Test 8: Glass Skeleton Loaders
   test('8. Glass Skeleton Loaders', async ({ page }) => {
     await mockAuth(page);
-    await page.route('**/api/v1/workspaces', async (route: any) => {
+    await page.route('**/api/v1/workspaces', async (route: Route) => {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Fake delay
       await route.fulfill({ status: 200, body: JSON.stringify([{ id: 'w1', name: 'Test', slug: 'test' }]) });
     });
