@@ -23,9 +23,10 @@ Plans:
 - [x] 08-07-PLAN.md — E2E Verification Suite
 
 ### Phase 9: Feature Integration (Ideas & Posts)
-- [ ] Connect AI Idea Generator to Backend
-- [ ] Implement Multi-platform Editor with real backend persistence
-- [ ] Media Library integration (Cloudflare R2)
+- [x] Connect AI Idea Generator to Backend
+- [x] Implement Multi-platform Editor with real backend persistence
+- [x] Media Library integration (Cloudflare R2)
+
 
 ### Phase 10: Scheduling & Analytics
 - [ ] Connect Calendar and Heatmap to Scheduling API
