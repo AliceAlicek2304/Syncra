@@ -17,11 +17,18 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check, MoreHorizontal } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { groupsApi } from '../../api/groups'
+import type { Group as ApiGroup } from '../../api/groups'
+import { ideasApi } from '../../api/ideas'
+import type { Idea as ApiIdea } from '../../api/ideas'
+import Skeleton from '../../components/Skeleton'
+
 import AIIdeaGenerator from '../../components/AIIdeaGenerator'
 import type { GeneratedIdea } from '../../components/AIIdeaGenerator'
 import EditIdeaModal from '../../components/EditIdeaModal'
 import DropdownPortal from '../../components/DropdownPortal'
-import { shortId } from '../../utils/shortId'
 import styles from './IdeasPage.module.css'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -37,14 +44,6 @@ interface Group {
     id: string
     name: string
 }
-
-// ─── Default groups ─────────────────────────────────────────────────────────
-const DEFAULT_GROUPS: Group[] = [
-    { id: 'unassigned', name: 'Unassigned' },
-    { id: 'todo', name: 'To Do' },
-    { id: 'inprogress', name: 'In Progress' },
-    { id: 'done', name: 'Done' },
-]
 
 // ─── Idea Card ──────────────────────────────────────────────────────────────
 interface IdeaCardProps {
@@ -344,14 +343,77 @@ function QuickAddModal({ groupId, onAdd, onClose }: QuickAddProps) {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function IdeasPage() {
-    const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS)
-    const [ideas, setIdeas] = useState<Idea[]>([])
+    const { activeWorkspace } = useWorkspace()
+    const workspaceId = activeWorkspace?.id ?? ''
+    const queryClient = useQueryClient()
+
+    // Fetch groups (board columns) from backend (D-13)
+    const { data: groups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['groups', workspaceId],
+        queryFn: () => groupsApi.getGroups(workspaceId),
+        enabled: !!workspaceId,
+    })
+
+    // Fetch ideas from backend
+    const { data: ideas = [], isLoading: ideasLoading } = useQuery({
+        queryKey: ['ideas', workspaceId],
+        queryFn: () => ideasApi.getIdeas(workspaceId),
+        enabled: !!workspaceId,
+    })
+
+    const isLoading = groupsLoading || ideasLoading
+
     const [activeId, setActiveId] = useState<string | null>(null)
     const [showAIModal, setShowAIModal] = useState(false)
     const [editingIdea, setEditingIdea] = useState<Idea | null>(null)
     const [quickAddGroupId, setQuickAddGroupId] = useState<string | null>(null)
     const [newGroupName, setNewGroupName] = useState('')
     const [addingGroup, setAddingGroup] = useState(false)
+
+    // Create idea mutation
+    const createIdeaMutation = useMutation({
+        mutationFn: (data: { groupId: string; title: string; description?: string }) =>
+            ideasApi.createIdea(workspaceId, { ...data, status: 'idea' }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] }),
+    })
+
+    // Update idea mutation
+    const updateIdeaMutation = useMutation({
+        mutationFn: ({ ideaId, data }: { ideaId: string; data: Parameters<typeof ideasApi.updateIdea>[2] }) =>
+            ideasApi.updateIdea(workspaceId, ideaId, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] }),
+    })
+
+    // Delete idea mutation
+    const deleteIdeaMutation = useMutation({
+        mutationFn: (ideaId: string) => ideasApi.deleteIdea(workspaceId, ideaId),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] }),
+    })
+
+    // Reorder mutation
+    const reorderMutation = useMutation({
+        mutationFn: (orderedIds: string[]) => ideasApi.reorderIdeas(workspaceId, orderedIds),
+        onError: () => queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] }),
+    })
+
+    const createGroupMutation = useMutation({
+        mutationFn: (name: string) => groupsApi.createGroup(workspaceId, { name }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['groups', workspaceId] }),
+    })
+
+    const updateGroupMutation = useMutation({
+        mutationFn: ({ groupId, name }: { groupId: string; name: string }) =>
+            groupsApi.updateGroup(workspaceId, groupId, { name }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['groups', workspaceId] }),
+    })
+
+    const deleteGroupMutation = useMutation({
+        mutationFn: (groupId: string) => groupsApi.deleteGroup(workspaceId, groupId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups', workspaceId] })
+            queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] })
+        },
+    })
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
@@ -373,7 +435,8 @@ export default function IdeasPage() {
 
         if (!isActiveIdea) return
 
-        setIdeas(prev => {
+        queryClient.setQueryData<Idea[]>(['ideas', workspaceId], prev => {
+            if (!prev) return prev
             const activeIndex = prev.findIndex(i => i.id === activeId)
             const activeIdea = prev[activeIndex]
 
@@ -412,65 +475,53 @@ export default function IdeasPage() {
 
     const handleDragEnd = () => {
         setActiveId(null)
-
-        // Optimistic update is already handled by `handleDragOver` to ensure smooth UI behavior.
-        // If a backend persistence layer is added later, trigger the API update here.
-        // Example:
-        // if (over) {
-        //     const idea = ideas.find(i => i.id === active.id)
-        //     if (idea) api.updateIdea(idea.id, { status: idea.status })
-        // }
+        if (workspaceId) {
+            reorderMutation.mutate(ideas.map(i => i.id))
+        }
     }
 
     const addIdea = (groupId: string, title: string) => {
-        setIdeas(prev => [...prev, {
-            id: shortId(),
-            title,
-            status: groupId,
-            createdAt: Date.now(),
-        }])
+        createIdeaMutation.mutate({ groupId, title })
     }
 
     const handleSelectAIIdea = (generated: GeneratedIdea) => {
-        setIdeas(prev => [...prev, {
-            id: generated.id,
+        // D-01: ideas stay in memory until user explicitly adds to board
+        createIdeaMutation.mutate({
+            groupId: groups[0]?.id || 'unassigned',
             title: generated.title,
             description: generated.description,
-            status: 'unassigned',
-            createdAt: Date.now(),
-        }])
+        })
         setShowAIModal(false)
     }
 
     const saveIdea = (updated: Idea) => {
-        setIdeas(prev => prev.map(i => i.id === updated.id ? updated : i))
+        updateIdeaMutation.mutate({ ideaId: updated.id, data: { title: updated.title, description: updated.description } })
     }
 
     const deleteIdea = (id: string) => {
-        setIdeas(prev => prev.filter(i => i.id !== id))
+        deleteIdeaMutation.mutate(id)
     }
 
     const moveIdea = (id: string, groupId: string) => {
-        setIdeas(prev => prev.map(i => i.id === id ? { ...i, status: groupId } : i))
+        updateIdeaMutation.mutate({ ideaId: id, data: { groupId } })
     }
 
     const addGroup = () => {
         if (!newGroupName.trim()) return
-        setGroups(prev => [...prev, { id: shortId(), name: newGroupName.trim() }])
+        createGroupMutation.mutate(newGroupName.trim())
         setNewGroupName('')
         setAddingGroup(false)
     }
 
     const renameGroup = (id: string, name: string) => {
-        setGroups(prev => prev.map(g => g.id === id ? { ...g, name } : g))
+        updateGroupMutation.mutate({ groupId: id, name })
     }
 
     const deleteGroup = (id: string) => {
-        setGroups(prev => prev.filter(g => g.id !== id))
-        setIdeas(prev => prev.map(i => i.status === id ? { ...i, status: 'unassigned' } : i))
+        deleteGroupMutation.mutate(id)
     }
 
-    const defaultGroupIds = DEFAULT_GROUPS.map(g => g.id)
+    const defaultGroupIds = ['unassigned', 'todo', 'inprogress', 'done']
     const activeIdea = activeId ? ideas.find(i => i.id === activeId) ?? null : null
 
     return (
@@ -510,47 +561,58 @@ export default function IdeasPage() {
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
             >
-                <div className={styles.board}>
-                    {groups.map(group => {
-                        const groupIdeas = ideas.filter(i => i.status === group.id)
-                        return (
-                            <Column
-                                key={group.id}
-                                group={group}
-                                ideas={groupIdeas}
-                                groups={groups}
-                                onAddIdea={id => setQuickAddGroupId(id)}
-                                onEditIdea={setEditingIdea}
-                                onDeleteIdea={deleteIdea}
-                                onMoveIdea={moveIdea}
-                                onRenameGroup={renameGroup}
-                                onDeleteGroup={deleteGroup}
-                                isDefault={defaultGroupIds.includes(group.id)}
-                            />
-                        )
-                    })}
-
-                    {/* Add group column */}
-                    {addingGroup ? (
-                        <div className={styles.newGroupColumn}>
-                            <input
-                                autoFocus
-                                className={styles.newGroupInput}
-                                placeholder="Group name…"
-                                value={newGroupName}
-                                onChange={e => setNewGroupName(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter') addGroup()
-                                    if (e.key === 'Escape') { setAddingGroup(false); setNewGroupName('') }
-                                }}
-                            />
-                            <div className={styles.newGroupActions}>
-                                <button className="btn-primary" onClick={addGroup} disabled={!newGroupName.trim()} style={{ fontSize: 13, padding: '8px 16px' }}>Add</button>
-                                <button className="btn-secondary" onClick={() => { setAddingGroup(false); setNewGroupName('') }} style={{ fontSize: 13, padding: '8px 16px' }}>Cancel</button>
+                {isLoading ? (
+                    <div className={styles.board}>
+                        {Array(4).fill(0).map((_, i) => (
+                            <div key={i} className={styles.column}>
+                                <Skeleton height="40px" style={{ marginBottom: 12 }} />
+                                <Skeleton height="120px" />
                             </div>
-                        </div>
-                    ) : null}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className={styles.board}>
+                        {groups.map(group => {
+                            const groupIdeas = ideas.filter(i => i.status === group.id)
+                            return (
+                                <Column
+                                    key={group.id}
+                                    group={group}
+                                    ideas={groupIdeas}
+                                    groups={groups}
+                                    onAddIdea={id => setQuickAddGroupId(id)}
+                                    onEditIdea={setEditingIdea}
+                                    onDeleteIdea={deleteIdea}
+                                    onMoveIdea={moveIdea}
+                                    onRenameGroup={renameGroup}
+                                    onDeleteGroup={deleteGroup}
+                                    isDefault={defaultGroupIds.includes(group.id)}
+                                />
+                            )
+                        })}
+
+                        {/* Add group column */}
+                        {addingGroup ? (
+                            <div className={styles.newGroupColumn}>
+                                <input
+                                    autoFocus
+                                    className={styles.newGroupInput}
+                                    placeholder="Group name…"
+                                    value={newGroupName}
+                                    onChange={e => setNewGroupName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') addGroup()
+                                        if (e.key === 'Escape') { setAddingGroup(false); setNewGroupName('') }
+                                    }}
+                                />
+                                <div className={styles.newGroupActions}>
+                                    <button className="btn-primary" onClick={addGroup} disabled={!newGroupName.trim()} style={{ fontSize: 13, padding: '8px 16px' }}>Add</button>
+                                    <button className="btn-secondary" onClick={() => { setAddingGroup(false); setNewGroupName('') }} style={{ fontSize: 13, padding: '8px 16px' }}>Cancel</button>
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+                )}
 
                 <DragOverlay>
                     {activeIdea ? <OverlayCard idea={activeIdea} /> : null}
