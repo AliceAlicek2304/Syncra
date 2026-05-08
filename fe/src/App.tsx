@@ -1,6 +1,8 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
+import { AnimatePresence } from 'framer-motion'
+import { PageWrapper } from './components/PageWrapper'
 
 // Homepage components
 import Navbar from './components/Navbar'
@@ -32,7 +34,7 @@ import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
 import HelpPage from './pages/app/HelpPage'
 
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import LoginModal from './components/auth/LoginModal'
 
 function Homepage() {
@@ -70,48 +72,45 @@ function Homepage() {
   )
 }
 
-const router = createBrowserRouter(
-  [
-    {
-      path: '/',
-      element: <Homepage />,
-    },
-    {
-      path: '/login',
-      element: <Homepage />,
-    },
-    {
-      path: '/app',
-      element: (
-        <ProtectedRoute>
-          <BillingProvider>
-            <CalendarProvider>
-              <RepurposeProvider>
-                <CreatePostModalProvider>
-                  <AppLayout />
-                </CreatePostModalProvider>
-              </RepurposeProvider>
-            </CalendarProvider>
-          </BillingProvider>
-        </ProtectedRoute>
-      ),
-      children: [
-        { index: true, element: <Navigate to="dashboard" replace /> },
-        { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'ideas', element: <IdeasPage /> },
-        { path: 'media', element: <MediaLibraryPage /> },
-        { path: 'calendar', element: <CalendarPage /> },
-        { path: 'analytics', element: <AnalyticsPage /> },
-        { path: 'trends', element: <TrendRadarPage /> },
-        { path: 'repurpose', element: <RepurposePage /> },
-        { path: 'settings', element: <SettingsPage /> },
-        { path: 'help', element: <HelpPage /> },
-      ],
-    },
-    { path: '*', element: <Navigate to="/" replace /> },
-  ],
-  { basename: '/Syncra/' },
-)
+function AnimatedRoutes() {
+  const location = useLocation()
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.key}>
+        <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
+        
+        <Route path="/app" element={
+          <ProtectedRoute>
+            <BillingProvider>
+              <CalendarProvider>
+                <RepurposeProvider>
+                  <CreatePostModalProvider>
+                    <AppLayout />
+                  </CreatePostModalProvider>
+                </RepurposeProvider>
+              </CalendarProvider>
+            </BillingProvider>
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+          <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
+          <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
+          <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
+          <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
+          <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
+          <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
+          <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+          <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
+        </Route>
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  )
+}
 
 const queryClient = new QueryClient()
 
@@ -121,7 +120,9 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <WorkspaceProvider>
-            <RouterProvider router={router} />
+            <BrowserRouter basename="/Syncra/">
+              <AnimatedRoutes />
+            </BrowserRouter>
           </WorkspaceProvider>
         </ToastProvider>
       </AuthProvider>

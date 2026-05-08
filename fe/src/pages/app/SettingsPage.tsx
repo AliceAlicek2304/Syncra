@@ -3,6 +3,7 @@ import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck, Us
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { motion } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useUpdateProfile, useUpdateWorkspace } from '../../hooks/useSettings'
@@ -112,9 +113,9 @@ export default function SettingsPage() {
                     <input {...registerProfile('lastName')} data-testid="profile-lastname" className={styles.input} />
                   </div>
                 </div>
-                <button type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? 'Saving...' : 'Save Profile'}
-                </button>
+                <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateProfile.isPending}>
+                  {updateProfile.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </motion.button>
               </form>
             )}
           </section>
@@ -130,9 +131,9 @@ export default function SettingsPage() {
                   <label>Workspace Name</label>
                   <input {...registerWorkspace('name')} data-testid="workspace-name" className={styles.input} />
                 </div>
-                <button type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateWorkspace.isPending}>
+                <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateWorkspace.isPending}>
                   {updateWorkspace.isPending ? 'Saving...' : 'Save Workspace'}
-                </button>
+                </motion.button>
               </form>
             )}
           </section>

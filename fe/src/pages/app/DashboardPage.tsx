@@ -2,6 +2,7 @@ import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight } 
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import OnboardingTour from '../../components/OnboardingTour'
 import CountingNumber from '../../components/CountingNumber'
 import Skeleton from '../../components/Skeleton'
@@ -131,9 +132,9 @@ export default function DashboardPage() {
             Thử tạo thêm Reel tuần này nhé — đặc biệt vào <strong>Thứ 3 & Thứ 5 lúc 19:00</strong>.
           </div>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 12, padding: '8px 16px', flexShrink: 0 }}>
+        <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 12, padding: '8px 16px', flexShrink: 0 }}>
           Tạo ngay →
-        </button>
+        </motion.button>
       </div>
 
       {/* Onboarding */}

@@ -1,4 +1,5 @@
 import { ImageIcon, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useCreatePostState } from './useCreatePostState'
 import CreatePostHeader from './CreatePostHeader'
 import CreatePostEditor, { ImageEditorPanel } from './CreatePostEditor'
@@ -11,9 +12,9 @@ export default function CreatePostModal(props: CreatePostModalProps) {
   const hookData = useCreatePostState(props)
   const { state, actions } = hookData
 
-  if (!props.isOpen) return null
-
   return (
+    <AnimatePresence>
+      {props.isOpen && (
     <div
       className={styles.backdrop}
       onMouseDown={e => {
@@ -25,7 +26,13 @@ export default function CreatePostModal(props: CreatePostModalProps) {
         actions.handleAttemptClose()
       }}
     >
-      <div className={styles.dialog}>
+      <motion.div
+        className={styles.dialog}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+      >
         
         {/* Unsaved Changes Dialog */}
         {state.showUnsavedDialog && (
@@ -57,7 +64,9 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                 >
                   Discard
                 </button>
-                <button 
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.1 }}
                   className="btn-primary" 
                   style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
                   onClick={() => {
@@ -69,7 +78,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                   }}
                 >
                   Save Draft
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -98,13 +107,15 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                 >
                   Cancel
                 </button>
-                <button 
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.1 }}
                   className="btn-primary" 
                   style={{ fontSize: 13, padding: '8px 16px', flex: 1, background: state.scheduleMode ? 'var(--gradient-brand)' : '#22c55e' }}
                   onClick={() => actions.confirmSchedule()}
                 >
                   {state.scheduleMode ? 'Schedule' : 'Publish'}
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -171,7 +182,9 @@ export default function CreatePostModal(props: CreatePostModalProps) {
 
           <RightPanel state={state} refs={hookData.refs} actions={actions} />
         </div>
-      </div>
+      </motion.div>
     </div>
+      )}
+    </AnimatePresence>
   )
 }

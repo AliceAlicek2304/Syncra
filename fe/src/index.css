@@ -98,7 +98,7 @@ a { text-decoration: none; color: inherit; }
 
 .glass-card:hover {
   border-color: var(--border-glow);
-  box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.1);
+  /* Framer Motion owns box-shadow and transform — do NOT add transition: box-shadow or transform here */
 }
 
 .btn-primary {
