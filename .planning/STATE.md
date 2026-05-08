@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Update the FE
-current_phase: 11
-status: milestone_complete
-last_updated: "2026-05-08T10:48:00Z"
+current_phase: 11.1
+status: completed
+last_updated: "2026-05-08T11:51:43.136Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 2
   total_plans: 22
-  completed_plans: 16
-  percent: 75
+  completed_plans: 17
+  percent: 77
 ---
 
 # Project State: Syncra.NET
 
 ## Metadata
 
-- **Current Phase:** 11
+- **Current Phase:** 11.1
 - **Status:** Milestone complete
 - **Last Updated:** 2026-05-08 17:48 UTC
 
@@ -44,6 +44,9 @@ See: .planning/PROJECT.md (updated 2026-05-03)
 
 ## Decisions
 
+- **Direct-to-R2 upload via pre-signed URLs (D-09)**: Implementation of high-performance uploads bypassing the backend for scalability.
+- **Contextual upload progress tracking per file (D-10)**: Real-time progress feedback using axios onUploadProgress.
+- **Backend-driven file deduplication check (D-11)**: Preventing redundant R2 uploads by checking asset existence before triggering the PUT request.
 - **use login() helper pattern from phase10 for E2E consistency**: Ensured all E2E tests use the same authentication flow for reliability.
 - **mock framer-motion useReducedMotion for PageWrapper testing**: Verified that the app remains functional for users with reduced motion preferences.
 

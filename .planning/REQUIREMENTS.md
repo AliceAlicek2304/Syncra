@@ -20,7 +20,7 @@ Implement a high-fidelity, production-ready frontend UI/UX for Syncra.NET, fully
 - **Scope:** Page transitions (Framer Motion), loading states, toast notifications, and interactive charts.
 - **Success Criteria:** UI feels responsive, fluid, and "premium" (no abrupt layout shifts).
 
-### REQ-8.4: Media Library & Asset Management
+### [x] REQ-8.4: Media Library & Asset Management
 - **Description:** Integrate frontend media uploads with the backend Cloudflare R2 / local storage endpoints.
 - **Scope:** Drag-and-drop uploads, asset preview, and gallery management.
 - **Success Criteria:** Users can upload and manage images/videos for social posts.

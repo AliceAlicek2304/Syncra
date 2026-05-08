@@ -22,11 +22,16 @@ Plans:
 - [x] 08-06-PLAN.md — Global error handling & toast notifications
 - [x] 08-07-PLAN.md — E2E Verification Suite
 
-### Phase 9: Feature Integration (Ideas & Posts)
-- [x] Connect AI Idea Generator to Backend
-- [x] Implement Multi-platform Editor with real backend persistence
-- [x] Media Library integration (Cloudflare R2)
+### Phase 9: Feature Integration (Ideas & Posts) (7 plans)
 
+Plans:
+- [x] 09-01-PLAN.md — Media API client & backend integration
+- [x] 09-02-PLAN.md — useR2Upload Hook — Direct-to-R2 Upload
+- [x] 09-03-PLAN.md — AI Idea Generator Backend Connection
+- [ ] 09-04-PLAN.md — Multi-platform Editor Persistence
+- [ ] 09-05-PLAN.md — Media Library Gallery Component
+- [ ] 09-06-PLAN.md — Post Scheduling UI Integration
+- [ ] 09-07-PLAN.md — Phase 9 E2E Verification
 
 ### Phase 10: Scheduling & Analytics
 - [ ] Connect Calendar and Heatmap to Scheduling API
