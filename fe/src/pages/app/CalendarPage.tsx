@@ -8,7 +8,7 @@ import { useCreatePostModal } from '../../context/createPostModalContext'
 import type { ScheduledPost } from '../../context/calendarContextBase'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useToast } from '../../context/ToastContext'
-import Skeleton from '../../components/Skeleton'
+import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { useCalendarPosts } from '../../hooks/useCalendarPosts'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 import styles from './CalendarPage.module.css'
@@ -402,10 +402,10 @@ export default function CalendarPage() {
     <div className={`glass-card ${styles.calCard}`} role="grid" aria-label="Month calendar">
       {isCalendarLoading && (
         <div className={styles.loadingOverlay}>
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
         </div>
       )}
       <div className={styles.dayHeaders} role="row">
@@ -523,10 +523,10 @@ export default function CalendarPage() {
     <div className={`glass-card ${styles.calCard} ${styles.weekCard}`} role="grid" aria-label="Week calendar">
       {isCalendarLoading && (
         <div className={styles.loadingOverlay}>
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
-          <Skeleton height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
+          <SkeletonLoader height="18px" />
         </div>
       )}
       {/* Column headers */}
@@ -617,10 +617,10 @@ export default function CalendarPage() {
       <div className={`glass-card ${styles.calCard} ${styles.dayViewCard}`} role="grid" aria-label="Day calendar">
         {isCalendarLoading && (
           <div className={styles.loadingOverlay}>
-            <Skeleton height="18px" />
-            <Skeleton height="18px" />
-            <Skeleton height="18px" />
-            <Skeleton height="18px" />
+            <SkeletonLoader height="18px" />
+            <SkeletonLoader height="18px" />
+            <SkeletonLoader height="18px" />
+            <SkeletonLoader height="18px" />
           </div>
         )}
         <div className={styles.dayViewTitle}>

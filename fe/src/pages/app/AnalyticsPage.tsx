@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { TrendingUp, TrendingDown, BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
-import Skeleton from '../../components/Skeleton'
+import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAnalyticsSummary } from '../../hooks/useAnalyticsSummary'
 import styles from './AnalyticsPage.module.css'
@@ -143,11 +143,11 @@ export default function AnalyticsPage() {
           <div key={m.label} className={`glass-card ${styles.metricCard}`}>
             <div className={styles.metricIcon} style={{ color: m.color, background: `${m.color}18` }}>{m.icon}</div>
             <div className={styles.metricValue}>
-              {isLoading ? <Skeleton height="28px" /> : <CountingNumber value={m.value} format={m.format} />}
+              {isLoading ? <SkeletonLoader height="28px" /> : <CountingNumber value={m.value} format={m.format} />}
             </div>
             <div className={styles.metricLabel}>{m.label}</div>
             <div className={styles.metricDelta} style={{ color: m.delta.startsWith('+') ? '#22c55e' : m.color }}>
-              {isLoading ? <Skeleton height="14px" width="80px" /> : m.delta}
+              {isLoading ? <SkeletonLoader height="14px" width="80px" /> : m.delta}
             </div>
           </div>
         ))}
@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
           <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
           <span className={styles.cardSub}>Phân tích dựa trên tương tác của audience</span>
         </div>
-        {isLoading ? <Skeleton height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
+        {isLoading ? <SkeletonLoader height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
         <div className={styles.heatmapLegend}>
           <span>Less active</span>
           <div className={styles.legendBar} />
@@ -223,21 +223,21 @@ export default function AnalyticsPage() {
           <tbody>
             {PLATFORMS_DATA.map((p) => (
               <tr key={p.name}>
-                <td><span className={styles.platformName}>{isLoading ? <Skeleton width="90px" height="14px" /> : p.name}</span></td>
-                <td className={styles.reach}>{isLoading ? <Skeleton width="50px" height="14px" /> : p.reach}</td>
+                <td><span className={styles.platformName}>{isLoading ? <SkeletonLoader width="90px" height="14px" /> : p.name}</span></td>
+                <td className={styles.reach}>{isLoading ? <SkeletonLoader width="50px" height="14px" /> : p.reach}</td>
                 <td>
                   <span className={styles.growth} style={{ color: !isLoading && p.growth.startsWith('+') ? '#22c55e' : '#ef4444' }}>
-                    {isLoading ? <Skeleton width="45px" height="14px" /> : p.growth}
+                    {isLoading ? <SkeletonLoader width="45px" height="14px" /> : p.growth}
                   </span>
                 </td>
-                <td className={styles.engagement}>{isLoading ? <Skeleton width="45px" height="14px" /> : p.engagement}</td>
-                <td className={styles.posts}>{isLoading ? <Skeleton width="20px" height="14px" /> : p.posts}</td>
+                <td className={styles.engagement}>{isLoading ? <SkeletonLoader width="45px" height="14px" /> : p.engagement}</td>
+                <td className={styles.posts}>{isLoading ? <SkeletonLoader width="20px" height="14px" /> : p.posts}</td>
                 <td>
                   {!isLoading && p.trend === 'up'
                     ? <TrendingUp size={16} color="#22c55e" />
                     : !isLoading
                       ? <TrendingDown size={16} color="#ef4444" />
-                      : <Skeleton width="16px" height="16px" />}
+                      : <SkeletonLoader width="16px" height="16px" />}
                 </td>
               </tr>
             ))}
