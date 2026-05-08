@@ -229,3 +229,28 @@ a { text-decoration: none; color: inherit; }
   pointer-events: none;
   z-index: 0;
 }
+
+/* =============================================
+   Skeleton Loader — Phase 11
+   ============================================= */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(139, 92, 246, 0.08)  50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-card {
+  border-radius: var(--radius-lg);
+}
