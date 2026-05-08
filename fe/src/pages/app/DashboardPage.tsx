@@ -3,9 +3,11 @@ import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { ErrorBoundary } from 'react-error-boundary'
+import { WidgetErrorFallback } from '../../components/WidgetErrorFallback'
 import OnboardingTour from '../../components/OnboardingTour'
 import CountingNumber from '../../components/CountingNumber'
-import Skeleton from '../../components/Skeleton'
+import { SkeletonLoader } from '../../components/SkeletonLoader'
 import styles from './DashboardPage.module.css'
 
 const QUICK_STATS = [
@@ -41,101 +43,112 @@ export default function DashboardPage() {
       <div className={styles.welcome}>
         <div>
           <h1 className={styles.title}>
-            {isLoading ? <Skeleton width="200px" height="32px" /> : `Chào buổi tối, ${(user?.displayName || user?.firstName || user?.email || 'Creator')?.split(' ')[0]} 👋`}
+            {isLoading ? <SkeletonLoader width="200px" height="32px" /> : `Chào buổi tối, ${(user?.displayName || user?.firstName || user?.email || 'Creator')?.split(' ')[0]} 👋`}
           </h1>
           <p className={styles.subtitle}>Đây là tổng quan hiệu suất content của bạn hôm nay.</p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className={styles.statsGrid}>
-        {isLoading 
-          ? Array(4).fill(0).map((_, i) => (
-              <div key={i} className={`glass-card ${styles.statCard}`}>
-                <Skeleton height="80px" />
-              </div>
-            ))
-          : stats.map(s => (
-              <div key={s.label} className={`glass-card ${styles.statCard}`}>
-                <div className={styles.statIcon} style={{ color: s.color, background: `${s.color}18` }}>
-                  {s.icon}
+      <ErrorBoundary FallbackComponent={WidgetErrorFallback}>
+        <div className={styles.statsGrid}>
+          {isLoading 
+            ? Array(4).fill(0).map((_, i) => (
+                <div key={i} className={`glass-card ${styles.statCard}`}>
+                  <SkeletonLoader height="80px" />
                 </div>
-                <div className={styles.statValue}>
-                  <CountingNumber
-                    value={s.value}
-                    format={(v) => {
-                      if (s.isK) return `${(v / 1000).toFixed(1)}K`
-                      if (s.isPercent) return `${v}.4%`
-                      return v.toString()
-                    }}
-                  />
-                </div>
-                <div className={styles.statLabel}>{s.label}</div>
-                <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
-                  {s.delta}
-                </div>
-              </div>
-            ))
-        }
-      </div>
+              ))
+            : stats.map(s => (
+                <motion.div
+                  key={s.label}
+                  className={`glass-card ${styles.statCard}`}
+                  whileHover={{ y: -4, borderColor: 'var(--purple-500)', boxShadow: '0 12px 40px rgba(139, 92, 246, 0.15)' }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className={styles.statIcon} style={{ color: s.color, background: `${s.color}18` }}>
+                    {s.icon}
+                  </div>
+                  <div className={styles.statValue}>
+                    <CountingNumber
+                      value={s.value}
+                      format={(v) => {
+                        if (s.isK) return `${(v / 1000).toFixed(1)}K`
+                        if (s.isPercent) return `${v}.4%`
+                        return v.toString()
+                      }}
+                    />
+                  </div>
+                  <div className={styles.statLabel}>{s.label}</div>
+                  <div className={styles.statDelta} style={{ color: s.delta.startsWith('+') ? '#22c55e' : s.color }}>
+                    {s.delta}
+                  </div>
+                </motion.div>
+              ))
+          }
+        </div>
+      </ErrorBoundary>
 
       {/* Recent posts */}
-      <div className={`glass-card ${styles.section}`}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Posts gần đây</h2>
-          <button className={styles.seeAll} onClick={() => navigate('/app/calendar')}>
-            Xem tất cả <ArrowUpRight size={13} />
-          </button>
+      <ErrorBoundary FallbackComponent={WidgetErrorFallback}>
+        <div className={`glass-card ${styles.section}`}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Posts gần đây</h2>
+            <button className={styles.seeAll} onClick={() => navigate('/app/calendar')}>
+              Xem tất cả <ArrowUpRight size={13} />
+            </button>
+          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Platform</th>
+                <th>Trạng thái</th>
+                <th>Reach</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading 
+                ? Array(4).fill(0).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={5}><SkeletonLoader height="40px" /></td>
+                    </tr>
+                  ))
+                : RECENT_POSTS.map(p => (
+                    <tr key={p.title}>
+                      <td className={styles.postTitle}>{p.title}</td>
+                      <td><span className={styles.platformTag}>{p.platform}</span></td>
+                      <td>
+                        <span className={`${styles.status} ${styles[`status_${p.status}`]}`}>
+                          {p.status === 'published' ? '✅ Đã đăng' : p.status === 'scheduled' ? '⏰ Scheduled' : '📝 Draft'}
+                        </span>
+                      </td>
+                      <td className={styles.reach}>{p.reach}</td>
+                      <td className={styles.date}>{p.date}</td>
+                    </tr>
+                  ))
+              }
+            </tbody>
+          </table>
         </div>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Tiêu đề</th>
-              <th>Platform</th>
-              <th>Trạng thái</th>
-              <th>Reach</th>
-              <th>Thời gian</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading 
-              ? Array(4).fill(0).map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={5}><Skeleton height="40px" /></td>
-                  </tr>
-                ))
-              : RECENT_POSTS.map(p => (
-                  <tr key={p.title}>
-                    <td className={styles.postTitle}>{p.title}</td>
-                    <td><span className={styles.platformTag}>{p.platform}</span></td>
-                    <td>
-                      <span className={`${styles.status} ${styles[`status_${p.status}`]}`}>
-                        {p.status === 'published' ? '✅ Đã đăng' : p.status === 'scheduled' ? '⏰ Scheduled' : '📝 Draft'}
-                      </span>
-                    </td>
-                    <td className={styles.reach}>{p.reach}</td>
-                    <td className={styles.date}>{p.date}</td>
-                  </tr>
-                ))
-            }
-          </tbody>
-        </table>
-      </div>
+      </ErrorBoundary>
 
       {/* AI tip */}
-      <div className={`glass-card ${styles.aiTip}`}>
-        <div className={styles.aiTipIcon}><Sparkles size={18} /></div>
-        <div>
-          <div className={styles.aiTipTitle}>Gợi ý từ AI</div>
-          <div className={styles.aiTipText}>
-            Posts dạng <strong>Reel</strong> của bạn đang có engagement cao hơn 2.3x so với Photo.
-            Thử tạo thêm Reel tuần này nhé — đặc biệt vào <strong>Thứ 3 & Thứ 5 lúc 19:00</strong>.
+      <ErrorBoundary FallbackComponent={WidgetErrorFallback}>
+        <div className={`glass-card ${styles.aiTip}`}>
+          <div className={styles.aiTipIcon}><Sparkles size={18} /></div>
+          <div>
+            <div className={styles.aiTipTitle}>Gợi ý từ AI</div>
+            <div className={styles.aiTipText}>
+              Posts dạng <strong>Reel</strong> của bạn đang có engagement cao hơn 2.3x so với Photo.
+              Thử tạo thêm Reel tuần này nhé — đặc biệt vào <strong>Thứ 3 & Thứ 5 lúc 19:00</strong>.
+            </div>
           </div>
+          <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 12, padding: '8px 16px', flexShrink: 0 }}>
+            Tạo ngay →
+          </motion.button>
         </div>
-        <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} className="btn-primary" onClick={() => navigate('/app/ai')} style={{ fontSize: 12, padding: '8px 16px', flexShrink: 0 }}>
-          Tạo ngay →
-        </motion.button>
-      </div>
+      </ErrorBoundary>
 
       {/* Onboarding */}
       <OnboardingTour />

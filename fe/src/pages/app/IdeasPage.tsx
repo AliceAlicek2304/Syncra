@@ -18,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Sparkles, Plus, X, Lightbulb, PlusCircle, Check, MoreHorizontal } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { groupsApi } from '../../api/groups'
 import type { Group } from '../../api/groups'
@@ -114,13 +115,15 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
     const otherGroups = groups.filter(g => g.id !== idea.groupId)
 
     return (
-        <div
+        <motion.div
             ref={setNodeRef}
             style={style}
             className={`${styles.ideaCard} ${isDragging ? styles.ideaCardDragging : ''}`}
             onClick={handleClick}
             {...attributes}
             {...listeners}
+            whileHover={{ y: -2, borderColor: 'var(--purple-400)', boxShadow: '0 8px 30px rgba(139, 92, 246, 0.1)' }}
+            transition={{ duration: 0.2 }}
         >
             <div className={styles.ideaCardContent}>
                 <p className={styles.ideaCardTitle}>{idea.title}</p>
@@ -178,7 +181,7 @@ function IdeaCard({ idea, groups, onEdit, onDelete, onMove }: IdeaCardProps) {
                     ))}
                 </div>
             </DropdownPortal>
-        </div>
+        </motion.div>
     )
 }
 
@@ -269,18 +272,33 @@ function Column({ group, ideas, groups, onAddIdea, onEditIdea, onDeleteIdea, onM
 
             {/* Cards */}
             <SortableContext items={ideaIds} strategy={verticalListSortingStrategy}>
-                <div className={styles.cardList}>
-                    {ideas.map(idea => (
-                        <IdeaCard key={idea.id} idea={idea} groups={groups} onEdit={onEditIdea} onDelete={onDeleteIdea} onMove={onMoveIdea} />
-                    ))}
-                </div>
+                <motion.div layout className={styles.cardList}>
+                    <AnimatePresence>
+                        {ideas.map(idea => (
+                            <motion.div
+                                key={idea.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.96 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.96 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            >
+                                <IdeaCard idea={idea} groups={groups} onEdit={onEditIdea} onDelete={onDeleteIdea} onMove={onMoveIdea} />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             </SortableContext>
 
             {/* Add idea button */}
-            <button className={styles.addIdeaBtn} onClick={() => onAddIdea(group.id)}>
+            <motion.button 
+                whileTap={{ scale: 0.97 }}
+                className={styles.addIdeaBtn} 
+                onClick={() => onAddIdea(group.id)}
+            >
                 <Plus size={14} />
                 <span>New Idea</span>
-            </button>
+            </motion.button>
         </div>
     )
 }

@@ -59,10 +59,15 @@ export default function Navbar() {
     <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
-        <a href="#" className={styles.logo}>
+        <motion.a 
+          href="#" 
+          className={styles.logo}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <img src={logo} alt="Syncra" className={styles.logoImg} />
           <span className={styles.logoText}>Syncra</span>
-        </a>
+        </motion.a>
 
         {/* Desktop links */}
         <ul className={styles.links}>
@@ -120,14 +125,24 @@ export default function Navbar() {
             </div>
           ) : (
             <>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.1 }}
                 className="btn-secondary"
                 style={{ padding: '10px 20px', fontSize: '14px' }}
                 onClick={handleLogin}
               >
                 Sign in
-              </button>
-              <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Start free</a>
+              </motion.button>
+              <motion.a 
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.1 }}
+                href="#pricing" 
+                className="btn-primary" 
+                style={{ padding: '10px 20px', fontSize: '14px' }}
+              >
+                Start free
+              </motion.a>
             </>
           )}
         </div>

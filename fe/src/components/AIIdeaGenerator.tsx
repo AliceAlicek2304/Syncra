@@ -5,6 +5,7 @@ import { aiApi } from '../api/ai'
 import type { GeneratedIdea as ApiGeneratedIdea, AIGenerateRequest } from '../api/ai'
 import { useR2Upload } from '../hooks/useR2Upload'
 import { useToast } from '../context/ToastContext'
+import { motion } from 'framer-motion'
 import { shortId } from '../utils/shortId'
 import styles from './AIIdeaGenerator.module.css'
 
@@ -437,9 +438,12 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
                                 {results.map(idea => {
                                     const isSelected = selectedIdeaIds.includes(idea.id)
                                     return (
-                                        <div
+                                        <motion.div
                                             key={idea.id}
                                             className={`glass-card ${styles.resultCard} ${isSelected ? styles.resultCardSelected : ''}`}
+                                            whileHover={{ y: -2, boxShadow: '0 12px 40px rgba(139, 92, 246, 0.2)' }}
+                                            whileTap={{ scale: 0.97 }}
+                                            transition={{ duration: 0.15 }}
                                             onClick={() => toggleSelect(idea)}
                                         >
                                             <div className={styles.resultCardTop}>
@@ -457,7 +461,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
                                                     : '+ Chọn'
                                                 }
                                             </button>
-                                        </div>
+                                        </motion.div>
                                     )
                                 })}
                             </div>
@@ -468,13 +472,15 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
                                         : 'Chưa chọn ý tưởng nào'
                                     }
                                 </span>
-                                <button
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    transition={{ duration: 0.1 }}
                                     className={`btn-primary ${styles.bulkAddBtn}`}
                                     onClick={handleBulkAdd}
                                     disabled={selectedIdeaIds.length === 0}
                                 >
                                     {presetResults ? 'Tạo bài ngay' : 'Thêm vào board'}
-                                </button>
+                                </motion.button>
                             </div>
                         </>
                     )}
