@@ -41,6 +41,7 @@ export default function AnalyticsPage() {
     summary,
     heatmap,
     isLoading,
+    isError,
   } = useAnalyticsSummary({ workspaceId: activeWorkspace?.id })
 
   const weeklyBars = useMemo(() => {
@@ -59,7 +60,7 @@ export default function AnalyticsPage() {
       label: 'Total Reach',
       value: summary?.totalReach ?? 0,
       delta: '+24%',
-      color: '#8b5cf6',
+      color: 'var(--purple-500)',
       format: (v: number) => `${(v / 1000).toFixed(1)}K`,
     },
     {
@@ -67,7 +68,7 @@ export default function AnalyticsPage() {
       label: 'Avg. Engagement',
       value: Number((summary?.engagementRate ?? 0).toFixed(2)),
       delta: '+11%',
-      color: '#ec4899',
+      color: 'var(--pink-500)',
       format: (v: number) => `${v.toFixed(2)}%`,
     },
     {
@@ -75,7 +76,7 @@ export default function AnalyticsPage() {
       label: 'Follower Growth',
       value: summary?.followerGrowth ?? 0,
       delta: 'this period',
-      color: '#22d3ee',
+      color: 'var(--cyan-400)',
       format: (v: number) => `+${v.toLocaleString()}`,
     },
     {
@@ -83,7 +84,7 @@ export default function AnalyticsPage() {
       label: 'Total Posts',
       value: summary?.totalPosts ?? 0,
       delta: 'across workspace',
-      color: '#f59e0b',
+      color: 'var(--accent-amber, #f59e0b)',
       format: (v: number) => v.toString(),
     },
   ]
@@ -129,6 +130,12 @@ export default function AnalyticsPage() {
           <span className={styles.rangeLabel}>{rangeLabel}</span>
         </div>
       </div>
+
+      {isError && (
+        <div className="glass-card" style={{ padding: '16px', color: 'var(--pink-500)', fontSize: '14px', border: '1px solid var(--pink-500)', background: 'rgba(236, 72, 153, 0.05)', marginBottom: '16px' }}>
+          Could not load analytics data. Please try again later.
+        </div>
+      )}
 
       {/* Top metrics */}
       <div className={styles.metricsRow}>

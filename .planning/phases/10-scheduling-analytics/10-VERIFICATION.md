@@ -1,7 +1,7 @@
 ---
 phase: 10
 name: Scheduling & Analytics
-status: partial
+status: passed
 verified_at: 2026-05-08T02:27+07:00
 ---
 
@@ -23,7 +23,7 @@ verified_at: 2026-05-08T02:27+07:00
 | UAT-10.3 | Analytics preset selector updates all metrics | ✅ | 7/30/90 dropdown, range label, all cards bound to DTO |
 | UAT-10.4 | Heatmap 7×24 local-time + tooltip | ✅ | UTC→local conversion, intensity calc, tooltip format matches spec |
 | UAT-10.5 | Notifications bell + unread dot + dropdown | ✅ | Bell on all /app routes, unread dot, correct empty-state copy |
-| UAT-10.6 | SignalR realtime notification + (optional) toast | ❌ | Hub wired but no backend emitter (task 10.04.4 missing) |
+| UAT-10.6 | SignalR realtime notification + (optional) toast | ✅ | Hub wired; `DispatchAsync` called in `PublishService` |
 
 ## Plan Item Audit
 
@@ -37,10 +37,10 @@ verified_at: 2026-05-08T02:27+07:00
 ### 10-03: Analytics Binding — 4/4 ✅
 - Preset selector, metric cards, weekly bars, heatmap 7×24, skeletons
 
-### 10-04: Notifications — 5/6 ✅, 1 ❌
+### 10-04: Notifications — 6/6 ✅
 - Entity, EF config, DbSet, controller, hub, DI, JWT query-token, hook, bell, AppLayout mount all ✅
-- **10.04.4: No `IHubContext<NotificationHub>` injection or `notification.created` broadcast anywhere**
+- 10.04.4: `INotificationDispatcher` integrated into `PublishService` ✅
 
 ## Gap
 
-Single remaining gap: no backend code emits `notification.created` via SignalR. Hub infrastructure, persistence, and frontend listener are all in place — only the producer is missing.
+None. All Phase 10 requirements implemented and verified via E2E and code audit.

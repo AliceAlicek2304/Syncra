@@ -43,12 +43,12 @@ interface CalPost {
 
 // ── Platform config ───────────────────────────────────
 const PLATFORMS = [
-  { id: 'all', label: 'All', color: '#8b5cf6' },
-  { id: 'TikTok', label: 'TikTok', color: '#8b5cf6' },
-  { id: 'Instagram', label: 'Instagram', color: '#ec4899' },
+  { id: 'all', label: 'All', color: 'var(--purple-500)' },
+  { id: 'TikTok', label: 'TikTok', color: 'var(--purple-500)' },
+  { id: 'Instagram', label: 'Instagram', color: 'var(--pink-500)' },
   { id: 'Facebook', label: 'Facebook', color: '#3b82f6' },
   { id: 'X', label: 'X', color: '#f59e0b' },
-  { id: 'LinkedIn', label: 'LinkedIn', color: '#22d3ee' },
+  { id: 'LinkedIn', label: 'LinkedIn', color: 'var(--cyan-400)' },
   { id: 'YouTube', label: 'YouTube', color: '#ef4444' },
 ]
 

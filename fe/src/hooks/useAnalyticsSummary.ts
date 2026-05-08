@@ -62,5 +62,6 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
     heatmap: heatmapQuery.data,
     isLoading: summaryQuery.isLoading || heatmapQuery.isLoading,
     isFetching: summaryQuery.isFetching || heatmapQuery.isFetching,
+    isError: summaryQuery.isError || heatmapQuery.isError,
   };
 }

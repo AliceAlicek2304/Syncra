@@ -1,7 +1,7 @@
 .heatmap {
   display: flex;
   gap: 12px;
-  padding-top: 10px;
+  padding-top: 12px;
 }
 
 .yAxis {
@@ -70,7 +70,7 @@
   border: 1px solid var(--border-glass);
   background: rgba(13, 17, 28, 0.92);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   pointer-events: none;
   white-space: nowrap;
 }

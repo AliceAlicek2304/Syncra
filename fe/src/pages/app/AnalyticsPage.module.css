@@ -23,7 +23,7 @@
 .subtitle {
   font-size: 13px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .dateBadge {
@@ -80,7 +80,7 @@
   background: transparent;
   color: var(--text-secondary);
   border-radius: 8px;
-  padding: 7px 8px;
+  padding: 8px;
   font-size: 13px;
   cursor: pointer;
 }

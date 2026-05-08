@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
+const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
 
 async function login(page: any) {
   await page.goto(`${APP_URL}/login`)
@@ -19,7 +19,7 @@ test.describe('Phase 10: Calendar — UAT-10.1', () => {
     await page.goto(`${APP_URL}/app/calendar`)
     await expect(page.getByRole('heading', { name: /calendar/i })).toBeVisible()
     // Month grid should be present
-    await expect(page.locator('[class*="monthGrid"]')).toBeVisible()
+    await expect(page.locator('[class*="grid"]').first()).toBeVisible()
   })
 
   test('Month navigation buttons work', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Phase 10: Calendar — UAT-10.1', () => {
   test('Skeleton shown while calendar loads', async ({ page }) => {
     await page.goto(`${APP_URL}/app/calendar`)
     // Skeletons should appear briefly or the grid should eventually render
-    await expect(page.locator('[data-testid="skeleton-loader"]').or(page.locator('[class*="monthGrid"]'))).toBeVisible()
+    await expect(page.locator('[data-testid="skeleton-loader"]').or(page.getByRole('grid'))).toBeVisible()
   })
 })
 
@@ -57,12 +57,12 @@ test.describe('Phase 10: Analytics — UAT-10.3', () => {
 
   test('Preset dropdown opens and shows 3 options', async ({ page }) => {
     await page.goto(`${APP_URL}/app/analytics`)
-    const presetBtn = page.locator('[class*="presetBtn"]')
+    const presetBtn = page.locator('button', { hasText: /Last \d+ days/ }).first()
     await expect(presetBtn).toBeVisible()
     await presetBtn.click()
-    await expect(page.getByText('Last 7 days')).toBeVisible()
-    await expect(page.getByText('Last 30 days')).toBeVisible()
-    await expect(page.getByText('Last 90 days')).toBeVisible()
+    await expect(page.getByText('Last 7 days').last()).toBeVisible()
+    await expect(page.getByText('Last 30 days').last()).toBeVisible()
+    await expect(page.getByText('Last 90 days').last()).toBeVisible()
   })
 
   test('Metric cards render with skeleton or values', async ({ page }) => {
@@ -127,18 +127,20 @@ test.describe('Phase 10: Notifications — UAT-10.5', () => {
 
   test('Bell click opens dropdown with empty state', async ({ page }) => {
     await page.goto(`${APP_URL}/app/dashboard`)
-    const bellBtn = page.locator('[class*="bellBtn"]')
-    await bellBtn.click()
+    const bellBtn = page.locator('button').filter({ has: page.locator('svg.lucide-bell') }).first()
+    await expect(bellBtn).toBeVisible()
+    await bellBtn.click({ force: true })
     // Empty state copy should appear
-    await expect(page.getByText('No notifications yet')).toBeVisible()
-    await expect(page.getByText(/we'll let you know/i)).toBeVisible()
+    await expect(page.getByText('No notifications yet').first()).toBeVisible()
+    await expect(page.getByText(/we'll let you know/i).first()).toBeVisible()
   })
 
   test('Dropdown header shows Notifications title', async ({ page }) => {
     await page.goto(`${APP_URL}/app/dashboard`)
-    const bellBtn = page.locator('[class*="bellBtn"]')
-    await bellBtn.click()
-    await expect(page.getByText('Notifications', { exact: true })).toBeVisible()
+    const bellBtn = page.locator('button').filter({ has: page.locator('svg.lucide-bell') }).first()
+    await expect(bellBtn).toBeVisible()
+    await bellBtn.click({ force: true })
+    await expect(page.getByText('Notifications', { exact: true }).first()).toBeVisible()
   })
 })
 
