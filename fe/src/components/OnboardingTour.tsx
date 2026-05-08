@@ -32,7 +32,9 @@ export default function OnboardingTour() {
 
   useEffect(() => {
     const hasCompletedTour = localStorage.getItem('syncra_onboarding_completed')
-    if (!hasCompletedTour) {
+    const isTest = localStorage.getItem('syncra_no_tour') === 'true' || window.location.search.includes('notour')
+    
+    if (!hasCompletedTour && !isTest) {
       // Delay a bit to let dashboard load
       const timer = setTimeout(() => setShow(true), 1200)
       return () => clearTimeout(timer)

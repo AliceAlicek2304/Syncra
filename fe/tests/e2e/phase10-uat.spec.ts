@@ -3,6 +3,9 @@ import { test, expect } from '@playwright/test'
 const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
 
 async function login(page: any) {
+  await page.addInitScript(() => {
+    localStorage.setItem('syncra_onboarding_completed', 'true')
+  })
   await page.goto(`${APP_URL}/login`)
   await page.fill('[data-testid="login-email"]', 'test@syncra.local')
   await page.fill('[data-testid="login-password"]', 'Test@12345')

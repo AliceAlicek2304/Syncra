@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
 
 async function login(page: any) {
-  await page.goto(`${APP_URL}/login`)
+  await page.goto(`${APP_URL}/login?notour=true`)
   await page.fill('[data-testid="login-email"]', 'test@syncra.local')
   await page.fill('[data-testid="login-password"]', 'Test@12345')
   await page.click('[data-testid="login-submit"]')
@@ -11,8 +11,14 @@ async function login(page: any) {
 }
 
 test.describe('Phase 11: Core User Flows — UAT-11.3', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('syncra_onboarding_completed', 'true')
+    })
+  })
+
   test('Login flow completes and dashboard renders', async ({ page }) => {
-    await page.goto(`${APP_URL}/login`)
+    await page.goto(`${APP_URL}/login?notour=true`)
     await page.fill('[data-testid="login-email"]', 'test@syncra.local')
     await page.fill('[data-testid="login-password"]', 'Test@12345')
     await page.click('[data-testid="login-submit"]')
@@ -25,7 +31,7 @@ test.describe('Phase 11: Core User Flows — UAT-11.3', () => {
 
   test('Dashboard renders without error boundary fallbacks', async ({ page }) => {
     await login(page)
-    await page.goto(`${APP_URL}/app/dashboard`)
+    await page.goto(`${APP_URL}/app/dashboard?notour=true`)
     await page.waitForLoadState('networkidle')
     // No error fallbacks should be visible on a healthy page
     const errorFallbacks = page.locator('[data-testid="widget-error-fallback"]')
@@ -34,7 +40,7 @@ test.describe('Phase 11: Core User Flows — UAT-11.3', () => {
 
   test('Create post modal opens and closes without crash', async ({ page }) => {
     await login(page)
-    await page.goto(`${APP_URL}/app/dashboard`)
+    await page.goto(`${APP_URL}/app/dashboard?notour=true`)
     await page.waitForLoadState('networkidle')
     // Try to open the create post modal
     const createBtn = page.locator('[data-testid="create-post-btn"], button:has-text("Create"), button:has-text("New Post")').first()
@@ -55,9 +61,9 @@ test.describe('Phase 11: Core User Flows — UAT-11.3', () => {
   test('Navigation to all main sections does not crash the app', async ({ page }) => {
     await login(page)
     const routes = [
-      `${APP_URL}/app/dashboard`,
-      `${APP_URL}/app/analytics`,
-      `${APP_URL}/app/calendar`,
+      `${APP_URL}/app/dashboard?notour=true`,
+      `${APP_URL}/app/analytics?notour=true`,
+      `${APP_URL}/app/calendar?notour=true`,
     ]
     for (const route of routes) {
       await page.goto(route)

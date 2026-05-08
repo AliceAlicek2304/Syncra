@@ -5,7 +5,10 @@ const mockAuth = async (page: Page) => {
   await page.route('**/api/v1/auth/me', async (route: Route) => {
     await route.fulfill({ status: 200, body: JSON.stringify({ userId: '1', email: 'test@a.com', displayName: 'Test User', firstName: 'Test', lastName: 'User' }) });
   });
-  await page.context().addInitScript(() => localStorage.setItem('syncra_access_token', 'mock-token'));
+  await page.addInitScript(() => {
+    localStorage.setItem('syncra_access_token', 'mock-token')
+    localStorage.setItem('syncra_onboarding_completed', 'true')
+  });
 };
 
 test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
@@ -33,7 +36,7 @@ test.describe('UAT Phase 8: Workspace, Settings, UI', () => {
 
   // ✅ Test 4: Route Protection
   test('4. Route Protection', async ({ page }) => {
-    await page.context().addInitScript(() => localStorage.clear());
+    await page.addInitScript(() => localStorage.clear());
     await page.goto('app/dashboard');
     
     // Sẽ bị redirect về homepage và mở login modal

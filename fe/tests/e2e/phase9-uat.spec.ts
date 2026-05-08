@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test'
 
-const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
+const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
 
 // Helper to login before tests
 async function login(page: any) {
+  await page.addInitScript(() => {
+    localStorage.setItem('syncra_onboarding_completed', 'true')
+  })
   await page.goto(`${APP_URL}/login`)
   // The LoginModal should be visible
   await page.fill('[data-testid="login-email"]', 'test@syncra.local')

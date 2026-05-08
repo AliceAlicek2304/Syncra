@@ -2,14 +2,14 @@
 
 ## Milestones
 
-- [ ] **v1.2 Update the FE** – Phases 8-11 (Active)
+- [x] **v1.2 Update the FE** – Phases 8-11 (Shipped 2026-05-08)
 - ? **v1.1 Reliable Payments & Provider Abstraction** – Phases 4-7 (shipped 2026-05-01) – [Archive](milestones/v1.1-ROADMAP.md)
 - ? **v1.0 Stability** – Phases 1-3 (shipped 2026-04-27) – [Archive](milestones/v1.0-ROADMAP.md)
 
 ## Phases
 
 <details open>
-<summary>[ ] v1.2 Update the FE (Phases 8-11) – ACTIVE</summary>
+<summary>[x] v1.2 Update the FE (Phases 8-11) – COMPLETE</summary>
 
 ### Phase 8: Core API Integration & Auth (7 plans)
 
@@ -34,15 +34,19 @@ Plans:
 - [x] 09-07-PLAN.md — Phase 9 E2E Verification
 
 
-### Phase 10: Scheduling & Analytics
-- [ ] Connect Calendar and Heatmap to Scheduling API
-- [ ] Bind Analytics charts to real metrics
-- [ ] Implement live notification system
+### Phase 10: Scheduling & Analytics (5 plans)
 
-### Phase 11: "Pro Max" Polish & E2E Testing
-- [x] Add Framer Motion transitions and micro-interactions
-- [x] Implement Skeleton loaders and Error Boundaries
-- [x] Complete Playwright E2E test suite for core flows
+Plans:
+- [x] 10-01-PLAN.md — Connect Calendar to Scheduling API
+- [x] 10-02-PLAN.md — Bind Analytics charts to real metrics
+- [x] 10-03-PLAN.md — Implement live notification system
+- [x] 10-04-PLAN.md — Heatmap integration
+- [x] 10-05-PLAN.md — UI Refinement Gap Closure
+
+### Phase 11: "Pro Max" Polish & E2E Testing (3 plans)
+- [x] 11-A-PLAN.md — Framer Motion foundations
+- [x] 11-B-PLAN.md — Micro-interactions & Error Boundaries
+- [x] 11-C-PLAN.md — E2E Test Suite
 </details>
 
 <details>
@@ -76,7 +80,7 @@ Plans:
 
 ## Next Milestone
 
-**v1.3 Performance & Analytics Optimization** (Deferred)
+**v1.3 Performance & Analytics Optimization** (Active)
 
 - [ ] Phase 12: Query Optimization & Caching
 - [ ] Phase 13: Advanced Analytics & Reporting

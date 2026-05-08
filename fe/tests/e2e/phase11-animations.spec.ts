@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
 
 async function login(page: any) {
-  await page.goto(`${APP_URL}/login`)
+  await page.goto(`${APP_URL}/login?notour=true`)
   await page.fill('[data-testid="login-email"]', 'test@syncra.local')
   await page.fill('[data-testid="login-password"]', 'Test@12345')
   await page.click('[data-testid="login-submit"]')
@@ -12,6 +12,9 @@ async function login(page: any) {
 
 test.describe('Phase 11: Animations & Polish — UAT-11.1', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('syncra_onboarding_completed', 'true')
+    })
     await login(page)
   })
 
@@ -22,14 +25,13 @@ test.describe('Phase 11: Animations & Polish — UAT-11.1', () => {
       await route.continue()
     })
     await page.goto(`${APP_URL}/app/dashboard`)
-    // Either skeleton or real content must be visible — skeleton appears during load
-    const skeleton = page.locator('[aria-label="Loading content"]')
-    const dashboard = page.locator('[data-testid="page-wrapper"]')
-    await expect(skeleton.or(dashboard)).toBeVisible({ timeout: 5000 })
+    // Just check for skeleton first, it should be visible during the delay
+    const skeleton = page.locator('[aria-label="Loading content"]').first()
+    await expect(skeleton).toBeVisible({ timeout: 5000 })
   })
 
   test('PageWrapper renders with data-testid="page-wrapper" on route', async ({ page }) => {
-    await page.goto(`${APP_URL}/app/dashboard`)
+    await page.goto(`${APP_URL}/app/dashboard?notour=true`)
     await page.waitForLoadState('networkidle')
     await expect(page.locator('[data-testid="page-wrapper"]')).toBeVisible()
   })

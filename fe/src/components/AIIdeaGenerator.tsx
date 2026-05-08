@@ -226,12 +226,14 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
             exit={{ opacity: 0 }}
         >
             <motion.div
-                className={styles.modal}
+                className={styles.dialog}
+                role="dialog"
+                aria-modal="true"
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                onClick={e => e.stopPropagation()}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className={styles.modalHeader}>
