@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
     X, Sparkles, Smile, Hash,
     RotateCcw, RotateCw, Crop, Check, FlipHorizontal,
@@ -273,7 +274,14 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
     // ── Render ────────────────────────────────────────────────────────────
     return (
         <div className={styles.backdrop} onMouseDown={e => { if (e.target !== e.currentTarget) return; if (editingId) { setEditingId(null); return } onClose() }}>
-            <div className={styles.dialog}>
+            <motion.div
+                className={styles.dialog}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={(e) => e.stopPropagation()}
+            >
 
                 {/* Image editor overlay */}
                 {editingId && (() => {
@@ -462,7 +470,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                         />
                     )}
                 </div>
-            </div>
+            </motion.div>
         </div>
     )
 }
