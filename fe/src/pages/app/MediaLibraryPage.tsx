@@ -73,7 +73,7 @@ export default function MediaLibraryPage() {
   const workspaceId = activeWorkspace?.id ?? ''
   const queryClient = useQueryClient()
   const { error: toastError } = useToast()
-  const { upload: uploadToR2 } = useR2Upload()
+  const { upload: uploadToR2, progress: uploadProgress } = useR2Upload()
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<MediaType>('all')
@@ -203,6 +203,7 @@ export default function MediaLibraryPage() {
               key={asset.id}
               asset={asset}
               onDelete={(id) => deleteMutation.mutate(id)}
+              uploadProgress={uploadProgress[asset.id]}
             />
           ))}
         </div>
