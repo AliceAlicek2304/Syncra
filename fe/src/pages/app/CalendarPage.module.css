@@ -59,6 +59,13 @@
   flex-wrap: wrap;
 }
 
+.savingIndicator {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
 /* View switcher */
 .viewSwitcher {
   display: flex;
@@ -284,6 +291,19 @@
   overflow: visible;
   min-width: 0;
   width: 100%;
+  position: relative;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 16px;
+  z-index: 2;
+  pointer-events: none;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  background: linear-gradient(180deg, rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.15));
+  border-radius: 10px;
 }
 
 /* ── Month view ──────────────────────────────────────── */
@@ -830,6 +850,7 @@
   color: var(--text-primary);
   line-height: 1.3;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -1101,6 +1122,7 @@
   font-size: 11px;
   color: var(--text-muted);
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

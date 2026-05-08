@@ -11,6 +11,7 @@ import CreatePostModal from '../../components/CreatePostModal'
 import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
+import NotificationBell from '../../components/NotificationBell'
 import WorkspaceSelector from '../../components/WorkspaceSelector'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
@@ -133,6 +134,7 @@ export default function AppLayout() {
 
       {/* Main content */}
       <main className={styles.main}>
+        <NotificationBell />
         <Outlet />
       </main>
 

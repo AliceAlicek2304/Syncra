@@ -1,50 +1,100 @@
+import { useMemo, useState } from 'react'
+import type { HeatmapSlotDto } from '../api/analytics'
 import styles from './Heatmap.module.css'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const HOURS = ['12am', '3am', '6am', '9am', '12pm', '3pm', '6pm', '9pm']
+const TICKS = [0, 3, 6, 9, 12, 15, 18, 21]
 
-// Mock intensity data (0 to 1)
-const HEAT_DATA = [
-  [0.05, 0.02, 0.01, 0.15, 0.45, 0.55, 0.85, 0.65], // Mon
-  [0.08, 0.03, 0.02, 0.20, 0.50, 0.60, 0.90, 0.70], // Tue
-  [0.06, 0.02, 0.05, 0.25, 0.55, 0.55, 0.80, 0.60], // Wed
-  [0.10, 0.04, 0.03, 0.30, 0.60, 0.85, 1.00, 0.75], // Thu (Peak)
-  [0.15, 0.05, 0.08, 0.35, 0.65, 0.80, 0.95, 0.85], // Fri
-  [0.20, 0.10, 0.15, 0.25, 0.70, 0.75, 0.85, 0.90], // Sat
-  [0.18, 0.08, 0.10, 0.20, 0.55, 0.65, 0.75, 0.65], // Sun
-]
+interface HeatmapProps {
+  slots?: HeatmapSlotDto[]
+}
 
-export default function Heatmap() {
+interface HoverCell {
+  day: number
+  hour: number
+  score: number
+}
+
+const toLocalSlot = (dayOfWeek: number, hourUtc: number) => {
+  const utcDate = new Date(Date.UTC(2020, 0, 6 + dayOfWeek, hourUtc, 0, 0, 0))
+  const localDay = (utcDate.getDay() + 6) % 7
+  const localHour = utcDate.getHours()
+
+  return { localDay, localHour }
+}
+
+const formatHour = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+
+export default function Heatmap({ slots = [] }: HeatmapProps) {
+  const [hoveredCell, setHoveredCell] = useState<HoverCell | null>(null)
+
+  const matrix = useMemo(() => {
+    const grid = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0))
+
+    slots.forEach((slot) => {
+      const { localDay, localHour } = toLocalSlot(slot.dayOfWeek, slot.hour)
+      grid[localDay][localHour] += Math.max(0, slot.score)
+    })
+
+    return grid
+  }, [slots])
+
+  const maxScore = useMemo(
+    () => matrix.flat().reduce((max, score) => Math.max(max, score), 0),
+    [matrix]
+  )
+
   return (
     <div className={styles.heatmap}>
       <div className={styles.yAxis}>
-        {DAYS.map(day => <span key={day} className={styles.axisLabel}>{day}</span>)}
+        {DAYS.map((day) => (
+          <span key={day} className={styles.axisLabel}>{day}</span>
+        ))}
       </div>
+
       <div className={styles.gridContainer}>
         <div className={styles.grid}>
-          {HEAT_DATA.map((row, i) => (
-            <div key={i} className={styles.row}>
-              {row.map((val, j) => (
-                <div 
-                  key={j} 
-                  className={styles.cell} 
-                  style={{ 
-                    '--intensity': val,
-                    background: val < 0.1 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : val < 0.5 
-                        ? `rgba(239, 68, 68, ${0.4 + (val * 1.2)})` // Reddish
-                        : `rgb(255, ${100 + (val - 0.5) * 310}, 0)` // Orange to Yellow
-                  } as React.CSSProperties}
-                  title={`Activity intensity: ${Math.round(val * 100)}%`}
-                />
-              ))}
+          {matrix.map((row, dayIndex) => (
+            <div key={DAYS[dayIndex]} className={styles.row}>
+              {row.map((score, hour) => {
+                const intensity = maxScore > 0 ? Math.min(1, Math.max(0, score / maxScore)) : 0
+                const background =
+                  intensity <= 0
+                    ? 'rgba(255,255,255,0.03)'
+                    : `rgba(139, 92, 246, ${0.12 + intensity * 0.58})`
+
+                return (
+                  <button
+                    key={`${dayIndex}-${hour}`}
+                    type="button"
+                    className={styles.cell}
+                    style={{
+                      background,
+                      boxShadow: intensity >= 0.75 ? '0 0 0 1px var(--border-glow)' : 'none',
+                    }}
+                    onMouseEnter={() => setHoveredCell({ day: dayIndex, hour, score })}
+                    onMouseLeave={() => setHoveredCell(null)}
+                    onFocus={() => setHoveredCell({ day: dayIndex, hour, score })}
+                    onBlur={() => setHoveredCell(null)}
+                    aria-label={`${DAYS[dayIndex]}, ${formatHour(hour)} — ${score} posts published`}
+                  />
+                )
+              })}
             </div>
           ))}
         </div>
+
         <div className={styles.xAxis}>
-          {HOURS.map(hour => <span key={hour} className={styles.axisLabel}>{hour}</span>)}
+          {TICKS.map((hour) => (
+            <span key={hour} className={styles.axisLabel}>{formatHour(hour)}</span>
+          ))}
         </div>
+
+        {hoveredCell && (
+          <div className={styles.tooltip}>
+            {`${DAYS[hoveredCell.day]}, ${formatHour(hoveredCell.hour)} — ${hoveredCell.score} posts published`}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -36,6 +36,65 @@
   border-radius: 100px;
 }
 
+.presetWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.presetBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-glass);
+  background: rgba(255,255,255,0.05);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.presetDropdown {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  z-index: 5;
+}
+
+.presetOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.presetOption:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border-glass);
+}
+
+.rangeLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .metricsRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<Media> Media => Set<Media>();
     public DbSet<Idea> Ideas => Set<Idea>();
     public DbSet<Group> Groups => Set<Group>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

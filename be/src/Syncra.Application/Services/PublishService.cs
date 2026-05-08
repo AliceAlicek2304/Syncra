@@ -15,17 +15,23 @@ public sealed class PublishService : IPublishService
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublishAdapterRegistry _publishAdapterRegistry;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationDispatcher _notificationDispatcher;
 
     public PublishService(
         IPostRepository postRepository,
         IIntegrationRepository integrationRepository,
         IUnitOfWork unitOfWork,
-        IPublishAdapterRegistry publishAdapterRegistry)
+        IPublishAdapterRegistry publishAdapterRegistry,
+        INotificationRepository notificationRepository,
+        INotificationDispatcher notificationDispatcher)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
         _unitOfWork = unitOfWork;
         _publishAdapterRegistry = publishAdapterRegistry;
+        _notificationRepository = notificationRepository;
+        _notificationDispatcher = notificationDispatcher;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -153,7 +159,19 @@ public sealed class PublishService : IPublishService
                 rawMetadata);
 
             await _postRepository.UpdateAsync(post);
+            
+            var successNotification = new Notification
+            {
+                WorkspaceId = workspaceId,
+                Type = "publish.success",
+                Title = "Post published",
+                Body = "Post published successfully.",
+                CreatedAtUtc = utcNow
+            };
+            await _notificationRepository.AddAsync(successNotification, cancellationToken);
+            
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationDispatcher.DispatchAsync(successNotification, cancellationToken);
 
             return new PublishResultDto(
                 Success: true,
@@ -172,7 +190,19 @@ public sealed class PublishService : IPublishService
             rawMetadata);
 
         await _postRepository.UpdateAsync(post);
+        
+        var failureNotification = new Notification
+        {
+            WorkspaceId = workspaceId,
+            Type = "publish.failure",
+            Title = "Publish failed",
+            Body = "Post failed to publish. Check details and try again.",
+            CreatedAtUtc = utcNow
+        };
+        await _notificationRepository.AddAsync(failureNotification, cancellationToken);
+        
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _notificationDispatcher.DispatchAsync(failureNotification, cancellationToken);
 
         return new PublishResultDto(
             Success: false,
