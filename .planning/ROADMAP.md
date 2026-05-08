@@ -27,11 +27,12 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Media API client & backend integration
 - [x] 09-02-PLAN.md — useR2Upload Hook — Direct-to-R2 Upload
-- [x] 09-03-PLAN.md — AI Idea Generator Backend Connection
-- [ ] 09-04-PLAN.md — Multi-platform Editor Persistence
-- [ ] 09-05-PLAN.md — Media Library Gallery Component
-- [ ] 09-06-PLAN.md — Post Scheduling UI Integration
-- [ ] 09-07-PLAN.md — Phase 9 E2E Verification
+- [x] 09-03-PLAN.md — Ideas Board Backend Integration
+- [x] 09-04-PLAN.md — AI Idea Generator — Real API Integration
+- [x] 09-05-PLAN.md — Multi-platform Editor — Auto-save & Backend Persistence
+- [x] 09-06-PLAN.md — Media Library Page
+- [x] 09-07-PLAN.md — Phase 9 E2E Verification
+
 
 ### Phase 10: Scheduling & Analytics
 - [ ] Connect Calendar and Heatmap to Scheduling API
