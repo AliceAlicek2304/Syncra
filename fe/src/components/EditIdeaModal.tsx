@@ -273,7 +273,13 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
 
     // ── Render ────────────────────────────────────────────────────────────
     return (
-        <div className={styles.backdrop} onMouseDown={e => { if (e.target !== e.currentTarget) return; if (editingId) { setEditingId(null); return } onClose() }}>
+        <motion.div
+            className={styles.backdrop}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={e => { if (e.target !== e.currentTarget) return; if (editingId) { setEditingId(null); return } onClose() }}
+        >
             <motion.div
                 className={styles.dialog}
                 initial={{ opacity: 0, scale: 0.96 }}

@@ -84,7 +84,13 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={styles.overlay} onClick={() => setIsOpen(false)}>
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setIsOpen(false)}
+        >
           <motion.div
             className={styles.container}
             initial={{ opacity: 0, scale: 0.96 }}
@@ -149,7 +155,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
               <span><kbd>esc</kbd> to close</span>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   )

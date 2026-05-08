@@ -93,8 +93,11 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
   return (
     <AnimatePresence>
       {isOpen && post && (
-        <div
+        <motion.div
           className={styles.backdrop}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
         >
           <motion.div
@@ -232,7 +235,7 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
               <button className={styles.saveBtn} onClick={handleSave}>Save Changes</button>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   )

@@ -15,8 +15,11 @@ export default function CreatePostModal(props: CreatePostModalProps) {
   return (
     <AnimatePresence>
       {props.isOpen && (
-    <div
+    <motion.div
       className={styles.backdrop}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       onMouseDown={e => {
         if (e.target !== e.currentTarget) return
         if (state.editingId) {
@@ -183,7 +186,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
           <RightPanel state={state} refs={hookData.refs} actions={actions} />
         </div>
       </motion.div>
-    </div>
+    </motion.div>
       )}
     </AnimatePresence>
   )

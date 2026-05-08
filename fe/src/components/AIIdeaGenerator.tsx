@@ -219,8 +219,20 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
     }
 
     return (
-        <div className={styles.overlay}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+        <motion.div
+            className={styles.overlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
+            <motion.div
+                className={styles.modal}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className={styles.modalHeader}>
                     <div className={styles.modalTitle}>
@@ -485,7 +497,7 @@ export default function AIIdeaGenerator({ onSelectIdea, onClose, workspaceId, pr
                         </>
                     )}
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     )
 }

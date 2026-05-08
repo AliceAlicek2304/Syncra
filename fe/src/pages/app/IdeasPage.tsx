@@ -317,8 +317,22 @@ function QuickAddModal({ groupId, onAdd, onClose }: QuickAddProps) {
         if (title.trim()) { onAdd(groupId, title.trim()); onClose() }
     }
     return (
-        <div className={styles.editOverlay} onClick={onClose}>
-            <div className={styles.editModal} onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <motion.div
+            className={styles.editOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+        >
+            <motion.div
+                className={styles.editModal}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={e => e.stopPropagation()}
+                style={{ maxWidth: 420 }}
+            >
                 <div className={styles.editModalHeader}>
                     <h3 className={styles.editModalTitle}>New Idea</h3>
                     <button className={styles.closeBtn} onClick={onClose}><X size={16} /></button>
@@ -340,8 +354,8 @@ function QuickAddModal({ groupId, onAdd, onClose }: QuickAddProps) {
                     <button className="btn-secondary" onClick={onClose} style={{ fontSize: 13 }}>Cancel</button>
                     <button className="btn-primary" onClick={handleAdd} disabled={!title.trim()}>Add Idea</button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     )
 }
 
@@ -624,33 +638,39 @@ export default function IdeasPage() {
             </DndContext>
 
             {/* AI Generator Modal */}
-            {showAIModal && (
-                <AIIdeaGenerator
-                    workspaceId={workspaceId}
-                    onSelectIdea={handleSelectAIIdea}
-                    onClose={() => setShowAIModal(false)}
-                />
-            )}
+            <AnimatePresence>
+                {showAIModal && (
+                    <AIIdeaGenerator
+                        workspaceId={workspaceId}
+                        onSelectIdea={handleSelectAIIdea}
+                        onClose={() => setShowAIModal(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Edit Idea Modal */}
-            {editingIdea && (
-                <EditIdeaModal
-                    idea={editingIdea}
-                    groups={groups}
-                    onSave={saveIdea}
-                    onDelete={deleteIdea}
-                    onClose={() => setEditingIdea(null)}
-                />
-            )}
+            <AnimatePresence>
+                {editingIdea && (
+                    <EditIdeaModal
+                        idea={editingIdea}
+                        groups={groups}
+                        onSave={saveIdea}
+                        onDelete={deleteIdea}
+                        onClose={() => setEditingIdea(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Quick Add Modal */}
-            {quickAddGroupId && (
-                <QuickAddModal
-                    groupId={quickAddGroupId}
-                    onAdd={addIdea}
-                    onClose={() => setQuickAddGroupId(null)}
-                />
-            )}
+            <AnimatePresence>
+                {quickAddGroupId && (
+                    <QuickAddModal
+                        groupId={quickAddGroupId}
+                        onAdd={addIdea}
+                        onClose={() => setQuickAddGroupId(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     )
 }
