@@ -17,9 +17,9 @@ progress:
 
 ## Metadata
 
-- **Current Phase:** 12
-- **Status:** Shipped — PR #19
-- **Last Updated:** 2026-05-12 11:55 UTC
+- **Current Phase:** 13
+- **Status:** Context gathered — Ready for planning
+- **Last Updated:** 2026-05-12 12:25 UTC
 
 ## Project Reference
 
@@ -45,7 +45,8 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 - [x] Redis Infrastructure (12-03)
 - [x] Cache Integration (12-04)
 - [x] Verification & Testing (12-05) — **UAT Complete 2026-05-12**
-- [ ] Phase 13 Advanced Analytics (Upcoming)
+- [x] Phase 13 Context gathered (2026-05-12)
+- [ ] Phase 13 Advanced Analytics & Reporting (Upcoming)
 
 ## Decisions
 
@@ -55,6 +56,10 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 - **Framer Motion Animations (D-12)**: High-fidelity fluid transitions and micro-interactions for "Pro Max" UI.
 - **Skeleton Loader Shimmer (D-13)**: Improved perceived performance during data fetching.
 - **Error Boundary Isolation (D-14)**: Prevented full-page crashes for non-critical widget errors.
+- **CSV Export Only (D-15)**: Simple CSV format for analytics exports.
+- **Presets + Custom Date Range (D-16)**: Quick buttons (7d, 30d, 90d, YTD) plus calendar picker.
+- **Aggregated Platform Data (D-17)**: Combined totals across all platforms in exports.
+- **Full Analytics Export Scope (D-18)**: Include summary + heatmap + per-post data.
 
 ## Known Blockers
 
