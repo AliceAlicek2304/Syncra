@@ -18,8 +18,8 @@ progress:
 ## Metadata
 
 - **Current Phase:** 12
-- **Status:** Complete
-- **Last Updated:** 2026-05-12 10:40 UTC
+- **Status:** Shipped — PR #19
+- **Last Updated:** 2026-05-12 11:55 UTC
 
 ## Project Reference
 
