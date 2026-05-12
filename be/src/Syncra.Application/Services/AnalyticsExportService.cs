@@ -32,27 +32,24 @@ public sealed class AnalyticsExportService : IAnalyticsExportService
         var days = (int)Math.Ceiling((endUtc - startUtc).TotalDays);
         if (days < 1) days = 1;
 
-        var summaryTask = _analyticsService.GetSummaryAsync(workspaceId, days, cancellationToken);
-        var heatmapTask = _analyticsService.GetHeatmapAsync(workspaceId, days, cancellationToken);
-        var postsTask = _postRepository.GetPublishedPostsForExportAsync(workspaceId, startUtc, endUtc, cancellationToken);
-
-        await Task.WhenAll(summaryTask, heatmapTask, postsTask);
-
-        if (summaryTask.Result.IsFailure)
+        var summaryResult = await _analyticsService.GetSummaryAsync(workspaceId, days, cancellationToken);
+        if (summaryResult.IsFailure)
         {
-            _logger.LogError("Failed to fetch analytics summary: {Error}", summaryTask.Result.Error);
-            return Result.Failure<byte[]>(summaryTask.Result.Error!);
+            _logger.LogError("Failed to fetch analytics summary: {Error}", summaryResult.Error);
+            return Result.Failure<byte[]>(summaryResult.Error!);
         }
 
-        if (heatmapTask.Result.IsFailure)
+        var heatmapResult = await _analyticsService.GetHeatmapAsync(workspaceId, days, cancellationToken);
+        if (heatmapResult.IsFailure)
         {
-            _logger.LogError("Failed to fetch heatmap: {Error}", heatmapTask.Result.Error);
-            return Result.Failure<byte[]>(heatmapTask.Result.Error!);
+            _logger.LogError("Failed to fetch heatmap: {Error}", heatmapResult.Error);
+            return Result.Failure<byte[]>(heatmapResult.Error!);
         }
 
-        var summary = summaryTask.Result.Value;
-        var heatmap = heatmapTask.Result.Value;
-        var posts = postsTask.Result;
+        var posts = await _postRepository.GetPublishedPostsForExportAsync(workspaceId, startUtc, endUtc, cancellationToken);
+
+        var summary = summaryResult.Value;
+        var heatmap = heatmapResult.Value;
 
         var sb = new StringBuilder();
         sb.AppendLine("# Analytics Export - Syncra.NET");
