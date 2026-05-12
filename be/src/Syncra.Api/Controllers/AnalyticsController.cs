@@ -83,4 +83,22 @@ public class AnalyticsController : ControllerBase
             cancellationToken);
         return result.ToActionResult();
     }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportAnalytics(
+        Guid workspaceId,
+        [FromQuery] int? days,
+        [FromQuery] DateTime? start,
+        [FromQuery] DateTime? end,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetAnalyticsExportQuery(workspaceId, days, start, end);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+            return result.ToActionResult();
+
+        var fileName = $"analytics-export-{workspaceId:N}-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        return File(result.Value, "text/csv", fileName);
+    }
 }

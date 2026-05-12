@@ -260,4 +260,66 @@ public class AnalyticsControllerTests : IClassFixture<WebApplicationFactory<Prog
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("Failed to load heatmap", content);
     }
+
+    [Fact]
+    public async Task ExportAnalytics_WithDays_ReturnsCsvFile()
+    {
+        var workspaceId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        var csvBytes = "workspace,date,metric,value\n"u8.ToArray();
+        _mediatorMock.Setup(m => m.Send(
+            It.Is<GetAnalyticsExportQuery>(q => q.WorkspaceId == workspaceId && q.Days == 30),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<byte[]>.Success(csvBytes));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/export?days=30");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(csvBytes, body);
+        Assert.Contains("attachment", response.Content.Headers.ContentDisposition?.ToString() ?? "");
+    }
+
+    [Fact]
+    public async Task ExportAnalytics_WithCustomDates_ReturnsCsvFile()
+    {
+        var workspaceId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        _mediatorMock.Setup(m => m.Send(
+            It.Is<GetAnalyticsExportQuery>(q => q.WorkspaceId == workspaceId && q.Days == null && q.StartUtc != null && q.EndUtc != null),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<byte[]>.Success(Array.Empty<byte>()));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/export?start=2026-01-01&end=2026-03-31");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task ExportAnalytics_Failure_ReturnsBadRequest()
+    {
+        var workspaceId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        _mediatorMock.Setup(m => m.Send(
+            It.IsAny<GetAnalyticsExportQuery>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<byte[]>.Failure("Export failed"));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/export?days=30");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Export failed", content);
+    }
 }
