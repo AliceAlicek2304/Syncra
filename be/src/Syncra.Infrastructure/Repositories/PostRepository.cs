@@ -126,4 +126,31 @@ public class PostRepository : Repository<Post>, IPostRepository
                 p.PublishedAtUtc))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Syncra.Domain.Models.Analytics.PostExportData>> GetPublishedPostsForExportAsync(
+        Guid workspaceId,
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(p => p.Integration)
+            .Where(p => p.WorkspaceId == workspaceId
+                     && p.Status == PostStatus.Published
+                     && p.PublishedAtUtc.HasValue
+                     && p.PublishedAtUtc.Value >= startUtc
+                     && p.PublishedAtUtc.Value <= endUtc)
+            .OrderByDescending(p => p.PublishedAtUtc)
+            .Select(p => new Syncra.Domain.Models.Analytics.PostExportData(
+                p.Id,
+                p.Title.Value.Substring(0, Math.Min(p.Title.Value.Length, 100)),
+                p.Content.Value != null
+                    ? p.Content.Value.Substring(0, Math.Min(p.Content.Value.Length, 150))
+                    : null,
+                p.PublishedAtUtc!.Value,
+                p.Integration != null ? p.Integration.Platform : "unknown",
+                p.Status.ToString()))
+            .ToListAsync(cancellationToken);
+    }
 }

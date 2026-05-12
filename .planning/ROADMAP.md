@@ -89,4 +89,7 @@ Plans:
 - [x] 12-03-PLAN.md — AnalyticsCacheService Implementation (Redis)
 - [x] 12-04-PLAN.md — Cache Integration & Invalidation
 - [x] 12-05-PLAN.md — Verification & Benchmarking — **UAT Complete 2026-05-12**
-- [ ] Phase 13: Advanced Analytics & Reporting
+### Phase 13: Advanced Analytics & Reporting (3 plans)
+- [ ] 13-01-PLAN.md — Export DTOs & Repository Extension
+- [ ] 13-02-PLAN.md — CSV Export Service Implementation
+- [ ] 13-03-PLAN.md — API Endpoint & Verification

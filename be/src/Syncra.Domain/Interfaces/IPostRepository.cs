@@ -30,4 +30,10 @@ public interface IPostRepository
         Guid workspaceId,
         DateTime? sinceUtc = null,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Syncra.Domain.Models.Analytics.PostExportData>> GetPublishedPostsForExportAsync(
+        Guid workspaceId,
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default);
 }
