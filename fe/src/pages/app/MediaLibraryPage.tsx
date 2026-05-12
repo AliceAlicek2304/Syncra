@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ErrorBoundary } from 'react-error-boundary'
 import { Upload, FileText, Trash2, Search, Image } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useToast } from '../../context/ToastContext'
@@ -7,6 +8,7 @@ import { mediaApi } from '../../api/media'
 import type { MediaAsset } from '../../api/media'
 import { useR2Upload } from '../../hooks/useR2Upload'
 import Skeleton from '../../components/Skeleton'
+import { WidgetErrorFallback } from '../../components/WidgetErrorFallback'
 import styles from './MediaLibraryPage.module.css'
 
 type MediaType = 'all' | 'image' | 'video' | 'document'
@@ -111,7 +113,8 @@ export default function MediaLibraryPage() {
     )
   }, [workspaceId, uploadToR2, queryClient, toastError])
 
-  const isEmpty = !isLoading && assets.length === 0
+  const assetList = Array.isArray(assets) ? assets : []
+  const isEmpty = !isLoading && assetList.length === 0
 
   return (
     <div className={styles.page}>
@@ -197,16 +200,18 @@ export default function MediaLibraryPage() {
           </button>
         </div>
       ) : (
-        <div className={styles.gallery}>
-          {assets.map(asset => (
-            <MediaCard
-              key={asset.id}
-              asset={asset}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              uploadProgress={uploadProgress[asset.id]}
-            />
-          ))}
-        </div>
+        <ErrorBoundary FallbackComponent={WidgetErrorFallback}>
+          <div className={styles.gallery}>
+            {assetList.map(asset => (
+              <MediaCard
+                key={asset.id}
+                asset={asset}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                uploadProgress={uploadProgress[asset.id]}
+              />
+            ))}
+          </div>
+        </ErrorBoundary>
       )}
     </div>
   )

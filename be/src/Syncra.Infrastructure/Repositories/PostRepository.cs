@@ -104,4 +104,26 @@ public class PostRepository : Repository<Post>, IPostRepository
 
         return (result, totalCount);
     }
+
+    public async Task<IEnumerable<Syncra.Domain.Models.Analytics.AnalyticsPostData>> GetAnalyticsDataAsync(
+        Guid workspaceId,
+        DateTime? sinceUtc = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbSet
+            .AsNoTracking()
+            .Where(p => p.WorkspaceId == workspaceId);
+
+        if (sinceUtc.HasValue)
+        {
+            query = query.Where(p => p.PublishedAtUtc >= sinceUtc.Value || p.Status == PostStatus.Scheduled);
+        }
+
+        return await query
+            .Select(p => new Syncra.Domain.Models.Analytics.AnalyticsPostData(
+                p.Id,
+                p.Status,
+                p.PublishedAtUtc))
+            .ToListAsync(cancellationToken);
+    }
 }

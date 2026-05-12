@@ -84,7 +84,7 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
         accessTokenFactory: () => token || '',
       })
       .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
+      .configureLogging(LogLevel.None)
       .build()
 
     connection.on('notification.created', () => {
@@ -92,7 +92,7 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
     })
 
     void connection.start().catch(() => {
-      // no-op: polling fallback remains active via query refetch interval
+      // no-op: polling fallback remains active via query refetch interval (30s)
     })
 
     return () => {

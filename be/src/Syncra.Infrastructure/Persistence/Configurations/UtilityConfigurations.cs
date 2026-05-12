@@ -42,6 +42,7 @@ public class AuditLogConfiguration : BaseEntityConfiguration<AuditLog>
         builder.HasIndex(e => e.WorkspaceId);
         builder.HasIndex(e => e.UserId);
         builder.HasIndex(e => e.CreatedAtUtc);
+        builder.HasIndex(e => new { e.WorkspaceId, e.CreatedAtUtc });
     }
 }
 

@@ -43,10 +43,11 @@ Plans:
 - [x] 10-04-PLAN.md — Heatmap integration
 - [x] 10-05-PLAN.md — UI Refinement Gap Closure
 
-### Phase 11: "Pro Max" Polish & E2E Testing (3 plans)
+### Phase 11: "Pro Max" Polish & E2E Testing (3 plans) — COMPLETE ✓
 - [x] 11-A-PLAN.md — Framer Motion foundations
 - [x] 11-B-PLAN.md — Micro-interactions & Error Boundaries
 - [x] 11-C-PLAN.md — E2E Test Suite
+  **UAT Complete 2026-05-12**
 </details>
 
 <details>
@@ -82,5 +83,10 @@ Plans:
 
 **v1.3 Performance & Analytics Optimization** (Active)
 
-- [ ] Phase 12: Query Optimization & Caching
+### Phase 12: Query Optimization & Caching (5 plans) — COMPLETE ✓
+- [x] 12-01-PLAN.md — EF Core Migrations for Indexes
+- [x] 12-02-PLAN.md — WorkspaceAnalyticsService Refactor (Projections)
+- [x] 12-03-PLAN.md — AnalyticsCacheService Implementation (Redis)
+- [x] 12-04-PLAN.md — Cache Integration & Invalidation
+- [x] 12-05-PLAN.md — Verification & Benchmarking — **UAT Complete 2026-05-12**
 - [ ] Phase 13: Advanced Analytics & Reporting

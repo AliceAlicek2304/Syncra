@@ -17,6 +17,7 @@ public sealed class PublishService : IPublishService
     private readonly IPublishAdapterRegistry _publishAdapterRegistry;
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IAnalyticsCache _cache;
 
     public PublishService(
         IPostRepository postRepository,
@@ -24,7 +25,8 @@ public sealed class PublishService : IPublishService
         IUnitOfWork unitOfWork,
         IPublishAdapterRegistry publishAdapterRegistry,
         INotificationRepository notificationRepository,
-        INotificationDispatcher notificationDispatcher)
+        INotificationDispatcher notificationDispatcher,
+        IAnalyticsCache cache)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
@@ -32,6 +34,7 @@ public sealed class PublishService : IPublishService
         _publishAdapterRegistry = publishAdapterRegistry;
         _notificationRepository = notificationRepository;
         _notificationDispatcher = notificationDispatcher;
+        _cache = cache;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -172,6 +175,11 @@ public sealed class PublishService : IPublishService
             
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await _notificationDispatcher.DispatchAsync(successNotification, cancellationToken);
+
+            // Invalidate analytics cache for this workspace (D-23)
+            // Using fire-and-forget style (not awaited for critical path speed)
+            _ = _cache.RemoveAsync($"analytics:summary:{workspaceId}:30", cancellationToken);
+            _ = _cache.RemoveAsync($"analytics:heatmap:{workspaceId}:90", cancellationToken);
 
             return new PublishResultDto(
                 Success: true,

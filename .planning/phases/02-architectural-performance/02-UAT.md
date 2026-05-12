@@ -64,22 +64,11 @@ result: pass
 ## Summary
 
 total: 6
-passed: 5
-issues: 1
+passed: 6
+issues: 0
 pending: 0
 skipped: 0
 
 ## Gaps
 
-- truth: "AnalyticsOptions configuration is present and appsettings files contain Analytics.CacheTtlSeconds values (3600 prod, 1 dev)."
-  status: failed
-  reason: "User reported: appsetting.json is missing"
-  root_cause: "Filename mismatch in manual verification (appsetting.json vs appsettings.json). Configuration files are present with expected values."
-  severity: major
-  test: 4
-  artifacts:
-    - "src/Syncra.Api/appsettings.json"
-    - "src/Syncra.Api/appsettings.Development.json"
-    - "src/Syncra.Application/Options/AnalyticsOptions.cs"
-  missing:
-    - "No code artifact missing; verification referenced incorrect singular filename."
+[none - verification error resolved: config files exist, user misread filename]

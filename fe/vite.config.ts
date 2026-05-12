@@ -10,7 +10,8 @@ export default defineConfig({
       '/Syncra/api': {
         target: 'http://localhost:5260',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/Syncra\/api/, '/api')
+        rewrite: (path) => path.replace(/^\/Syncra\/api/, '/api'),
+        ws: true,
       }
     }
   }

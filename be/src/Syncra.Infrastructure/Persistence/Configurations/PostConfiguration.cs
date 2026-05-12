@@ -49,6 +49,8 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasIndex(e => new { e.WorkspaceId, e.Status, e.PublishedAtUtc });
+
         builder.HasOne(e => e.Integration)
             .WithMany(i => i.Posts)
             .HasForeignKey(e => e.IntegrationId)

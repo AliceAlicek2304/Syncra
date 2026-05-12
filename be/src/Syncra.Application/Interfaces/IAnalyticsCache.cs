@@ -1,10 +1,9 @@
 namespace Syncra.Application.Interfaces;
 
-/// <summary>
-/// Thin cache abstraction for analytics — keeps Application layer free of infrastructure dependencies.
-/// </summary>
 public interface IAnalyticsCache
 {
-    Task<string?> GetAsync(string key, CancellationToken cancellationToken = default);
-    Task SetAsync(string key, string value, TimeSpan ttl, CancellationToken cancellationToken = default);
+    Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
+    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
+    Task RemoveAsync(string key, CancellationToken cancellationToken = default);
+    Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default);
 }
