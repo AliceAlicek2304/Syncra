@@ -141,3 +141,22 @@ be/src/Syncra.Api/wwwroot/temp/
 # Stripe CLI binary
 be/stripe
 be/stripe.tar.gz
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+.bg-shell/
+*.swo
+*~
+*.code-workspace
+.env.*
+!.env.example
+.next/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+vendor/
+.cache/
+tmp/
