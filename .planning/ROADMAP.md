@@ -2,14 +2,33 @@
 
 ## Milestones
 
-- [x] **v1.2 Update the FE** – Phases 8-11 (Shipped 2026-05-08)
-- ? **v1.1 Reliable Payments & Provider Abstraction** – Phases 4-7 (shipped 2026-05-01) – [Archive](milestones/v1.1-ROADMAP.md)
-- ? **v1.0 Stability** – Phases 1-3 (shipped 2026-04-27) – [Archive](milestones/v1.0-ROADMAP.md)
+- ✅ **v1.3 Performance & Analytics Optimization** – Phases 12-13 (Shipped 2026-05-13) – [Archive](milestones/v1.3-ROADMAP.md)
+- ✅ **v1.2 Update the FE** – Phases 8-11 (Shipped 2026-05-08)
+- ✅ **v1.1 Reliable Payments & Provider Abstraction** – Phases 4-7 (shipped 2026-05-01) – [Archive](milestones/v1.1-ROADMAP.md)
+- ✅ **v1.0 Stability** – Phases 1-3 (shipped 2026-04-27) – [Archive](milestones/v1.0-ROADMAP.md)
 
 ## Phases
 
 <details open>
-<summary>[x] v1.2 Update the FE (Phases 8-11) – COMPLETE</summary>
+<summary>✅ v1.3 Performance & Analytics Optimization (Phases 12-13) – SHIPPED 2026-05-13</summary>
+
+### Phase 12: Query Optimization & Caching (5 plans) — COMPLETE ✓
+- [x] 12-01-PLAN.md — EF Core Migrations for Indexes
+- [x] 12-02-PLAN.md — WorkspaceAnalyticsService Refactor (Projections)
+- [x] 12-03-PLAN.md — AnalyticsCacheService Implementation (Redis)
+- [x] 12-04-PLAN.md — Cache Integration & Invalidation
+- [x] 12-05-PLAN.md — Verification & Benchmarking — **UAT Complete 2026-05-12**
+
+### Phase 13: Advanced Analytics & Reporting (3 plans + 1 fix) — COMPLETE ✓
+- [x] 13-01-PLAN.md — Export DTOs & Repository Extension
+- [x] 13-02-PLAN.md — CSV Export Service Implementation
+- [x] 13-03-PLAN.md — API Endpoint & Verification
+- [x] 13-FIX-01-PLAN.md — Fix EF Core concurrency crash in CSV export
+  **UAT Complete 2026-05-12**
+</details>
+
+<details>
+<summary>✅ v1.2 Update the FE (Phases 8-11) – SHIPPED 2026-05-08</summary>
 
 ### Phase 8: Core API Integration & Auth (7 plans)
 
@@ -33,7 +52,6 @@ Plans:
 - [x] 09-06-PLAN.md — Media Library Page
 - [x] 09-07-PLAN.md — Phase 9 E2E Verification
 
-
 ### Phase 10: Scheduling & Analytics (5 plans)
 
 Plans:
@@ -51,7 +69,7 @@ Plans:
 </details>
 
 <details>
-<summary>? v1.1 Reliable Payments & Provider Abstraction (Phases 4-7) – SHIPPED 2026-05-01</summary>
+<summary>✅ v1.1 Reliable Payments & Provider Abstraction (Phases 4-7) – SHIPPED 2026-05-01</summary>
 
 ### Phase 4: Payment Provider Abstraction
 - [x] Phase 4 (3/3 plans) – completed 2026-04-30 (PR #15)
@@ -66,7 +84,7 @@ Plans:
 </details>
 
 <details>
-<summary>? v1.0 Stability (Phases 1-3) – SHIPPED 2026-04-27</summary>
+<summary>✅ v1.0 Stability (Phases 1-3) – SHIPPED 2026-04-27</summary>
 
 ### Phase 1: Security & Multi-tenancy Hardening
 - [x] Phase 1 (4/4 plans) – completed 2026-04-26
@@ -81,16 +99,6 @@ Plans:
 
 ## Next Milestone
 
-**v1.3 Performance & Analytics Optimization** (Active)
+**v1.4** (Planned)
 
-### Phase 12: Query Optimization & Caching (5 plans) — COMPLETE ✓
-- [x] 12-01-PLAN.md — EF Core Migrations for Indexes
-- [x] 12-02-PLAN.md — WorkspaceAnalyticsService Refactor (Projections)
-- [x] 12-03-PLAN.md — AnalyticsCacheService Implementation (Redis)
-- [x] 12-04-PLAN.md — Cache Integration & Invalidation
-- [x] 12-05-PLAN.md — Verification & Benchmarking — **UAT Complete 2026-05-12**
-### Phase 13: Advanced Analytics & Reporting (3 plans + 1 fix)
-- [x] 13-01-PLAN.md — Export DTOs & Repository Extension
-- [x] 13-02-PLAN.md — CSV Export Service Implementation
-- [x] 13-03-PLAN.md — API Endpoint & Verification
-- [ ] 13-FIX-01-PLAN.md — Fix EF Core concurrency crash in CSV export
+*Next milestone to be defined via `/gsd-new-milestone`*

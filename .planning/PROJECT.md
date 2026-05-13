@@ -5,11 +5,12 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 
 ## Current State
 
-**Active:** v1.2 Update the FE (Completed 2026-05-08)
+**Active:** v1.3 Performance & Analytics Optimization (Completed 2026-05-13)
 
-v1.2 delivered a high-fidelity frontend UI/UX using React, fully integrated with the .NET backend API, with "Pro Max" animations and comprehensive E2E flow testing.
+v1.3 optimized analytics performance with database indexing, query projections, and Redis caching. Delivered CSV analytics export with date range presets. Resolved EF Core concurrency crash in the export pipeline.
 
 **Shipped:**
+- <details><summary>v1.3 Performance & Analytics Optimization (2026-05-13)</summary>Database indexes for analytics, query projections (no Media Include), Redis-backed cache-aside pattern with 60-min TTL, cache invalidation on publish, CSV analytics export with presets (7d/30d/90d/YTD) + custom dates, concurrency fix for EF Core in export pipeline.</details>
 - <details><summary>v1.2 Update the FE (2026-05-08)</summary>High-fidelity frontend with Framer Motion animations, robust error handling, perceived performance polish via Skeleton Loaders, and full E2E test coverage.</details>
 - <details><summary>v1.1 Reliable Payments & Provider Abstraction (2026-05-01)</summary>Delivered a robust billing engine with IPaymentProvider abstraction, Redis-backed webhook idempotency, and a complete frontend Billing UX.</details>
 - <details><summary>v1.0 Stability (2026-04-27)</summary>Hardened foundation, tenant resolution optimization, and comprehensive test coverage.</details>
@@ -27,6 +28,9 @@ v1.2 delivered a high-fidelity frontend UI/UX using React, fully integrated with
 ### Active
 
 ### Validated
+- ✓ REQ-12.1: Database Query Optimization — v1.3 (Phase 12)
+- ✓ REQ-12.2: Redis Caching Layer — v1.3 (Phase 12)
+- ✓ REQ-13.1: Advanced Analytics Reporting (CSV) — v1.3 (Phase 13)
 - ✓ v1.2 Frontend UI/UX (High Fidelity) – v1.2 (Phase 11)
 - ✓ v1.2 API Integration – v1.2 (Phase 11)
 - ✓ v1.2 E2E Flow Testing – v1.2 (Phase 11)
@@ -42,6 +46,13 @@ v1.2 delivered a high-fidelity frontend UI/UX using React, fully integrated with
 
 | Decision | Status | Outcome |
 |----------|--------|---------|
+| Composite DB Indexes for Analytics | Good | Accelerated filter queries on Posts and AuditLogs |
+| Query Projections (no Media Include) | Good | Reduced memory overhead and DB transfer size |
+| Redis-backed Cache-Aside Pattern | Good | Cached analytics return in < 50ms |
+| Cache Invalidation on Publish | Good | Analytics reflect latest data without stale caches |
+| CSV-only Export (PDF deferred) | Good | Simple implementation, bandwidth-efficient |
+| Presets + Custom Date Range | Good | Quick buttons (7d/30d/90d/YTD) plus calendar picker |
+| Sequential DbContext Access | Good | Fixed EF Core concurrency crash in export pipeline |
 | Framer Motion Animations | Good | High-fidelity fluid transitions and micro-interactions |
 | Skeleton Loader Shimmer | Good | Improved perceived performance during data fetching |
 | Error Boundary Isolation | Good | Prevented full-page crashes for non-critical widget errors |
@@ -60,4 +71,4 @@ v1.2 delivered a high-fidelity frontend UI/UX using React, fully integrated with
 - Frontend must maintain high performance and "Pro Max" UI/UX standards
 
 ---
-*Last updated: 2026-05-08 for v1.2 milestone completion*
+*Last updated: 2026-05-13 after v1.3 milestone*
