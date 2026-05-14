@@ -71,8 +71,7 @@ export default function MultiPlatformEditor({ initialContent, platforms, onClose
     if (!activePostId && workspaceId) {
       createPostMutation.mutate()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]) // only on mount
+  }, [workspaceId, activePostId, createPostMutation])
 
   // Cleanup save timer on unmount
   useEffect(() => {
