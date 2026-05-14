@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -31,6 +33,13 @@ public class IdempotencyFilter : IAsyncActionFilter
         _logger = logger;
     }
 
+    private static string ComputeRequestHash(byte[] bodyBytes)
+    {
+        using var sha256 = SHA256.Create();
+        var hash = sha256.ComputeHash(bodyBytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         // Only apply to requests that supply the header
@@ -56,6 +65,14 @@ public class IdempotencyFilter : IAsyncActionFilter
         if (context.HttpContext.Items.TryGetValue("WorkspaceId", out var wsIdObj) && wsIdObj is Guid wsId)
             workspaceId = wsId;
 
+        // ── Read request body for hash computation ──────────────────────────
+        context.HttpContext.Request.EnableBuffering();
+        using var bodyReader = new StreamReader(
+            context.HttpContext.Request.Body, Encoding.UTF8, leaveOpen: true);
+        var body = await bodyReader.ReadToEndAsync();
+        context.HttpContext.Request.Body.Position = 0;
+        var requestHash = ComputeRequestHash(Encoding.UTF8.GetBytes(body));
+
         // ── Check for existing idempotency record ────────────────────────────
         var existing = await _db.IdempotencyRecords
             .Where(r => r.Key == key && r.ExpiresAtUtc > DateTime.UtcNow)
@@ -73,6 +90,21 @@ public class IdempotencyFilter : IAsyncActionFilter
                     message = "A request with this Idempotency-Key is already being processed. Please retry later."
                 })
                 { StatusCode = 409 };
+                return;
+            }
+
+            if (existing.RequestHash != requestHash)
+            {
+                _logger.LogWarning(
+                    "Idempotency key {Key} reused with different request body. " +
+                    "Original hash: {OriginalHash}, New hash: {NewHash}",
+                    key, existing.RequestHash, requestHash);
+
+                context.Result = new ConflictObjectResult(new
+                {
+                    error = "Idempotency key reused with different request body",
+                    idempotencyKey = key
+                });
                 return;
             }
 
@@ -96,7 +128,7 @@ public class IdempotencyFilter : IAsyncActionFilter
         var record = new IdempotencyRecord
         {
             Key = key,
-            RequestHash = string.Empty,   // Simplified: not hashing body here
+            RequestHash = requestHash,
             Endpoint = path,
             Method = method,
             Status = IdempotencyStatus.Pending,
@@ -107,6 +139,10 @@ public class IdempotencyFilter : IAsyncActionFilter
 
         _db.IdempotencyRecords.Add(record);
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Created idempotency record for key {Key} on {Method} {Path} with hash {Hash}",
+            key, method, path, requestHash);
 
         // ── Execute the action ───────────────────────────────────────────────
         var executed = await next();

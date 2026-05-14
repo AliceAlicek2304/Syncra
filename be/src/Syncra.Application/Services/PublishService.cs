@@ -1,10 +1,10 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
-using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Application.Services;
@@ -18,6 +18,7 @@ public sealed class PublishService : IPublishService
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly IAnalyticsCache _cache;
+    private readonly ILogger<PublishService> _logger;
 
     public PublishService(
         IPostRepository postRepository,
@@ -26,7 +27,8 @@ public sealed class PublishService : IPublishService
         IPublishAdapterRegistry publishAdapterRegistry,
         INotificationRepository notificationRepository,
         INotificationDispatcher notificationDispatcher,
-        IAnalyticsCache cache)
+        IAnalyticsCache cache,
+        ILogger<PublishService> logger)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
@@ -35,6 +37,7 @@ public sealed class PublishService : IPublishService
         _notificationRepository = notificationRepository;
         _notificationDispatcher = notificationDispatcher;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -176,10 +179,8 @@ public sealed class PublishService : IPublishService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await _notificationDispatcher.DispatchAsync(successNotification, cancellationToken);
 
-            // Invalidate analytics cache for this workspace (D-23)
-            // Using fire-and-forget style (not awaited for critical path speed)
-            _ = _cache.RemoveAsync($"analytics:summary:{workspaceId}:30", cancellationToken);
-            _ = _cache.RemoveAsync($"analytics:heatmap:{workspaceId}:90", cancellationToken);
+            // Fire-and-forget cache invalidation with error logging (D-23)
+            _ = InvalidateAnalyticsCacheAsync(workspaceId, cancellationToken);
 
             return new PublishResultDto(
                 Success: true,
@@ -219,6 +220,33 @@ public sealed class PublishService : IPublishService
             ErrorCode: providerResult.Error?.Code,
             ErrorMessage: errorText,
             RawMetadata: rawMetadata);
+    }
+
+    private async Task InvalidateAnalyticsCacheAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cacheKeys = new[]
+            {
+                $"analytics:summary:{workspaceId}:30",
+                $"analytics:heatmap:{workspaceId}:90"
+            };
+
+            var tasks = cacheKeys.Select(key => _cache.RemoveAsync(key, cancellationToken));
+            await Task.WhenAll(tasks);
+
+            _logger.LogInformation(
+                "Invalidated analytics cache for workspace {WorkspaceId}", workspaceId);
+        }
+        catch (OperationCanceledException)
+        {
+            // Graceful cancellation — no logging needed
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to invalidate analytics cache for workspace {WorkspaceId}", workspaceId);
+        }
     }
 
     private static PublishRequest BuildPublishRequest(Guid workspaceId, Post post)
