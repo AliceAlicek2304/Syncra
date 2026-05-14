@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useCalendar } from '../../context/calendarContextBase'
-import { getMockResults } from '../../data/mockAI'
-import type { AIGenerateInput } from '../../data/mockAI'
+const getMockResults = async () => ({ ideas: [] })
 import { shortId } from '../../utils/shortId'
 import { PLATFORMS, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
@@ -528,7 +527,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const handleGenerateAI = () => {
     if (aiPrompt.trim() === '') return
     setAiIsGenerating(true)
-    const input: AIGenerateInput = { topic: aiPrompt, niche: '', audience: '', goal: '', tone: tone }
+    const input = { topic: aiPrompt, niche: '', audience: '', goal: '', tone: tone }
     setTimeout(() => {
       setAiResults(getMockResults(input).slice(0, 4))
       setAiIsGenerating(false)

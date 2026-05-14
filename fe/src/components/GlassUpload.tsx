@@ -1,10 +1,17 @@
 import { Upload, FileImage, FileVideo } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useR2Upload } from '../../hooks/useR2Upload'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { useToast } from '../../context/ToastContext'
 import styles from './GlassUpload.module.css'
 
 export default function GlassUpload() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
+  const { upload } = useR2Upload()
+  const { activeWorkspace } = useWorkspace()
+  const { success: toastSuccess, error: toastError } = useToast()
+  const workspaceId = activeWorkspace?.id
 
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => {
@@ -31,16 +38,22 @@ export default function GlassUpload() {
       e.stopPropagation()
     }
 
-    const handleDrop = (e: DragEvent) => {
+    const handleDrop = async (e: DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
       setIsDragging(false)
       setDragCounter(0)
-      
+
       const files = e.dataTransfer?.files
-      if (files && files.length > 0) {
-        console.log('Dropped files:', files)
-        alert(`Đã nhận ${files.length} file! (Tính năng upload đang được tích hợp)`)
+      if (files && files.length > 0 && workspaceId) {
+        for (const file of Array.from(files)) {
+          try {
+            await upload(file, workspaceId)
+            toastSuccess(`Uploaded ${file.name}`)
+          } catch {
+            toastError(`Failed to upload ${file.name}`)
+          }
+        }
       }
     }
 
@@ -55,7 +68,7 @@ export default function GlassUpload() {
       window.removeEventListener('dragover', handleDragOver)
       window.removeEventListener('drop', handleDrop)
     }
-  }, [dragCounter])
+    }, [dragCounter, workspaceId, upload, toastError, toastSuccess])
 
   if (!isDragging) return null
 

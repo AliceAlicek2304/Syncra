@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { TrendingUp, TrendingDown, BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check } from 'lucide-react'
+import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
@@ -7,23 +7,7 @@ import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAnalyticsSummary } from '../../hooks/useAnalyticsSummary'
 import styles from './AnalyticsPage.module.css'
 
-const PLATFORMS_DATA = [
-  { name: 'TikTok', reach: '72.4K', growth: '+34%', engagement: '9.2%', posts: 18, trend: 'up' },
-  { name: 'Instagram', reach: '31.2K', growth: '+12%', engagement: '6.8%', posts: 22, trend: 'up' },
-  { name: 'YouTube', reach: '14.8K', growth: '+8%', engagement: '5.1%', posts: 6, trend: 'up' },
-  { name: 'LinkedIn', reach: '6.3K', growth: '-3%', engagement: '4.2%', posts: 8, trend: 'down' },
-  { name: 'X', reach: '2.9K', growth: '+5%', engagement: '3.1%', posts: 12, trend: 'up' },
-  { name: 'Facebook', reach: '0.8K', growth: '-8%', engagement: '1.4%', posts: 4, trend: 'down' },
-]
-
-const INSIGHTS = [
-  { icon: '🔥', text: 'Bài dạng Reel hiệu quả hơn 2.3x so với Photo trên Instagram của bạn.' },
-  { icon: '⏰', text: 'Giờ vàng đăng bài: Thứ 3 & Thứ 5 lúc 19:00–21:00 trên TikTok.' },
-  { icon: '📈', text: 'TikTok đang tăng trưởng nhanh nhất — tập trung vào đây sẽ tối ưu ROI.' },
-  { icon: '💡', text: 'Hashtag #contentcreator & #aitools mang lại reach cao nhất tháng này.' },
-]
-
-const FALLBACK_WEEKLY_BARS = [45, 60, 38, 85, 52, 90, 68]
+const DEFAULT_BARS = [45, 60, 38, 85, 52, 90, 68]
 
 const PRESET_LABELS: Record<7 | 30 | 90, string> = {
   7: 'Last 7 days',
@@ -46,7 +30,7 @@ export default function AnalyticsPage() {
 
   const weeklyBars = useMemo(() => {
     const weeklyReach = summary?.weeklyReach ?? []
-    if (weeklyReach.length === 0) return FALLBACK_WEEKLY_BARS
+    if (weeklyReach.length === 0) return DEFAULT_BARS
 
     const maxReach = weeklyReach.reduce((max, item) => Math.max(max, item.reach), 0)
     if (maxReach <= 0) return weeklyReach.map(() => 8)
@@ -180,12 +164,11 @@ export default function AnalyticsPage() {
             <span className={styles.cardSub}>Gợi ý cải thiện</span>
           </div>
           <div className={styles.insightList}>
-            {INSIGHTS.map((ins, i) => (
-              <div key={i} className={styles.insightItem}>
-                <span className={styles.insightEmoji}>{ins.icon}</span>
-                <p className={styles.insightText}>{ins.text}</p>
-              </div>
-            ))}
+            <div className={styles.insightItem} style={{ justifyContent: 'center', padding: '1rem' }}>
+              <p className={styles.insightText} style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+                AI insights will appear here once enough data has been collected from your connected accounts.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -209,40 +192,12 @@ export default function AnalyticsPage() {
         <div className={styles.cardHeader}>
           <h2 className={styles.cardTitle}>Hiệu suất từng nền tảng</h2>
         </div>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Platform</th>
-              <th>Reach</th>
-              <th>Tăng trưởng</th>
-              <th>Engagement</th>
-              <th>Số bài</th>
-              <th>Xu hướng</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PLATFORMS_DATA.map((p) => (
-              <tr key={p.name}>
-                <td><span className={styles.platformName}>{isLoading ? <SkeletonLoader width="90px" height="14px" /> : p.name}</span></td>
-                <td className={styles.reach}>{isLoading ? <SkeletonLoader width="50px" height="14px" /> : p.reach}</td>
-                <td>
-                  <span className={styles.growth} style={{ color: !isLoading && p.growth.startsWith('+') ? '#22c55e' : '#ef4444' }}>
-                    {isLoading ? <SkeletonLoader width="45px" height="14px" /> : p.growth}
-                  </span>
-                </td>
-                <td className={styles.engagement}>{isLoading ? <SkeletonLoader width="45px" height="14px" /> : p.engagement}</td>
-                <td className={styles.posts}>{isLoading ? <SkeletonLoader width="20px" height="14px" /> : p.posts}</td>
-                <td>
-                  {!isLoading && p.trend === 'up'
-                    ? <TrendingUp size={16} color="#22c55e" />
-                    : !isLoading
-                      ? <TrendingDown size={16} color="#ef4444" />
-                      : <SkeletonLoader width="16px" height="16px" />}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <BarChart3 size={32} style={{ opacity: 0.4, marginBottom: '0.5rem' }} />
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Per-platform analytics will appear here once your accounts are connected and have published content.
+          </p>
+        </div>
       </div>
     </div>
   )

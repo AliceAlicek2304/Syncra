@@ -1,6 +1,18 @@
 import { createContext, useContext } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { RepurposePlatform, RepurposeAtom } from '../data/mockAI'
+
+export type RepurposePlatform = 'LinkedIn' | 'X' | 'Instagram' | 'Newsletter'
+export type AtomType = 'POST' | 'THREAD' | 'CAROUSEL' | 'INSIGHT' | 'TIP' | 'QUOTE'
+
+export interface RepurposeAtom {
+  id: string
+  type: AtomType
+  title?: string
+  content: string
+  platform: RepurposePlatform
+  suggestedHashtags: string[]
+  suggestedCTA?: string
+}
 
 export interface RepurposeConfig {
     sourceText: string

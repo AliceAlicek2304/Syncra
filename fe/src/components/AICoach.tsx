@@ -1,17 +1,24 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Sparkles, X, TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './AICoach.module.css'
-import { TREND_TIPS } from '../data/mockCoachTrends'
 import AIIdeaGenerator from './AIIdeaGenerator'
 import type { GeneratedIdea as ApiGeneratedIdea } from '../api/ai'
 import { useCreatePostModal } from '../context/createPostModalContext'
 import { useWorkspace } from '../context/WorkspaceContext'
-import type { ContentIdea } from '../data/mockAI'
+
+const FALLBACK_TIPS = [{
+  id: 'fallback-1',
+  title: 'AI Coach Coming Soon',
+  text: 'Your personalized content trends and recommendations will appear here once our AI has analyzed your posting patterns.',
+  category: 'trend' as const,
+  action: 'Generate Ideas',
+  ideas: [] as ApiGeneratedIdea[]
+}]
 
 export default function AICoach() {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const [generatorIdeas, setGeneratorIdeas] = useState<ContentIdea[] | null>(null)
+  const [generatorIdeas, setGeneratorIdeas] = useState<ApiGeneratedIdea[] | null>(null)
   
   const { openCreatePost } = useCreatePostModal()
   const { activeWorkspace } = useWorkspace()
@@ -27,11 +34,13 @@ export default function AICoach() {
     isAnimatingRef.current = isAnimating
   }, [isAnimating])
 
+  const displayTips = FALLBACK_TIPS
+
   // Add cloned slides at boundaries for infinite loop
   const slides = useMemo(() => {
-    if (!TREND_TIPS || TREND_TIPS.length === 0) return []
-    return [TREND_TIPS[TREND_TIPS.length - 1], ...TREND_TIPS, TREND_TIPS[0]]
-  }, [])
+    if (!displayTips || displayTips.length === 0) return []
+    return [displayTips[displayTips.length - 1], ...displayTips, displayTips[0]]
+  }, [displayTips])
 
   useEffect(() => {
     // Simulate a notification popping up after 3 seconds
@@ -46,7 +55,7 @@ export default function AICoach() {
     setShowNotification(false)
   }
 
-  const handleActionClick = (ideas: ContentIdea[]) => {
+  const handleActionClick = (ideas: ApiGeneratedIdea[]) => {
     setGeneratorIdeas(ideas)
     setIsOpen(false) // Close coach panel, then open generator modal
   }
@@ -91,8 +100,8 @@ export default function AICoach() {
   }, [isOpen, handlePrev, handleNext])
 
   // Calculate index for the pagination display
-  const realIndex = slides.length > 0 ? (slideIndex - 1 + TREND_TIPS.length) % TREND_TIPS.length : 0
-  const notificationTip = TREND_TIPS[0]
+  const realIndex = slides.length > 0 ? (slideIndex - 1 + displayTips.length) % displayTips.length : 0
+  const notificationTip = displayTips[0]
 
   return (
     <>
@@ -188,7 +197,7 @@ export default function AICoach() {
               {/* Pagination indicator only */}
               <div className={styles.paginationWrap}>
                 <span className={styles.pagination}>
-                  {realIndex + 1} / {TREND_TIPS.length}
+                  {realIndex + 1} / {displayTips.length}
                 </span>
               </div>
 
@@ -207,7 +216,7 @@ export default function AICoach() {
       {generatorIdeas && (
         <AIIdeaGenerator
           workspaceId={workspaceId}
-          presetResults={generatorIdeas as unknown as ApiGeneratedIdea[]}
+          presetResults={generatorIdeas}
           onClose={() => setGeneratorIdeas(null)}
           onSelectIdea={(idea) => {
             openCreatePost({ initialContent: idea.description, source: 'coach' })
