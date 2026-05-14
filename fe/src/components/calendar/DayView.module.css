@@ -1,0 +1,100 @@
+.dayViewCard {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 16px;
+  z-index: 2;
+  pointer-events: none;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  background: linear-gradient(180deg, rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.15));
+  border-radius: 10px;
+}
+
+.cellDragOver {
+  background: rgba(139,92,246,0.2) !important;
+  border-color: rgba(139,92,246,0.6) !important;
+  border-style: dashed !important;
+}
+
+.dayViewTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.07));
+}
+
+.dayBody {
+  overflow-y: auto;
+  max-height: calc(100vh - 320px);
+  position: relative;
+}
+
+.dayRow {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.04));
+  min-height: 60px;
+}
+
+.dayTimeLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 12px 0;
+  text-align: right;
+  border-right: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  align-self: flex-start;
+}
+
+.daySlot {
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  min-height: 60px;
+  position: relative;
+}
+
+.daySlot:focus {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: -2px;
+}
+
+.daySlot:hover { background: rgba(255,255,255,0.025); }
+
+.daySlotCurrentHour {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.currentTimeLine {
+  position: absolute;
+  left: 64px;
+  right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.currentTimeDot {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}

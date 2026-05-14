@@ -1,0 +1,100 @@
+.visualCard {
+  display: flex;
+  flex-direction: row;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: grab;
+  transition: transform 0.15s, box-shadow 0.15s;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-glass, rgba(255,255,255,0.08));
+  max-width: 320px;
+  width: 100%;
+  min-height: 56px;
+  height: auto;
+}
+
+.visualCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.visualCard:active { cursor: grabbing; }
+
+.postPillDragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.cardThumbnail {
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  background: rgba(0,0,0,0.2);
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardPlaceholderBroken {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.3));
+}
+
+.cardContent {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cardTime {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cardTitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardPlatform {
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.platformBadge {
+  display: inline-flex;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+}
