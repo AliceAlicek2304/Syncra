@@ -20,6 +20,33 @@
 
 ---
 
+## v1.3 — Performance & Analytics Optimization
+
+**Shipped:** 2026-05-13
+
+**Scope:** 2 phases (12-13), 9 plans, all complete
+
+**Key Accomplishments:**
+
+1. Created composite DB indexes on `Posts(WorkspaceId, Status, PublishedAtUtc)` and `AuditLogs(WorkspaceId, CreatedAtUtc)` for analytics acceleration
+2. Refactored analytics queries to use `.Select()` projections with `.AsNoTracking()`, eliminating unnecessary `Include(Media)` overhead
+3. Implemented `AnalyticsCacheService` with Redis-backed cache-aside pattern (60-min TTL), cache invalidation on publish
+4. Built 3-section CSV export (Summary, Heatmap, Posts) with date presets (7d/30d/90d/YTD) and custom date range
+5. Fixed EF Core concurrency crash (`InvalidOperationException`) in CSV export by replacing `Task.WhenAll` with sequential `await`
+6. Achieved 19/19 analytics tests passing, UAT complete for both phases
+
+**Stats:**
+- Commits: 8 (feature) + 2 (archive)
+- Files changed: 53
+- LOC: +3,010 / -565
+- Duration: 2026-05-12 → 2026-05-13 (~1.5 days)
+
+**Known Gaps:** None
+
+**Deferred Items:** None
+
+---
+
 ## v1.0 — Stability
 
 **Shipped:** 2026-04-27
