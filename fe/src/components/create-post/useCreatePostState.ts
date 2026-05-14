@@ -1,18 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useCalendar } from '../../context/calendarContextBase'
-const getMockResults = async () => ({ ideas: [] })
+import { useCreatePostMedia } from '../../hooks/useCreatePostMedia'
+import { useCreatePostAI } from '../../hooks/useCreatePostAI'
 import { shortId } from '../../utils/shortId'
-import { PLATFORMS, type Platform, type Tone, type MediaFile, type PlatformCaptionMap, type CreatePostModalProps } from './types'
+import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
-export function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
+function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
   const clean = base.trim()
   if (!clean) return ''
-
-  if (clean.length > maxChars) {
-    return clean.substring(0, maxChars - 3) + '...'
-  }
-
+  if (clean.length > maxChars) return clean.substring(0, maxChars - 3) + '...'
   return clean
 }
 
@@ -23,9 +20,11 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const isEditMode = !!editPost
 
+  const mediaHook = useCreatePostMedia()
+  const aiHook = useCreatePostAI()
+
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
   const [activeTab, setActiveTab] = useState<Platform>('TikTok')
-
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
     TikTok: '', Instagram: '', Facebook: '', X: ''
   })
@@ -33,12 +32,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
     TikTok: false, Instagram: false, Facebook: false, X: false
   })
 
-  const [showAI, setShowAI] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
   const tone: Tone = 'default'
   const [showEmoji, setShowEmoji] = useState(false)
-  const [media, setMedia] = useState<MediaFile[]>([])
-  const [dragOver, setDragOver] = useState(false)
   const [createAnother, setCreateAnother] = useState(false)
   const [scheduleMode, setScheduleMode] = useState(false)
   const [scheduleTime, setScheduleTime] = useState('')
@@ -49,29 +45,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitRef = useRef(false)
 
-  const [dragId, setDragId] = useState<string | null>(null)
-  const [dragOverId, setDragOverId] = useState<string | null>(null)
-
-  const [aiPrompt, setAiPrompt] = useState('')
-  const [aiResults, setAiResults] = useState<Array<{ id: string; type: string; caption: string }>>([])
-  const [aiIsGenerating, setAiIsGenerating] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const replaceInputRef = useRef<HTMLInputElement>(null)
-  const replaceTargetIdRef = useRef<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiRef = useRef<HTMLDivElement>(null)
 
-  // Using useEffect to initialize state here triggers a warning because it's better to do this
-  // without useEffect or at least not synchronously setting state inside.
-  // We'll wrap it in a setTimeout to fix the synchronous warning
   useEffect(() => {
     if (!isOpen) {
       didInitRef.current = false
       initialSnapshotRef.current = null
-      // Use requestAnimationFrame or setTimeout to delay state update outside synchronous flow
-      // or check if it actually needs an update
       if (showUnsavedDialog) {
         requestAnimationFrame(() => setShowUnsavedDialog(false))
       }
@@ -85,28 +65,25 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
-      let initMedia: MediaFile[] = []
 
-      // Edit mode - load from existing post
       if (editPost) {
-        nextCaptions = { 
-          TikTok: editPost.caption, 
-          Instagram: editPost.caption, 
-          Facebook: editPost.caption, 
-          X: editPost.caption 
+        nextCaptions = {
+          TikTok: editPost.caption,
+          Instagram: editPost.caption,
+          Facebook: editPost.caption,
+          X: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
-        
+
         if (editPost.image) {
-          initMedia = [{ id: shortId(), url: editPost.image, type: 'image', name: 'image' }]
+          mediaHook.setMedia([{ id: shortId(), url: editPost.image, type: 'image', name: 'image' }])
         }
-        
+
         initSchMode = true
         const mm = String(editPost.month + 1).padStart(2, '0')
         const dd = String(editPost.day).padStart(2, '0')
         initSchTime = `${editPost.year}-${mm}-${dd}T${editPost.time}`
-      }
-      else if (!initialContent && !initialDate) {
+      } else if (!initialContent && !initialDate) {
         try {
           const draftStr = localStorage.getItem('syncra_draft')
           if (draftStr) {
@@ -144,13 +121,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setScheduleTime(initSchTime)
       setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
-      setMedia(initMedia)
 
-      // Nếu không load từ Draft, snapshot của Caption sẽ luôn trống.
-      // Điều này đảm bảo khi có initialContent, trạng thái sẽ bị đánh dấu là Dirty (chưa lưu) ngay lập tức.
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
-        media: initMedia,
+        media: mediaHook.media,
         activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
@@ -158,10 +132,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }, 0)
 
     didInitRef.current = true
-  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost])
+  }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost, mediaHook])
 
   const caption = captionsByPlatform[activeTab] ?? ''
-  
+
   const setActiveCaption = (next: string) => {
     setCaptionsByPlatform(prev => ({ ...prev, [activeTab]: next }))
     setTouched(prev => ({ ...prev, [activeTab]: true }))
@@ -169,7 +143,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const currentSnapshot = JSON.stringify({
     captionsByPlatform,
-    media,
+    media: mediaHook.media,
     activePlatforms,
     scheduleMode,
     scheduleTime
@@ -181,30 +155,17 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const hasPlatforms = activePlatforms.length > 0
 
   const reset = useCallback(() => {
-    setEditingId(null)
-    setMedia(prev => { prev.forEach(m => URL.revokeObjectURL(m.url)); return [] })
-
-    setCaptionsByPlatform({ TikTok: '', Instagram: '', Facebook: '', X: '' })
-    setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
-
-    setShowAI(false)
+    mediaHook.resetMedia()
+    aiHook.resetAI()
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
     setActivePlatforms(['TikTok'])
     setActiveTab('TikTok')
-    setAiPrompt('')
-    setAiResults([])
-    setAiIsGenerating(false)
     setShowUnsavedDialog(false)
-
     initialSnapshotRef.current = null
     didInitRef.current = false
-  }, [])
-
-  // We should NOT store `isDirty` as a ref that we update during render.
-  // We can just return it from the hook. But to keep the same signature without refactoring too much:
-  // we can use a state, or just let `isDirty` be a normal variable and pass it where needed, or we only use `isDirty` in `handleAttemptClose` by re-evaluating it.
+  }, [mediaHook, aiHook])
 
   const getIsDirty = useCallback(() => {
     return isOpen && initialSnapshotRef.current !== null && currentSnapshot !== initialSnapshotRef.current
@@ -248,16 +209,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
       X: '#1DA1F2'
     }
 
-    const firstImage = media.find(m => m.type === 'image')?.url
-    
+    const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
+
     if (isEditMode && editPost) {
-      // Update existing post as draft
       const platform = activePlatforms[0] || editPost.platform
-      const caption = captionsByPlatform[platform] || editPost.caption
-      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-      
+      const cap = captionsByPlatform[platform] || editPost.caption
+      const hashtags = cap.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+
       updatePost(editPost.id, {
-        title: caption.slice(0, 50) || `Draft on ${platform}`,
+        title: cap.slice(0, 50) || `Draft on ${platform}`,
         platform,
         status: 'draft',
         time,
@@ -265,17 +225,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
         month,
         year,
         color: platformColors[platform] || editPost.color,
-        caption,
+        caption: cap,
         hashtags,
         image: firstImage || editPost.image
       })
       onToast?.({ message: 'Draft updated successfully.', type: 'success' })
     } else {
-      // Create new draft posts
       activePlatforms.forEach(platform => {
         const platformCaption = captionsByPlatform[platform] || ''
         const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-        
+
         addPost({
           year,
           month,
@@ -294,7 +253,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     localStorage.removeItem('syncra_draft')
-    
     initialSnapshotRef.current = currentSnapshot
     return true
   }
@@ -331,16 +289,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
       X: '#1DA1F2'
     }
 
-    const firstImage = media.find(m => m.type === 'image')?.url
-    
+    const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
+
     if (isEditMode && editPost) {
-      // Update existing post
       const platform = activePlatforms[0] || editPost.platform
-      const caption = captionsByPlatform[platform] || editPost.caption
-      const hashtags = caption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-      
+      const cap = captionsByPlatform[platform] || editPost.caption
+      const hashtags = cap.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
+
       updatePost(editPost.id, {
-        title: caption.slice(0, 50) || `Post on ${platform}`,
+        title: cap.slice(0, 50) || `Post on ${platform}`,
         platform,
         status: 'scheduled',
         time,
@@ -348,17 +305,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
         month,
         year,
         color: platformColors[platform] || editPost.color,
-        caption,
+        caption: cap,
         hashtags,
         image: firstImage || editPost.image
       })
       onToast?.({ message: 'Post updated successfully!', type: 'success' })
     } else {
-      // Create new posts
       activePlatforms.forEach(platform => {
         const platformCaption = captionsByPlatform[platform] || ''
         const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-        
+
         addPost({
           year,
           month,
@@ -377,22 +333,18 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     localStorage.removeItem('syncra_draft')
-    
     setShowPublishConfirmDialog(false)
-    if (createAnother) {
-      reset()
-    } else {
-      reset()
-      onClose()
-    }
+
+    reset()
+    if (!createAnother) onClose()
   }
 
   useEffect(() => {
     if (!isOpen) return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (editingId) {
-        setEditingId(null)
+      if (mediaHook.editingId) {
+        mediaHook.setEditingId(null)
         return
       }
       if (showUnsavedDialog) {
@@ -403,7 +355,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [isOpen, editingId, showUnsavedDialog, handleAttemptClose])
+  }, [isOpen, mediaHook, mediaHook.editingId, mediaHook.setEditingId, showUnsavedDialog, handleAttemptClose])
 
   useEffect(() => {
     if (!showEmoji) return
@@ -424,93 +376,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
     })
   }
 
-  const handleFiles = useCallback((files: FileList | null) => {
-    if (!files) return
-    Array.from(files).forEach(file => {
-      const type = file.type.startsWith('video') ? 'video' : 'image'
-      
-      if (type === 'image') {
-        // Convert to base64 for persistence
-        const reader = new FileReader()
-        reader.onload = () => {
-          setMedia(prev => [...prev, { 
-            id: shortId(), 
-            url: reader.result as string, 
-            type, 
-            name: file.name 
-          }])
-        }
-        reader.readAsDataURL(file)
-      } else {
-        const url = URL.createObjectURL(file)
-        setMedia(prev => [...prev, { id: shortId(), url, type, name: file.name }])
-      }
-    })
-  }, [])
-
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    handleFiles(e.dataTransfer.files)
-  }
-
-  const removeMedia = (id: string) => {
-    setMedia(prev => {
-      const item = prev.find(m => m.id === id)
-      if (item) URL.revokeObjectURL(item.url)
-      return prev.filter(m => m.id !== id)
-    })
-    setEditingId(prev => (prev === id ? null : prev))
-  }
-
-  const handleDragStart = (id: string) => setDragId(id)
-  const handleDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id) }
-  const handleDropOnThumb = (id: string) => {
-    if (!dragId || dragId === id) { setDragId(null); setDragOverId(null); return }
-    setMedia(prev => {
-      const from = prev.findIndex(m => m.id === dragId)
-      const to = prev.findIndex(m => m.id === id)
-      if (from < 0 || to < 0) return prev
-      const next = [...prev]
-      const [item] = next.splice(from, 1)
-      next.splice(to, 0, item)
-      return next
-    })
-    setDragId(null); setDragOverId(null)
-  }
-  const handleDragEnd = () => { setDragId(null); setDragOverId(null) }
-
-  const handleReplaceVideo = (id: string) => {
-    replaceTargetIdRef.current = id
-    replaceInputRef.current?.click()
-  }
-
-  const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    const targetId = replaceTargetIdRef.current
-    if (!file || !targetId) return
-    const newUrl = URL.createObjectURL(file)
-    const newType: 'image' | 'video' = file.type.startsWith('video') ? 'video' : 'image'
-    setMedia(prev => prev.map(m => {
-      if (m.id !== targetId) return m
-      URL.revokeObjectURL(m.url)
-      return { ...m, url: newUrl, type: newType, name: file.name }
-    }))
-    e.target.value = ''
-    replaceTargetIdRef.current = null
-  }
-
-  const handleEditorSave = (blob: Blob) => {
-    if (!editingId) return
-    const newUrl = URL.createObjectURL(blob)
-    setMedia(prev => prev.map(m => {
-      if (m.id !== editingId) return m
-      URL.revokeObjectURL(m.url)
-      return { ...m, url: newUrl, name: m.name.replace(/\.[^.]+$/, '') + '_edited.jpg' }
-    }))
-    setEditingId(null)
-  }
-
   const insertAtCursor = (text: string) => {
     const el = textareaRef.current
     if (!el) { setActiveCaption(caption + text); return }
@@ -524,24 +389,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }, 0)
   }
 
-  const handleGenerateAI = () => {
-    if (aiPrompt.trim() === '') return
-    setAiIsGenerating(true)
-    const input = { topic: aiPrompt, niche: '', audience: '', goal: '', tone: tone }
-    setTimeout(() => {
-      setAiResults(getMockResults(input).slice(0, 4))
-      setAiIsGenerating(false)
-    }, 800)
-  }
-
-  const applyAISuggestion = (suggestion: string) => {
-    setActiveCaption(suggestion)
-  }
-
   const refs = {
-    fileInputRef,
-    replaceInputRef,
-    replaceTargetIdRef,
+    fileInputRef: mediaHook.fileInputRef,
+    replaceInputRef: mediaHook.replaceInputRef,
+    replaceTargetIdRef: mediaHook.replaceTargetIdRef,
     textareaRef,
     emojiRef,
   }
@@ -549,25 +400,42 @@ export function useCreatePostState(props: CreatePostModalProps) {
   return {
     state: {
       activePlatforms, activeTab, captionsByPlatform, touched,
-      showAI, showPreview, tone, showEmoji, media, dragOver,
+      showPreview, tone, showEmoji,
       createAnother, scheduleMode, scheduleTime, showUnsavedDialog,
       showPublishConfirmDialog,
-      dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
-      currentSnapshot, isEditMode, editPost
+      currentSnapshot, isEditMode, editPost,
+      media: mediaHook.media,
+      dragOver: mediaHook.dragOver,
+      dragId: mediaHook.dragId,
+      dragOverId: mediaHook.dragOverId,
+      editingId: mediaHook.editingId,
+      showAI: aiHook.showAI,
+      aiPrompt: aiHook.aiPrompt,
+      aiResults: aiHook.aiResults,
+      aiIsGenerating: aiHook.aiIsGenerating,
     },
     refs,
     actions: {
       setActivePlatforms, setActiveTab, setCaptionsByPlatform, setTouched,
-      setShowAI, setShowPreview, setShowEmoji, setMedia, setDragOver,
+      setShowPreview, setShowEmoji,
       setCreateAnother, setScheduleMode, setScheduleTime, setShowUnsavedDialog,
       setShowPublishConfirmDialog,
-      setDragId, setDragOverId, setAiPrompt, setAiResults, setAiIsGenerating,
-      setEditingId, setActiveCaption, reset, handleAttemptClose, handleDraft,
-      handleSchedule, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
-      handleDragStart, handleDragOver, handleDropOnThumb, handleDragEnd,
-      handleReplaceVideo, handleReplaceFile, handleEditorSave, insertAtCursor,
-      handleGenerateAI, applyAISuggestion
+      setActiveCaption, reset, handleAttemptClose, handleDraft,
+      handleSchedule, confirmSchedule, togglePlatform,
+      handleFiles: mediaHook.handleFiles, onDrop: mediaHook.onDrop,
+      removeMedia: mediaHook.removeMedia,
+      handleDragStart: mediaHook.handleDragStart, handleDragOver: mediaHook.handleDragOver,
+      handleDropOnThumb: mediaHook.handleDropOnThumb, handleDragEnd: mediaHook.handleDragEnd,
+      handleReplaceVideo: mediaHook.handleReplaceVideo,
+      handleReplaceFile: mediaHook.handleReplaceFile,
+      handleEditorSave: mediaHook.handleEditorSave,
+      setMedia: mediaHook.setMedia, setDragOver: mediaHook.setDragOver,
+      setEditingId: mediaHook.setEditingId,
+      handleGenerateAI: aiHook.handleGenerateAI, applyAISuggestion: aiHook.applyAISuggestion,
+      setShowAI: aiHook.setShowAI, setAiPrompt: aiHook.setAiPrompt,
+      setAiResults: aiHook.setAiResults, setAiIsGenerating: aiHook.setAiIsGenerating,
+      insertAtCursor,
     }
   }
 }

@@ -240,7 +240,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       <div
                         key={s.id}
                         className={styles.aiResultCard}
-                        onClick={() => actions.applyAISuggestion(s.caption)}
+                        onClick={() => actions.applyAISuggestion()}
                       >
                         <div className={styles.aiResultType}>{s.type}</div>
                         <div className={styles.aiResultCaption}>{s.caption}</div>
