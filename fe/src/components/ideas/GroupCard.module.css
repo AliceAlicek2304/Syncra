@@ -1,0 +1,175 @@
+/* ── Column ─────────────────────────────────────────────────────── */
+.column {
+    background: rgba(13, 17, 28, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    width: 280px;
+    min-width: 280px;
+    max-height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    flex-shrink: 0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.2s;
+}
+
+.column:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.columnHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 14px 10px;
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.columnTitleBtn {
+    background: transparent;
+    border: none;
+    cursor: default;
+    padding: 0;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
+}
+
+.columnTitle {
+    font-family: var(--font-title);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.columnHeaderRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.columnBadge {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    min-width: 22px;
+    text-align: center;
+}
+
+.deleteColBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    opacity: 0;
+}
+
+.column:hover .deleteColBtn {
+    opacity: 1;
+}
+
+.deleteColBtn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.renameRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.renameInput {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--purple-400);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 8px;
+    outline: none;
+    min-width: 0;
+}
+
+.renameOk {
+    background: var(--gradient-brand);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ── Card list ──────────────────────────────────────────────────── */
+.cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.cardList::-webkit-scrollbar {
+    width: 4px;
+}
+
+.cardList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cardList::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+/* ── Add Idea Button ────────────────────────────────────────────── */
+.addIdeaBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 12px 12px;
+    padding: 8px 10px;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.addIdeaBtn:hover {
+    border-color: var(--purple-400);
+    color: var(--purple-400);
+    background: rgba(139, 92, 246, 0.05);
+}
