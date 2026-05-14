@@ -1,8 +1,8 @@
 import { Upload, FileImage, FileVideo } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useR2Upload } from '../../hooks/useR2Upload'
-import { useWorkspace } from '../../context/WorkspaceContext'
-import { useToast } from '../../context/ToastContext'
+import { useR2Upload } from '../hooks/useR2Upload'
+import { useWorkspace } from '../context/WorkspaceContext'
+import { useToast } from '../context/ToastContext'
 import styles from './GlassUpload.module.css'
 
 export default function GlassUpload() {
