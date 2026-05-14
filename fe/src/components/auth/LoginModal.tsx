@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import styles from './LoginModal.module.css';
@@ -46,6 +45,14 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -91,7 +98,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
         <div className={styles.footer}>
           Don't have an account?
-          <a href="#" className={styles.link}>Sign up</a>
+          <a href="/signup" className={styles.link}>Sign up</a>
         </div>
       </div>
     </div>

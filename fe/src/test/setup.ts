@@ -20,9 +20,8 @@ vi.mock('framer-motion', async (importOriginal) => {
       {},
       {
         get: (_target, tag: string) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ({ children, ...props }: any) => {
-            const { whileHover, whileTap, variants, initial, animate, exit, transition, layout, layoutId, ...rest } = props;
+          ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => {
+            const { ...rest } = props;
             return React.createElement(tag, rest, children);
           },
       }

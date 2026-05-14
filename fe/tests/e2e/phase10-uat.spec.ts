@@ -1,8 +1,6 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
-const APP_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173/Syncra'
-
-async function login(page: any) {
+async function login(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('syncra_onboarding_completed', 'true')
   })
