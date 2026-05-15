@@ -149,6 +149,7 @@ be/stripe.tar.gz
 *.swo
 *~
 *.code-workspace
+.gsd.migrating
 .env.*
 !.env.example
 .next/
@@ -160,3 +161,8 @@ target/
 vendor/
 .cache/
 tmp/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

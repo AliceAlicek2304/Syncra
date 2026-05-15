@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "Syncra",
+  "project_id": "0f5334fb-a4fd-4c56-a3df-8680bd921658"
+}
