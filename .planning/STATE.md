@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: Performance & Analytics Optimization
-current_phase: 13
-status: shipped
-last_updated: "2026-05-13T10:00:00Z"
+milestone_name: Stability
+current_phase: 14
+status: completed
+last_updated: "2026-05-15T05:03:53.000Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -17,16 +17,16 @@ progress:
 
 ## Metadata
 
-- **Current Phase:** 13 (completed)
-- **Status:** v1.3 shipped — 2026-05-13
-- **Last Updated:** 2026-05-13 10:00 UTC
+- **Current Phase:** 14
+- **Status:** Phase 14 complete
+- **Last Updated:** 2026-05-15 05:03 UTC
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-05-13 after v1.3 milestone)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Planning next milestone
+**Current focus:** Phase 14 — fix-dashboard-code-quality-issues
 
 ## Milestone History
 
@@ -36,10 +36,24 @@ See: .planning/PROJECT.md (updated 2026-05-13 after v1.3 milestone)
 | v1.1 Reliable Payments & Provider Abstraction | 4-7 | 13 | Shipped | 2026-05-01 |
 | v1.2 Update the FE | 8-11 | 22 | Shipped | 2026-05-08 |
 | v1.3 Performance & Analytics Optimization | 12-13 | 9 | Shipped | 2026-05-13 |
+| v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
 
 ## Active Tasks
 
-- None — v1.3 shipped. Start next milestone with `/gsd-new-milestone`.
+- Phase 14 complete. Ready for next phase or milestone.
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 14 added: Fix dashboard code quality issues
+
+## Key Decisions (v1.4)
+
+- **ESLint Zero-Warnings Policy (D-19)**: All source files must pass `npm run lint` with zero errors; eslint-disable suppressions removed from all files.
+- **Component Extraction Pattern (D-20)**: Pages exceeding 500 lines extracted into co-located sub-components with CSS modules; original page becomes an orchestrator under 250 lines.
+- **Sub-Hook Pattern (D-21)**: Complex hooks (>250 lines) decomposed into smaller focused hooks (media, AI) composed in the parent hook.
+- **Test Critical Flows (D-22)**: Extracted components, custom hooks, dashboard states, and upload pipeline all covered by vitest tests (62 new tests).
 
 ## Key Decisions (v1.3)
 
