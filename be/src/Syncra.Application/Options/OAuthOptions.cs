@@ -7,6 +7,15 @@ public class OAuthOptions
     public OAuthProviderOptions TikTok { get; set; } = new();
     public OAuthProviderOptions YouTube { get; set; } = new();
     public OAuthProviderOptions Facebook { get; set; } = new();
+    public OAuthProviderOptions Google { get; set; } = new();
+}
+
+public class GoogleOAuthOptions
+{
+    public string ClientId { get; set; } = string.Empty;
+    public string ClientSecret { get; set; } = string.Empty;
+    public string CallbackUrl { get; set; } = string.Empty;
+    public string[] Scopes { get; set; } = new[] { "email", "profile" };
 }
 
 public class OAuthProviderOptions

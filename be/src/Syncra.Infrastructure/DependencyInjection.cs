@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
@@ -10,6 +11,7 @@ using Syncra.Infrastructure.Services;
 using Syncra.Domain.Interfaces;
 using Syncra.Application.Options;
 using Syncra.Application.Common.Interfaces;
+using Syncra.Application.Providers;
 using Syncra.Infrastructure.Social;
 using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Storage;
@@ -98,6 +100,20 @@ public static class DependencyInjection
         services.AddScoped<IPaymentProvider, StripePaymentProvider>();
         services.AddScoped<IPaymentProviderResolver, PaymentProviderResolver>();
         services.AddScoped<IStripeService, StripeService>();
+
+        // Google OAuth provider
+        services.Configure<GoogleOAuthOptions>(configuration.GetSection("OAuth:Google"));
+        services.AddHttpClient("GoogleOAuth", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<GoogleAuthProvider>(sp =>
+        {
+            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient("GoogleOAuth");
+            var options = sp.GetRequiredService<IOptions<GoogleOAuthOptions>>();
+            return new GoogleAuthProvider(options, httpClient);
+        });
+        services.AddScoped<IOAuthProvider>(sp => sp.GetRequiredService<GoogleAuthProvider>());
 
         return services;
     }
