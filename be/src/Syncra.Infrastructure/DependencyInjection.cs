@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+        services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -113,7 +114,7 @@ public static class DependencyInjection
             var options = sp.GetRequiredService<IOptions<GoogleOAuthOptions>>();
             return new GoogleAuthProvider(options, httpClient);
         });
-        services.AddScoped<IOAuthProvider>(sp => sp.GetRequiredService<GoogleAuthProvider>());
+        services.AddScoped<IOAuthProvider, GoogleAuthProvider>();
 
         return services;
     }

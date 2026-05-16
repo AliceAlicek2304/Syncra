@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs;
 using Syncra.Application.Features.Auth.Commands;
 using Syncra.Application.Features.Users.Queries;
+using Syncra.Domain.Interfaces;
 using Syncra.Shared.Extensions;
 using MediatR;
 
@@ -13,10 +14,12 @@ namespace Syncra.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IEnumerable<IOAuthProvider> _providers;
 
-    public AuthController(IMediator mediator)
+    public AuthController(IMediator mediator, IEnumerable<IOAuthProvider> providers)
     {
         _mediator = mediator;
+        _providers = providers;
     }
 
     [HttpPost("register")]
@@ -61,4 +64,27 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
+
+    [HttpGet("oauth/{provider}/login")]
+    public IActionResult GetOAuthLoginUrl(string provider, [FromQuery] string returnUrl)
+    {
+        var providerInstance = _providers.FirstOrDefault(p => p.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
+        if (providerInstance == null)
+        {
+            return BadRequest(new { error = "unsupported_provider", message = $"Provider '{provider}' is not supported." });
+        }
+
+        var loginUrl = providerInstance.GetLoginUrl(returnUrl ?? "/");
+        return Ok(new { loginUrl });
+    }
+
+    [HttpPost("oauth/{provider}/callback")]
+    public async Task<IActionResult> OAuthCallback(string provider, [FromBody] OAuthCallbackRequest request, CancellationToken cancellationToken)
+    {
+        var command = new OAuthLoginCommand(provider, request.Code, request.State, request.ReturnUrl ?? "/");
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
 }
+
+public record OAuthCallbackRequest(string Code, string State, string? ReturnUrl);
