@@ -1,171 +1,226 @@
-<!-- refreshed: 2025-02-14 -->
+<!-- refreshed: 2026-05-14 -->
 # Architecture
 
-**Analysis Date:** 2025-02-14
+**Analysis Date:** 2026-05-14
 
 ## System Overview
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    React Frontend (Vite)                    │
-├──────────────────┬──────────────────┬───────────────────────┤
-│      Pages       │    Components    │    Context (State)    │
-│    `fe/src/pages`│`fe/src/components`│   `fe/src/context`   │
-└────────┬─────────┴────────┬─────────┴──────────┬────────────┘
-         │                  │                     │
-         ▼                  ▼                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    ASP.NET Core API Layer                   │
-│                    `be/src/Syncra.Api`                      │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Logic (CQRS)                 │
-│                 `be/src/Syncra.Application`                 │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Infrastructure (Persistence)               │
-│               `be/src/Syncra.Infrastructure`                │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    SQL Database / Storage                   │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                        CLIENT (React SPA)                            │
+│  `fe/src/`                                                           │
+│  Pages → Contexts → Hooks → API Layer (Axios) → HTTP                 │
+└──────────────────────────────┬───────────────────────────────────────┘
+                               │ HTTP REST + SignalR
+                               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                     BACKEND API (ASP.NET Core)                        │
+│  `be/src/Syncra.Api/`                                                │
+│  Controllers → MediatR → Middleware Stack                             │
+└──────┬──────────────────────────────────┬────────────────────────────┘
+       │                                  │
+       ▼                                  ▼
+┌─────────────────┐            ┌──────────────────────────┐
+│  Application     │            │  Infrastructure           │
+│  `Syncra.App/`  │            │  `Syncra.Infra/`          │
+│  CQRS + Services │            │  EF Core, Repos, Jobs     │
+│  Pipeline Behav. │            │  Social Providers, Redis   │
+└────────┬─────────┘            └──────────┬────────────────┘
+         │                                 │
+         ▼                                 ▼
+┌─────────────────┐            ┌──────────────────────────┐
+│  Domain          │            │  External                 │
+│  `Syncra.Domain/`│            │  PostgreSQL, Redis,       │
+│  Entities, VOs,  │            │  Stripe, Social APIs      │
+│  Interfaces      │            │  Hangfire, Sentry, Files  │
+└──────────────────┘            └──────────────────────────┘
 ```
 
 ## Component Responsibilities
 
 | Component | Responsibility | File |
 |-----------|----------------|------|
-| API Controller | Handles HTTP requests, validates input models, and dispatches commands/queries. | `be/src/Syncra.Api/Controllers/` |
-| Features (CQRS) | Contains business logic for specific use cases (Commands and Queries). | `be/src/Syncra.Application/Features/` |
-| Persistence | Handles database access using Entity Framework Core. | `be/src/Syncra.Infrastructure/Persistence/` |
-| Domain Entities | Core business models and rules. | `be/src/Syncra.Domain/Entities/` |
-| React Components | UI presentation and local state management. | `fe/src/components/` |
-| Context Providers | Global state management (Auth, Billing, Workspace). | `fe/src/context/` |
+| Syncra.Api | HTTP layer, controllers, middleware, SignalR hubs, Swagger | `be/src/Syncra.Api/` |
+| Syncra.Application | CQRS handlers, service interfaces, DTOs, pipeline behaviors, options | `be/src/Syncra.Application/` |
+| Syncra.Domain | Domain entities, value objects, enums, repository interfaces, domain exceptions | `be/src/Syncra.Domain/` |
+| Syncra.Infrastructure | EF Core DbContext, repositories, social providers, Hangfire jobs, Redis, Stripe, file storage | `be/src/Syncra.Infrastructure/` |
+| Syncra.Shared | Constants, extension methods, helpers | `be/src/Syncra.Shared/` |
+| fe/src | React SPA: pages, components, contexts, API client, hooks | `fe/src/` |
 
 ## Pattern Overview
 
-**Overall:** Clean Architecture (Backend) and Modular Component-based (Frontend).
+**Overall:** Clean Architecture (Domain-centric) with CQRS — backend; Context-driven React SPA with feature-based layouts — frontend.
 
 **Key Characteristics:**
-- **Separation of Concerns:** Clearly defined layers in the backend to isolate business logic from infrastructure.
-- **CQRS (Command Query Responsibility Segregation):** Used in the Application layer to separate read and write operations.
-- **Dependency Injection:** Heavily used in .NET for decoupling services and their implementations.
-- **Context API:** Used in the React frontend for managing cross-cutting state like authentication and billing.
+- **5-project .NET solution** with strict dependency direction: Api → Application → Domain ← Infrastructure (Dependency Inversion)
+- **CQRS via MediatR**: Commands (mutations) and Queries (reads) are separate record types with dedicated handlers
+- **Repository + Unit of Work** over EF Core for data access
+- **Strategy pattern** for social platform providers (`ISocialProvider`) and payment providers (`IPaymentProvider`)
+- **Middleware pipeline** for cross-cutting concerns (correlation IDs, tenant resolution, global error handling)
+- **Background job scheduling** via Hangfire for token refresh and post publishing
+- **Real-time notifications** via SignalR
+- **Frontend: Context providers** layered from auth → workspace → feature → page
+- **CSS Modules** co-located with components
 
 ## Layers
 
-**API Layer (Backend):**
-- Purpose: Entry point for external requests, handling HTTP, Authentication, and Middleware.
-- Location: `be/src/Syncra.Api`
-- Contains: Controllers, Middleware, Filters, and Startup configuration.
-- Depends on: `Syncra.Application`, `Syncra.Infrastructure` (for DI registration).
+**API Layer (Syncra.Api):**
+- Purpose: HTTP entry point, request routing, middleware, Swagger documentation, SignalR hubs
+- Location: `be/src/Syncra.Api/`
+- Contains: `Controllers/` (17 controllers), `Middleware/` (3 middlewares), `Hubs/` (NotificationHub), `Filters/` (IdempotencyFilter), `Services/` (NotificationDispatcher), `SwaggerFilters/`, `Common/`
+- Depends on: Syncra.Application (for MediatR), Syncra.Infrastructure (for DI registration)
+- Used by: HTTP clients (React SPA, mobile, third-party)
 
-**Application Layer (Backend):**
-- Purpose: Orchestrates business logic and use cases.
-- Location: `be/src/Syncra.Application`
-- Contains: Commands, Queries, Handlers, DTOs, and Interfaces.
-- Depends on: `Syncra.Domain`.
+**Application Layer (Syncra.Application):**
+- Purpose: Orchestration, CQRS handlers, service abstractions, validation, pipeline behaviors
+- Location: `be/src/Syncra.Application/`
+- Contains: `Features/{Feature}/Queries/`, `Features/{Feature}/Commands/`, `Services/`, `Interfaces/`, `DTOs/`, `Options/`, `Payments/`, `Common/Behaviors/`
+- Depends on: Syncra.Domain (for entities, interfaces)
+- Pipeline behaviors: `LoggingBehavior<>`, `ValidationBehavior<>`, `PerformanceBehavior<>`
 
-**Infrastructure Layer (Backend):**
-- Purpose: Implementation of external concerns (DB, File Storage, Social APIs).
-- Location: `be/src/Syncra.Infrastructure`
-- Contains: Repositories, DB Context, Migrations, and External Service Clients.
-- Depends on: `Syncra.Application`, `Syncra.Domain`.
+**Domain Layer (Syncra.Domain):**
+- Purpose: Enterprise business rules, entities, value objects, repository contracts
+- Location: `be/src/Syncra.Domain/`
+- Contains: `Entities/` (19 entities), `ValueObjects/` (8 VOs), `Enums/` (10 enums), `Interfaces/` (16 repository interfaces), `Exceptions/`, `Models/Social/` and `Models/Analytics/`
+- Depends on: Nothing (outer layer has zero dependencies)
 
-**Domain Layer (Backend):**
-- Purpose: Core business entities and logic that is independent of any technology.
-- Location: `be/src/Syncra.Domain`
-- Contains: Entities, Value Objects, Enums, and Domain Exceptions.
+**Infrastructure Layer (Syncra.Infrastructure):**
+- Purpose: Data access, external service integration, background jobs, file storage
+- Location: `be/src/Syncra.Infrastructure/`
+- Contains: `Persistence/` (AppDbContext + Configurations + Interceptors + Seed), `Repositories/` (14 repos), `Social/` (4 providers + registry + adapters), `Services/` (6 services), `Jobs/` (4 job files), `Storage/`, `Publishing/`
+- Depends on: Syncra.Application (service interfaces), Syncra.Domain (entity interfaces)
 
-**UI Layer (Frontend):**
-- Purpose: User interface and interaction logic.
-- Location: `fe/src/`
-- Contains: Pages, Components, Hooks, and Assets.
+**Shared Layer (Syncra.Shared):**
+- Purpose: Common utilities shared across layers
+- Location: `be/src/Syncra.Shared/`
+- Contains: `Constants/`, `Extensions/`, `Helpers/`
 
 ## Data Flow
 
-### Primary Request Path
+### Primary Request Path (REST)
 
-1. Frontend initiates request via `apiFetch` (`fe/src/utils/api.ts`).
-2. Controller receives request (`be/src/Syncra.Api/Controllers/`).
-3. Controller dispatches a Command/Query via MediatR to the Application layer.
-4. Handler in Application layer processes business logic, interacting with Domain entities.
-5. Handler uses Repository interfaces to persist/retrieve data from Infrastructure (`be/src/Syncra.Infrastructure/Persistence/`).
-6. Result is returned as a DTO to the Controller.
-7. Controller returns HTTP response to the Frontend.
+1. **HTTP Request** → Middleware pipeline: `CorrelationIdMiddleware` (adds X-Correlation-ID) → `GlobalExceptionMiddleware` (catch-all error handler) → Authentication (JWT Bearer) → Authorization → `TenantResolutionMiddleware` (validates X-Workspace-Id header)
+2. **Controller** (`be/src/Syncra.Api/Controllers/*.cs`) handles routing, extracts user identity via `User.GetUserId()` extension method, and dispatches MediatR command/query
+3. **MediatR Pipeline** runs behaviors in order: `LoggingBehavior` → `ValidationBehavior` (FluentValidation) → `PerformanceBehavior`
+4. **Handler** (`be/src/Syncra.Application/Features/{Feature}/{Command|Query}Handler.cs`) executes business logic, calls repository interfaces
+5. **Repository** (`be/src/Syncra.Infrastructure/Repositories/*.cs`) executes EF Core queries against PostgreSQL
+6. **Response** flows back through the pipeline → Controller → serialized JSON → HTTP response with correlation header
 
-### Background Processing Flow
+### Social Publishing Flow
 
-1. Recurring jobs or triggered tasks are handled by Hangfire.
-2. Job Handlers reside in `be/src/Syncra.Infrastructure/Jobs/`.
-3. Jobs interact with Application services or Infrastructure repositories.
+1. Publish endpoint invoked → `PostsController` → MediatR command → `PublishService` (`be/src/Syncra.Application/Services/PublishService.cs`)
+2. `IPublishAdapterRegistry` resolves the correct adapter for the target platform
+3. Adapter delegates to `ISocialProvider` implementation (e.g., `FacebookProvider`, `XOAuthProvider`, `YouTubeProvider`, `TikTokOAuthProvider` in `be/src/Syncra.Infrastructure/Social/Providers/`)
+4. Publish result persisted back via `Post` domain entity state machine (`Post.cs` methods: `MarkPublishSuccess`, `MarkPublishFailure`)
+5. Real-time notification dispatched via SignalR `NotificationHub` (`be/src/Syncra.Api/Hubs/NotificationHub.cs`)
+
+### Background Job Flow
+
+1. `Program.cs` schedules recurring jobs at startup via `IIntegrationTokenRefreshJobScheduler` and `IDuePostPublishJobScheduler`
+2. Hangfire executes `IntegrationTokenRefreshJob` and `DuePostPublishJob` on schedule (both in `be/src/Syncra.Infrastructure/Jobs/`)
+3. Jobs use Infrastructure services (Redis distributed lock for webhook concurrency via `RedisDistributedLockService`)
 
 **State Management:**
-- Backend: Stateless, using JWT for authentication and database for persistence.
-- Frontend: Context API for global state (`fe/src/context/`), local `useState` for component-level state.
+- Backend: Stateless (JWT tokens), request-scoped DbContext via DI, Redis for distributed caching/locking, PostgreSQL for persistence
+- Frontend: React Context providers (Auth, Workspace, Calendar, Repurpose, Billing, Toast, CreatePostModal), TanStack React Query for server state caching
 
 ## Key Abstractions
 
-**Repository Pattern:**
-- Purpose: Decouples the application layer from data access technology.
-- Examples: `be/src/Syncra.Infrastructure/Repositories/`
-- Pattern: Interface defined in `Domain` or `Application`, implemented in `Infrastructure`.
+**EntityBase:**
+- Purpose: Base class for all domain entities, provides Id (Guid), audit timestamps, soft-delete, optimistic concurrency versioning
+- Files: `be/src/Syncra.Domain/Entities/EntityBase.cs`, `be/src/Syncra.Domain/Entities/WorkspaceEntityBase.cs`
+- Pattern: Abstract base class with factory methods
 
-**Mediator Pattern:**
-- Purpose: Decouples the sender of a request from its receiver.
-- Examples: `be/src/Syncra.Application/Features/`
-- Pattern: MediatR used for Commands and Queries.
+**Value Objects:**
+- Purpose: Immutable, self-validating value types with factory methods (e.g., `PostTitle.Create(...)`)
+- Files: `be/src/Syncra.Domain/ValueObjects/*.cs` (8 VOs: Email, PostContent, PostTitle, ScheduledTime, WorkspaceName, WorkspaceSlug, etc.)
+- Pattern: Sealed class with private constructor, static Create factory, implicit string operator
+
+**Repository Pattern:**
+- Purpose: Abstracts data access behind domain interfaces
+- Files: `be/src/Syncra.Domain/Interfaces/I{Entity}Repository.cs` (12 repos) → implementations in `be/src/Syncra.Infrastructure/Repositories/`
+- Pattern: Generic `Repository<T>` base class plus specific repositories; all scoped via `AddScoped<I{Repo}, {Repo}>()` in DI
+- Base class: `be/src/Syncra.Infrastructure/Repositories/Repository.cs`
+
+**CQRS with MediatR:**
+- Purpose: Separates read and write operations; each is a record + handler pair
+- Files: `be/src/Syncra.Application/Features/{Feature}/Queries/*`, `be/src/Syncra.Application/Features/{Feature}/Commands/*`
+- Pattern: Record implements `IRequest<TResponse>`, handler implements `IRequestHandler<TOperation, TResult>`
+
+**Social Provider Strategy:**
+- Purpose: Pluggable social platform integration via `ISocialProvider` interface
+- Files: `be/src/Syncra.Domain/Interfaces/ISocialProvider.cs` → implementations in `be/src/Syncra.Infrastructure/Social/Providers/{Facebook,XOAuth,TikTokOAuth,YouTube}Provider.cs`
+- Pattern: `ProviderRegistry` resolves provider by string ID, adapters for publish and analytics
+
+**Payment Provider Strategy:**
+- Purpose: Pluggable payment provider with `IPaymentProvider` interface (Stripe implementation)
+- Files: `be/src/Syncra.Application/Interfaces/IPaymentProvider.cs`, `be/src/Syncra.Infrastructure/Services/StripePaymentProvider.cs`
+- Decoupled webhook handling: `IPaymentWebhookHandler` implementations dispatched via `PaymentWebhookEventDispatcher`
+
+**Idempotency:**
+- Purpose: Ensures mutating endpoints are safe to retry with the same `Idempotency-Key` header
+- Files: `be/src/Syncra.Api/Filters/IdempotencyFilter.cs`
+- Pattern: Action filter backed by `IdempotencyRecord` entity in PostgreSQL; returns cached response on replay
 
 ## Entry Points
 
-**API Entry Point:**
+**Backend HTTP API:**
 - Location: `be/src/Syncra.Api/Program.cs`
-- Triggers: HTTP Requests.
-- Responsibilities: Configures DI, Middleware, Routing, and starts the web server.
+- Triggers: HTTP requests on ASP.NET Core Kestrel
+- Responsibilities: Configures middleware pipeline, registers DI modules (Application, Infrastructure, Api, Auth, Hangfire), maps controllers + SignalR hub + health checks, schedules recurring jobs
 
-**Frontend Entry Point:**
-- Location: `fe/src/main.tsx`
-- Triggers: Browser page load.
-- Responsibilities: Mounts the React application and provides the router.
+**Backend Background Jobs:**
+- Location: Scheduled from `Program.cs` lines 57-64, executed by Hangfire server
+- Triggers: Hangfire cron schedule
+- Responsibilities: Refresh expiring OAuth tokens (`IntegrationTokenRefreshJob`), publish due posts (`DuePostPublishJob`)
+
+**Frontend SPA:**
+- Location: `fe/src/main.tsx` → `fe/src/App.tsx`
+- Triggers: Browser loading index.html → Vite dev/prod build
+- Responsibilities: Mounts React app with providers: `QueryClientProvider` > `AuthProvider` > `ToastProvider` > `WorkspaceProvider` > `BrowserRouter` (basename "/Syncra/")
 
 ## Architectural Constraints
 
-- **Multi-tenancy:** Handled via `TenantResolutionMiddleware` (`be/src/Syncra.Api/Middleware/TenantResolutionMiddleware.cs`) using `X-Workspace-Id` header.
-- **Clean Architecture Dependencies:** `Domain` must not depend on any other layer. `Application` only depends on `Domain`.
-- **Stateless API:** The API is stateless, relying on JWTs in the `Authorization` header.
+- **Dependency direction:** Domain has zero dependencies. Infrastructure depends on Application and Domain. Application depends only on Domain. Api depends on all lower layers. Violating this (e.g., Domain referencing Infrastructure) breaks Clean Architecture.
+- **Threading:** ASP.NET Core uses the thread pool for requests. Hangfire jobs run on separate worker threads. SignalR connections are long-lived. Redis `ConnectionMultiplexer` is a singleton shared across requests.
+- **Global state:** `AppDbContext` is scoped per request (no global state). Axios `globalErrorHandler` in `fe/src/lib/axios.ts` (line 40) is a module-level singleton that gets set by `ToastContext`.
+- **Tenant isolation:** Multi-tenant via `X-Workspace-Id` header, validated by `TenantResolutionMiddleware` and cached in Redis for 1 hour. All workspace-scoped controllers read `context.Items["WorkspaceId"]`.
+- **Circular imports:** Not detected. Backend has strict project references. Frontend uses standard ES module imports with no circular dependency indicators.
 
 ## Anti-Patterns
 
-### Logic in Controllers
-**What happens:** Business logic placed directly inside API controllers.
-**Why it's wrong:** Makes controllers hard to test and reuse; violates separation of concerns.
-**Do this instead:** Use MediatR Commands/Queries in `be/src/Syncra.Application/Features/`.
+### Service Locator in ProviderRegistry
 
-### Cross-Layer Direct Access
-**What happens:** Application layer directly using EF Core `DbContext`.
-**Why it's wrong:** Couples business logic to a specific persistence technology.
-**Do this instead:** Use Repository interfaces defined in `Application` or `Domain`.
+**What happens:** `ProviderRegistry` (`be/src/Syncra.Infrastructure/Social/ProviderRegistry.cs`) uses `IServiceProvider.GetServices<ISocialProvider>()` to resolve providers at runtime by string ID.
+**Why it's wrong:** This is a Service Locator pattern — it hides dependencies and makes it impossible to reason about which providers are used by just looking at constructor injection.
+**Do this instead:** Consider registering named provider instances via a factory pattern or using a `Dictionary<string, ISocialProvider>` populated during DI registration.
+
+### Global Error Handler Singleton in Axios Module
+
+**What happens:** `fe/src/lib/axios.ts` lines 40-44 defines a mutable module-level `globalErrorHandler` that gets set via `registerErrorHandler()`. This creates implicit global state.
+**Why it's wrong:** Testing becomes fragile because the global handler persists between tests. The coupling is implicit — nothing in the type system enforces that `registerErrorHandler` is called before errors occur.
+**Do this instead:** Use Axios response interceptors with a DI-provided callback, or wrap Axios in a service class that accepts an error handler via constructor.
 
 ## Error Handling
 
-**Strategy:** Centralized exception handling via Middleware.
+**Strategy:** Centralized exception handling via `GlobalExceptionMiddleware` (`be/src/Syncra.Api/Middleware/GlobalExceptionMiddleware.cs`) that maps exception types to HTTP status codes and structured JSON responses.
 
 **Patterns:**
-- **Global Exception Middleware:** `be/src/Syncra.Api/Middleware/GlobalExceptionMiddleware.cs` catches unhandled exceptions and returns standardized error responses.
-- **Domain Exceptions:** Specific exceptions defined in `be/src/Syncra.Domain/Exceptions/` for business rule violations.
+- **DomainException** → mapped to 400/401/404 based on `Code` property (`not_found`, `invalid_credentials`, `invalid_token`, or default 400)
+- **FluentValidation ValidationException** → 400 with field-level error details
+- **KeyNotFoundException** → 404
+- **StripeException** → 502 Bad Gateway (upstream provider error)
+- **Unhandled exceptions** → 500 Internal Server Error with Sentry logging
+- **Frontend** → Axios interceptor catches 401 (redirects to login), other errors forwarded to `ToastContext` global handler
 
 ## Cross-Cutting Concerns
 
-**Logging:** Serilog integrated in `be/src/Syncra.Api/Program.cs`.
-**Validation:** FluentValidation (likely used) or DataAnnotations for DTO validation in the Application layer.
-**Authentication:** JWT-based, configured in `be/src/Syncra.Api/DependencyInjection.cs`.
+**Logging:** Serilog with structured logging setup in `Program.cs` line 13-15; `LoggingBehavior` for MediatR pipeline; `CorrelationIdMiddleware` pushes correlation ID into `LogContext` (`be/src/Syncra.Api/Middleware/CorrelationIdMiddleware.cs`)
+**Validation:** FluentValidation with `ValidationBehavior` pipeline for MediatR — validators are auto-registered from assembly via `AddValidatorsFromAssembly()`
+**Authentication:** JWT Bearer with configurable issuer/audience/secret via `JwtOptions`; SignalR supports token via query string for WebSocket connections
+**Caching:** `IDistributedCache` abstraction — Redis cache when connection string present, otherwise in-memory fallback; 1-hour TTL for tenant membership cache
+**Real-time:** SignalR hub at `/api/v1/hubs/notifications` for workspace-scoped notifications via `NotificationDispatcher`
 
 ---
 
-*Architecture analysis: 2025-02-14*
+*Architecture analysis: 2026-05-14*

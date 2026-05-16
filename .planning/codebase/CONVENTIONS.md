@@ -1,111 +1,156 @@
 # Coding Conventions
 
-**Analysis Date:** 2025-02-14
+**Analysis Date:** 2026-05-14
 
 ## Naming Patterns
 
-### Frontend (React/TypeScript)
 **Files:**
-- Components: PascalCase (e.g., `AICoach.tsx`, `Navbar.tsx`) in `fe/src/components/`
-- Contexts: camelCase for files (e.g., `calendarContextBase.ts`) but PascalCase for provider files (e.g., `CalendarContext.tsx`)
-- Utilities: camelCase (e.g., `api.ts`, `shortId.ts`)
+- PascalCase for React components: `PageWrapper.tsx`, `SkeletonLoader.tsx`, `AICoach.tsx`, `ProtectedRoute.tsx`
+- camelCase for utilities/hooks: `shortId.ts`, `axios.ts`, `useR2Upload.ts`, `useSettings.ts`
+- camelCase for API modules: `posts.ts`, `groups.ts`, `media.ts`, `ideas.ts`
+- Test files mirror source: `posts.ts` → `posts.test.ts`, `PageWrapper.tsx` → `PageWrapper.test.tsx`
+- CSS Modules: `PageWrapper.tsx` → `*.module.css` (co-located, same base name e.g. `PageWrapper.module.css`)
 
 **Functions:**
-- Functional Components: PascalCase (e.g., `function Homepage()`)
-- Hooks: `use` prefix (e.g., `useAuth`)
-- Utility functions: camelCase (e.g., `apiFetch`)
+- camelCase for all functions (`createPost`, `getGroups`, `toggleCoach`, `handleNext`)
+- React components: PascalCase function components (`function PageWrapper()`, `export default function AICoach()`)
+- Callback props: `onClose`, `onSave`, `onDelete`, `onSuccess`, `resetErrorBoundary`
+- Event handlers: `handleCloseLogin`, `handleLoginSuccess`, `handleTransitionEnd`
 
 **Variables:**
-- Local variables: camelCase
-- Constants: SCREAMING_SNAKE_CASE (though many local constants use camelCase)
+- camelCase for all variables (`workspaceId`, `postId`, `isOpen`, `prefersReduced`)
+- Boolean variables prefixed with `is`, `has`, `show`: `isOpen`, `isUploading`, `hasMore`, `showNotification`
 
 **Types:**
-- Interfaces and Types: PascalCase (e.g., `ReactNode`, `BillingPlan`)
+- PascalCase for all interfaces and type aliases: `Post`, `CreatePostRequest`, `GetPostsParams`, `PresignResponse`
+- API DTOs: request/response types named `{Verb}{Entity}Request` or `{Entity}Request`/`{Entity}Response`
+- Props interfaces: component name + `Props` suffix: `PageWrapperProps`, `SkeletonLoaderProps`, `ToastProps`
+- Context types: `{Name}ContextType` e.g. `AuthContextType`, `ToastContextType`
 
-### Backend (.NET/C#)
-**Files:**
-- Classes: PascalCase (e.g., `Post.cs`, `PostsController.cs`)
-- Projects: PascalCase with dot notation (e.g., `Syncra.Api.csproj`)
-
-**Namespaces:**
-- Follow directory structure: `Syncra.{Layer}.{Folder}` (e.g., `namespace Syncra.Domain.Entities`)
-
-**Classes:**
-- PascalCase
-- Use `sealed` by default for domain entities and services (e.g., `public sealed class Post`)
-
-**Properties:**
-- PascalCase (e.g., `public Guid UserId { get; private set; }`)
-- Use private setters for encapsulation in domain entities.
-
-**Methods:**
-- PascalCase (e.g., `public static Post Create(...)`)
-- Use factory methods (`Create`) instead of public constructors for domain entities.
+**API Modules:**
+- Named export object with `Api` suffix: `postsApi`, `ideasApi`, `mediaApi`, `groupsApi`, `aiApi`, `authApi`, `workspacesApi`, `notificationsApi`, `usersApi`
+- Each method is an async arrow function typed with `Promise<T>`
 
 ## Code Style
 
-### Frontend
 **Formatting:**
-- Standard Vite/React defaults. No explicit `.prettierrc` found, likely using ESLint for style enforcement.
+- No Prettier config detected — formatting relies on ESLint only
+- ESLint 9+ flat config at `fe/eslint.config.js`
+- ESLint plugins: `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`
+- ESLint ignores: `['dist']`
 
 **Linting:**
-- ESLint configured in `fe/eslint.config.js`.
-- Uses `typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh`.
+- `eslint .` runs via `npm run lint`
+- Rules: `js.configs.recommended`, `tseslint.configs.recommended`, `reactHooks.configs.flat.recommended`, `reactRefresh.configs.vite`
 
-### Backend
-**Formatting:**
-- Standard .NET/C# conventions (PascalCase, K&R style braces).
-- Braces on new lines for classes and methods.
+**Style Inconsistencies Detected:**
+- Semicolons: Source files (`.ts`, `.tsx`) consistently use semicolons; test files (`*.test.ts/tsx`) consistently omit semicolons
+- Quotes: Mixed usage — most files use single quotes, some use double quotes (`utils/api.ts` uses double quotes)
+- Trailing commas: Some files use them, some don't (e.g., `api/groups.ts` uses no trailing commas, `api/posts.ts` uses them)
 
-**Linting:**
-- Implicitly handled by modern MSBuild/Roslyn analyzers. No `.editorconfig` detected in root, but standard C# rules apply.
+**Lint Command:**
+```bash
+npm run lint          # Runs eslint . from fe/
+npm run lint -- --fix # Auto-fix
+```
 
 ## Import Organization
 
-### Frontend
 **Order:**
-1. External libraries (`react`, `react-router-dom`)
-2. Internal contexts and hooks
-3. Internal components
-4. Internal pages
-5. Types (using `import type`)
+1. React/framework imports (`import { useState } from 'react'`)
+2. Third-party library imports (`import { motion, useReducedMotion } from 'framer-motion'`, `import { Navigate } from 'react-router-dom'`)
+3. Internal/local imports (`import api from '../lib/axios'`, `import { useAuth } from '../context/AuthContext'`)
+4. CSS Module imports (`import styles from './PageWrapper.module.css'`)
 
 **Path Aliases:**
-- Not detected. Relative paths used (e.g., `../../components/Navbar`).
+- `@/` resolves to `fe/src/` (via `vitest.config.ts` and `tsconfig.app.json`)
+- Example: `import { Button } from '@/components/ui/button'`
+
+**Import Style:**
+- `import type { X }` for type-only imports (`import type { ReactNode } from 'react'`, `import type { User, LoginRequest } from '../api/types'`)
+- No barrel/index files detected — imports use direct file paths
 
 ## Error Handling
 
-### Frontend
-- Centralized API fetching in `fe/src/utils/api.ts` with response checking and error throwing.
-- Uses `try/catch` in components for UI-level error handling.
-
-### Backend
-- Centralized via `GlobalExceptionMiddleware.cs` in `be/src/Syncra.Api/Middleware/`.
-- Maps specific exceptions (e.g., `DomainException`, `ValidationException`, `StripeException`) to HTTP status codes and structured JSON responses.
-- Uses Sentry for capturing unhandled exceptions (`SentrySdk.CaptureException(ex)`).
+**Patterns:**
+- **React Error Boundaries:** Via `react-error-boundary` — `WidgetErrorFallback.tsx` provides the fallback UI for widget-level errors
+- **Context Hook Guards:**
+  ```typescript
+  // In every context hook (AuthContext.tsx, ToastContext.tsx)
+  export function useAuth() {
+    const ctx = useContext(AuthContext)
+    if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
+    return ctx
+  }
+  ```
+- **API Error Interceptor:** Global error handling in `fe/src/lib/axios.ts` — 401 redirects to login, other errors forwarded to `ToastContext`
+- **try/catch with console.error:** Used in async contexts like `AuthContext.tsx` login and hydration
+- **Error message parsing:** In `fe/src/utils/api.ts` — attempts to extract `.message` or `.error` from API error responses
 
 ## Logging
 
-### Backend
-**Framework:** Serilog with Sentry integration.
+**Framework:** `console` (no structured logging library detected)
+
 **Patterns:**
-- Configured in `be/src/Syncra.Api/Program.cs`.
-- Uses `ILogger<T>` for dependency injection.
-- Structured logging with `RedactingEnricher` to protect sensitive data.
+- `console.error('Failed to...', error)` in catch blocks (`AuthContext.tsx:27`, `AuthContext.tsx:45`)
+- No `console.log` observed in source code
+
+## Comments
+
+**When to Comment:**
+- Complex logic explanations (e.g., `useR2Upload.ts` describes the upload flow in comments)
+- JSDoc-style block comments for hooks explaining purpose and flow
+- Inline comments for non-obvious decisions (`// CRITICAL: Do not include Authorization...`)
+- Architecture references in comments (`// D-11: Backend may return existing assetId`)
+
+**JSDoc/TSDoc:**
+- Used sparingly — only for complex hooks like `useR2Upload.ts`
+- Format: `/** ... */` block comments describing purpose and flow
+
+## Function Design
+
+**Size:** Functions range from 1-line fetchers to ~30-line handlers. React components typically 30-100 lines.
+
+**Parameters:**
+- Named props interface for React components
+- Context hooks: zero parameters
+- API methods: `(workspaceId: string, data?: XxxRequest)` pattern consistently used across all API modules
+- Callbacks follow `(item: Type) => void` pattern
+
+**Return Values:**
+- Async API methods: `Promise<T>` where T is response data type
+- React components: `JSX.Element` (implicit)
+- Boolean functions: `isAnimating`, `isOpen`, `loading`
 
 ## Module Design
 
-### Frontend
-**Exports:** Named exports for utilities, default exports for components.
-**Contexts:** Heavy use of React Context for state management (`AuthContext`, `BillingContext`, etc.).
+**Exports:**
+- **Named exports for shared utilities:** `export function PageWrapper`, `export function SkeletonLoader`, `export function useAuth`
+- **Default exports for page-level components:** `export default function AICoach`, `export default function Toast`, `export default function Heatmap`
+- **Named export objects for APIs:** `export const postsApi = { ... }`
+- **Default export for singleton:** `export default api` (the axios instance in `lib/axios.ts`)
+- Mixed pattern: `ProtectedRoute.tsx` uses default export; `PageWrapper.tsx` uses named export
 
-### Backend
-**Architecture:** Clean Architecture with clear layer separation:
-- `Syncra.Domain`: Entities, Value Objects, Domain Exceptions.
-- `Syncra.Application`: DTOs, Services, Interfaces.
-- `Syncra.Infrastructure`: Persistence (EF Core), External Integrations (Stripe, Social APIs).
-- `Syncra.Api`: Controllers, Middleware.
+**Barrel Files:** Not detected. Each component imports directly from its source file.
+
+**CSS Modules:**
+- Each visual component co-locates a `.module.css` file (39 detected in `fe/src/components/`)
+- Imported as `import styles from './ComponentName.module.css'`
+- Usage: `className={styles.container}`
+
+## Data Flow Conventions
+
+**State Management:**
+- React Context for auth, workspace, toast, calendar, billing, repurpose state
+- TanStack React Query for server state (observed in `fe/package.json` dependency)
+- Local `useState`/`useReducer` for component-local state
+- `useRef` for animation guards and imperative DOM access
+
+**API Layer:**
+- Single axios instance at `fe/src/lib/axios.ts` with interceptors for auth token and workspace ID
+- API modules (`fe/src/api/*.ts`) wrap axios calls with typed request/response interfaces
+- URL pattern: `workspaces/{workspaceId}/{resource}[/{id}]`
 
 ---
 
-*Convention analysis: 2025-02-14*
+*Convention analysis: 2026-05-14*

@@ -102,3 +102,30 @@ Plans:
 **v1.4** (Planned)
 
 *Next milestone to be defined via `/gsd-new-milestone`*
+
+### Phase 14: Fix dashboard code quality issues
+
+**Goal:** Clean up code quality across the entire frontend application — remove mock data from production UI, refactor large component files, fix ESLint errors and suppressions, address backend code quality issues that affect dashboard data, and add test coverage for critical user flows.
+
+**Depends on:** Phase 13
+**Plans:** 8/8 plans complete
+
+Requirements:
+- **REQ-14.1:** Mock data removal from production UI
+- **REQ-14.2:** Large file refactoring (files >300 lines split into smaller components)
+- **REQ-14.3:** ESLint quality bar and CI enforcement
+- **REQ-14.4:** Backend code quality fixes (PublishService cache, IdempotencyFilter hash)
+- **REQ-14.5:** Test coverage for critical user flows and refactored components
+
+Plans:
+- [ ] **Wave 1** (parallel):
+  - [x] 14-01-PLAN.md — ESLint Quality Bar & CI Pipeline (fix 14 errors, remove 7 suppressions, fix deps, verify CI)
+  - [x] 14-02-PLAN.md — Backend Fixes (PublishService cache eviction, IdempotencyFilter SHA256 + 409)
+  - [x] 14-03-PLAN.md — Mock Data Eradication (delete mockAI.ts/mockCoachTrends.ts, fix consumers, wire GlassUpload, AnalyticsPage cleanup)
+  - [x] 14-04-PLAN.md — CalendarPage Refactoring (extract VisualCard + month/week/day view renderers)
+  - [x] 14-05-PLAN.md — IdeasPage Refactoring (extract useIdeaBoard hook + IdeaCard/GroupCard)
+  - [x] 14-06-PLAN.md — HelpPage Refactoring (extract data + tab sub-components)
+- [ ] **Wave 2**:
+  - [x] 14-07-PLAN.md — CreatePost Module Refactoring (split useCreatePostState + AIIdeaGenerator, fix CreatePostEditor eslint)
+- [ ] **Wave 3**:
+  - [x] 14-08-PLAN.md — Test Coverage (10+ test files for extracted components, hooks, and critical flows)

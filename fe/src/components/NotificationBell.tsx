@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useNotificationHub } from '../hooks/useNotificationHub';
@@ -15,6 +15,15 @@ export default function NotificationBell() {
   const { notifications, hasUnread, markRead, markAllRead } = useNotificationHub({
     workspaceId: activeWorkspace?.id,
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open]);
 
   return (
     <div className={styles.wrap}>

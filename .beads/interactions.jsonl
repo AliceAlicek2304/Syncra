@@ -1,0 +1,1 @@
+{"id":"int-090f550c","kind":"field_change","created_at":"2026-05-15T09:32:55.8113584Z","actor":"Syncra Dev","issue_id":"Syncra-v30","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Created missing mockAI.ts with mockGenerateRepurpose function and RepurposePlatform re-export"}}

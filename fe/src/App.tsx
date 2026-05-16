@@ -76,7 +76,7 @@ function AnimatedRoutes() {
   const location = useLocation()
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.key}>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />

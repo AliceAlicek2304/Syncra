@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -53,6 +54,8 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar { width: 8px; }
@@ -65,6 +68,40 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
 a { text-decoration: none; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--purple-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--purple-500);
+  outline-offset: 2px;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--purple-500);
+  outline-offset: 0;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
 
 .gradient-text {
   background: var(--gradient-hero);
@@ -115,7 +152,7 @@ a { text-decoration: none; color: inherit; }
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
   position: relative;
   overflow: hidden;
@@ -155,7 +192,7 @@ a { text-decoration: none; color: inherit; }
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-secondary:hover {
@@ -178,7 +215,7 @@ a { text-decoration: none; color: inherit; }
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-ghost:hover {
@@ -203,6 +240,7 @@ a { text-decoration: none; color: inherit; }
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.04em;
+  text-wrap: balance;
   background: linear-gradient(to bottom, #fff, #94a3b8);
   -webkit-background-clip: text;
   background-clip: text;
@@ -228,6 +266,17 @@ a { text-decoration: none; color: inherit; }
   filter: blur(120px);
   pointer-events: none;
   z-index: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* =============================================
