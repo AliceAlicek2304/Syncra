@@ -13,7 +13,7 @@
     - [x] Collision detection & `linking_required` status
     - [x] Secure password-verified linking flow
     - [x] Settings UI for viewing/unlinking accounts
-- [ ] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling
+- [x] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling ✅
 
 ## Phase Details
 
@@ -58,9 +58,9 @@ Plans:
   2. Tokens are automatically refreshed before expiry without user intervention
   3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
 **Plans**: 3 plans
-- [ ] 17-01-PLAN.md — Token schema + OAuthCallbackResult transport pipeline
-- [ ] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection
-- [ ] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection
+- [x] 17-01-PLAN.md — Token schema + OAuthCallbackResult transport pipeline ✅
+- [x] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection ✅
+- [x] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection ✅
 
 ## Progress Table
 
@@ -68,7 +68,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | DONE | 2026-05-16 |
 | 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
-| 17 - Token Storage + Auto-Refresh + Revocation | 0/3 | Planned | - |
+| 17 - Token Storage + Auto-Refresh + Revocation | 3/3 | DONE | 2026-05-16 |
 
 ## Coverage
 
@@ -82,8 +82,8 @@ Plans:
 | LINK-02 | Phase 16 | Covered |
 | LINK-03 | Phase 16 | Covered |
 | LINK-04 | Phase 16 | Covered |
-| TOKEN-01 | Phase 17 | Pending |
-| TOKEN-02 | Phase 17 | Pending |
-| TOKEN-03 | Phase 17 | Pending |
+| TOKEN-01 | Phase 17 | Covered |
+| TOKEN-02 | Phase 17 | Covered |
+| TOKEN-03 | Phase 17 | Covered |
 
 **Coverage:** 11/11 v1.5 requirements mapped ✓
