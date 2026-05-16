@@ -1,5 +1,5 @@
 import api from '../lib/axios';
-import type { AuthResponse, LoginRequest, RegisterRequest, User } from './types';
+import type { AuthResponse, LoginRequest, RegisterRequest, User, LinkAccountRequest } from './types';
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -34,6 +34,11 @@ export const authApi = {
       state,
       returnUrl,
     });
+    return response.data;
+  },
+
+  linkAccount: async (data: LinkAccountRequest): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('auth/link', data);
     return response.data;
   },
 };

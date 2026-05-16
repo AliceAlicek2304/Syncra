@@ -2,12 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
+import LinkAccountModal from '../components/auth/LinkAccountModal';
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { error: showError } = useToast();
   const [status, setStatus] = useState('Connecting...');
+  const [linkingState, setLinkingState] = useState<{
+    showModal: boolean;
+    email: string;
+    providerKey: string;
+  }>({
+    showModal: false,
+    email: '',
+    providerKey: '',
+  });
   const hasProcessed = useRef(false);
 
   useEffect(() => {
@@ -34,12 +44,27 @@ export default function OAuthCallbackPage() {
       try {
         setStatus('Signing you in...');
         const response = await authApi.oauthCallback('google', code, state);
+        
+        // Handle successful login
         localStorage.setItem('syncra_access_token', response.token);
         setStatus('Success! Redirecting...');
         navigate('/app/dashboard', { replace: true });
       } catch (err: unknown) {
         console.error('OAuth callback error:', err);
-        const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to complete Google sign-in';
+        
+        const errorData = (err as { response?: { data?: { code?: string, email?: string, providerKey?: string, message?: string } } })?.response?.data;
+        
+        if (errorData?.code === 'linking_required' && errorData.email && errorData.providerKey) {
+          setStatus('Account linking required');
+          setLinkingState({
+            showModal: true,
+            email: errorData.email,
+            providerKey: errorData.providerKey,
+          });
+          return;
+        }
+
+        const message = errorData?.message || 'Failed to complete Google sign-in';
         showError(message);
         navigate('/login');
       }
@@ -48,12 +73,29 @@ export default function OAuthCallbackPage() {
     processCallback();
   }, [searchParams, navigate, showError]);
 
+  const handleLinkSuccess = (token: string) => {
+    localStorage.setItem('syncra_access_token', token);
+    setStatus('Success! Account linked. Redirecting...');
+    setLinkingState(prev => ({ ...prev, showModal: false }));
+    navigate('/app/dashboard', { replace: true });
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#080b14]">
       <div className="text-center">
-        <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto" />
+        {!linkingState.showModal && (
+          <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto" />
+        )}
         <p className="text-lg font-semibold text-white">{status}</p>
       </div>
+
+      <LinkAccountModal
+        isOpen={linkingState.showModal}
+        onClose={() => navigate('/login')}
+        email={linkingState.email}
+        providerKey={linkingState.providerKey}
+        onLinkSuccess={handleLinkSuccess}
+      />
     </div>
   );
 }

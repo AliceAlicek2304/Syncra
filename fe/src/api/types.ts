@@ -37,3 +37,10 @@ export interface Workspace {
 export interface WorkspaceResponse {
   workspaces: Workspace[];
 }
+
+export interface LinkAccountRequest {
+  email: string;
+  password?: string;
+  provider: string;
+  providerKey: string;
+}
