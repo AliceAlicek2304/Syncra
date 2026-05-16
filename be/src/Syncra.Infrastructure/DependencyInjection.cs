@@ -115,6 +115,7 @@ public static class DependencyInjection
             return new GoogleAuthProvider(options, httpClient);
         });
         services.AddScoped<IOAuthProvider, GoogleAuthProvider>();
+        services.AddScoped<IGoogleTokenService, GoogleTokenService>();
 
         return services;
     }

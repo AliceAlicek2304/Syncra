@@ -55,6 +55,16 @@ public class GlobalExceptionMiddleware
                 await context.Response.WriteAsJsonAsync(new { code = domainEx.Code, message = domainEx.Message });
                 break;
 
+            case OAuthTokenRevokedException revokedEx:
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "oauth_token_revoked",
+                    message = revokedEx.Message,
+                    provider = revokedEx.ProviderName
+                });
+                break;
+
             case LinkingRequiredException linkingEx:
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsJsonAsync(new 
