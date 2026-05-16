@@ -44,3 +44,9 @@ export interface LinkAccountRequest {
   provider: string;
   providerKey: string;
 }
+
+export interface LinkedAccount {
+  provider: string;
+  providerKey: string | null;
+  linkedAtUtc: string;
+}

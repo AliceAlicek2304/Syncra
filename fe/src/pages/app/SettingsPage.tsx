@@ -10,6 +10,7 @@ import { useUpdateProfile, useUpdateWorkspace } from '../../hooks/useSettings'
 import Skeleton from '../../components/Skeleton'
 import RadarChart from '../../components/RadarChart'
 import BillingSection from '../../components/billing/BillingSection'
+import LinkedAccountsSection from '../../components/auth/LinkedAccountsSection'
 import styles from './SettingsPage.module.css'
 
 const profileSchema = z.object({
@@ -136,6 +137,13 @@ export default function SettingsPage() {
                 </motion.button>
               </form>
             )}
+          </section>
+
+          {/* Authentication Settings */}
+          <section className={`glass-card ${styles.section}`}>
+            <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Authentication</h2>
+            <p className={styles.sectionDesc}>Quản lý các phương thức đăng nhập của bạn.</p>
+            <LinkedAccountsSection />
           </section>
 
           {/* Brand Voice Section */}

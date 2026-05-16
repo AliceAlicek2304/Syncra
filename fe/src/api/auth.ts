@@ -1,5 +1,5 @@
 import api from '../lib/axios';
-import type { AuthResponse, LoginRequest, RegisterRequest, User, LinkAccountRequest } from './types';
+import type { AuthResponse, LoginRequest, RegisterRequest, User, LinkAccountRequest, LinkedAccount } from './types';
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -40,5 +40,14 @@ export const authApi = {
   linkAccount: async (data: LinkAccountRequest): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('auth/link', data);
     return response.data;
+  },
+
+  getLinkedAccounts: async (): Promise<LinkedAccount[]> => {
+    const response = await api.get<LinkedAccount[]>('auth/linked-accounts');
+    return response.data;
+  },
+
+  unlinkGoogleAccount: async (): Promise<void> => {
+    await api.delete('auth/link/google');
   },
 };

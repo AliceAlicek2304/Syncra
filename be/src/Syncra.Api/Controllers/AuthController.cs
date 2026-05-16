@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs;
 using Syncra.Application.DTOs.Auth;
 using Syncra.Application.Features.Auth.Commands;
+using Syncra.Application.Features.Auth.Queries;
 using Syncra.Application.Features.Users.Queries;
 using Syncra.Domain.Interfaces;
 using Syncra.Shared.Extensions;
@@ -98,6 +99,30 @@ public class AuthController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("linked-accounts")]
+    public async Task<IActionResult> GetLinkedAccounts(CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var query = new GetLinkedAccountsQuery(userId.Value);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpDelete("link/{provider}")]
+    public async Task<IActionResult> UnlinkAccount(string provider, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var command = new UnlinkAccountCommand(userId.Value, provider);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 }
 

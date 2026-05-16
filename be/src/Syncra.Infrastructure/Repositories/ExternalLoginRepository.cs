@@ -19,6 +19,13 @@ public class ExternalLoginRepository : Repository<ExternalLogin>, IExternalLogin
             .FirstOrDefaultAsync(el => el.ProviderName == providerName && el.ProviderUserId == providerUserId);
     }
 
+    public async Task<IEnumerable<ExternalLogin>> GetByUserIdAsync(Guid userId)
+    {
+        return await _dbSet
+            .Where(el => el.UserId == userId)
+            .ToListAsync();
+    }
+
     public async Task AddAsync(ExternalLogin entity)
     {
         await _dbSet.AddAsync(entity);
@@ -27,6 +34,12 @@ public class ExternalLoginRepository : Repository<ExternalLogin>, IExternalLogin
     public Task UpdateAsync(ExternalLogin entity)
     {
         _dbSet.Update(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(ExternalLogin entity)
+    {
+        _dbSet.Remove(entity);
         return Task.CompletedTask;
     }
 }
