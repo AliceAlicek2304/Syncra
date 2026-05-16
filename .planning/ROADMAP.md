@@ -1,131 +1,80 @@
-# Roadmap: Syncra.NET
+# Roadmap: v1.5 Google Auth & Account Linking
 
-## Milestones
-
-- ✅ **v1.3 Performance & Analytics Optimization** – Phases 12-13 (Shipped 2026-05-13) – [Archive](milestones/v1.3-ROADMAP.md)
-- ✅ **v1.2 Update the FE** – Phases 8-11 (Shipped 2026-05-08)
-- ✅ **v1.1 Reliable Payments & Provider Abstraction** – Phases 4-7 (shipped 2026-05-01) – [Archive](milestones/v1.1-ROADMAP.md)
-- ✅ **v1.0 Stability** – Phases 1-3 (shipped 2026-04-27) – [Archive](milestones/v1.0-ROADMAP.md)
+**Milestone:** v1.5 Google Auth & Calendar Integration (Calendar removed by user)
+**Created:** 2026-05-16
+**Last Updated:** 2026-05-16
+**Granularity:** Standard
+**Coverage:** 11/11 requirements mapped
 
 ## Phases
 
-<details open>
-<summary>✅ v1.3 Performance & Analytics Optimization (Phases 12-13) – SHIPPED 2026-05-13</summary>
+- [ ] **Phase 15: Multi-Provider Auth Foundation + Google OAuth** - IAuthProvider abstraction, Google OAuth login/signup, profile import
+- [ ] **Phase 16: Account Linking** - Email collision detection, password verification, linked accounts management
+- [ ] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling
 
-### Phase 12: Query Optimization & Caching (5 plans) — COMPLETE ✓
-- [x] 12-01-PLAN.md — EF Core Migrations for Indexes
-- [x] 12-02-PLAN.md — WorkspaceAnalyticsService Refactor (Projections)
-- [x] 12-03-PLAN.md — AnalyticsCacheService Implementation (Redis)
-- [x] 12-04-PLAN.md — Cache Integration & Invalidation
-- [x] 12-05-PLAN.md — Verification & Benchmarking — **UAT Complete 2026-05-12**
+## Phase Details
 
-### Phase 13: Advanced Analytics & Reporting (3 plans + 1 fix) — COMPLETE ✓
-- [x] 13-01-PLAN.md — Export DTOs & Repository Extension
-- [x] 13-02-PLAN.md — CSV Export Service Implementation
-- [x] 13-03-PLAN.md — API Endpoint & Verification
-- [x] 13-FIX-01-PLAN.md — Fix EF Core concurrency crash in CSV export
-  **UAT Complete 2026-05-12**
-</details>
-
-<details>
-<summary>✅ v1.2 Update the FE (Phases 8-11) – SHIPPED 2026-05-08</summary>
-
-### Phase 8: Core API Integration & Auth (7 plans)
-
+### Phase 15: Multi-Provider Auth Foundation + Google OAuth
+**Goal**: Users can authenticate with Google accounts through a multi-provider-ready architecture
+**Depends on**: Phase 14 (v1.4 code quality baseline)
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
+**Success Criteria** (what must be TRUE):
+  1. User can click "Sign in with Google" on login page and be redirected to Google consent, then returned to the app with a valid JWT session
+  2. First-time Google user gets a new account auto-created with name, email, and avatar imported from Google profile
+  3. Returning Google user is signed in to their existing account without creating a duplicate
+  4. IAuthProvider interface exists and can be implemented to add a future provider (GitHub, Microsoft, Apple) without modifying auth flow logic
+**Plans**: 4 plans
 Plans:
-- [x] 08-01-PLAN.md — Implement API client (Axios)
-- [x] 08-02-PLAN.md — Auth flow & session persistence
-- [x] 08-03-PLAN.md — Workspace fetching & switching
-- [x] 08-04-PLAN.md — Profile settings form & update
-- [x] 08-05-PLAN.md — Workspace settings form & update
-- [x] 08-06-PLAN.md — Global error handling & toast notifications
-- [x] 08-07-PLAN.md — E2E Verification Suite
+- [ ] 15-01-PLAN.md — IAuthProvider interface + ExternalLogin entity
+- [ ] 15-02-PLAN.md — GoogleAuthProvider implementation + DI registration
+- [ ] 15-03-PLAN.md — OAuth login/callback endpoints + user creation logic
+- [ ] 15-04-PLAN.md — Google button in LoginModal + OAuth callback page
+**UI hint**: yes
 
-### Phase 9: Feature Integration (Ideas & Posts) (7 plans)
+### Phase 16: Account Linking
+**Goal**: Users can safely link their Google account to an existing email/password account
+**Depends on**: Phase 15
+**Requirements**: LINK-01, LINK-02, LINK-03, LINK-04
+**Success Criteria** (what must be TRUE):
+  1. When a Google email matches an existing email/password account, the system detects the collision and prompts the user to verify ownership with their password before linking
+  2. After password verification, the Google account is linked to the existing account (no duplicate created)
+  3. User can view all linked authentication methods (email/password, Google) in account settings
+  4. User can unlink their Google account from settings, and the account remains accessible via email/password
+**Plans**: TBD
+**UI hint**: yes
 
-Plans:
-- [x] 09-01-PLAN.md — Media API client & backend integration
-- [x] 09-02-PLAN.md — useR2Upload Hook — Direct-to-R2 Upload
-- [x] 09-03-PLAN.md — Ideas Board Backend Integration
-- [x] 09-04-PLAN.md — AI Idea Generator — Real API Integration
-- [x] 09-05-PLAN.md — Multi-platform Editor — Auto-save & Backend Persistence
-- [x] 09-06-PLAN.md — Media Library Page
-- [x] 09-07-PLAN.md — Phase 9 E2E Verification
+### Phase 17: Token Storage + Auto-Refresh + Revocation
+**Goal**: Google OAuth tokens are durably stored, automatically refreshed, and revocation is handled gracefully
+**Depends on**: Phase 15
+**Requirements**: TOKEN-01, TOKEN-02, TOKEN-03
+**Success Criteria** (what must be TRUE):
+  1. Google OAuth access and refresh tokens are persisted in PostgreSQL and cached in Redis for fast retrieval
+  2. Tokens are automatically refreshed before expiry without user intervention
+  3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
+**Plans**: TBD
 
-### Phase 10: Scheduling & Analytics (5 plans)
+## Progress Table
 
-Plans:
-- [x] 10-01-PLAN.md — Connect Calendar to Scheduling API
-- [x] 10-02-PLAN.md — Bind Analytics charts to real metrics
-- [x] 10-03-PLAN.md — Implement live notification system
-- [x] 10-04-PLAN.md — Heatmap integration
-- [x] 10-05-PLAN.md — UI Refinement Gap Closure
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | Planned | - |
+| 16 - Account Linking | 0/0 | Not started | - |
+| 17 - Token Storage + Auto-Refresh + Revocation | 0/0 | Not started | - |
 
-### Phase 11: "Pro Max" Polish & E2E Testing (3 plans) — COMPLETE ✓
-- [x] 11-A-PLAN.md — Framer Motion foundations
-- [x] 11-B-PLAN.md — Micro-interactions & Error Boundaries
-- [x] 11-C-PLAN.md — E2E Test Suite
-  **UAT Complete 2026-05-12**
-</details>
+## Coverage
 
-<details>
-<summary>✅ v1.1 Reliable Payments & Provider Abstraction (Phases 4-7) – SHIPPED 2026-05-01</summary>
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| AUTH-01 | Phase 15 | Pending |
+| AUTH-02 | Phase 15 | Pending |
+| AUTH-03 | Phase 15 | Pending |
+| AUTH-04 | Phase 15 | Pending |
+| LINK-01 | Phase 16 | Pending |
+| LINK-02 | Phase 16 | Pending |
+| LINK-03 | Phase 16 | Pending |
+| LINK-04 | Phase 16 | Pending |
+| TOKEN-01 | Phase 17 | Pending |
+| TOKEN-02 | Phase 17 | Pending |
+| TOKEN-03 | Phase 17 | Pending |
 
-### Phase 4: Payment Provider Abstraction
-- [x] Phase 4 (3/3 plans) – completed 2026-04-30 (PR #15)
-
-### Phase 5: Stripe Data Consistency & Mapping
-- [x] Phase 5 (4/4 plans) – shipped 2026-05-01 (PR #16)
-
-### Phase 6: Webhook Reliability & Idempotency
-- [x] Phase 7: Billing UX & Documentation
-- [x] Phase 7 (4/4 plans) – shipped 2026-05-01 (PR #17)
-
-</details>
-
-<details>
-<summary>✅ v1.0 Stability (Phases 1-3) – SHIPPED 2026-04-27</summary>
-
-### Phase 1: Security & Multi-tenancy Hardening
-- [x] Phase 1 (4/4 plans) – completed 2026-04-26
-
-### Phase 2: Architectural Refinement & Performance
-- [x] Phase 2 (6/6 plans) – completed 2026-04-26
-
-### Phase 3: Quality & Observability
-- [x] Phase 3 (3/3 plans) – completed 2026-04-27
-
-</details>
-
-## Next Milestone
-
-**v1.4** (Planned)
-
-*Next milestone to be defined via `/gsd-new-milestone`*
-
-### Phase 14: Fix dashboard code quality issues
-
-**Goal:** Clean up code quality across the entire frontend application — remove mock data from production UI, refactor large component files, fix ESLint errors and suppressions, address backend code quality issues that affect dashboard data, and add test coverage for critical user flows.
-
-**Depends on:** Phase 13
-**Plans:** 8/8 plans complete
-
-Requirements:
-- **REQ-14.1:** Mock data removal from production UI
-- **REQ-14.2:** Large file refactoring (files >300 lines split into smaller components)
-- **REQ-14.3:** ESLint quality bar and CI enforcement
-- **REQ-14.4:** Backend code quality fixes (PublishService cache, IdempotencyFilter hash)
-- **REQ-14.5:** Test coverage for critical user flows and refactored components
-
-Plans:
-- [ ] **Wave 1** (parallel):
-  - [x] 14-01-PLAN.md — ESLint Quality Bar & CI Pipeline (fix 14 errors, remove 7 suppressions, fix deps, verify CI)
-  - [x] 14-02-PLAN.md — Backend Fixes (PublishService cache eviction, IdempotencyFilter SHA256 + 409)
-  - [x] 14-03-PLAN.md — Mock Data Eradication (delete mockAI.ts/mockCoachTrends.ts, fix consumers, wire GlassUpload, AnalyticsPage cleanup)
-  - [x] 14-04-PLAN.md — CalendarPage Refactoring (extract VisualCard + month/week/day view renderers)
-  - [x] 14-05-PLAN.md — IdeasPage Refactoring (extract useIdeaBoard hook + IdeaCard/GroupCard)
-  - [x] 14-06-PLAN.md — HelpPage Refactoring (extract data + tab sub-components)
-- [ ] **Wave 2**:
-  - [x] 14-07-PLAN.md — CreatePost Module Refactoring (split useCreatePostState + AIIdeaGenerator, fix CreatePostEditor eslint)
-- [ ] **Wave 3**:
-  - [x] 14-08-PLAN.md — Test Coverage (10+ test files for extracted components, hooks, and critical flows)
+**Coverage:** 11/11 v1.5 requirements mapped ✓

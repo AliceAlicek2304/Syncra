@@ -69,9 +69,9 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
 
             if (existingUser != null)
             {
-                user = existingUser;
-                var newExternalLogin = ExternalLogin.Create(user.Id, request.ProviderName, callbackResult.ProviderUserId);
-                await _externalLoginRepository.AddAsync(newExternalLogin);
+                // Collision detected: user exists with this email but not this OAuth provider
+                // Throw LinkingRequiredException to trigger password verification on frontend
+                throw new LinkingRequiredException(callbackResult.Email, callbackResult.ProviderUserId);
             }
             else
             {

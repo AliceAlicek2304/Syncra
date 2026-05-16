@@ -1,32 +1,62 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Stability
-current_phase: 14
-status: completed
-last_updated: "2026-05-15T05:03:53.000Z"
+milestone: v1.5
+milestone_name: Google Auth & Calendar Integration
+current_phase: 15
+status: executing
+last_updated: "2026-05-16T04:30:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_plans: 4
+  completed_plans: 4
+  percent: 33
 ---
 
 # Project State: Syncra.NET
 
 ## Metadata
 
-- **Current Phase:** 14
-- **Status:** Phase 14 complete
-- **Last Updated:** 2026-05-15 05:03 UTC
+- **Current Phase:** 15 (Multi-Provider Auth Foundation + Google OAuth) — COMPLETE
+- **Status:** Phase 15 complete, ready for Phase 16
+- **Last Updated:** 2026-05-16 04:30 UTC
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-13 after v1.3 milestone)
+See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Phase 14 — fix-dashboard-code-quality-issues
+**Current focus:** v1.5 Google Auth & Account Linking — Phase 15: Multi-Provider Auth Foundation + Google OAuth
+
+## Current Position
+
+Phase: 15 — Multi-Provider Auth Foundation + Google OAuth
+Plan: 4 plans across 3 waves — ALL COMPLETE
+Status: Phase complete
+Last activity: 2026-05-16 — Phase 15 implementation complete
+
+## Phase 15 Summary
+
+**Goal:** Multi-provider auth foundation with Google OAuth login/signup
+
+**Backend (Wave 1-2):**
+- IOAuthProvider interface (ProviderName, GetLoginUrl, HandleCallbackAsync)
+- ExternalLogin entity + IExternalLoginRepository + ExternalLoginRepository
+- GoogleOAuthOptions (ClientId, ClientSecret, CallbackUrl, Scopes)
+- GoogleAuthProvider with full OAuth flow (state generation, code exchange, user info)
+- OAuthLoginCommand + OAuthLoginCommandHandler (new user creation, workspace, token generation)
+- AuthController endpoints: GET /oauth/{provider}/login, POST /oauth/{provider}/callback
+
+**Frontend (Wave 3):**
+- Google sign-in button in LoginModal with OAuth URL redirect
+- OAuthCallbackPage for handling Google callback and token storage
+- Auth API methods: getOAuthLoginUrl, oauthCallback
+
+**Commits:**
+- feat(auth): IOAuthProvider interface + ExternalLogin entity (Wave 1)
+- feat(auth): GoogleAuthProvider implementation (Wave 2)
+- feat(auth): OAuth endpoints + command handler with ExternalLogin repository
+- feat(frontend): Google OAuth button and callback page
 
 ## Milestone History
 
@@ -37,16 +67,31 @@ See: .planning/PROJECT.md (updated 2026-05-13 after v1.3 milestone)
 | v1.2 Update the FE | 8-11 | 22 | Shipped | 2026-05-08 |
 | v1.3 Performance & Analytics Optimization | 12-13 | 9 | Shipped | 2026-05-13 |
 | v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
-
-## Active Tasks
-
-- Phase 14 complete. Ready for next phase or milestone.
+| v1.5 Google Auth & Calendar Integration | 15-17 | 4 | Phase 15 Complete | 2026-05-16 |
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 14 added: Fix dashboard code quality issues
+- Phase 15-17 defined: v1.5 Google Auth & Account Linking (Calendar removed from scope)
+
+### v1.5 Roadmap Summary
+
+| Phase | Goal | Requirements |
+|-------|------|--------------|
+| 15 | Multi-Provider Auth + Google OAuth login/signup | AUTH-01, AUTH-02, AUTH-03, AUTH-04 |
+| 16 | Account Linking (email collision, password verify, unlink) | LINK-01, LINK-02, LINK-03, LINK-04 |
+| 17 | Token Storage + Auto-Refresh + Revocation | TOKEN-01, TOKEN-02, TOKEN-03 |
+
+### Key Architectural Decisions (v1.5)
+
+- **No ASP.NET Core Identity** — integrate Google OAuth with existing custom JWT auth pipeline
+- **Cookie-based OAuth → JWT exchange** — Google.Apis.Auth.AspNetCore3 with OnTicketReceived event
+- **IAuthProvider interface** — multi-provider abstraction for future providers
+- **ExternalLogin table** — new identity mapping (Google sub → UserId)
+- **Token storage** — PostgreSQL (durable) + Redis (fast retrieval), encrypted with IDataProtector
+- **Calendar deferred** — user explicitly removed from v1.5 scope
 
 ## Key Decisions (v1.4)
 
@@ -71,4 +116,5 @@ See: .planning/PROJECT.md (updated 2026-05-13 after v1.3 milestone)
 
 ## Deferred Items
 
-- None.
+- Google Calendar integration (user removed from v1.5 scope)
+- Additional auth providers (GitHub, Microsoft) — deferred to v2

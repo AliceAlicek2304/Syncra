@@ -55,6 +55,17 @@ public class GlobalExceptionMiddleware
                 await context.Response.WriteAsJsonAsync(new { code = domainEx.Code, message = domainEx.Message });
                 break;
 
+            case LinkingRequiredException linkingEx:
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(new 
+                { 
+                    code = linkingEx.Code, 
+                    message = linkingEx.Message,
+                    email = linkingEx.Email,
+                    providerKey = linkingEx.ProviderKey
+                });
+                break;
+
             case DomainException domainEx:
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsJsonAsync(new { code = domainEx.Code, message = domainEx.Message });

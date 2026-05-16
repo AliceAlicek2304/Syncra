@@ -1,0 +1,37 @@
+# Node
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+coverage/
+
+# Logs
+*.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Cache
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temp
+*.tmp
+*.swp

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs;
+using Syncra.Application.DTOs.Auth;
 using Syncra.Application.Features.Auth.Commands;
 using Syncra.Application.Features.Users.Queries;
 using Syncra.Domain.Interfaces;
@@ -82,6 +83,19 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> OAuthCallback(string provider, [FromBody] OAuthCallbackRequest request, CancellationToken cancellationToken)
     {
         var command = new OAuthLoginCommand(provider, request.Code, request.State, request.ReturnUrl ?? "/");
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("link")]
+    public async Task<IActionResult> LinkAccount([FromBody] LinkAccountDto linkAccountDto, CancellationToken cancellationToken)
+    {
+        var command = new LinkAccountCommand(
+            linkAccountDto.Email,
+            linkAccountDto.Password,
+            linkAccountDto.Provider,
+            linkAccountDto.ProviderKey);
+
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }

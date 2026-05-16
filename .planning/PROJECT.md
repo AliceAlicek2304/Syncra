@@ -5,7 +5,16 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 
 ## Current State
 
-**Active:** v1.3 Performance & Analytics Optimization (Completed 2026-05-13)
+**Active:** v1.5 Google Auth & Calendar Integration
+
+**Goal:** Add Google OAuth login/signup with account linking, display Google Calendar events in the app, using ASP.NET Core Identity with a multi-provider-ready architecture.
+
+**Target features:**
+- Google OAuth login and signup
+- Account linking (email match prompt)
+- Google Calendar integration (display events in app)
+- Multi-provider OAuth architecture (abstract provider interface)
+- Redis-backed token storage with auto-refresh
 
 v1.3 optimized analytics performance with database indexing, query projections, and Redis caching. Delivered CSV analytics export with date range presets. Resolved EF Core concurrency crash in the export pipeline.
 
@@ -70,5 +79,22 @@ v1.3 optimized analytics performance with database indexing, query projections, 
 - Stripe webhooks must be idempotent
 - Frontend must maintain high performance and "Pro Max" UI/UX standards
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-05-13 after v1.3 milestone*
+*Last updated: 2026-05-16 after v1.5 milestone start*
