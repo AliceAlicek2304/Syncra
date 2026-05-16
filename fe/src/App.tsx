@@ -36,6 +36,7 @@ import HelpPage from './pages/app/HelpPage'
 
 import { useNavigate } from 'react-router-dom'
 import LoginModal from './components/auth/LoginModal'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
 
 function Homepage() {
   const location = useLocation()
@@ -80,6 +81,7 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.key}>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
+        <Route path="/auth/google/callback" element={<OAuthCallbackPage />} />
         
         <Route path="/app" element={
           <ProtectedRoute>
