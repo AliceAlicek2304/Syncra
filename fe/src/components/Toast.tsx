@@ -26,7 +26,7 @@ export default function Toast({ toasts, onDismiss }: ToastProps) {
   return (
     <div className={styles.wrapper}>
       {toasts.map(t => (
-        <div key={t.id} className={`${styles.toast} ${styles[t.type]}`} onClick={() => onDismiss(t.id)}>
+        <div key={t.id} data-testid="toast-message" className={`${styles.toast} ${styles[t.type]}`} onClick={() => onDismiss(t.id)}>
           <span className={styles.icon}>
             {t.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
           </span>

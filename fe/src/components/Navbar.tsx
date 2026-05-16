@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { motion } from 'framer-motion'
+import WorkspaceSelector from './WorkspaceSelector'
 import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
 
@@ -24,7 +26,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { user, login, logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -44,8 +46,7 @@ export default function Navbar() {
   }, [])
 
   const handleLogin = () => {
-    login()
-    navigate('/app/dashboard')
+    navigate('/login')
   }
 
   const handleLogout = () => {
@@ -58,10 +59,15 @@ export default function Navbar() {
     <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
-        <a href="#" className={styles.logo}>
+        <motion.a 
+          href="#" 
+          className={styles.logo}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <img src={logo} alt="Syncra" className={styles.logoImg} />
           <span className={styles.logoText}>Syncra</span>
-        </a>
+        </motion.a>
 
         {/* Desktop links */}
         <ul className={styles.links}>
@@ -74,6 +80,7 @@ export default function Navbar() {
 
         {/* CTA / Avatar */}
         <div className={styles.cta}>
+          {user && <WorkspaceSelector />}
           {user ? (
             <div className={styles.avatarWrapper} ref={dropdownRef}>
               <button
@@ -81,16 +88,22 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(o => !o)}
                 aria-label="User menu"
               >
-                <span className={styles.avatarCircle}>{user.avatar}</span>
+                <span className={styles.avatarCircle}>
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.displayName || user.email} />
+                  ) : (
+                    (user.displayName || user.email).charAt(0).toUpperCase()
+                  )}
+                </span>
                 <div className={styles.avatarInfo}>
-                  <span className={styles.avatarName}>{user.name}</span>
-                  <span className={styles.avatarPlan}>{user.plan}</span>
+                  <span className={styles.avatarName}>{user.displayName || user.email}</span>
+                  <span className={styles.avatarPlan}>Free Plan</span>
                 </div>
               </button>
               {dropdownOpen && (
                 <div className={styles.dropdown}>
                   <div className={styles.dropdownHeader}>
-                    <span className={styles.dropdownHandle}>{user.handle}</span>
+                    <span className={styles.dropdownHandle}>{user.email}</span>
                   </div>
                   {USER_MENU.map(item => (
                     <button
@@ -112,14 +125,24 @@ export default function Navbar() {
             </div>
           ) : (
             <>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.1 }}
                 className="btn-secondary"
                 style={{ padding: '10px 20px', fontSize: '14px' }}
                 onClick={handleLogin}
               >
                 Sign in
-              </button>
-              <a href="#pricing" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>Start free</a>
+              </motion.button>
+              <motion.a 
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.1 }}
+                href="#pricing" 
+                className="btn-primary" 
+                style={{ padding: '10px 20px', fontSize: '14px' }}
+              >
+                Start free
+              </motion.a>
             </>
           )}
         </div>
@@ -156,7 +179,7 @@ export default function Navbar() {
                 >
                   Sign in
                 </button>
-                <a href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</a>
+                <motion.a whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</motion.a>
               </>
             )}
           </div>

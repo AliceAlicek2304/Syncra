@@ -1,23 +1,25 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import CreatePostModal from '../../components/CreatePostModal'
-import { shortId } from '../../utils/shortId'
-import Toast, { type ToastItem } from '../../components/Toast'
 import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
+import NotificationBell from '../../components/NotificationBell'
+import WorkspaceSelector from '../../components/WorkspaceSelector'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
+  { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
@@ -27,19 +29,11 @@ const NAV_ITEMS = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth()
+  const { success, error } = useToast()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-  const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
-
-  const addToast = useCallback((t: Omit<ToastItem, 'id'>) => {
-    setToasts(prev => [...prev, { ...t, id: shortId() }])
-  }, [])
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
-  }, [])
 
   const handleLogout = () => {
     logout()
@@ -64,6 +58,13 @@ export default function AppLayout() {
             {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
+
+        {/* Workspace Selector */}
+        {!collapsed && (
+          <div className={styles.workspaceWrapper}>
+            <WorkspaceSelector />
+          </div>
+        )}
 
         {/* New Post button */}
         <div className={styles.newPostWrap}>
@@ -110,11 +111,17 @@ export default function AppLayout() {
           </NavLink>
 
           <div className={styles.userRow}>
-            <div className={styles.avatar}>{user?.avatar}</div>
+            <div className={styles.avatar}>
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.displayName || user.email} />
+              ) : (
+                (user?.displayName || user?.email || 'U').charAt(0).toUpperCase()
+              )}
+            </div>
             {!collapsed && (
               <div className={styles.userInfo}>
-                <span className={styles.userName}>{user?.name}</span>
-                <span className={styles.userPlan}>{user?.plan} plan</span>
+                <span className={styles.userName}>{user?.displayName || user?.email}</span>
+                <span className={styles.userPlan}>Free plan</span>
               </div>
             )}
             {!collapsed && (
@@ -128,6 +135,7 @@ export default function AppLayout() {
 
       {/* Main content */}
       <main className={styles.main}>
+        <NotificationBell />
         <Outlet />
       </main>
 
@@ -135,12 +143,11 @@ export default function AppLayout() {
       <CreatePostModal
         isOpen={state.isOpen}
         onClose={closeCreatePost}
-        onToast={addToast}
+        onToast={(t) => t.type === 'success' ? success(t.message) : error(t.message)}
         initialContent={state.initialContent}
         initialDate={state.initialDate}
         editPost={state.editPost}
       />
-      <Toast toasts={toasts} onDismiss={dismissToast} />
       
       {/* Floating AI Coach */}
       <AICoach />

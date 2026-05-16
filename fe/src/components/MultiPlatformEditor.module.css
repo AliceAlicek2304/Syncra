@@ -339,3 +339,30 @@
   .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.05); flex-direction: row; overflow-x: auto; }
   .tab { white-space: nowrap; }
 }
+
+.saveStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  color: var(--text-muted);
+  transition: opacity 400ms ease;
+}
+
+.saveStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.saveStatusDot[data-status="saved"] { background: #22c55e; }
+.saveStatusDot[data-status="error"] { background: #ef4444; }
+.saveStatusDot[data-status="saving"] { background: var(--text-muted); }
+
+.saveStatusText {
+  color: var(--text-muted);
+}

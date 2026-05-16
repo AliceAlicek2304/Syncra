@@ -1,0 +1,39 @@
+export interface User {
+  userId: string;
+  email: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  locale?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  expiresAtUtc: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password?: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password?: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+}
+
+export interface WorkspaceResponse {
+  workspaces: Workspace[];
+}

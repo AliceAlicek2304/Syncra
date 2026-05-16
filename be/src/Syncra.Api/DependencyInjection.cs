@@ -16,6 +16,7 @@ public static class DependencyInjection
     {
         // Controllers
         services.AddControllers();
+        services.AddSignalR();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {
@@ -60,6 +61,7 @@ public static class DependencyInjection
         // Filters
         services.AddScoped<Filters.IdempotencyFilter>();
         services.AddScoped<Controllers.PaymentWebhookOrchestrator>();
+        services.AddScoped<Syncra.Application.Interfaces.INotificationDispatcher, Syncra.Api.Services.NotificationDispatcher>();
 
         return services;
     }
@@ -93,6 +95,23 @@ public static class DependencyInjection
             {
                 options.TokenValidationParameters.ValidateIssuerSigningKey = false;
             }
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        path.StartsWithSegments("/api/v1/hubs/notifications"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         services.AddAuthorization();

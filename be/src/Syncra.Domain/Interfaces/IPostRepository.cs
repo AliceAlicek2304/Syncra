@@ -25,4 +25,15 @@ public interface IPostRepository
         int page = 1,
         int pageSize = 20,
         CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<Syncra.Domain.Models.Analytics.AnalyticsPostData>> GetAnalyticsDataAsync(
+        Guid workspaceId,
+        DateTime? sinceUtc = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Syncra.Domain.Models.Analytics.PostExportData>> GetPublishedPostsForExportAsync(
+        Guid workspaceId,
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default);
 }

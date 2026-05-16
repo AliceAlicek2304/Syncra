@@ -289,6 +289,20 @@ http://localhost:5260/api/v1
 
 ---
 
+### Group Endpoints
+
+Groups allow organizing posts and ideas within a workspace.
+
+| Method | Endpoint | Description | Frontend Page |
+|--------|----------|-------------|---------------|
+| POST | `/workspaces/{workspaceId}/groups` | Create new group | Ideas/Calendar Page |
+| GET | `/workspaces/{workspaceId}/groups` | List workspace groups | Ideas/Calendar Page |
+| GET | `/workspaces/{workspaceId}/groups/{groupId}` | Get single group | - |
+| PUT | `/workspaces/{workspaceId}/groups/{groupId}` | Update group | - |
+| DELETE | `/workspaces/{workspaceId}/groups/{groupId}` | Delete group | - |
+
+---
+
 ### Post/Content Endpoints
 
 | Method | Endpoint | Description | Frontend Page |
@@ -314,7 +328,7 @@ http://localhost:5260/api/v1
 | Method | Endpoint | Description | Frontend Page |
 |--------|----------|-------------|---------------|
 | POST | `/workspaces/{workspaceId}/integrations/{providerId}/connect` | Start OAuth flow | Settings Page |
-| GET | `/workspaces/{workspaceId}/integrations/{providerId}/callback` | OAuth callback | (Automatic) |
+| GET | `/api/v1/integrations/{providerId}/callback` | OAuth callback | (Automatic) |
 | GET | `/workspaces/{workspaceId}/integrations` | List connected integrations | Settings Page |
 | DELETE | `/workspaces/{workspaceId}/integrations/{providerId}` | Disconnect integration | Settings Page |
 | GET | `/workspaces/{workspaceId}/integrations/{providerId}/health` | Check integration status | Settings Page |
@@ -353,10 +367,11 @@ When multiple health checks are performed, the most severe status is reported ac
 
 | Method | Endpoint | Description | Frontend Page |
 |--------|----------|-------------|---------------|
-| GET | `/workspaces/{workspaceId}/analytics/overview` | Get overall analytics | Analytics Page |
-| GET | `/workspaces/{workspaceId}/analytics/platforms` | Get platform-specific analytics | Analytics Page |
+| GET | `/workspaces/{workspaceId}/analytics/summary` | Get workspace overview summary | Analytics Page |
+| GET | `/workspaces/{workspaceId}/analytics/heatmap` | Get best posting time heatmap | Analytics Page |
 | GET | `/workspaces/{workspaceId}/analytics/{integrationId}` | Get analytics for specific integration | Analytics Page |
 | GET | `/workspaces/{workspaceId}/analytics/post/{postId}` | Get analytics for specific post | Analytics Page |
+| GET | `/workspaces/{workspaceId}/analytics/post/{postId}/debug` | Get raw platform data for debugging | - |
 
 **Query Parameters:**
 - `date`: Number of days to look back (default: 30)
@@ -379,12 +394,29 @@ When multiple health checks are performed, the most severe status is reported ac
 
 | Method | Endpoint | Description | Frontend Page |
 |--------|----------|-------------|---------------|
-| GET | `/workspaces/{workspaceId}/subscription` | Get current subscription | Settings Page (Billing) |
-| POST | `/workspaces/{workspaceId}/subscription/create-checkout-session` | Create Stripe checkout | Settings Page (Billing) |
-| POST | `/workspaces/{workspaceId}/subscription/create-portal-session` | Create billing portal session | Settings Page (Billing) |
+| GET | `/api/v1/workspaces/{workspaceId}/subscription` | Get current subscription | Settings Page (Billing) |
+| POST | `/api/v1/workspaces/{workspaceId}/subscription/create-checkout-session` | Create Stripe checkout (PriceId based) | Settings Page (Billing) |
+| POST | `/api/v2/workspaces/{workspaceId}/subscription/create-checkout-session` | Create Stripe checkout (PlanCode based) | Settings Page (Billing) |
+| POST | `/api/v1/workspaces/{workspaceId}/subscription/create-portal-session` | Create billing portal (v1) | Settings Page (Billing) |
+| POST | `/api/v2/workspaces/{workspaceId}/subscription/create-portal-session` | Create billing portal (v2) | Settings Page (Billing) |
 
-**Webhook Endpoint (no authentication):**
-- POST `/api/stripe/webhook` - Stripe webhook handler
+**Note:** v2 endpoints (and some v1) require the `X-Workspace-Id` header matching the route parameter.
+
+**Webhook Endpoints (no authentication):**
+- POST `/api/stripe/webhook` - Legacy Stripe webhook
+- POST `/api/v1/payments/webhook` - Multi-provider payment webhook
+
+---
+
+### Admin Endpoints
+
+Restricted endpoints for system administration.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/webhooks/failed` | List failed webhook records |
+| POST | `/api/admin/webhooks/{id}/reset` | Reset a failed webhook for retry |
+| POST | `/api/admin/stripe/sync-plans` | Sync Plans from Stripe Products |
 
 ---
 
@@ -409,8 +441,7 @@ When multiple health checks are performed, the most severe status is reported ac
 
 **Used APIs:**
 - `GET /api/v1/workspaces/{workspaceId}/posts` - Recent posts
-- `GET /api/v1/workspaces/{workspaceId}/analytics/overview` - Quick stats
-- `GET /api/v1/workspaces/{workspaceId}/analytics/platforms` - Platform stats
+- `GET /api/v1/workspaces/{workspaceId}/analytics/summary` - Quick stats
 
 **Display:**
 - Quick stats cards (total reach, engagement, platforms connected, scheduled posts)
@@ -423,6 +454,7 @@ When multiple health checks are performed, the most severe status is reported ac
 
 **Used APIs:**
 - `GET /api/v1/workspaces/{workspaceId}/posts` - All posts with filters
+- `GET /api/v1/workspaces/{workspaceId}/groups` - Workspace groups for filtering
 - `POST /api/v1/workspaces/{workspaceId}/posts` - Create new post
 - `PUT /api/v1/workspaces/{workspaceId}/posts/{postId}` - Update post (reschedule)
 - `POST /api/v1/workspaces/{workspaceId}/posts/{postId}/publish` - Publish post
@@ -431,6 +463,7 @@ When multiple health checks are performed, the most severe status is reported ac
 - Month/Week/Day view toggle
 - Drag-and-drop rescheduling
 - Platform filtering
+- Group filtering
 - Post status indicators (draft, scheduled, published)
 
 ---
@@ -439,12 +472,15 @@ When multiple health checks are performed, the most severe status is reported ac
 
 **Used APIs:**
 - `GET /api/v1/workspaces/{workspaceId}/posts` - List all posts
+- `GET /api/v1/workspaces/{workspaceId}/groups` - List workspace groups
 - `POST /api/v1/workspaces/{workspaceId}/posts` - Create new idea
 - `PUT /api/v1/workspaces/{workspaceId}/posts/{postId}` - Update idea
 - `DELETE /api/v1/workspaces/{workspaceId}/posts/{postId}` - Delete idea
+- `POST /api/v1/workspaces/{workspaceId}/groups` - Create group
 
 **Features:**
 - Kanban-style board with columns (Unassigned, To Do, In Progress, Done)
+- Group-based organization
 - Drag-and-drop between columns
 - AI idea generation modal
 - Edit idea modal
@@ -454,8 +490,8 @@ When multiple health checks are performed, the most severe status is reported ac
 ### Analytics Page (`/app/analytics`)
 
 **Used APIs:**
-- `GET /api/v1/workspaces/{workspaceId}/analytics/overview` - Overall stats
-- `GET /api/v1/workspaces/{workspaceId}/analytics/platforms` - Platform breakdown
+- `GET /api/v1/workspaces/{workspaceId}/analytics/summary` - Overall stats
+- `GET /api/v1/workspaces/{workspaceId}/analytics/heatmap` - Best posting times
 - `GET /api/v1/workspaces/{workspaceId}/analytics/{integrationId}` - Integration-specific
 - `GET /api/v1/workspaces/{workspaceId}/analytics/post/{postId}` - Post-specific
 
@@ -676,5 +712,5 @@ The Swagger documentation includes:
 
 ---
 
-*Last Updated: March 2026*
+*Last Updated: May 2026*
 *For questions, contact: support@syncra.io*

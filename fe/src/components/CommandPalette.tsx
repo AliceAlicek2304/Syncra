@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, LayoutDashboard, Sparkles, Repeat,
   TrendingUp, CalendarDays, BarChart3, Settings,
@@ -80,66 +81,82 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className={styles.overlay} onClick={() => setIsOpen(false)}>
-      <div className={styles.container} onClick={e => e.stopPropagation()} onKeyDown={onKeyDown}>
-        <div className={styles.searchWrap}>
-          <Search size={20} className={styles.searchIcon} />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Type a command or search..."
-            className={styles.input}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <div className={styles.hint}>
-            <Command size={12} /> K
-          </div>
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setIsOpen(false)}
+        >
+          <motion.div
+            className={styles.container}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={onKeyDown}
+          >
+            <div className={styles.searchWrap}>
+              <Search size={20} className={styles.searchIcon} />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Type a command or search..."
+                className={styles.input}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <div className={styles.hint}>
+                <Command size={12} /> K
+              </div>
+            </div>
 
-        <div className={styles.results}>
-          {filteredCommands.length === 0 ? (
-            <div className={styles.empty}>No results found for "{search}"</div>
-          ) : (
-            <>
-              {['Navigation', 'Actions'].map(cat => {
-                const group = filteredCommands.filter(c => c.category === cat)
-                if (group.length === 0) return null
-                return (
-                  <div key={cat} className={styles.group}>
-                    <div className={styles.groupLabel}>{cat}</div>
-                    {group.map(cmd => {
-                      const globalIndex = filteredCommands.indexOf(cmd)
-                      const isActive = globalIndex === selectedIndex
-                      return (
-                        <div
-                          key={cmd.id}
-                          className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
-                          onClick={() => handleAction(cmd)}
-                          onMouseEnter={() => setSelectedIndex(globalIndex)}
-                        >
-                          <span className={styles.itemIcon}>{cmd.icon}</span>
-                          <span className={styles.itemLabel}>{cmd.label}</span>
-                          {cmd.shortcut && <span className={styles.itemShortcut}>{cmd.shortcut}</span>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-            </>
-          )}
-        </div>
+            <div className={styles.results}>
+              {filteredCommands.length === 0 ? (
+                <div className={styles.empty}>No results found for "{search}"</div>
+              ) : (
+                <>
+                  {['Navigation', 'Actions'].map(cat => {
+                    const group = filteredCommands.filter(c => c.category === cat)
+                    if (group.length === 0) return null
+                    return (
+                      <div key={cat} className={styles.group}>
+                        <div className={styles.groupLabel}>{cat}</div>
+                        {group.map(cmd => {
+                          const globalIndex = filteredCommands.indexOf(cmd)
+                          const isActive = globalIndex === selectedIndex
+                          return (
+                            <div
+                              key={cmd.id}
+                              className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
+                              onClick={() => handleAction(cmd)}
+                              onMouseEnter={() => setSelectedIndex(globalIndex)}
+                            >
+                              <span className={styles.itemIcon}>{cmd.icon}</span>
+                              <span className={styles.itemLabel}>{cmd.label}</span>
+                              {cmd.shortcut && <span className={styles.itemShortcut}>{cmd.shortcut}</span>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </div>
 
-        <div className={styles.footer}>
-          <span><kbd>↑↓</kbd> to navigate</span>
-          <span><kbd>↵</kbd> to select</span>
-          <span><kbd>esc</kbd> to close</span>
-        </div>
-      </div>
-    </div>
+            <div className={styles.footer}>
+              <span><kbd>↑↓</kbd> to navigate</span>
+              <span><kbd>↵</kbd> to select</span>
+              <span><kbd>esc</kbd> to close</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

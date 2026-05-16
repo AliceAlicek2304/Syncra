@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/refs */
 import { useState, useRef } from 'react'
 import { Smile, Hash, Settings2, X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
 import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, type Platform } from './types'
@@ -172,24 +171,30 @@ const PLATFORM_BADGE_CLASS: Record<Platform, string> = {
   X: styles.badgeX,
 }
 
-export default function CreatePostEditor({ state, refs, actions }: UseCreatePostStateReturn) {
+export default function CreatePostEditor({ state, refs: { fileInputRef, replaceInputRef, textareaRef, emojiRef }, actions }: UseCreatePostStateReturn) {
   return (
     <>
       <div className={styles.postArea}>
         {/* Author row */}
         <div className={styles.authorRow}>
           <div className={styles.avatarWrap}>
-            <div className={styles.avatarBubble}>{state.user?.avatar ?? 'U'}</div>
+            <div className={styles.avatarBubble}>
+              {state.user?.avatarUrl ? (
+                <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+              ) : (
+                (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+              )}
+            </div>
             <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[state.activeTab]}`}>
               <PlatformIcon platform={state.activeTab} size={12} />
             </div>
           </div>
-          <span className={styles.authorName}>{state.user?.name ?? 'You'}</span>
+          <span className={styles.authorName}>{state.user?.displayName || state.user?.firstName || 'You'}</span>
         </div>
 
         {/* Textarea */}
         <textarea
-          ref={refs.textareaRef}
+          ref={textareaRef}
           className={styles.textarea}
           placeholder="What would you like to share?"
           value={state.caption}
@@ -200,7 +205,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         {state.media.length === 0 ? (
           <div
             className={`${styles.mediaZone} ${state.dragOver ? styles.mediaZoneDragOver : ''}`}
-            onClick={() => refs.fileInputRef.current?.click()}
+            onClick={() => fileInputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); actions.setDragOver(true) }}
             onDragLeave={() => actions.setDragOver(false)}
             onDrop={actions.onDrop}
@@ -247,7 +252,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
             <div
               className={styles.mediaZone}
               style={{ width: 72, height: 72, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
-              onClick={() => refs.fileInputRef.current?.click()}
+              onClick={() => fileInputRef.current?.click()}
             >
               <span className={styles.mediaZoneText}><span>+ Add</span></span>
             </div>
@@ -255,7 +260,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
         )}
 
         <input
-          ref={refs.fileInputRef}
+          ref={fileInputRef}
           type="file"
           accept="image/*,video/*"
           multiple
@@ -263,7 +268,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
           onChange={e => actions.handleFiles(e.target.files)}
         />
         <input
-          ref={refs.replaceInputRef}
+          ref={replaceInputRef}
           type="file"
           accept="image/*,video/*"
           style={{ display: 'none' }}
@@ -273,7 +278,7 @@ export default function CreatePostEditor({ state, refs, actions }: UseCreatePost
 
       {/* Toolbar*/}
       <div className={styles.toolbar} style={{ position: 'relative' }}>
-        <div ref={refs.emojiRef} style={{ position: 'relative' }}>
+        <div ref={emojiRef} style={{ position: 'relative' }}>
           <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">
             <Smile size={18} />
           </button>

@@ -16,17 +16,20 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IPostRepository _postRepository;
     private readonly IIntegrationAnalyticsService _integrationAnalyticsService;
+    private readonly IAnalyticsCache _cache;
     private readonly ILogger<WorkspaceAnalyticsService> _logger;
 
     public WorkspaceAnalyticsService(
         IIntegrationRepository integrationRepository,
         IPostRepository postRepository,
         IIntegrationAnalyticsService integrationAnalyticsService,
+        IAnalyticsCache cache,
         ILogger<WorkspaceAnalyticsService> logger)
     {
         _integrationRepository = integrationRepository;
         _postRepository = postRepository;
         _integrationAnalyticsService = integrationAnalyticsService;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -35,6 +38,14 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         int date = 30,
         CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"analytics:summary:{workspaceId}:{date}";
+        var cached = await _cache.GetAsync<WorkspaceAnalyticsSummaryDto>(cacheKey, cancellationToken);
+        if (cached != null)
+        {
+            _logger.LogInformation("Cache hit for analytics summary: {WorkspaceId}", workspaceId);
+            return Result.Success(cached);
+        }
+
         // 1. Lấy tất cả active integrations
         var integrations = (await _integrationRepository.GetByWorkspaceIdAsync(workspaceId))
             .Where(i => i.IsActive)
@@ -79,21 +90,25 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
             ? Math.Round((double)totalEngagements / totalReach * 100, 2)
             : 0;
 
-        // 4. Total posts từ DB
-        var posts = await _postRepository.GetByWorkspaceIdAsync(workspaceId);
-        var totalPosts = posts.Count(p =>
+        // 4. Total posts từ DB (D-17: Lean Projection)
+        var postData = await _postRepository.GetAnalyticsDataAsync(workspaceId, cancellationToken: cancellationToken);
+        var totalPosts = postData.Count(p =>
             p.Status == PostStatus.Published ||
             p.Status == PostStatus.Scheduled);
 
         // 5. Weekly reach — aggregate Page Impressions + Views theo tuần
         var weeklyReach = BuildWeeklyReach(allData, date);
 
-        return Result.Success(new WorkspaceAnalyticsSummaryDto(
+        var summary = new WorkspaceAnalyticsSummaryDto(
             TotalReach: totalReach,
             EngagementRate: engagementRate,
             FollowerGrowth: followerGrowth,
             TotalPosts: totalPosts,
-            WeeklyReach: weeklyReach));
+            WeeklyReach: weeklyReach);
+
+        await _cache.SetAsync(cacheKey, summary, cancellationToken: cancellationToken);
+
+        return Result.Success(summary);
     }
 
     // Cộng tổng tất cả data points của các labels chỉ định
@@ -136,9 +151,18 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
         int date = 90,
         CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"analytics:heatmap:{workspaceId}:{date}";
+        var cached = await _cache.GetAsync<HeatmapDto>(cacheKey, cancellationToken);
+        if (cached != null)
+        {
+            _logger.LogInformation("Cache hit for heatmap: {WorkspaceId}", workspaceId);
+            return Result.Success(cached);
+        }
+
         var since = DateTime.UtcNow.AddDays(-date);
 
-        var posts = await _postRepository.GetByWorkspaceIdAsync(workspaceId);
+        // D-17: Lean Projection
+        var posts = await _postRepository.GetAnalyticsDataAsync(workspaceId, since, cancellationToken);
 
         // Chỉ lấy published posts trong khoảng thời gian
         var publishedPosts = posts
@@ -164,7 +188,10 @@ public sealed class WorkspaceAnalyticsService : IWorkspaceAnalyticsService
                 Score: g.Count()))
             .ToList();
 
-        return Result.Success(new HeatmapDto(Slots: grouped));
+        var result = new HeatmapDto(Slots: grouped);
+        await _cache.SetAsync(cacheKey, result, cancellationToken: cancellationToken);
+
+        return Result.Success(result);
     }
 
     // Try to get ICT timezone, with fallback for different OS

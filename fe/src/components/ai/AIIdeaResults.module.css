@@ -1,0 +1,141 @@
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resultsHint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.resultsHint strong {
+  color: var(--purple-400);
+}
+
+.resultCard {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.resultCard:hover {
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+.resultCardSelected {
+  border-color: var(--purple-400) !important;
+  background: rgba(139, 92, 246, 0.08) !important;
+}
+
+.resultCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.resultType {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.resultPlatforms {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.resultTitle {
+  font-family: var(--font-title);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.resultHook {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.selectBtn {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: transparent;
+  color: var(--purple-400);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.selectBtn:hover {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: var(--purple-400);
+}
+
+.selectBtnSelected {
+  background: var(--gradient-brand);
+  border-color: transparent;
+  color: #fff;
+}
+
+.selectBtnSelected:hover {
+  opacity: 0.88;
+  background: var(--gradient-brand);
+}
+
+.bulkFooter {
+  position: sticky;
+  bottom: 0;
+  background: rgba(13, 17, 28, 0.97);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bulkCount {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.bulkAddBtn {
+  font-size: 13px !important;
+  padding: 9px 18px !important;
+  gap: 6px !important;
+  flex-shrink: 0;
+}
+
+.bulkAddBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}

@@ -77,9 +77,9 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
 
         // Redis cache read — matches Potiz integration.service.ts:374
         var cacheKey = $"integration:{workspaceId}:{integrationId}:{date}";
-        var cached = await _cache.GetAsync(cacheKey, cancellationToken);
+        var cached = await _cache.GetAsync<List<AnalyticsData>>(cacheKey, cancellationToken);
         if (cached != null)
-            return Result.Success(JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new());
+            return Result.Success(cached);
 
         try
         {
@@ -92,7 +92,7 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
                 cancellationToken);
 
             // Redis cache write — matches Potiz integration.service.ts:388
-            await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), _options.Value.CacheTtl, cancellationToken);
+            await _cache.SetAsync(cacheKey, result, _options.Value.CacheTtl, cancellationToken);
             return Result.Success(result);
         }
         catch (RefreshTokenException)
@@ -229,9 +229,9 @@ public sealed class IntegrationAnalyticsService : IIntegrationAnalyticsService
 
         // Redis cache read
         var cacheKey = $"integration:{workspaceId}:{postId}:{date}";
-        var cached = await _cache.GetAsync(cacheKey, cancellationToken);
+        var cached = await _cache.GetAsync<List<AnalyticsData>>(cacheKey, cancellationToken);
         if (cached != null)
-            return Result.Success(JsonSerializer.Deserialize<List<AnalyticsData>>(cached) ?? new());
+            return Result.Success(cached);
 
         try
         {

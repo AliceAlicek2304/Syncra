@@ -71,7 +71,6 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useCreatePostModal() {
   const ctx = useContext(CreatePostModalContext)
   if (!ctx) throw new Error('useCreatePostModal must be used within CreatePostModalProvider')

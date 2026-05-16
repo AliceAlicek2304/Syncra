@@ -5,4 +5,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/Syncra/',
+  server: {
+    proxy: {
+      '/Syncra/api': {
+        target: 'http://localhost:5260',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/Syncra\/api/, '/api'),
+        ws: true,
+      }
+    }
+  }
 })
+

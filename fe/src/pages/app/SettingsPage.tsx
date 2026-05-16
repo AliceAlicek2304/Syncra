@@ -1,10 +1,63 @@
 import { useState } from 'react'
-import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck } from 'lucide-react'
+import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck, User as UserIcon, Building } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { motion } from 'framer-motion'
+import { useAuth } from '../../context/AuthContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { useUpdateProfile, useUpdateWorkspace } from '../../hooks/useSettings'
+import Skeleton from '../../components/Skeleton'
 import RadarChart from '../../components/RadarChart'
 import BillingSection from '../../components/billing/BillingSection'
 import styles from './SettingsPage.module.css'
 
+const profileSchema = z.object({
+  displayName: z.string().min(2, 'Name too short'),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  timezone: z.string().optional(),
+})
+
+const workspaceSchema = z.object({
+  name: z.string().min(2, 'Workspace name too short'),
+})
+
 export default function SettingsPage() {
+  const { user, loading: authLoading } = useAuth()
+  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace()
+  const updateProfile = useUpdateProfile()
+  const updateWorkspace = useUpdateWorkspace()
+
+  const isLoading = authLoading || workspaceLoading;
+
+  const { register: registerProfile, handleSubmit: handleSubmitProfile } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      displayName: user?.displayName || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      timezone: user?.timezone || 'UTC',
+    }
+  })
+
+  const { register: registerWorkspace, handleSubmit: handleSubmitWorkspace } = useForm({
+    resolver: zodResolver(workspaceSchema),
+    defaultValues: {
+      name: activeWorkspace?.name || '',
+    }
+  })
+
+  const onProfileSubmit = (data: { displayName?: string; firstName?: string; lastName?: string; timezone?: string }) => {
+    updateProfile.mutate(data)
+  }
+
+  const onWorkspaceSubmit = (data: { name: string }) => {
+    if (activeWorkspace) {
+      updateWorkspace.mutate({ id: activeWorkspace.id, data })
+    }
+  }
+
   const [brandTone, setBrandTone] = useState({
     professional: 0.8,
     friendly: 0.6,
@@ -39,6 +92,52 @@ export default function SettingsPage() {
 
       <div className={styles.content}>
         <div className={styles.mainCol}>
+          {/* Profile Settings */}
+          <section className={`glass-card ${styles.section}`}>
+            <h2 className={styles.sectionTitle}><UserIcon size={18} /> Profile Settings</h2>
+            {isLoading ? (
+              <div className={styles.form}><Skeleton height="200px" /></div>
+            ) : (
+              <form onSubmit={handleSubmitProfile(onProfileSubmit)} className={styles.form}>
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label>Display Name</label>
+                    <input {...registerProfile('displayName')} className={styles.input} />
+                  </div>
+                  <div className={styles.field}>
+                    <label>First Name</label>
+                    <input {...registerProfile('firstName')} data-testid="profile-firstname" className={styles.input} />
+                  </div>
+                  <div className={styles.field}>
+                    <label>Last Name</label>
+                    <input {...registerProfile('lastName')} data-testid="profile-lastname" className={styles.input} />
+                  </div>
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateProfile.isPending}>
+                  {updateProfile.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </motion.button>
+              </form>
+            )}
+          </section>
+
+          {/* Workspace Settings */}
+          <section className={`glass-card ${styles.section}`}>
+            <h2 className={styles.sectionTitle}><Building size={18} /> Workspace Settings</h2>
+            {isLoading ? (
+              <div className={styles.form}><Skeleton height="100px" /></div>
+            ) : (
+              <form onSubmit={handleSubmitWorkspace(onWorkspaceSubmit)} className={styles.form}>
+                <div className={styles.field}>
+                  <label>Workspace Name</label>
+                  <input {...registerWorkspace('name')} data-testid="workspace-name" className={styles.input} />
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateWorkspace.isPending}>
+                  {updateWorkspace.isPending ? 'Saving...' : 'Save Workspace'}
+                </motion.button>
+              </form>
+            )}
+          </section>
+
           {/* Brand Voice Section */}
           <section className={`glass-card ${styles.section}`}>
             <div className={styles.sectionHeader}>

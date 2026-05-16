@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X, Clock, Check } from 'lucide-react'
 import type { ScheduledPost } from '../context/calendarContextBase'
 import styles from './EditPostModal.module.css'
@@ -30,27 +31,29 @@ interface Props {
 }
 
 export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete }: Props) {
-  const [title, setTitle] = useState('')
-  const [caption, setCaption] = useState('')
-  const [platform, setPlatform] = useState('TikTok')
-  const [status, setStatus] = useState<ScheduledPost['status']>('scheduled')
-  const [time, setTime] = useState('09:00')
-  const [day, setDay] = useState(1)
-  const [month, setMonth] = useState(0)
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [form, setForm] = useState({
+    title: '',
+    caption: '',
+    platform: 'TikTok',
+    status: 'scheduled' as ScheduledPost['status'],
+    time: '09:00',
+    day: 1,
+    month: 0,
+    year: new Date().getFullYear(),
+  })
 
   useEffect(() => {
     if (post) {
-      /* eslint-disable react-hooks/set-state-in-effect */
-      setTitle(post.title)
-      setCaption(post.caption)
-      setPlatform(post.platform)
-      setStatus(post.status)
-      setTime(post.time === '—' ? '09:00' : post.time)
-      setDay(post.day)
-      setMonth(post.month)
-      setYear(post.year)
-      /* eslint-enable react-hooks/set-state-in-effect */
+      queueMicrotask(() => setForm({
+        title: post.title,
+        caption: post.caption,
+        platform: post.platform,
+        status: post.status,
+        time: post.time === '—' ? '09:00' : post.time,
+        day: post.day,
+        month: post.month,
+        year: post.year,
+      }))
     }
   }, [post])
 
@@ -63,165 +66,181 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
     return () => window.removeEventListener('keydown', handler)
   }, [isOpen, onClose])
 
-  if (!isOpen || !post) return null
+  const platformColor = PLATFORM_OPTIONS.find(p => p.id === form.platform)?.color ?? '#8b5cf6'
 
-  const platformColor = PLATFORM_OPTIONS.find(p => p.id === platform)?.color ?? '#8b5cf6'
-
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const daysInMonth = new Date(form.year, form.month + 1, 0).getDate()
 
   const handleSave = () => {
+    if (!post) return
     onSave(post.id, {
-      title,
-      caption,
-      platform,
-      status,
-      time,
-      day,
-      month,
-      year,
+      title: form.title,
+      caption: form.caption,
+      platform: form.platform,
+      status: form.status,
+      time: form.time,
+      day: form.day,
+      month: form.month,
+      year: form.year,
       color: platformColor,
     })
     onClose()
   }
 
   const handleDelete = () => {
+    if (!post) return
     onDelete(post.id)
     onClose()
   }
 
   return (
-    <div
-      className={styles.backdrop}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div className={styles.dialog}>
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <span className={styles.platformDot} style={{ background: platformColor }} />
-            <span className={styles.headerTitle}>Edit Post</span>
-          </div>
-          <button className={styles.closeBtn} onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Body */}
-        <div className={styles.body}>
-          {/* Title */}
-          <div className={styles.field}>
-            <label className={styles.label}>Title</label>
-            <input
-              className={styles.input}
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Post title..."
-            />
-          </div>
-
-          {/* Platform */}
-          <div className={styles.field}>
-            <label className={styles.label}>Platform</label>
-            <div className={styles.platformChips}>
-              {PLATFORM_OPTIONS.map(p => (
-                <button
-                  key={p.id}
-                  className={`${styles.platformChip} ${platform === p.id ? styles.platformChipActive : ''}`}
-                  style={platform === p.id ? { borderColor: p.color, background: `${p.color}20`, color: p.color } : {}}
-                  onClick={() => setPlatform(p.id)}
-                >
-                  {p.label}
-                </button>
-              ))}
+    <AnimatePresence>
+      {isOpen && post && (
+        <motion.div
+          className={styles.backdrop}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
+        >
+          <motion.div
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={styles.header}>
+              <div className={styles.headerLeft}>
+                <span className={styles.platformDot} style={{ background: platformColor }} />
+                <span className={styles.headerTitle}>Edit Post</span>
+              </div>
+              <button className={styles.closeBtn} onClick={onClose}><X size={16} /></button>
             </div>
-          </div>
 
-          {/* Status */}
-          <div className={styles.field}>
-            <label className={styles.label}>Status</label>
-            <div className={styles.statusChips}>
-              {STATUS_OPTIONS.map(s => (
-                <button
-                  key={s.value}
-                  className={`${styles.statusChip} ${styles[`status_${s.value}`]} ${status === s.value ? styles.statusChipActive : ''}`}
-                  onClick={() => setStatus(s.value)}
-                >
-                  {status === s.value && <Check size={11} />}
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
+            {/* Body */}
+            <div className={styles.body}>
+              {/* Title */}
+              <div className={styles.field}>
+                <label className={styles.label}>Title</label>
+                <input
+                  className={styles.input}
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Post title..."
+                />
+              </div>
 
-          {/* Date & Time row */}
-          <div className={styles.fieldRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Date</label>
-              <div className={styles.dateRow}>
-                <select
-                  className={styles.select}
-                  value={day}
-                  onChange={e => setDay(Number(e.target.value))}
-                >
-                  {Array.from({ length: daysInMonth }).map((_, i) => (
-                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+              {/* Platform */}
+              <div className={styles.field}>
+                <label className={styles.label}>Platform</label>
+                <div className={styles.platformChips}>
+                  {PLATFORM_OPTIONS.map(p => (
+                    <button
+                      key={p.id}
+                      className={`${styles.platformChip} ${form.platform === p.id ? styles.platformChipActive : ''}`}
+                      style={form.platform === p.id ? { borderColor: p.color, background: `${p.color}20`, color: p.color } : {}}
+                      onClick={() => setForm(f => ({ ...f, platform: p.id }))}
+                    >
+                      {p.label}
+                    </button>
                   ))}
-                </select>
-                <select
-                  className={styles.select}
-                  value={month}
-                  onChange={e => setMonth(Number(e.target.value))}
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={i}>{m}</option>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className={styles.field}>
+                <label className={styles.label}>Status</label>
+                <div className={styles.statusChips}>
+                  {STATUS_OPTIONS.map(s => (
+                    <button
+                      key={s.value}
+                      className={`${styles.statusChip} ${styles[`status_${s.value}`]} ${form.status === s.value ? styles.statusChipActive : ''}`}
+                      onClick={() => setForm(f => ({ ...f, status: s.value }))}
+                    >
+                      {status === s.value && <Check size={11} />}
+                      {s.label}
+                    </button>
                   ))}
-                </select>
-                <select
-                  className={styles.select}
-                  value={year}
-                  onChange={e => setYear(Number(e.target.value))}
-                >
-                  {Array.from({ length: 6 }).map((_, i) => {
-                    const y = new Date().getFullYear() - 1 + i
-                    return <option key={y} value={y}>{y}</option>
-                  })}
-                </select>
+                </div>
+              </div>
+
+              {/* Date & Time row */}
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Date</label>
+                  <div className={styles.dateRow}>
+                    <select
+                      className={styles.select}
+                      value={form.day}
+                      onChange={e => setForm(f => ({ ...f, day: Number(e.target.value) }))}
+                    >
+                      {Array.from({ length: daysInMonth }).map((_, i) => (
+                        <option key={i + 1} value={i + 1}>{i + 1}</option>
+                      ))}
+                    </select>
+                    <select
+                      className={styles.select}
+                      value={form.month}
+                      onChange={e => setForm(f => ({ ...f, month: Number(e.target.value) }))}
+                    >
+                      {MONTHS.map((m, i) => (
+                        <option key={m} value={i}>{m}</option>
+                      ))}
+                    </select>
+                    <select
+                      className={styles.select}
+                      value={form.year}
+                      onChange={e => setForm(f => ({ ...f, year: Number(e.target.value) }))}
+                    >
+                      {Array.from({ length: 6 }).map((_, i) => {
+                        const y = new Date().getFullYear() - 1 + i
+                        return <option key={y} value={y}>{y}</option>
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    className={styles.input}
+                    value={form.time}
+                    onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Caption */}
+              <div className={styles.field}>
+                <label className={styles.label}>Caption</label>
+                <textarea
+                  className={styles.textarea}
+                  value={form.caption}
+                  onChange={e => setForm(f => ({ ...f, caption: e.target.value }))}
+                  placeholder="Post caption..."
+                  rows={4}
+                />
               </div>
             </div>
 
-            <div className={styles.field}>
-              <label className={styles.label}>
-                <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
-                Time
-              </label>
-              <input
-                type="time"
-                className={styles.input}
-                value={time}
-                onChange={e => setTime(e.target.value)}
-              />
+            {/* Footer */}
+            <div className={styles.footer}>
+              <button className={styles.deleteBtn} onClick={handleDelete}>Delete</button>
+              <div className={styles.footerSpacer} />
+              <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
+              <button className={styles.saveBtn} onClick={handleSave}>Save Changes</button>
             </div>
-          </div>
-
-          {/* Caption */}
-          <div className={styles.field}>
-            <label className={styles.label}>Caption</label>
-            <textarea
-              className={styles.textarea}
-              value={caption}
-              onChange={e => setCaption(e.target.value)}
-              placeholder="Post caption..."
-              rows={4}
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className={styles.footer}>
-          <button className={styles.deleteBtn} onClick={handleDelete}>Delete</button>
-          <div className={styles.footerSpacer} />
-          <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-          <button className={styles.saveBtn} onClick={handleSave}>Save Changes</button>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

@@ -47,4 +47,17 @@ public class WorkspacesController : ControllerBase
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateWorkspace(Guid id, [FromBody] UpdateWorkspaceRequest request, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var command = new UpdateWorkspaceCommand(id, userId.Value, request.Name);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
 }
+
+public record UpdateWorkspaceRequest(string Name);

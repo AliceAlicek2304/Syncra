@@ -1,10 +1,10 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
-using Syncra.Domain.Interfaces;
 using Syncra.Domain.Models.Social;
 
 namespace Syncra.Application.Services;
@@ -15,17 +15,29 @@ public sealed class PublishService : IPublishService
     private readonly IIntegrationRepository _integrationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublishAdapterRegistry _publishAdapterRegistry;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IAnalyticsCache _cache;
+    private readonly ILogger<PublishService> _logger;
 
     public PublishService(
         IPostRepository postRepository,
         IIntegrationRepository integrationRepository,
         IUnitOfWork unitOfWork,
-        IPublishAdapterRegistry publishAdapterRegistry)
+        IPublishAdapterRegistry publishAdapterRegistry,
+        INotificationRepository notificationRepository,
+        INotificationDispatcher notificationDispatcher,
+        IAnalyticsCache cache,
+        ILogger<PublishService> logger)
     {
         _postRepository = postRepository;
         _integrationRepository = integrationRepository;
         _unitOfWork = unitOfWork;
         _publishAdapterRegistry = publishAdapterRegistry;
+        _notificationRepository = notificationRepository;
+        _notificationDispatcher = notificationDispatcher;
+        _cache = cache;
+        _logger = logger;
     }
 
     public async Task<PublishResultDto> PublishAsync(
@@ -153,7 +165,22 @@ public sealed class PublishService : IPublishService
                 rawMetadata);
 
             await _postRepository.UpdateAsync(post);
+            
+            var successNotification = new Notification
+            {
+                WorkspaceId = workspaceId,
+                Type = "publish.success",
+                Title = "Post published",
+                Body = "Post published successfully.",
+                CreatedAtUtc = utcNow
+            };
+            await _notificationRepository.AddAsync(successNotification, cancellationToken);
+            
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationDispatcher.DispatchAsync(successNotification, cancellationToken);
+
+            // Fire-and-forget cache invalidation with error logging (D-23)
+            _ = InvalidateAnalyticsCacheAsync(workspaceId, cancellationToken);
 
             return new PublishResultDto(
                 Success: true,
@@ -172,7 +199,19 @@ public sealed class PublishService : IPublishService
             rawMetadata);
 
         await _postRepository.UpdateAsync(post);
+        
+        var failureNotification = new Notification
+        {
+            WorkspaceId = workspaceId,
+            Type = "publish.failure",
+            Title = "Publish failed",
+            Body = "Post failed to publish. Check details and try again.",
+            CreatedAtUtc = utcNow
+        };
+        await _notificationRepository.AddAsync(failureNotification, cancellationToken);
+        
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _notificationDispatcher.DispatchAsync(failureNotification, cancellationToken);
 
         return new PublishResultDto(
             Success: false,
@@ -181,6 +220,33 @@ public sealed class PublishService : IPublishService
             ErrorCode: providerResult.Error?.Code,
             ErrorMessage: errorText,
             RawMetadata: rawMetadata);
+    }
+
+    private async Task InvalidateAnalyticsCacheAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cacheKeys = new[]
+            {
+                $"analytics:summary:{workspaceId}:30",
+                $"analytics:heatmap:{workspaceId}:90"
+            };
+
+            var tasks = cacheKeys.Select(key => _cache.RemoveAsync(key, cancellationToken));
+            await Task.WhenAll(tasks);
+
+            _logger.LogInformation(
+                "Invalidated analytics cache for workspace {WorkspaceId}", workspaceId);
+        }
+        catch (OperationCanceledException)
+        {
+            // Graceful cancellation — no logging needed
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to invalidate analytics cache for workspace {WorkspaceId}", workspaceId);
+        }
     }
 
     private static PublishRequest BuildPublishRequest(Guid workspaceId, Post post)

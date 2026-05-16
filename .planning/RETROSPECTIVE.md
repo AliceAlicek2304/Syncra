@@ -1,0 +1,84 @@
+# Project Retrospective: Syncra.NET
+
+## Milestone: v1.1 � Reliable Payments & Provider Abstraction
+
+**Shipped:** 2026-05-01
+**Phases:** 4 | **Plans:** 15
+
+### What Was Built
+- Unified IPaymentProvider abstraction allowing for future gateway expansions.
+- High-reliability webhook orchestrator with Redis distributed locking and idempotency.
+- Integrated "Settings -> Billing" UI in the React frontend with full Stripe lifecycle management.
+- Operational runbooks for billing support and troubleshooting.
+
+### What Worked
+- **Parallel Research/Plan:** Splitting backend hardening and frontend data layer allowed for rapid implementation.
+- **UAT Checklist:** Having a pre-defined manual test suite ensured all edge cases (canceled checkout, portal returns) were covered.
+- **Redis for Idempotency:** Using Redis instead of just DB-level constraints provided a much cleaner way to handle concurrent webhook deliveries.
+
+### What Was Inefficient
+- **Plan Entity Refactor:** We had to revisit the Plan entity multiple times to get the Stripe mapping right (Monthly vs Yearly price IDs). This could have been consolidated earlier.
+
+### Patterns Established
+- **Timestamp Guards:** Using EventCreatedAtUtc as a guard against out-of-order state updates.
+- **Provider Registry:** Pattern for resolving infrastructure services by tenant or configuration.
+
+### Key Lessons
+- Stripe's "Product" vs "Price" hierarchy needs careful mapping to internal "Plan" entities to avoid confusion in multi-interval billing.
+- Frontend "Refresh Signaling" via query params is a simple but effective way to ensure consistent state after external redirects.
+
+---
+
+## Milestone: v1.0 � Stability
+
+**Shipped:** 2026-04-27
+**Phases:** 3 | **Plans:** 12
+
+### What Was Built
+- Foundation hardening (JWT, Multi-tenancy).
+- Performance optimizations (Redis caching, EF Core query tuning).
+- Quality & Observability (Sentry, Serilog, S3/R2 storage).
+
+## Milestone: v1.3 — Performance & Analytics Optimization
+
+**Shipped:** 2026-05-13
+**Phases:** 2 | **Plans:** 9
+
+### What Was Built
+- Composite database indexes on Posts and AuditLogs for analytics acceleration.
+- Query projections using `.Select()` + `.AsNoTracking()` eliminating unnecessary Media entity loading.
+- Redis-backed `AnalyticsCacheService` with cache-aside pattern and invalidation on publish.
+- CSV analytics export with 3-section output (Summary, Heatmap, Posts) and date presets (7d/30d/90d/YTD) + custom dates.
+- EF Core concurrency crash fix in export pipeline — sequential `await` replaced `Task.WhenAll`.
+
+### What Worked
+- **Focused Scope:** Keeping v1.3 to just performance and analytics allowed rapid delivery in ~1.5 days.
+- **UAT-Driven Verification:** Phase 12 UAT (8/8) and Phase 13 (19/19 tests) provided clear completion criteria.
+- **Cache-aside Pattern:** Simple, reliable caching without over-engineering — cache miss → populate → serve pattern minimized complexity.
+- **Single Responsibility Fix:** The concurrency crash fix was a clean, minimal change with clear root cause.
+
+### What Was Inefficient
+- **Quick Tasks Interruption:** A quick-task commit interrupted the v1.3 commit flow — minor context cost.
+
+### Patterns Established
+- **Projected Query Pattern:** `.Select()` + `.AsNoTracking()` for read-only analytics paths — applied consistently across all analytics queries.
+- **Cache Invalidation on Domain Events:** Invalidation triggered by `PublishService` on successful publication — deterministic and testable.
+
+### Key Lessons
+- EF Core's scoped DbContext is not thread-safe — avoid `Task.WhenAll` on operations sharing the same context.
+- CSV is a pragmatic export format — much simpler than PDF and sufficient for analytics data.
+- Date range resolution with precedence rules (days > custom) avoids ambiguous API behavior.
+
+### Cost Observations
+- Quick vertical slice (2 phases, 9 plans) completed in ~1.5 days
+- Efficient execution due to clear scope boundaries
+
+---
+
+## Cross-Milestone Trends
+
+| Milestone | Velocity (Plans/Day) | Quality (Passing Tests) |
+|-----------|----------------------|-------------------------|
+| v1.0      | 4.0                  | 100% (95/95)            |
+| v1.1      | 3.75                 | 100% (105/105)          |
+| v1.3      | 6.0                  | 100% (19/19)            |

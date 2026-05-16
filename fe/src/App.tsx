@@ -1,6 +1,8 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './context/AuthContext'
-import type { ReactNode } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from './context/AuthContext'
+import { AnimatePresence } from 'framer-motion'
+import { PageWrapper } from './components/PageWrapper'
 
 // Homepage components
 import Navbar from './components/Navbar'
@@ -18,9 +20,13 @@ import { CalendarProvider } from './context/CalendarContext'
 import { RepurposeProvider } from './context/RepurposeContext'
 import { CreatePostModalProvider } from './context/createPostModalContext'
 import { BillingProvider } from './context/BillingContext'
+import { WorkspaceProvider } from './context/WorkspaceContext'
+import { ToastProvider } from './context/ToastContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
+import MediaLibraryPage from './pages/app/MediaLibraryPage'
 import CalendarPage from './pages/app/CalendarPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
@@ -28,7 +34,22 @@ import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
 import HelpPage from './pages/app/HelpPage'
 
+import { useNavigate } from 'react-router-dom'
+import LoginModal from './components/auth/LoginModal'
+
 function Homepage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isLoginOpen = location.pathname === '/login'
+
+  const handleCloseLogin = () => {
+    navigate('/')
+  }
+
+  const handleLoginSuccess = () => {
+    navigate('/app/dashboard')
+  }
+
   return (
     <div style={{ position: 'relative' }}>
       <Navbar />
@@ -40,58 +61,72 @@ function Homepage() {
       <Testimonials />
       <TrustBadges />
       <Footer />
+      
+      {isLoginOpen && (
+        <LoginModal 
+          onClose={handleCloseLogin} 
+          onSuccess={handleLoginSuccess} 
+        />
+      )}
     </div>
   )
 }
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
-  return user ? <>{children}</> : <Navigate to="/" replace />
+function AnimatedRoutes() {
+  const location = useLocation()
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.key}>
+        <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
+        
+        <Route path="/app" element={
+          <ProtectedRoute>
+            <BillingProvider>
+              <CalendarProvider>
+                <RepurposeProvider>
+                  <CreatePostModalProvider>
+                    <AppLayout />
+                  </CreatePostModalProvider>
+                </RepurposeProvider>
+              </CalendarProvider>
+            </BillingProvider>
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+          <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
+          <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
+          <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
+          <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
+          <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
+          <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
+          <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+          <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
+        </Route>
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  )
 }
 
-const router = createBrowserRouter(
-  [
-    {
-      path: '/',
-      element: <Homepage />,
-    },
-    {
-      path: '/app',
-      element: (
-        <ProtectedRoute>
-          <BillingProvider>
-            <CalendarProvider>
-              <RepurposeProvider>
-                <CreatePostModalProvider>
-                  <AppLayout />
-                </CreatePostModalProvider>
-              </RepurposeProvider>
-            </CalendarProvider>
-          </BillingProvider>
-        </ProtectedRoute>
-      ),
-      children: [
-        { index: true, element: <Navigate to="dashboard" replace /> },
-        { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'ideas', element: <IdeasPage /> },
-        { path: 'calendar', element: <CalendarPage /> },
-        { path: 'analytics', element: <AnalyticsPage /> },
-        { path: 'trends', element: <TrendRadarPage /> },
-        { path: 'repurpose', element: <RepurposePage /> },
-        { path: 'settings', element: <SettingsPage /> },
-        { path: 'help', element: <HelpPage /> },
-      ],
-    },
-    { path: '*', element: <Navigate to="/" replace /> },
-  ],
-  { basename: '/Syncra' },
-)
+const queryClient = new QueryClient()
 
 function App() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ToastProvider>
+          <WorkspaceProvider>
+            <BrowserRouter basename="/Syncra/">
+              <AnimatedRoutes />
+            </BrowserRouter>
+          </WorkspaceProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
 

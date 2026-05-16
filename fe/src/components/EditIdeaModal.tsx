@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
     X, Sparkles, Smile, Hash,
     RotateCcw, RotateCw, Crop, Check, FlipHorizontal,
@@ -6,18 +7,9 @@ import {
 import { shortId } from '../utils/shortId'
 import { useCreatePostModal } from '../context/createPostModalContext'
 import IdeaAIAssistantPanel from './IdeaAIAssistantPanel'
+import type { Idea } from '../api/ideas'
+import type { Group } from '../api/groups'
 import styles from './EditIdeaModal.module.css'
-
-// ── Types ──────────────────────────────────────────────────────────────────
-interface Group { id: string; name: string }
-
-interface Idea {
-    id: string
-    title: string
-    description?: string
-    status: string
-    createdAt: number
-}
 
 interface MediaFile { id: string; url: string; type: 'image' | 'video'; name: string }
 
@@ -174,7 +166,7 @@ function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
 export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Props, 'onDelete'> & { onDelete?: (id: string) => void }) {
     const [title, setTitle] = useState(idea.title)
     const [content, setContent] = useState(idea.description ?? '')
-    const [status, setStatus] = useState(idea.status)
+    const [groupId, setGroupId] = useState(idea.groupId)
     const [showAI, setShowAI] = useState(false)
     const [showEmoji, setShowEmoji] = useState(false)
     const [media, setMedia] = useState<MediaFile[]>([])
@@ -275,14 +267,29 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
 
     // ── Save ─────────────────────────────────────────────────────────────
     const handleSave = () => {
-        onSave({ ...idea, title: title.trim() || idea.title, description: content, status })
+        onSave({ ...idea, title: title.trim() || idea.title, description: content, groupId })
         onClose()
     }
 
     // ── Render ────────────────────────────────────────────────────────────
     return (
-        <div className={styles.backdrop} onMouseDown={e => { if (e.target !== e.currentTarget) return; if (editingId) { setEditingId(null); return } onClose() }}>
-            <div className={styles.dialog}>
+        <motion.div
+            className={styles.backdrop}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={e => { if (e.target !== e.currentTarget) return; if (editingId) { setEditingId(null); return } onClose() }}
+        >
+            <motion.div
+                className={styles.dialog}
+                role="dialog"
+                aria-modal="true"
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={(e) => e.stopPropagation()}
+            >
 
                 {/* Image editor overlay */}
                 {editingId && (() => {
@@ -313,8 +320,8 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                     <div className={styles.groupSelect}>
                         <select
                             className={styles.groupSelectInput}
-                            value={status}
-                            onChange={e => setStatus(e.target.value)}
+                            value={groupId}
+                            onChange={e => setGroupId(e.target.value)}
                         >
                             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                         </select>
@@ -471,7 +478,7 @@ export default function EditIdeaModal({ idea, groups, onSave, onClose }: Omit<Pr
                         />
                     )}
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     )
 }

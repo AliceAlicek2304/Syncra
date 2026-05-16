@@ -92,8 +92,10 @@ fe/.claude/
 fullcode.txt
 CLAUDE.md
 GEMINI.md
+.agents
 .agent
 .claude
+.gemini
 .aider*
 .github/copilot-instructions.md
 **/.planning/
@@ -101,6 +103,8 @@ GEMINI.md
 .specify
 .antigravity
 specs/
+fe/test-results
+fe/playwright-report
 
 # knowns (ignore entire folder)
 .knowns/
@@ -137,3 +141,28 @@ be/src/Syncra.Api/wwwroot/temp/
 # Stripe CLI binary
 be/stripe
 be/stripe.tar.gz
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+.bg-shell/
+*.swo
+*~
+*.code-workspace
+.gsd.migrating
+.env.*
+!.env.example
+.next/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+vendor/
+.cache/
+tmp/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

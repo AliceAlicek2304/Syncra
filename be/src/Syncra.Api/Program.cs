@@ -3,6 +3,7 @@ using Serilog;
 using Syncra.Api;
 using Syncra.Api.Logging;
 using Syncra.Api.Middleware;
+using Syncra.Api.Hubs;
 using Syncra.Application;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
@@ -49,6 +50,7 @@ app.UseAuthorization();
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/api/v1/hubs/notifications");
 app.MapHealthChecks("/health");
 
 // Schedule recurring jobs

@@ -83,7 +83,13 @@ export function RightPanel({ state, actions }: SidebarProps) {
         </div>
         <div className={styles.tiktokActions}>
           <div className={styles.tiktokAvatarAction}>
-            <div className={styles.tiktokAvatarRing}>{state.user?.avatar ?? 'U'}</div>
+            <div className={styles.tiktokAvatarRing}>
+              {state.user?.avatarUrl ? (
+                <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+              ) : (
+                (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+              )}
+            </div>
             <div className={styles.tiktokAvatarPlus}>+</div>
           </div>
           {[
@@ -96,10 +102,10 @@ export function RightPanel({ state, actions }: SidebarProps) {
           ))}
         </div>
         <div className={styles.tiktokOverlay}>
-          <div className={styles.tiktokUser}>@{state.user?.handle ?? 'you'}</div>
+          <div className={styles.tiktokUser}>@{state.user?.displayName?.toLowerCase().replace(/\s+/g, '') || 'you'}</div>
           {state.caption && <div className={styles.tiktokCaption}>{state.caption}</div>}
           <div className={styles.tiktokSound}>
-            <Music2 size={13} /> original sound · {state.user?.handle ?? 'you'}
+            <Music2 size={13} /> original sound · {state.user?.displayName?.toLowerCase().replace(/\s+/g, '') || 'you'}
           </div>
         </div>
       </div>
@@ -108,8 +114,14 @@ export function RightPanel({ state, actions }: SidebarProps) {
     if (state.activeTab === 'Instagram') return (
       <div className={styles.igCard}>
         <div className={styles.igHeader}>
-          <div className={styles.igAvatar}>{state.user?.avatar ?? 'U'}</div>
-          <span className={styles.igUsername}>{state.user?.handle ?? 'you'}</span>
+          <div className={styles.igAvatar}>
+            {state.user?.avatarUrl ? (
+              <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+            ) : (
+              (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+            )}
+          </div>
+          <span className={styles.igUsername}>{state.user?.displayName?.toLowerCase().replace(/\s+/g, '') || 'you'}</span>
         </div>
         <div className={styles.igImage}>
           {firstImage
@@ -122,16 +134,22 @@ export function RightPanel({ state, actions }: SidebarProps) {
           <MessageCircle size={18} className={styles.igActionIcon} />
           <Share2 size={18} className={styles.igActionIcon} />
         </div>
-        {state.caption && <div className={styles.igCaption}><b>{state.user?.handle ?? 'you'}</b> {state.caption}</div>}
+        {state.caption && <div className={styles.igCaption}><b>{state.user?.displayName?.toLowerCase().replace(/\s+/g, '') || 'you'}</b> {state.caption}</div>}
       </div>
     )
 
     if (state.activeTab === 'Facebook') return (
       <div className={styles.fbCard}>
         <div className={styles.fbHeader}>
-          <div className={styles.fbAvatar}>{state.user?.avatar ?? 'U'}</div>
+          <div className={styles.fbAvatar}>
+            {state.user?.avatarUrl ? (
+              <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+            ) : (
+              (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+            )}
+          </div>
           <div className={styles.fbMeta}>
-            <span className={styles.fbName}>{state.user?.name ?? 'You'}</span>
+            <span className={styles.fbName}>{state.user?.displayName || state.user?.firstName || 'You'}</span>
             <span className={styles.fbTime}>Just now · 🌐</span>
           </div>
         </div>
@@ -150,10 +168,16 @@ export function RightPanel({ state, actions }: SidebarProps) {
     return (
       <div className={styles.xCard}>
         <div className={styles.xHeader}>
-          <div className={styles.xAvatar}>{state.user?.avatar ?? 'U'}</div>
+          <div className={styles.xAvatar}>
+            {state.user?.avatarUrl ? (
+              <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
+            ) : (
+              (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
+            )}
+          </div>
           <div className={styles.xMeta}>
-            <span className={styles.xName}>{state.user?.name ?? 'You'}</span>
-            <span className={styles.xHandle}>@{state.user?.handle ?? 'you'}</span>
+            <span className={styles.xName}>{state.user?.displayName || state.user?.firstName || 'You'}</span>
+            <span className={styles.xHandle}>@{state.user?.displayName?.toLowerCase().replace(/\s+/g, '') || 'you'}</span>
           </div>
         </div>
         {state.caption && <div className={styles.xBody}>{state.caption}</div>}
@@ -216,7 +240,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       <div
                         key={s.id}
                         className={styles.aiResultCard}
-                        onClick={() => actions.applyAISuggestion(s.caption)}
+                        onClick={() => actions.applyAISuggestion()}
                       >
                         <div className={styles.aiResultType}>{s.type}</div>
                         <div className={styles.aiResultCaption}>{s.caption}</div>
