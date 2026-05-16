@@ -21,7 +21,7 @@ const profileSchema = z.object({
 })
 
 const workspaceSchema = z.object({
-  name: z.string().min(2, 'Workspace name too short'),
+  name: z.string().min(2, 'Workspace name too short').max(100, 'Workspace name too long'),
 })
 
 export default function SettingsPage() {

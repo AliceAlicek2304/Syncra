@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Google Auth & Calendar Integration
-current_phase: 17
+current_phase: 18
 status: complete
-last_updated: "2026-05-16T15:01:00.000Z"
+last_updated: "2026-05-17T01:05:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
   percent: 100
 ---
 
@@ -17,23 +17,23 @@ progress:
 
 ## Metadata
 
-- **Current Phase:** 17 (Token Storage + Auto-Refresh + Revocation) — COMPLETE
-- **Status:** Phase 17 complete — Milestone v1.5 finished
-- **Last Updated:** 2026-05-16
+- **Current Phase:** 18 (Allow apostrophes in workspace names) — COMPLETE
+- **Status:** Phase 18 implemented and verified. Milestone v1.5 complete.
+- **Last Updated:** 2026-05-17
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** v1.5 Google Auth & Account Linking — Phase 17: Token Storage + Auto-Refresh + Revocation
+**Current focus:** Phase 18: Allow apostrophes in workspace names
 
 ## Current Position
 
-Phase: 17 — Token Storage + Auto-Refresh + Revocation
-Plan: 17-03-PLAN.md
+Phase: 18 — Allow apostrophes in workspace names
+Plan: 18-PLAN.md
 Status: COMPLETE
-Last activity: 2026-05-16 — Phase 17 execution finished
+Last activity: 2026-05-17 — Phase 18 implemented and verified. Milestone v1.5 complete.
 
 ## Phase 15 Summary
 
@@ -73,8 +73,8 @@ Last activity: 2026-05-16 — Phase 17 execution finished
 
 ### Roadmap Evolution
 
-- Phase 14 added: Fix dashboard code quality issues
 - Phase 15-17 defined: v1.5 Google Auth & Account Linking (Calendar removed from scope)
+- Phase 18 added: Allow apostrophes in workspace names (found during Phase 15 UAT)
 
 ### v1.5 Roadmap Summary
 

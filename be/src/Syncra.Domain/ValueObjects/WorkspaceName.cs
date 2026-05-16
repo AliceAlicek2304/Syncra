@@ -7,8 +7,6 @@ public sealed class WorkspaceName : IEquatable<WorkspaceName>
     public const int MinLength = 1;
     public const int MaxLength = 100;
 
-    private static readonly char[] InvalidChars = ['/', '\'', '"', '\\'];
-
     public string Value { get; }
 
     private WorkspaceName(string value) => Value = value;
@@ -25,11 +23,6 @@ public sealed class WorkspaceName : IEquatable<WorkspaceName>
         if (trimmed.Length < MinLength || trimmed.Length > MaxLength)
         {
             throw new ValidationException("InvalidWorkspaceName", $"Workspace name must be between {MinLength} and {MaxLength} characters.");
-        }
-
-        if (trimmed.IndexOfAny(InvalidChars) >= 0)
-        {
-            throw new ValidationException("InvalidWorkspaceName", "Workspace name contains invalid characters.");
         }
 
         return new WorkspaceName(trimmed);

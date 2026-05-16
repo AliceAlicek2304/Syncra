@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Web;
 using Microsoft.Extensions.Options;
 using Syncra.Domain.Interfaces;
@@ -111,17 +112,17 @@ public class GoogleAuthProvider : IOAuthProvider
     }
 
     private record TokenResponse(
-        string AccessToken,
-        string RefreshToken,
-        int ExpiresIn,
-        string IdToken
+        [property: JsonPropertyName("access_token")] string AccessToken,
+        [property: JsonPropertyName("refresh_token")] string RefreshToken,
+        [property: JsonPropertyName("expires_in")] int ExpiresIn,
+        [property: JsonPropertyName("id_token")] string IdToken
     );
 
     private record UserInfoResponse(
-        string Sub,
-        string Email,
-        bool EmailVerified,
-        string? Name,
-        string? Picture
+        [property: JsonPropertyName("sub")] string Sub,
+        [property: JsonPropertyName("email")] string Email,
+        [property: JsonPropertyName("email_verified")] bool EmailVerified,
+        [property: JsonPropertyName("name")] string? Name,
+        [property: JsonPropertyName("picture")] string? Picture
     );
 }

@@ -2,7 +2,7 @@
 
 **Milestone:** v1.5 Google Auth & Calendar Integration (Calendar removed by user)
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16
+**Last Updated:** 2026-05-17
 **Granularity:** Standard
 **Coverage:** 11/11 requirements mapped
 
@@ -69,6 +69,7 @@ Plans:
 | 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | DONE | 2026-05-16 |
 | 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
 | 17 - Token Storage + Auto-Refresh + Revocation | 3/3 | DONE | 2026-05-16 |
+| 18 - Allow apostrophes in workspace names | 1/1 | DONE | 2026-05-17 |
 
 ## Coverage
 
@@ -87,3 +88,13 @@ Plans:
 | TOKEN-03 | Phase 17 | Covered |
 
 **Coverage:** 11/11 v1.5 requirements mapped ✓
+
+### Phase 18: Allow apostrophes in workspace names
+
+**Goal:** Remove character restrictions on workspace names across the full stack.
+**Requirements**: TBD
+**Depends on:** Phase 17
+**Plans:** 1 plan
+
+Plans:
+- [x] 18-PLAN.md — Allow apostrophes and special characters in workspace names ✅
