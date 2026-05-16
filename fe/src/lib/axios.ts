@@ -25,8 +25,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('syncra_access_token');
-      window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');
+      if (error.response?.data?.code === 'oauth_token_revoked') {
+        const provider = error.response.data.provider ?? 'google';
+        sessionStorage.setItem('oauth_revoked_provider', provider);
+        // Do NOT redirect - allow component-level handling (D-04)
+      } else {
+        localStorage.removeItem('syncra_access_token');
+        window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');
+      }
     } else {
       // We'll handle global errors via a callback registered from ToastContext
       if (globalErrorHandler) {
