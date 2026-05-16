@@ -6,6 +6,9 @@ public sealed class ExternalLogin : EntityBase
     public string ProviderName { get; private set; } = string.Empty;
     public string ProviderUserId { get; private set; } = string.Empty;
     public DateTime LastUsedAtUtc { get; private set; }
+    public string? AccessToken { get; private set; }
+    public string? RefreshToken { get; private set; }
+    public DateTime? ExpiresAtUtc { get; private set; }
 
     public User User { get; private set; } = null!;
 
@@ -30,4 +33,15 @@ public sealed class ExternalLogin : EntityBase
     {
         LastUsedAtUtc = DateTime.UtcNow;
     }
+
+    public void StoreTokens(string accessToken, string? refreshToken, int expiresInSeconds)
+    {
+        AccessToken = accessToken;
+        if (!string.IsNullOrEmpty(refreshToken))
+            RefreshToken = refreshToken;
+        ExpiresAtUtc = DateTime.UtcNow.AddSeconds(expiresInSeconds);
+    }
+
+    public bool IsTokenExpired() =>
+        ExpiresAtUtc == null || ExpiresAtUtc <= DateTime.UtcNow.AddMinutes(5);
 }

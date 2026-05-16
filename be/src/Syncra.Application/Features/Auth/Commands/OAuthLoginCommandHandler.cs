@@ -61,6 +61,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
                 ?? throw new DomainException("user_not_found", "User associated with this OAuth login was not found.");
 
             externalLogin.RecordUsage();
+            if (!string.IsNullOrEmpty(callbackResult.AccessToken))
+                externalLogin.StoreTokens(callbackResult.AccessToken, callbackResult.RefreshToken, callbackResult.ExpiresIn);
             await _externalLoginRepository.UpdateAsync(externalLogin);
         }
         else
@@ -138,6 +140,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         await _unitOfWork.SaveChangesAsync();
 
         var externalLogin = ExternalLogin.Create(user.Id, providerName, callbackResult.ProviderUserId);
+        if (!string.IsNullOrEmpty(callbackResult.AccessToken))
+            externalLogin.StoreTokens(callbackResult.AccessToken, callbackResult.RefreshToken, callbackResult.ExpiresIn);
         await _externalLoginRepository.AddAsync(externalLogin);
 
         await CreateDefaultWorkspaceAsync(user);

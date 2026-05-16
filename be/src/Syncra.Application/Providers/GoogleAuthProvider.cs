@@ -59,7 +59,10 @@ public class GoogleAuthProvider : IOAuthProvider
             Name: userInfo.Name,
             AvatarUrl: userInfo.Picture,
             IsNewUser: true,
-            ExistingUserId: null
+            ExistingUserId: null,
+            AccessToken: tokens.AccessToken,
+            RefreshToken: tokens.RefreshToken,
+            ExpiresIn: tokens.ExpiresIn
         );
     }
 

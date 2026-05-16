@@ -72,3 +72,22 @@ public class IdempotencyRecordConfiguration : BaseEntityConfiguration<Idempotenc
         builder.HasIndex(e => e.ExpiresAtUtc);
     }
 }
+
+public class ExternalLoginConfiguration : BaseEntityConfiguration<ExternalLogin>
+{
+    public override void Configure(EntityTypeBuilder<ExternalLogin> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("external_logins");
+
+        builder.Property(e => e.UserId).HasColumnName("user_id");
+        builder.Property(e => e.ProviderName).IsRequired().HasMaxLength(50).HasColumnName("provider_name");
+        builder.Property(e => e.ProviderUserId).IsRequired().HasMaxLength(200).HasColumnName("provider_user_id");
+        builder.Property(e => e.LastUsedAtUtc).HasColumnName("last_used_at_utc");
+        builder.Property(e => e.AccessToken).HasMaxLength(2000).HasColumnName("access_token");
+        builder.Property(e => e.RefreshToken).HasMaxLength(2000).HasColumnName("refresh_token");
+        builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+
+        builder.HasIndex(e => new { e.ProviderName, e.ProviderUserId }).IsUnique();
+    }
+}

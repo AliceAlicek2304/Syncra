@@ -15,5 +15,8 @@ public record OAuthCallbackResult(
     string? Name,
     string? AvatarUrl,
     bool IsNewUser,
-    Guid? ExistingUserId
+    Guid? ExistingUserId,
+    string? AccessToken,
+    string? RefreshToken,
+    int ExpiresIn
 );

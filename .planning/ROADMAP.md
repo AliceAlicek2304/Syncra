@@ -57,7 +57,10 @@ Plans:
   1. Google OAuth access and refresh tokens are persisted in PostgreSQL and cached in Redis for fast retrieval
   2. Tokens are automatically refreshed before expiry without user intervention
   3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 17-01-PLAN.md — Token schema + OAuthCallbackResult transport pipeline
+- [ ] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection
+- [ ] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection
 
 ## Progress Table
 
@@ -65,7 +68,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | DONE | 2026-05-16 |
 | 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
-| 17 - Token Storage + Auto-Refresh + Revocation | 0/0 | Not started | - |
+| 17 - Token Storage + Auto-Refresh + Revocation | 0/3 | Planned | - |
 
 ## Coverage
 
