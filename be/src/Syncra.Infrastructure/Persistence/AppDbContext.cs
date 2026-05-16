@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<Idea> Ideas => Set<Idea>();
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
