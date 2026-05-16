@@ -8,8 +8,11 @@
 
 ## Phases
 
-- [ ] **Phase 15: Multi-Provider Auth Foundation + Google OAuth** - IAuthProvider abstraction, Google OAuth login/signup, profile import
-- [ ] **Phase 16: Account Linking** - Email collision detection, password verification, linked accounts management
+- [x] **Phase 15: Multi-Provider Auth Foundation + Google OAuth** - IAuthProvider abstraction, Google OAuth login/signup, profile import ✅
+- [x] **Phase 16: Account Linking & Management** - Collision detection, password verification, linked accounts management ✅
+    - [x] Collision detection & `linking_required` status
+    - [x] Secure password-verified linking flow
+    - [x] Settings UI for viewing/unlinking accounts
 - [ ] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling
 
 ## Phase Details
@@ -40,7 +43,10 @@ Plans:
   2. After password verification, the Google account is linked to the existing account (no duplicate created)
   3. User can view all linked authentication methods (email/password, Google) in account settings
   4. User can unlink their Google account from settings, and the account remains accessible via email/password
-**Plans**: TBD
+**Plans**: 3 plans
+- [x] 16-01-PLAN.md — Backend collision detection & link endpoint ✅
+- [x] 16-02-PLAN.md — Frontend password verification modal ✅
+- [x] 16-03-PLAN.md — Settings UI for linked accounts & unlinking ✅
 **UI hint**: yes
 
 ### Phase 17: Token Storage + Auto-Refresh + Revocation
@@ -57,22 +63,22 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | Planned | - |
-| 16 - Account Linking | 0/0 | Not started | - |
+| 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | DONE | 2026-05-16 |
+| 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
 | 17 - Token Storage + Auto-Refresh + Revocation | 0/0 | Not started | - |
 
 ## Coverage
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 15 | Pending |
-| AUTH-02 | Phase 15 | Pending |
-| AUTH-03 | Phase 15 | Pending |
-| AUTH-04 | Phase 15 | Pending |
-| LINK-01 | Phase 16 | Pending |
-| LINK-02 | Phase 16 | Pending |
-| LINK-03 | Phase 16 | Pending |
-| LINK-04 | Phase 16 | Pending |
+| AUTH-01 | Phase 15 | Covered |
+| AUTH-02 | Phase 15 | Covered |
+| AUTH-03 | Phase 15 | Covered |
+| AUTH-04 | Phase 15 | Covered |
+| LINK-01 | Phase 16 | Covered |
+| LINK-02 | Phase 16 | Covered |
+| LINK-03 | Phase 16 | Covered |
+| LINK-04 | Phase 16 | Covered |
 | TOKEN-01 | Phase 17 | Pending |
 | TOKEN-02 | Phase 17 | Pending |
 | TOKEN-03 | Phase 17 | Pending |
