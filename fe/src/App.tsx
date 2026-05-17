@@ -36,18 +36,30 @@ import HelpPage from './pages/app/HelpPage'
 
 import { useNavigate } from 'react-router-dom'
 import LoginModal from './components/auth/LoginModal'
+import SignupModal from './components/auth/SignupModal'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function Homepage() {
   const location = useLocation()
   const navigate = useNavigate()
   const isLoginOpen = location.pathname === '/login'
+  const isSignupOpen = location.pathname === '/signup'
 
   const handleCloseLogin = () => {
     navigate('/')
   }
 
   const handleLoginSuccess = () => {
+    navigate('/app/dashboard')
+  }
+
+  const handleCloseSignup = () => {
+    navigate('/')
+  }
+
+  const handleSignupSuccess = () => {
     navigate('/app/dashboard')
   }
 
@@ -69,6 +81,13 @@ function Homepage() {
           onSuccess={handleLoginSuccess} 
         />
       )}
+      
+      {isSignupOpen && (
+        <SignupModal 
+          onClose={handleCloseSignup} 
+          onSuccess={handleSignupSuccess} 
+        />
+      )}
     </div>
   )
 }
@@ -81,7 +100,10 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.key}>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
+        <Route path="/signup" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/auth/google/callback" element={<OAuthCallbackPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         
         <Route path="/app" element={
           <ProtectedRoute>

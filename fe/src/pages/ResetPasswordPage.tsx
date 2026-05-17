@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { authApi } from '../api/auth';
 import styles from './ResetPasswordPage.module.css';
@@ -18,7 +18,6 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPasswordPage() {
-  const navigate = useNavigate();
   const { error: showError } = useToast();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');

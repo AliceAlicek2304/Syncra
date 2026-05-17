@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { authApi } from '../../api/auth';
@@ -24,6 +25,7 @@ interface LoginModalProps {
 export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const { login } = useAuth();
   const { error: showError } = useToast();
+  const navigate = useNavigate();
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { ref, focusFirst } = useFocusTrap(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,6 +139,10 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
             {errors.password && <span className={styles.errorText}>{errors.password.message}</span>}
           </div>
 
+          <Link to="/forgot-password" className={styles.forgotLink}>
+            Forgot password?
+          </Link>
+
           <button type="submit" data-testid="login-submit" className={styles.submitBtn} disabled={isSubmitting}>
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>
@@ -144,7 +150,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
         <div className={styles.footer}>
           Don't have an account?
-          <a href="/signup" className={styles.link}>Sign up</a>
+          <button onClick={() => navigate('/signup')} className={styles.link}>Sign up</button>
         </div>
       </div>
     </div>
