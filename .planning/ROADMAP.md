@@ -14,6 +14,7 @@
     - [x] Secure password-verified linking flow
     - [x] Settings UI for viewing/unlinking accounts
 - [x] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling ✅
+- [ ] **Phase 19: Fix keyboard navigation & accessibility issues** - LoginModal focus trapping, aria-labels, keyboard navigation
 
 ## Phase Details
 
@@ -39,11 +40,12 @@ Plans:
 **Depends on**: Phase 15
 **Requirements**: LINK-01, LINK-02, LINK-03, LINK-04
 **Success Criteria** (what must be TRUE):
-  1. When a Google email matches an existing email/password account, the system detects the collision and prompts the user to verify ownership with their password before linking
-  2. After password verification, the Google account is linked to the existing account (no duplicate created)
-  3. User can view all linked authentication methods (email/password, Google) in account settings
-  4. User can unlink their Google account from settings, and the account remains accessible via email/password
+   1. When a Google email matches an existing email/password account, the system detects the collision and prompts the user to verify ownership with their password before linking
+   2. After password verification, the Google account is linked to the existing account (no duplicate created)
+   3. User can view all linked authentication methods (email/password, Google) in account settings
+   4. User can unlink their Google account from settings, and the account remains accessible via email/password
 **Plans**: 3 plans
+Plans:
 - [x] 16-01-PLAN.md — Backend collision detection & link endpoint ✅
 - [x] 16-02-PLAN.md — Frontend password verification modal ✅
 - [x] 16-03-PLAN.md — Settings UI for linked accounts & unlinking ✅
@@ -54,13 +56,24 @@ Plans:
 **Depends on**: Phase 15
 **Requirements**: TOKEN-01, TOKEN-02, TOKEN-03
 **Success Criteria** (what must be TRUE):
-  1. Google OAuth access and refresh tokens are persisted in PostgreSQL and cached in Redis for fast retrieval
-  2. Tokens are automatically refreshed before expiry without user intervention
-  3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
+   1. Google OAuth access and refresh tokens are persisted in PostgreSQL and cached in Redis for fast retrieval
+   2. Tokens are automatically refreshed before expiry without user intervention
+   3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
 **Plans**: 3 plans
+Plans:
 - [x] 17-01-PLAN.md — Token schema + OAuthCallbackResult transport pipeline ✅
 - [x] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection ✅
 - [x] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection ✅
+
+### Phase 19: Fix keyboard navigation & accessibility issues
+
+**Goal:** LoginModal traps focus, elements have proper aria-labels, keyboard navigation works correctly.
+**Requirements**: A11Y-01, A11Y-02, A11Y-03
+**Depends on:** Phase 15
+**Plans:** 1 plan
+
+Plans:
+- [ ] 19-01-PLAN.md — LoginModal focus trapping, aria-labels, keyboard navigation
 
 ## Progress Table
 
@@ -70,6 +83,7 @@ Plans:
 | 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
 | 17 - Token Storage + Auto-Refresh + Revocation | 3/3 | DONE | 2026-05-16 |
 | 18 - Allow apostrophes in workspace names | 1/1 | DONE | 2026-05-17 |
+| 19 - Fix keyboard navigation & accessibility issues | 0/1 | PLANNED | — |
 
 ## Coverage
 
