@@ -21,6 +21,13 @@ public class PostmarkEmailService : IEmailService
 
     public async Task SendPasswordResetEmailAsync(User user, string resetToken, CancellationToken cancellationToken = default)
     {
+        // In development/local environments where Postmark API key is not configured,
+        // skip sending emails to avoid external network calls and test failures.
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            return;
+        }
+
         var resetUrl = $"https://syncra.app/reset-password?token={resetToken}";
 
         var htmlBody = BuildPasswordResetHtmlBody(resetUrl);
@@ -48,6 +55,12 @@ public class PostmarkEmailService : IEmailService
 
     public async Task SendPasswordChangedEmailAsync(User user, CancellationToken cancellationToken = default)
     {
+        // Skip sending emails during local development when Postmark API key is not configured.
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            return;
+        }
+
         var htmlBody = BuildPasswordChangedHtmlBody();
         var textBody = BuildPasswordChangedTextBody();
 
