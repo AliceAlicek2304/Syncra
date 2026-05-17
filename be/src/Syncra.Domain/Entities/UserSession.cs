@@ -13,4 +13,12 @@ public sealed class UserSession : EntityBase
 
     public User User { get; set; } = null!;
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+    // Domain behaviors
+
+    public void Revoke()
+    {
+        RevokedAtUtc = DateTime.UtcNow;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }

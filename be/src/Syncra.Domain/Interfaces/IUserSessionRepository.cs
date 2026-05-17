@@ -8,4 +8,5 @@ public interface IUserSessionRepository
     Task AddAsync(UserSession entity);
     Task UpdateAsync(UserSession entity);
     Task DeleteAsync(Guid id);
+    Task InvalidateAllForUserAsync(Guid userId);
 }
