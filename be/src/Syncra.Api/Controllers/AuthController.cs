@@ -47,6 +47,15 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ResetPasswordCommand(request.Token, request.NewPassword);
+        await _mediator.Send(command, cancellationToken);
+        return Ok(new { message = "Password has been reset successfully." });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
@@ -138,3 +147,5 @@ public class AuthController : ControllerBase
 public record OAuthCallbackRequest(string Code, string State, string? ReturnUrl);
 
 public record ForgotPasswordRequest(string Email);
+
+public record ResetPasswordRequest(string Token, string NewPassword);
