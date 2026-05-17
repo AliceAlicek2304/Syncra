@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck, User as UserIcon, Building } from 'lucide-react'
+import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,6 +11,7 @@ import Skeleton from '../../components/Skeleton'
 import RadarChart from '../../components/RadarChart'
 import BillingSection from '../../components/billing/BillingSection'
 import LinkedAccountsSection from '../../components/auth/LinkedAccountsSection'
+import ChangePasswordForm from '../../components/auth/ChangePasswordForm'
 import styles from './SettingsPage.module.css'
 
 const profileSchema = z.object({
@@ -144,6 +145,13 @@ export default function SettingsPage() {
             <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Authentication</h2>
             <p className={styles.sectionDesc}>Quản lý các phương thức đăng nhập của bạn.</p>
             <LinkedAccountsSection />
+          </section>
+
+          {/* Security Section */}
+          <section className={`glass-card ${styles.section}`}>
+            <h2 className={styles.sectionTitle}><Lock size={18} /> Security</h2>
+            <p className={styles.sectionDesc}>Manage your account security settings, including changing your password.</p>
+            <ChangePasswordForm />
           </section>
 
           {/* Brand Voice Section */}
