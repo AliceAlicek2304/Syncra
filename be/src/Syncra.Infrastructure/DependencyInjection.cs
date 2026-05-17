@@ -118,6 +118,14 @@ public static class DependencyInjection
         services.AddScoped<IOAuthProvider, GoogleAuthProvider>();
         services.AddScoped<IGoogleTokenService, GoogleTokenService>();
 
+        // Postmark transactional email
+        services.Configure<PostmarkOptions>(configuration.GetSection(PostmarkOptions.SectionName));
+        services.AddHttpClient("PostmarkEmail", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddScoped<IEmailService, PostmarkEmailService>();
+
         return services;
     }
 }
