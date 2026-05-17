@@ -2,38 +2,38 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Google Auth & Calendar Integration
-current_phase: 19
-status: complete
-last_updated: "2026-05-17T09:45:00.000Z"
+current_phase: 20
+status: context_gathered
+last_updated: "2026-05-17T14:36:00.000Z"
 progress:
-  total_phases: 5
+  total_phases: 8
   completed_phases: 5
   total_plans: 13
   completed_plans: 13
-  percent: 100
+  percent: 62
 ---
 
 # Project State: Syncra.NET
 
 ## Metadata
 
-- **Current Phase:** 19 (Fix keyboard navigation & accessibility issues) — DONE
-- **Status:** Milestone v1.5 complete. All 5 phases (15–19) finished.
-- **Last Updated:** 2026-05-17 (Phase 19 marked complete)
+- **Current Phase:** 20 (Forgot/Reset password flow) — CONTEXT GATHERED
+- **Status:** Milestone v1.5 complete (phases 15–19). Phases 20–22 added for auth enhancements.
+- **Last Updated:** 2026-05-17 (Phases 20–22 added)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Phase 19: Fix keyboard navigation & accessibility issues
+**Current focus:** Phase 20: Forgot/Reset password flow
 
 ## Current Position
 
-Phase: 19 — Fix keyboard navigation & accessibility issues
-Plan: 19-01 (complete)
-Status: DONE
-Last activity: 2026-05-17 — Phase 19 completed: WCAG 2.2 AA LoginModal with focus trap, ARIA labels, keyboard nav.
+Phase: 20 — Forgot/Reset password flow
+Plan: Pending
+Status: PENDING
+Last activity: 2026-05-17 — Phases 20–22 added: Forgot password, Change password, Email verification.
 
 ## Phase 15 Summary
 
@@ -76,6 +76,9 @@ Last activity: 2026-05-17 — Phase 19 completed: WCAG 2.2 AA LoginModal with fo
 - Phase 15-17 defined: v1.5 Google Auth & Account Linking (Calendar removed from scope)
 - Phase 18 added: Allow apostrophes in workspace names (found during Phase 15 UAT)
 - Phase 19 added: Fix keyboard navigation & accessibility issues (found during Phase 15 UAT)
+- Phase 20 added: Forgot/Reset password flow
+- Phase 21 added: Change password in Settings
+- Phase 22 added: Email verification after registration
 
 ### v1.5 Roadmap Summary
 
