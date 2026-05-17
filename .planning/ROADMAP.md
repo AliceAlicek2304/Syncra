@@ -2,7 +2,7 @@
 
 **Milestone:** v1.5 Google Auth & Calendar Integration (Calendar removed by user)
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-17 (Phase 19 marked complete)
+**Last Updated:** 2026-05-17 (Phases 20-22 added: auth enhancements)
 **Granularity:** Standard
 **Coverage:** 11/11 requirements mapped
 
@@ -15,6 +15,9 @@
     - [x] Settings UI for viewing/unlinking accounts
 - [x] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling ✅
 - [x] **Phase 19: Fix keyboard navigation & accessibility issues** - LoginModal focus trapping, aria-labels, keyboard navigation ✅
+- [x] **Phase 20: Forgot/Reset password flow** - Email-based password reset flow with token (completed 2026-05-17)
+- [x] **Phase 21: Change password in Settings** - Authenticated password change flow with session invalidation and email notification (completed 2026-05-17)
+- [ ] **Phase 22: Email verification after registration** - Verify email after signup
 
 ## Phase Details
 
@@ -119,3 +122,56 @@ Plans:
 
 Plans:
 - [x] 18-PLAN.md — Allow apostrophes and special characters in workspace names ✅
+
+### Phase 20: Forgot/Reset password flow
+
+**Goal:** Users who forget their password can request a password reset email, click a secure link with a short-lived token, and set a new password.
+**Requirements**: TBD
+**Depends on:** Phase 19
+**Success Criteria** (what must be TRUE):
+  1. User can enter their email on /forgot-password and always receives the same generic confirmation message regardless of whether the email exists
+  2. User receives a branded HTML email with a reset link that expires in 1 hour
+  3. User can click the link, land on /reset-password?token=xxx, set a new password, and get redirected to sign in
+  4. Rate limiting (1 req/email/60s) prevents email flooding, and invalid/used tokens return generic errors
+  5. After password reset, all existing user sessions are invalidated for security
+**Plans:** 4/4 plans complete
+
+Plans:
+- [x] 20-01-PLAN.md — PasswordResetToken entity + repository + EF migration (Wave 1)
+- [x] 20-02-PLAN.md — Postmark email service + ForgotPassword command + endpoint (Wave 2)
+- [x] 20-03-PLAN.md — ResetPassword command + handler + endpoint (Wave 2)
+- [x] 20-04-PLAN.md — Frontend forgot/reset pages + LoginModal link (Wave 3)
+
+### Phase 21: Change password in Settings
+
+**Goal:** Securely allow authenticated users to change their password or set one if they signed up via OAuth.
+**Requirements**: AUTH-05, AUTH-06 (to be added)
+**Depends on:** Phase 20
+**Success Criteria** (what must be TRUE):
+  1. User can change their password from the Settings -> Security section.
+  2. Users who signed up via Google can "Set Password" for the first time without needing a "Current Password".
+  3. All existing sessions are invalidated after a password change, requiring the user to log in again.
+  4. User receives a confirmation email via Postmark after a successful password change/set.
+**Plans:** 3/3 plans complete
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 21 to break down)
+
+### Phase 22: Email verification after registration
+
+**Goal:** Users who register with email/password receive a verification email, and can verify by clicking a link that auto-logs them in. OAuth users skip verification (auto-verified by Google).
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Success Criteria** (what must be TRUE):
+   1. User registers with email/password and receives a verification email within seconds
+   2. User can click the verification link, be logged in, and land in the dashboard (auto-login)
+   3. Clicking link after 7 days shows error and offers "resend" option
+   4. Verification status is stored in `user.EmailVerifiedAtUtc`
+   5. Google/OAuth users skip the verification flow (auto-verified at signup)
+   6. User can manually resend verification email from account settings (Settings > Account Security)
+**Plans:** 3 plans
+
+Plans:
+- [ ] 22-01-PLAN.md — EmailVerificationToken entity + repository + IEmailService.SendEmailVerificationAsync (Wave 1)
+- [ ] 22-02-PLAN.md — VerifyEmailCommand + handler + API endpoints + update RegisterCommandHandler & OAuthLoginCommandHandler (Wave 2)
+- [ ] 22-03-PLAN.md — VerifyEmailPage component + resend UI in Settings + API methods (Wave 3)
