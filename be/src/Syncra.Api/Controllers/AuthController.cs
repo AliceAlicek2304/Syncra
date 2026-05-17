@@ -38,6 +38,15 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), new { id = result }, new { Message = "User registered successfully." });
     }
 
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
@@ -127,3 +136,5 @@ public class AuthController : ControllerBase
 }
 
 public record OAuthCallbackRequest(string Code, string State, string? ReturnUrl);
+
+public record ForgotPasswordRequest(string Email);
