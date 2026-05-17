@@ -58,9 +58,10 @@ public class ForgotPasswordCommandHandlerTests
         var user = User.Create("test@example.com", "hashedPassword123");
         var command = new ForgotPasswordCommand(email);
 
+        // GetAsync returns null (no rate limit hit)
         _cacheMock
-            .Setup(c => c.GetStringAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
+            .Setup(c => c.GetAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
 
         _userRepositoryMock
             .Setup(r => r.GetByEmailAsync(normalizedEmail))
@@ -78,10 +79,11 @@ public class ForgotPasswordCommandHandlerTests
             .Setup(e => e.SendPasswordResetEmailAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        // SetAsync called to set rate limit
         _cacheMock
-            .Setup(c => c.SetStringAsync(
+            .Setup(c => c.SetAsync(
                 $"reset_pwd:{normalizedEmail}",
-                "1",
+                It.IsAny<byte[]>(),
                 It.IsAny<DistributedCacheEntryOptions>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -107,17 +109,17 @@ public class ForgotPasswordCommandHandlerTests
         var command = new ForgotPasswordCommand(email);
 
         _cacheMock
-            .Setup(c => c.GetStringAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
+            .Setup(c => c.GetAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
 
         _userRepositoryMock
             .Setup(r => r.GetByEmailAsync(normalizedEmail))
             .ReturnsAsync((User?)null);
 
         _cacheMock
-            .Setup(c => c.SetStringAsync(
+            .Setup(c => c.SetAsync(
                 $"reset_pwd:{normalizedEmail}",
-                "1",
+                It.IsAny<byte[]>(),
                 It.IsAny<DistributedCacheEntryOptions>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -141,9 +143,10 @@ public class ForgotPasswordCommandHandlerTests
         var normalizedEmail = "TEST@EXAMPLE.COM";
         var command = new ForgotPasswordCommand(email);
 
+        // GetAsync returns non-null bytes (rate limited)
         _cacheMock
-            .Setup(c => c.GetStringAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
-            .ReturnsAsync("1");
+            .Setup(c => c.GetAsync($"reset_pwd:{normalizedEmail}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new byte[] { 0x31 }); // "1" as UTF-8 byte
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
