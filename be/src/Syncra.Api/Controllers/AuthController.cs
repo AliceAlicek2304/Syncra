@@ -73,6 +73,19 @@ public class AuthController : ControllerBase
     }
 
     [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var command = new ChangePasswordCommand(userId.Value, request.CurrentPassword, request.NewPassword);
+        await _mediator.Send(command, cancellationToken);
+        return Ok(new { message = "Password has been changed successfully." });
+    }
+
+    [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
     {
@@ -149,3 +162,5 @@ public record OAuthCallbackRequest(string Code, string State, string? ReturnUrl)
 public record ForgotPasswordRequest(string Email);
 
 public record ResetPasswordRequest(string Token, string NewPassword);
+
+public record ChangePasswordRequest(string? CurrentPassword, string NewPassword);

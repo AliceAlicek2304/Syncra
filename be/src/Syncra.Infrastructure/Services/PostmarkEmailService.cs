@@ -23,8 +23,8 @@ public class PostmarkEmailService : IEmailService
     {
         var resetUrl = $"https://syncra.app/reset-password?token={resetToken}";
 
-        var htmlBody = BuildHtmlBody(resetUrl);
-        var textBody = BuildTextBody(resetUrl);
+        var htmlBody = BuildPasswordResetHtmlBody(resetUrl);
+        var textBody = BuildPasswordResetTextBody(resetUrl);
 
         var payload = new
         {
@@ -46,7 +46,32 @@ public class PostmarkEmailService : IEmailService
         response.EnsureSuccessStatusCode();
     }
 
-    private static string BuildHtmlBody(string resetUrl)
+    public async Task SendPasswordChangedEmailAsync(User user, CancellationToken cancellationToken = default)
+    {
+        var htmlBody = BuildPasswordChangedHtmlBody();
+        var textBody = BuildPasswordChangedTextBody();
+
+        var payload = new
+        {
+            From = $"{_options.FromName} <{_options.FromEmail}>",
+            To = user.Email.Value,
+            Subject = "Your Syncra password has been changed",
+            HtmlBody = htmlBody,
+            TextBody = textBody
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.postmarkapp.com/email")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("X-Postmark-Server-Token", _options.ApiKey);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static string BuildPasswordResetHtmlBody(string resetUrl)
     {
         return $@"<!DOCTYPE html>
 <html>
@@ -84,8 +109,50 @@ public class PostmarkEmailService : IEmailService
 </html>";
     }
 
-    private static string BuildTextBody(string resetUrl)
+    private static string BuildPasswordResetTextBody(string resetUrl)
     {
         return $"Reset your Syncra password\n\nClick the link below to reset your password. This link expires in 1 hour.\n\n{resetUrl}\n\nIf you didn't request this, you can safely ignore this email.";
+    }
+
+    private static string BuildPasswordChangedHtmlBody()
+    {
+        return @"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #080b14; padding: 40px 20px;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+        <tr><td align=""center"">
+            <table style=""max-width: 480px; width: 100%; background: #0f1220; border-radius: 18px; padding: 40px; border: 1px solid rgba(255,255,255,0.06);"">
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <h1 style=""color: #fff; font-size: 24px; font-weight: 800; margin: 0;"">Syncra</h1>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 8px;"">
+                    <h2 style=""color: #e4e6f0; font-size: 18px; font-weight: 700; margin: 0;"">Password Changed</h2>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <p style=""color: #8b8fa3; font-size: 14px; line-height: 1.6; margin: 0;"">
+                        Your password has been changed successfully. Your account is now more secure.
+                    </p>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <p style=""color: #8b8fa3; font-size: 14px; line-height: 1.6; margin: 0;"">
+                        All active sessions have been logged out for security.
+                    </p>
+                </td></tr>
+                <tr><td align=""center"">
+                    <p style=""color: #6b6f82; font-size: 12px; line-height: 1.5; margin: 0;"">
+                        If you didn't make this change, please contact support immediately at support@syncra.app
+                    </p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private static string BuildPasswordChangedTextBody()
+    {
+        return "Password Changed\n\nYour password has been changed successfully. Your account is now more secure.\n\nAll active sessions have been logged out for security.\n\nIf you didn't make this change, please contact support immediately at support@syncra.app";
     }
 }
