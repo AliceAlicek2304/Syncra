@@ -61,6 +61,11 @@ export const authApi = {
     return response.data;
   },
 
+  /**
+   * Change the authenticated user's password.
+   * @param data - { currentPassword?: string, newPassword: string }
+   * Returns a message on success.
+   */
   changePassword: async (data: { currentPassword?: string; newPassword: string }): Promise<{ message: string }> => {
     const response = await api.post<{ message: string }>('auth/change-password', data);
     return response.data;
