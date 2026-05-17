@@ -1,0 +1,91 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Options;
+using Syncra.Application.Interfaces;
+using Syncra.Application.Options;
+using Syncra.Domain.Entities;
+
+namespace Syncra.Infrastructure.Services;
+
+public class PostmarkEmailService : IEmailService
+{
+    private readonly HttpClient _httpClient;
+    private readonly PostmarkOptions _options;
+
+    public PostmarkEmailService(IHttpClientFactory httpClientFactory, IOptions<PostmarkOptions> options)
+    {
+        _options = options.Value;
+        _httpClient = httpClientFactory.CreateClient("PostmarkEmail");
+    }
+
+    public async Task SendPasswordResetEmailAsync(User user, string resetToken, CancellationToken cancellationToken = default)
+    {
+        var resetUrl = $"https://syncra.app/reset-password?token={resetToken}";
+
+        var htmlBody = BuildHtmlBody(resetUrl);
+        var textBody = BuildTextBody(resetUrl);
+
+        var payload = new
+        {
+            From = $"{_options.FromName} <{_options.FromEmail}>",
+            To = user.Email.Value,
+            Subject = "Reset your Syncra password",
+            HtmlBody = htmlBody,
+            TextBody = textBody
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.postmarkapp.com/email")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("X-Postmark-Server-Token", _options.ApiKey);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static string BuildHtmlBody(string resetUrl)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #080b14; padding: 40px 20px;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+        <tr><td align=""center"">
+            <table style=""max-width: 480px; width: 100%; background: #0f1220; border-radius: 18px; padding: 40px; border: 1px solid rgba(255,255,255,0.06);"">
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <h1 style=""color: #fff; font-size: 24px; font-weight: 800; margin: 0;"">Syncra</h1>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 8px;"">
+                    <h2 style=""color: #e4e6f0; font-size: 18px; font-weight: 700; margin: 0;"">Reset your password</h2>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <p style=""color: #8b8fa3; font-size: 14px; line-height: 1.6; margin: 0;"">
+                        Click the button below to reset your password. This link expires in 1 hour.
+                    </p>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <a href=""{resetUrl}"" style=""display: inline-block; padding: 14px 32px; border-radius: 10px; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; font-size: 14px; font-weight: 700; text-decoration: none;"">
+                        Reset Password
+                    </a>
+                </td></tr>
+                <tr><td align=""center"">
+                    <p style=""color: #6b6f82; font-size: 12px; line-height: 1.5; margin: 0;"">
+                        If you didn't request this, you can safely ignore this email.<br>
+                        For security, this link expires in 1 hour and can only be used once.
+                    </p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private static string BuildTextBody(string resetUrl)
+    {
+        return $"Reset your Syncra password\n\nClick the link below to reset your password. This link expires in 1 hour.\n\n{resetUrl}\n\nIf you didn't request this, you can safely ignore this email.";
+    }
+}
