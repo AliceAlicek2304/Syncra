@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="056b30de-ea29-4354-908c-4e5bf2b545a3" name="hieu_tai@DESKTOP-24LUL62 2026-05-17 13:54:50" runUser="DESKTOP-24LUL62\hieu_tai" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-05-17T13:54:50.9173069+07:00" queuing="2026-05-17T13:54:50.9173072+07:00" start="2026-05-17T13:54:49.3979001+07:00" finish="2026-05-17T13:54:50.9228610+07:00" />
+  <TestSettings name="default" id="9d2d53ee-4da9-4601-8dbf-f3a6301f991a">
+    <Deployment runDeploymentRoot="hieu_tai_DESKTOP-24LUL62_2026-05-17_13_54_50" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="cd23db72-6fc0-434c-9963-3c449d2791e9" testId="fa9e3123-2b2e-d625-6438-d6f980be72c8" testName="Syncra.UnitTests.Domain.PasswordResetTokenRepositoryInterfaceTests.Interface_ShouldDefineExpectedMethods" computerName="DESKTOP-24LUL62" duration="00:00:00.0071965" startTime="2026-05-17T13:54:49.8589272+07:00" endTime="2026-05-17T13:54:49.8589389+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cd23db72-6fc0-434c-9963-3c449d2791e9" />
+    <UnitTestResult executionId="f083f650-0576-45c9-a00a-81147470d37b" testId="6b1fe2cc-3f2d-312f-d28b-0dca953d4f6c" testName="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.AddAsync_ShouldPersistToken" computerName="DESKTOP-24LUL62" duration="00:00:00.0295456" startTime="2026-05-17T13:54:50.7858329+07:00" endTime="2026-05-17T13:54:50.7858330+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f083f650-0576-45c9-a00a-81147470d37b">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.</Message>
+          <StackTrace>   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.AddAsync(TEntity entity, CancellationToken cancellationToken)&#xD;
+   at Syncra.Infrastructure.Repositories.Repository`1.AddAsync(T entity) in D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\Repository.cs:line 35&#xD;
+   at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.AddAsync_ShouldPersistToken() in D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs:line 60&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4977645e-5aee-4575-81b6-78c94b687b44" testId="c666d0b1-d41d-7941-d621-b903f6639637" testName="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnTokenWithUser" computerName="DESKTOP-24LUL62" duration="00:00:00.0249349" startTime="2026-05-17T13:54:50.8113168+07:00" endTime="2026-05-17T13:54:50.8113170+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4977645e-5aee-4575-81b6-78c94b687b44">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.</Message>
+          <StackTrace>   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.Add(TEntity entity)&#xD;
+   at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnTokenWithUser() in D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs:line 84&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="e9119ebd-ffff-4278-ba54-6c2f7397f824" testId="f3b0944a-8262-2a33-fa75-a827211a50e7" testName="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldSetUsedAtUtc" computerName="DESKTOP-24LUL62" duration="00:00:00.1493887" startTime="2026-05-17T13:54:50.7559348+07:00" endTime="2026-05-17T13:54:50.7559349+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e9119ebd-ffff-4278-ba54-6c2f7397f824">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.</Message>
+          <StackTrace>   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.Add(TEntity entity)&#xD;
+   at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldSetUsedAtUtc() in D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs:line 127&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="96101be4-2356-4ef9-8053-fe49abbba969" testId="853cee18-c3d9-23fd-5b13-5a74a5ced4fe" testName="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnNull_WhenNotFound" computerName="DESKTOP-24LUL62" duration="00:00:00.7524910" startTime="2026-05-17T13:54:50.6098543+07:00" endTime="2026-05-17T13:54:50.6098546+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="96101be4-2356-4ef9-8053-fe49abbba969">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.</Message>
+          <StackTrace>   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.CheckState()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityQueryable()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.System.Linq.IQueryable.get_Provider()&#xD;
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.Include[TEntity,TProperty](IQueryable`1 source, Expression`1 navigationPropertyPath)&#xD;
+   at Syncra.Infrastructure.Repositories.PasswordResetTokenRepository.GetByTokenHashAsync(String tokenHash) in D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\PasswordResetTokenRepository.cs:line 16&#xD;
+   at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnNull_WhenNotFound() in D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs:line 106&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="cd889d82-8c47-4c40-8b22-84d0e76630b9" testId="caadc6f7-7329-5bf5-9634-ec3527ec82ac" testName="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound" computerName="DESKTOP-24LUL62" duration="00:00:00.0225460" startTime="2026-05-17T13:54:50.8344278+07:00" endTime="2026-05-17T13:54:50.8344281+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cd889d82-8c47-4c40-8b22-84d0e76630b9">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.</Message>
+          <StackTrace>   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_Finder()&#xD;
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.FindAsync(Object[] keyValues)&#xD;
+   at Syncra.Infrastructure.Repositories.PasswordResetTokenRepository.MarkAsUsedAsync(Guid id) in D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\PasswordResetTokenRepository.cs:line 23&#xD;
+   at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound() in D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs:line 148&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Syncra.UnitTests.Domain.PasswordResetTokenRepositoryInterfaceTests.Interface_ShouldDefineExpectedMethods" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="fa9e3123-2b2e-d625-6438-d6f980be72c8">
+      <Execution id="cd23db72-6fc0-434c-9963-3c449d2791e9" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Domain.PasswordResetTokenRepositoryInterfaceTests" name="Interface_ShouldDefineExpectedMethods" />
+    </UnitTest>
+    <UnitTest name="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnNull_WhenNotFound" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="853cee18-c3d9-23fd-5b13-5a74a5ced4fe">
+      <Execution id="96101be4-2356-4ef9-8053-fe49abbba969" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests" name="GetByTokenHashAsync_ShouldReturnNull_WhenNotFound" />
+    </UnitTest>
+    <UnitTest name="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldSetUsedAtUtc" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="f3b0944a-8262-2a33-fa75-a827211a50e7">
+      <Execution id="e9119ebd-ffff-4278-ba54-6c2f7397f824" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests" name="MarkAsUsedAsync_ShouldSetUsedAtUtc" />
+    </UnitTest>
+    <UnitTest name="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="caadc6f7-7329-5bf5-9634-ec3527ec82ac">
+      <Execution id="cd889d82-8c47-4c40-8b22-84d0e76630b9" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests" name="MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound" />
+    </UnitTest>
+    <UnitTest name="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnTokenWithUser" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="c666d0b1-d41d-7941-d621-b903f6639637">
+      <Execution id="4977645e-5aee-4575-81b6-78c94b687b44" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests" name="GetByTokenHashAsync_ShouldReturnTokenWithUser" />
+    </UnitTest>
+    <UnitTest name="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.AddAsync_ShouldPersistToken" storage="d:\code\syncra\be\tests\syncra.unittests\bin\debug\net8.0\syncra.unittests.dll" id="6b1fe2cc-3f2d-312f-d28b-0dca953d4f6c">
+      <Execution id="f083f650-0576-45c9-a00a-81147470d37b" />
+      <TestMethod codeBase="D:\Code\Syncra\be\tests\Syncra.UnitTests\bin\Debug\net8.0\Syncra.UnitTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests" name="AddAsync_ShouldPersistToken" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="fa9e3123-2b2e-d625-6438-d6f980be72c8" executionId="cd23db72-6fc0-434c-9963-3c449d2791e9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6b1fe2cc-3f2d-312f-d28b-0dca953d4f6c" executionId="f083f650-0576-45c9-a00a-81147470d37b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c666d0b1-d41d-7941-d621-b903f6639637" executionId="4977645e-5aee-4575-81b6-78c94b687b44" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f3b0944a-8262-2a33-fa75-a827211a50e7" executionId="e9119ebd-ffff-4278-ba54-6c2f7397f824" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="853cee18-c3d9-23fd-5b13-5a74a5ced4fe" executionId="96101be4-2356-4ef9-8053-fe49abbba969" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="caadc6f7-7329-5bf5-9634-ec3527ec82ac" executionId="cd889d82-8c47-4c40-8b22-84d0e76630b9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="6" executed="6" passed="1" failed="5" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.26)&#xD;
+[xUnit.net 00:00:00.07]   Discovering: Syncra.UnitTests&#xD;
+[xUnit.net 00:00:00.11]   Discovered:  Syncra.UnitTests&#xD;
+[xUnit.net 00:00:00.11]   Starting:    Syncra.UnitTests&#xD;
+[xUnit.net 00:00:00.90]       System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.&#xD;
+[xUnit.net 00:00:00.90]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.90]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+[xUnit.net 00:00:00.90]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.CheckState()&#xD;
+[xUnit.net 00:00:00.90]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityQueryable()&#xD;
+[xUnit.net 00:00:00.90]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.System.Linq.IQueryable.get_Provider()&#xD;
+[xUnit.net 00:00:00.90]            at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.Include[TEntity,TProperty](IQueryable`1 source, Expression`1 navigationPropertyPath)&#xD;
+[xUnit.net 00:00:00.90]         D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\PasswordResetTokenRepository.cs(16,0): at Syncra.Infrastructure.Repositories.PasswordResetTokenRepository.GetByTokenHashAsync(String tokenHash)&#xD;
+[xUnit.net 00:00:00.90]         D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs(106,0): at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnNull_WhenNotFound()&#xD;
+[xUnit.net 00:00:00.90]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.05]       System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.&#xD;
+[xUnit.net 00:00:01.05]       Stack Trace:&#xD;
+[xUnit.net 00:00:01.05]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+[xUnit.net 00:00:01.05]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+[xUnit.net 00:00:01.05]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.Add(TEntity entity)&#xD;
+[xUnit.net 00:00:01.05]         D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs(127,0): at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldSetUsedAtUtc()&#xD;
+[xUnit.net 00:00:01.05]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.08]       System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.&#xD;
+[xUnit.net 00:00:01.08]       Stack Trace:&#xD;
+[xUnit.net 00:00:01.08]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+[xUnit.net 00:00:01.08]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+[xUnit.net 00:00:01.08]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.AddAsync(TEntity entity, CancellationToken cancellationToken)&#xD;
+[xUnit.net 00:00:01.08]         D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\Repository.cs(35,0): at Syncra.Infrastructure.Repositories.Repository`1.AddAsync(T entity)&#xD;
+[xUnit.net 00:00:01.08]         D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs(60,0): at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.AddAsync_ShouldPersistToken()&#xD;
+[xUnit.net 00:00:01.08]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.10]       System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.&#xD;
+[xUnit.net 00:00:01.10]       Stack Trace:&#xD;
+[xUnit.net 00:00:01.10]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+[xUnit.net 00:00:01.10]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.EntryWithoutDetectChanges(TEntity entity)&#xD;
+[xUnit.net 00:00:01.10]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.Add(TEntity entity)&#xD;
+[xUnit.net 00:00:01.10]         D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs(84,0): at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnTokenWithUser()&#xD;
+[xUnit.net 00:00:01.10]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.13]       System.InvalidOperationException : Cannot create a DbSet for 'PasswordResetToken' because this type is not included in the model for the context.&#xD;
+[xUnit.net 00:00:01.13]       Stack Trace:&#xD;
+[xUnit.net 00:00:01.13]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()&#xD;
+[xUnit.net 00:00:01.13]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_Finder()&#xD;
+[xUnit.net 00:00:01.13]            at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.FindAsync(Object[] keyValues)&#xD;
+[xUnit.net 00:00:01.13]         D:\Code\Syncra\be\src\Syncra.Infrastructure\Repositories\PasswordResetTokenRepository.cs(23,0): at Syncra.Infrastructure.Repositories.PasswordResetTokenRepository.MarkAsUsedAsync(Guid id)&#xD;
+[xUnit.net 00:00:01.13]         D:\Code\Syncra\be\tests\Syncra.UnitTests\Infrastructure\PasswordResetTokenRepositoryTests.cs(148,0): at Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound()&#xD;
+[xUnit.net 00:00:01.13]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.13]   Finished:    Syncra.UnitTests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="DESKTOP-24LUL62" outcome="Error" timestamp="2026-05-17T13:54:50.6078615+07:00">
+        <Text>[xUnit.net 00:00:00.90]     Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnNull_WhenNotFound [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DESKTOP-24LUL62" outcome="Error" timestamp="2026-05-17T13:54:50.7561315+07:00">
+        <Text>[xUnit.net 00:00:01.05]     Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldSetUsedAtUtc [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DESKTOP-24LUL62" outcome="Error" timestamp="2026-05-17T13:54:50.7859225+07:00">
+        <Text>[xUnit.net 00:00:01.08]     Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.AddAsync_ShouldPersistToken [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DESKTOP-24LUL62" outcome="Error" timestamp="2026-05-17T13:54:50.8111726+07:00">
+        <Text>[xUnit.net 00:00:01.10]     Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.GetByTokenHashAsync_ShouldReturnTokenWithUser [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DESKTOP-24LUL62" outcome="Error" timestamp="2026-05-17T13:54:50.8341915+07:00">
+        <Text>[xUnit.net 00:00:01.13]     Syncra.UnitTests.Infrastructure.PasswordResetTokenRepositoryTests.MarkAsUsedAsync_ShouldNotThrow_WhenTokenNotFound [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>
