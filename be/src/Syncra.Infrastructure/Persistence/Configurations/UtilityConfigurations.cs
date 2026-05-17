@@ -73,6 +73,23 @@ public class IdempotencyRecordConfiguration : BaseEntityConfiguration<Idempotenc
     }
 }
 
+public class PasswordResetTokenConfiguration : BaseEntityConfiguration<PasswordResetToken>
+{
+    public override void Configure(EntityTypeBuilder<PasswordResetToken> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("password_reset_tokens");
+
+        builder.Property(e => e.UserId).HasColumnName("user_id");
+        builder.Property(e => e.TokenHash).IsRequired().HasMaxLength(500).HasColumnName("token_hash");
+        builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+        builder.Property(e => e.UsedAtUtc).HasColumnName("used_at_utc");
+
+        builder.HasIndex(e => e.TokenHash);
+        builder.HasIndex(e => e.UserId);
+    }
+}
+
 public class ExternalLoginConfiguration : BaseEntityConfiguration<ExternalLogin>
 {
     public override void Configure(EntityTypeBuilder<ExternalLogin> builder)
