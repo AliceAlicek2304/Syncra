@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import styles from './ChangePasswordForm.module.css';
 
+// ChangePasswordForm handles both password-set and OAuth-only users.
+// Uses react-hook-form + zod for validation. New password must be at least 8 characters.
 const changePasswordSchema = z.object({
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
