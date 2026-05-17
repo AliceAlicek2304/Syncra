@@ -7,21 +7,16 @@ public sealed class PasswordResetToken : EntityBase
     public DateTime ExpiresAtUtc { get; set; }
     public DateTime? UsedAtUtc { get; set; }
 
+    // Navigation property
     public User User { get; set; } = null!;
 
-    // Computed properties
+    // Domain behavior methods
     public bool IsExpired => DateTime.UtcNow > ExpiresAtUtc;
     public bool IsUsed => UsedAtUtc.HasValue;
     public bool IsValid => !IsExpired && !IsUsed;
 
-    // Domain behaviors
     public void MarkAsUsed()
     {
-        if (UsedAtUtc.HasValue)
-        {
-            return;
-        }
-
         UsedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
     }
