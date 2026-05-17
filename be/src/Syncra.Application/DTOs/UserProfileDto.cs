@@ -8,4 +8,5 @@ public record UserProfileDto(
     string? LastName,
     string? AvatarUrl,
     string? Timezone,
-    string? Locale);
+    string? Locale,
+    bool HasPasswordBeenSet);

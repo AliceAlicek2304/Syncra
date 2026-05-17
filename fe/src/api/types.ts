@@ -7,6 +7,7 @@ export interface User {
   avatarUrl?: string;
   timezone?: string;
   locale?: string;
+  hasPasswordBeenSet?: boolean;
 }
 
 export interface AuthResponse {

@@ -22,6 +22,6 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
             throw new KeyNotFoundException("User not found.");
         }
 
-        return new UserDto(user.Id, user.Email.Value);
+        return new UserDto(user.Id, user.Email.Value, user.HasPasswordBeenSet);
     }
 }

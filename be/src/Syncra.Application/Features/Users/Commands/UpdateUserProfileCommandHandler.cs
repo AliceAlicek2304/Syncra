@@ -51,6 +51,7 @@ public sealed class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUser
             user.Profile.LastName,
             user.Profile.AvatarUrl,
             user.Profile.Timezone,
-            user.Profile.Locale);
+            user.Profile.Locale,
+            user.HasPasswordBeenSet);
     }
 }

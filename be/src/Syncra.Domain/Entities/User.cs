@@ -14,6 +14,7 @@ public sealed class User : EntityBase
     public string Status { get; private set; } = "active";
     public DateTime? EmailVerifiedAtUtc { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
+    public bool HasPasswordBeenSet { get; private set; } = true;
 
     // Navigation properties
     public UserProfile? Profile { get; set; }
@@ -69,6 +70,13 @@ public sealed class User : EntityBase
     public void UpdatePassword(string newPasswordHash)
     {
         PasswordHash = newPasswordHash;
+        HasPasswordBeenSet = true;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void MarkPasswordAsNotSet()
+    {
+        HasPasswordBeenSet = false;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

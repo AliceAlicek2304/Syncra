@@ -29,7 +29,8 @@ public sealed class GetUserProfileQueryHandler : IRequestHandler<GetUserProfileQ
             user.Profile?.LastName,
             user.Profile?.AvatarUrl,
             user.Profile?.Timezone,
-            user.Profile?.Locale
+            user.Profile?.Locale,
+            user.HasPasswordBeenSet
         );
     }
 }
