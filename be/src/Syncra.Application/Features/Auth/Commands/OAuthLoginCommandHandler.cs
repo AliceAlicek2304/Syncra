@@ -54,6 +54,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         var externalLogin = await _externalLoginRepository.GetByProviderAndUserIdAsync(request.ProviderName, callbackResult.ProviderUserId);
 
         User user;
+        var isNewUser = false;
 
         if (externalLogin != null)
         {
@@ -73,16 +74,18 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
             {
                 // Collision detected: user exists with this email but not this OAuth provider
                 // Throw LinkingRequiredException to trigger password verification on frontend
-                throw new LinkingRequiredException(callbackResult.Email, callbackResult.ProviderUserId);
+                throw new LinkingRequiredException(callbackResult.Email, callbackResult.ProviderUserId, callbackResult.AvatarUrl);
             }
             else
             {
                 user = await CreateNewUserAsync(request.ProviderName, callbackResult);
+                isNewUser = true;
             }
         }
 
         user.RecordLogin();
-        await _userRepository.UpdateAsync(user);
+        if (!isNewUser)
+            await _userRepository.UpdateAsync(user);
 
         var token = _tokenService.GenerateJwtToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
@@ -137,7 +140,6 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         user.VerifyEmail();
 
         await _userRepository.AddAsync(user);
-        await _unitOfWork.SaveChangesAsync();
 
         var externalLogin = ExternalLogin.Create(user.Id, providerName, callbackResult.ProviderUserId);
         if (!string.IsNullOrEmpty(callbackResult.AccessToken))
@@ -164,7 +166,6 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         workspace.AddMember(user.Id, "owner");
 
         await _workspaceRepository.AddAsync(workspace);
-        await _unitOfWork.SaveChangesAsync();
     }
 
     private static string GenerateSlug(string name)
@@ -173,7 +174,9 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         slug = Regex.Replace(slug, @"\s+", "-");
         slug = Regex.Replace(slug, @"[^a-z0-9\-]", "");
         slug = Regex.Replace(slug, @"-{2,}", "-").Trim('-');
-        return slug.Length > 0 ? slug : "workspace";
+        if (slug.Length == 0) return "workspace";
+        if (slug.Length < 3) slug = slug.PadRight(3, '0');
+        return slug;
     }
 
     private static string HashToken(string token)

@@ -2,7 +2,7 @@
 
 **Milestone:** v1.5 Google Auth & Calendar Integration (Calendar removed by user)
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-17
+**Last Updated:** 2026-05-17 (Phase 19 marked complete)
 **Granularity:** Standard
 **Coverage:** 11/11 requirements mapped
 
@@ -14,7 +14,7 @@
     - [x] Secure password-verified linking flow
     - [x] Settings UI for viewing/unlinking accounts
 - [x] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling ✅
-- [ ] **Phase 19: Fix keyboard navigation & accessibility issues** - LoginModal focus trapping, aria-labels, keyboard navigation
+- [x] **Phase 19: Fix keyboard navigation & accessibility issues** - LoginModal focus trapping, aria-labels, keyboard navigation ✅
 
 ## Phase Details
 
@@ -27,12 +27,13 @@
   2. First-time Google user gets a new account auto-created with name, email, and avatar imported from Google profile
   3. Returning Google user is signed in to their existing account without creating a duplicate
   4. IAuthProvider interface exists and can be implemented to add a future provider (GitHub, Microsoft, Apple) without modifying auth flow logic
-**Plans**: 4 plans
+**Plans**: 5 plans (all complete)
 Plans:
-- [ ] 15-01-PLAN.md — IAuthProvider interface + ExternalLogin entity
-- [ ] 15-02-PLAN.md — GoogleAuthProvider implementation + DI registration
-- [ ] 15-03-PLAN.md — OAuth login/callback endpoints + user creation logic
-- [ ] 15-04-PLAN.md — Google button in LoginModal + OAuth callback page
+- [x] 15-01-PLAN.md — IAuthProvider interface + ExternalLogin entity ✅
+- [x] 15-02-PLAN.md — GoogleAuthProvider implementation + DI registration ✅
+- [x] 15-03-PLAN.md — OAuth login/callback endpoints + user creation logic ✅
+- [x] 15-04-PLAN.md — Google button in LoginModal + OAuth callback page ✅
+- [x] 15-05-PLAN.md — Fix missing Google OAuth configuration (gap closure) ✅
 **UI hint**: yes
 
 ### Phase 16: Account Linking
@@ -65,25 +66,31 @@ Plans:
 - [x] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection ✅
 - [x] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection ✅
 
-### Phase 19: Fix keyboard navigation & accessibility issues
+### Phase 19: Fix keyboard navigation & accessibility issues ✅
 
 **Goal:** LoginModal traps focus, elements have proper aria-labels, keyboard navigation works correctly.
 **Requirements**: A11Y-01, A11Y-02, A11Y-03
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1 plan (complete)
+**Success Criteria** (what must be TRUE):
+  1. Focus trap cycles Tab/Shift+Tab within the LoginModal and never reaches elements behind the backdrop
+  2. Close button has `aria-label="Close modal"`, Google button has `aria-label="Sign in with Google"`
+  3. Modal container has `role="dialog"` and `aria-modal="true"`
+  4. First focusable element receives focus when the modal opens; focus returns to triggering element on close
+  5. Escape key still closes the modal (preserved from existing behavior)
 
 Plans:
-- [ ] 19-01-PLAN.md — LoginModal focus trapping, aria-labels, keyboard navigation
+- [x] 19-01-PLAN.md — LoginModal focus trapping, aria-labels, keyboard navigation ✅
 
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15 - Multi-Provider Auth Foundation + Google OAuth | 4/4 | DONE | 2026-05-16 |
+| 15 - Multi-Provider Auth Foundation + Google OAuth | 5/5 | DONE | 2026-05-16 |
 | 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
 | 17 - Token Storage + Auto-Refresh + Revocation | 3/3 | DONE | 2026-05-16 |
 | 18 - Allow apostrophes in workspace names | 1/1 | DONE | 2026-05-17 |
-| 19 - Fix keyboard navigation & accessibility issues | 0/1 | PLANNED | — |
+| 19 - Fix keyboard navigation & accessibility issues | 1/1 | DONE | 2026-05-17 |
 
 ## Coverage
 

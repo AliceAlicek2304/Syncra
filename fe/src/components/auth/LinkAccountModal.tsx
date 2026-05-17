@@ -18,6 +18,7 @@ interface LinkAccountModalProps {
   onClose: () => void;
   email: string;
   providerKey: string;
+  avatarUrl?: string;
   onLinkSuccess: (token: string, refreshToken: string, expiresAtUtc: string) => void;
 }
 
@@ -26,10 +27,12 @@ export default function LinkAccountModal({
   onClose,
   email,
   providerKey,
+  avatarUrl,
   onLinkSuccess,
 }: LinkAccountModalProps) {
   const { error: showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -49,6 +52,7 @@ export default function LinkAccountModal({
   const onSubmit = async (data: LinkAccountFormValues) => {
     setIsSubmitting(true);
     try {
+      setSubmitError(null);
       const response = await authApi.linkAccount({
         email,
         password: data.password,
@@ -59,6 +63,7 @@ export default function LinkAccountModal({
     } catch (err: unknown) {
       console.error('Link account error:', err);
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid password';
+      setSubmitError(message);
       showError(message);
     } finally {
       setIsSubmitting(false);
@@ -85,9 +90,22 @@ export default function LinkAccountModal({
         </button>
 
         <div className={styles.header}>
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10 text-purple-500">
-            <Lock size={24} />
-          </div>
+          {avatarUrl ? (
+            <div className="mx-auto mb-4 relative">
+              <img 
+                src={avatarUrl} 
+                alt={email} 
+                className="h-20 w-20 rounded-full border-2 border-purple-500/30 object-cover mx-auto"
+              />
+              <div className="absolute -bottom-1 -right-1 bg-[#0f1220] p-1.5 rounded-full border border-purple-500/30">
+                <Lock size={14} className="text-purple-500" />
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10 text-purple-500">
+              <Lock size={24} />
+            </div>
+          )}
           <h2 className={styles.title}>Account Linking</h2>
           <p className={styles.subtitle}>
             We found an existing account with <strong>{email}</strong>. 
@@ -96,20 +114,43 @@ export default function LinkAccountModal({
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+          <div className={`${styles.errorWrapper} ${submitError ? styles.errorVisible : ''}`}>
+            {submitError && (
+              <div className={styles.alert}>
+                <div className="flex items-center gap-2 text-red-500">
+                  <X size={16} />
+                  <span className="text-xs font-semibold">{submitError}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className={styles.field}>
-            <label className={styles.label}>Password</label>
+            <div className="flex items-center justify-between">
+              <label className={styles.label}>Password</label>
+              <a href="#" className="text-xs font-medium text-purple-500 hover:text-purple-400 transition-colors">
+                Forgot password?
+              </a>
+            </div>
             <input
               type="password"
-              className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+              className={`${styles.input} ${(errors.password || submitError) ? styles.inputError : ''}`}
               placeholder="••••••••"
               autoFocus
-              {...register('password')}
+              {...register('password', { onChange: () => setSubmitError(null) })}
             />
             {errors.password && <span className={styles.errorText}>{errors.password.message}</span>}
           </div>
 
           <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-            {isSubmitting ? 'Linking Account...' : 'Link Account'}
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span>Linking...</span>
+              </div>
+            ) : (
+              'Link Account'
+            )}
           </button>
         </form>
       </div>

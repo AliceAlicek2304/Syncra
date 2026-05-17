@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { authApi } from '../../api/auth';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import styles from './LoginModal.module.css';
 
 const loginSchema = z.object({
@@ -23,6 +24,8 @@ interface LoginModalProps {
 export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const { login } = useAuth();
   const { error: showError } = useToast();
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { ref, focusFirst } = useFocusTrap(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -58,6 +61,17 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   };
 
   useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    focusFirst();
+  }, [focusFirst]);
+
+  useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -67,8 +81,8 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.closeBtn} onClick={onClose}>
+      <div className={styles.modal} role="dialog" aria-modal="true" ref={ref} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.closeBtn} aria-label="Close modal" onClick={onClose}>
           <X size={20} />
         </button>
 
@@ -80,6 +94,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
         <button
           type="button"
           className={styles.googleBtn}
+          aria-label="Sign in with Google"
           onClick={handleGoogleLogin}
         >
           <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
@@ -101,6 +116,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
             <input
               type="email"
               data-testid="login-email"
+              aria-required="true"
               className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
               placeholder="name@example.com"
               {...register('email')}
@@ -113,6 +129,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
             <input
               type="password"
               data-testid="login-password"
+              aria-required="true"
               className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
               placeholder="••••••••"
               {...register('password')}

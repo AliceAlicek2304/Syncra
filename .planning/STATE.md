@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Google Auth & Calendar Integration
-current_phase: 18
+current_phase: 19
 status: complete
-last_updated: "2026-05-17T01:05:00.000Z"
+last_updated: "2026-05-17T09:45:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 13
+  completed_plans: 13
   percent: 100
 ---
 
@@ -17,23 +17,23 @@ progress:
 
 ## Metadata
 
-- **Current Phase:** 18 (Allow apostrophes in workspace names) — COMPLETE
-- **Status:** Phase 18 implemented and verified. Milestone v1.5 complete.
-- **Last Updated:** 2026-05-17
+- **Current Phase:** 19 (Fix keyboard navigation & accessibility issues) — DONE
+- **Status:** Milestone v1.5 complete. All 5 phases (15–19) finished.
+- **Last Updated:** 2026-05-17 (Phase 19 marked complete)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Phase 18: Allow apostrophes in workspace names
+**Current focus:** Phase 19: Fix keyboard navigation & accessibility issues
 
 ## Current Position
 
-Phase: 18 — Allow apostrophes in workspace names
-Plan: 18-PLAN.md
-Status: COMPLETE
-Last activity: 2026-05-17 — Phase 18 implemented and verified. Milestone v1.5 complete.
+Phase: 19 — Fix keyboard navigation & accessibility issues
+Plan: 19-01 (complete)
+Status: DONE
+Last activity: 2026-05-17 — Phase 19 completed: WCAG 2.2 AA LoginModal with focus trap, ARIA labels, keyboard nav.
 
 ## Phase 15 Summary
 
@@ -67,7 +67,7 @@ Last activity: 2026-05-17 — Phase 18 implemented and verified. Milestone v1.5 
 | v1.2 Update the FE | 8-11 | 22 | Shipped | 2026-05-08 |
 | v1.3 Performance & Analytics Optimization | 12-13 | 9 | Shipped | 2026-05-13 |
 | v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
-| v1.5 Google Auth & Calendar Integration | 15-17 | 10 | Milestone Complete | 2026-05-16 |
+| v1.5 Google Auth & Calendar Integration | 15-19 | 13 | Milestone Complete | 2026-05-17 |
 
 ## Accumulated Context
 
@@ -75,6 +75,7 @@ Last activity: 2026-05-17 — Phase 18 implemented and verified. Milestone v1.5 
 
 - Phase 15-17 defined: v1.5 Google Auth & Account Linking (Calendar removed from scope)
 - Phase 18 added: Allow apostrophes in workspace names (found during Phase 15 UAT)
+- Phase 19 added: Fix keyboard navigation & accessibility issues (found during Phase 15 UAT)
 
 ### v1.5 Roadmap Summary
 

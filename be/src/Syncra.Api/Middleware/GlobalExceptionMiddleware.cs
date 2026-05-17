@@ -23,15 +23,27 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
-            SentrySdk.CaptureException(ex);
-            await HandleExceptionAsync(context, ex);
+            await HandleExceptionAsync(context, ex, _logger);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, ILogger logger)
     {
         context.Response.ContentType = "application/json";
+
+        if (exception is not DomainException and not FluentValidation.ValidationException and not KeyNotFoundException)
+        {
+            logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
+            SentrySdk.CaptureException(exception);
+        }
+        else if (exception is LinkingRequiredException or OAuthTokenRevokedException)
+        {
+            logger.LogInformation("Authentication event: {Message} for {Path}", exception.Message, context.Request.Path);
+        }
+        else
+        {
+            logger.LogWarning(exception, "Domain exception for {Method} {Path}: {Message}", context.Request.Method, context.Request.Path, exception.Message);
+        }
 
         switch (exception)
         {
@@ -72,7 +84,8 @@ public class GlobalExceptionMiddleware
                     code = linkingEx.Code, 
                     message = linkingEx.Message,
                     email = linkingEx.Email,
-                    providerKey = linkingEx.ProviderKey
+                    providerKey = linkingEx.ProviderKey,
+                    avatarUrl = linkingEx.AvatarUrl
                 });
                 break;
 

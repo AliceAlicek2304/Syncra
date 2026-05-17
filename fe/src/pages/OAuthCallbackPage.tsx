@@ -3,20 +3,24 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
 import LinkAccountModal from '../components/auth/LinkAccountModal';
+import { useAuth } from '../context/AuthContext';
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { error: showError } = useToast();
+  const { hydrateSession } = useAuth();
   const [status, setStatus] = useState('Connecting...');
   const [linkingState, setLinkingState] = useState<{
     showModal: boolean;
     email: string;
     providerKey: string;
+    avatarUrl?: string;
   }>({
     showModal: false,
     email: '',
     providerKey: '',
+    avatarUrl: '',
   });
   const hasProcessed = useRef(false);
 
@@ -47,12 +51,15 @@ export default function OAuthCallbackPage() {
         
         // Handle successful login
         localStorage.setItem('syncra_access_token', response.token);
-        setStatus('Success! Redirecting...');
+        localStorage.removeItem('syncra_workspace_id');
+        setStatus('Success! Syncing account...');
+        await hydrateSession();
+        setStatus('Redirecting...');
         navigate('/app/dashboard', { replace: true });
       } catch (err: unknown) {
         console.error('OAuth callback error:', err);
         
-        const errorData = (err as { response?: { data?: { code?: string, email?: string, providerKey?: string, message?: string } } })?.response?.data;
+        const errorData = (err as { response?: { data?: { code?: string, email?: string, providerKey?: string, avatarUrl?: string, message?: string } } })?.response?.data;
         
         if (errorData?.code === 'linking_required' && errorData.email && errorData.providerKey) {
           setStatus('Account linking required');
@@ -60,6 +67,7 @@ export default function OAuthCallbackPage() {
             showModal: true,
             email: errorData.email,
             providerKey: errorData.providerKey,
+            avatarUrl: errorData.avatarUrl,
           });
           return;
         }
@@ -73,9 +81,11 @@ export default function OAuthCallbackPage() {
     processCallback();
   }, [searchParams, navigate, showError]);
 
-  const handleLinkSuccess = (token: string) => {
+  const handleLinkSuccess = async (token: string) => {
     localStorage.setItem('syncra_access_token', token);
-    setStatus('Success! Account linked. Redirecting...');
+    setStatus('Success! Account linked. Syncing...');
+    await hydrateSession();
+    setStatus('Redirecting...');
     setLinkingState(prev => ({ ...prev, showModal: false }));
     navigate('/app/dashboard', { replace: true });
   };
@@ -94,6 +104,7 @@ export default function OAuthCallbackPage() {
         onClose={() => navigate('/login')}
         email={linkingState.email}
         providerKey={linkingState.providerKey}
+        avatarUrl={linkingState.avatarUrl}
         onLinkSuccess={handleLinkSuccess}
       />
     </div>

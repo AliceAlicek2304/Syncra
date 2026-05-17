@@ -29,6 +29,8 @@ api.interceptors.response.use(
         const provider = error.response.data.provider ?? 'google';
         sessionStorage.setItem('oauth_revoked_provider', provider);
         // Do NOT redirect - allow component-level handling (D-04)
+      } else if (error.response?.data?.code === 'invalid_credentials') {
+        // Do NOT redirect - allow form-level handling for bad passwords
       } else {
         localStorage.removeItem('syncra_access_token');
         window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');

@@ -8,6 +8,8 @@ interface AuthContextType {
   loading: boolean
   login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
+  updateUser: (user: User | null) => void
+  hydrateSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -16,30 +18,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const hydrate = async () => {
-      const token = localStorage.getItem('syncra_access_token')
-      if (token) {
-        try {
-          const userData = await authApi.getMe()
-          setUser(userData)
-        } catch (error) {
-          console.error('Failed to hydrate session:', error)
-          localStorage.removeItem('syncra_access_token')
-        }
+  const hydrateSession = async () => {
+    const token = localStorage.getItem('syncra_access_token')
+    if (token) {
+      try {
+        const userData = await authApi.getMe()
+        setUser(userData)
+      } catch (error) {
+        console.error('Failed to hydrate session:', error)
+        localStorage.removeItem('syncra_access_token')
+        localStorage.removeItem('syncra_workspace_id')
+        setUser(null)
       }
-      setLoading(false)
+    } else {
+      setUser(null)
     }
+    setLoading(false)
+  }
 
-    hydrate()
+  useEffect(() => {
+    hydrateSession()
   }, [])
 
   const login = async (credentials: LoginRequest) => {
     try {
       const response = await authApi.login(credentials)
       localStorage.setItem('syncra_access_token', response.token)
-      const userData = await authApi.getMe()
-      setUser(userData)
+      await hydrateSession()
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -48,11 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('syncra_access_token')
+    localStorage.removeItem('syncra_workspace_id')
     setUser(null)
   }
 
+  const updateUser = (userData: User | null) => {
+    setUser(userData)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, hydrateSession }}>
       {children}
     </AuthContext.Provider>
   )
