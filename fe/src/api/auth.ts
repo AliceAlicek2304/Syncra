@@ -70,4 +70,14 @@ export const authApi = {
     const response = await api.post<{ message: string }>('auth/change-password', data);
     return response.data;
   },
+
+  verifyEmail: async (token: string): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('auth/verify-email', { token });
+    return response.data;
+  },
+
+  resendVerificationEmail: async (email: string): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('auth/resend-verification-email', { email });
+    return response.data;
+  },
 };

@@ -56,6 +56,24 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password has been reset successfully." });
     }
 
+    [AllowAnonymous]
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request, CancellationToken cancellationToken)
+    {
+        var command = new VerifyEmailCommand(request.Token);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("resend-verification-email")]
+    public async Task<IActionResult> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ResendVerificationEmailCommand(request.Email);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
@@ -164,3 +182,7 @@ public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Token, string NewPassword);
 
 public record ChangePasswordRequest(string? CurrentPassword, string NewPassword);
+
+public record VerifyEmailRequest(string Token);
+
+public record ResendVerificationEmailRequest(string Email);

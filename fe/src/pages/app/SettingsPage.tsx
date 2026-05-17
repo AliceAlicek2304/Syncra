@@ -13,6 +13,8 @@ import BillingSection from '../../components/billing/BillingSection'
 import LinkedAccountsSection from '../../components/auth/LinkedAccountsSection'
 import ChangePasswordForm from '../../components/auth/ChangePasswordForm'
 import styles from './SettingsPage.module.css'
+import AccountSecuritySection from '../../components/auth/AccountSecuritySection'
+
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'Name too short'),
@@ -145,6 +147,10 @@ export default function SettingsPage() {
             <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Authentication</h2>
             <p className={styles.sectionDesc}>Quản lý các phương thức đăng nhập của bạn.</p>
             <LinkedAccountsSection />
+          </section>
+
+          <section className={`glass-card ${styles.section}`}>
+            <AccountSecuritySection />
           </section>
 
           {/* Security Section */}

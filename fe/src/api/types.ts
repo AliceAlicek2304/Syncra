@@ -8,6 +8,8 @@ export interface User {
   timezone?: string;
   locale?: string;
   hasPasswordBeenSet?: boolean;
+  emailVerifiedAtUtc?: string | null;
+
 }
 
 export interface AuthResponse {

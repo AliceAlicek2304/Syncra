@@ -40,6 +40,8 @@ import SignupModal from './components/auth/SignupModal'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
+
 
 function Homepage() {
   const location = useLocation()
@@ -104,6 +106,8 @@ function AnimatedRoutes() {
         <Route path="/auth/google/callback" element={<OAuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+
         
         <Route path="/app" element={
           <ProtectedRoute>
