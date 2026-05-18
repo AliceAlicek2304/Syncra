@@ -43,6 +43,7 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
 
         // Update user password via domain method
         resetToken.User.UpdatePassword(newPasswordHash);
+        resetToken.User.RegenerateSecurityStamp();
         await _userRepository.UpdateAsync(resetToken.User);
 
         // Mark token as used (single-use, D-04/D-12)

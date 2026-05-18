@@ -15,6 +15,7 @@ public sealed class User : EntityBase
     public DateTime? EmailVerifiedAtUtc { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
     public bool HasPasswordBeenSet { get; private set; } = true;
+    public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString();
 
     // Navigation properties
     public UserProfile? Profile { get; set; }
@@ -79,6 +80,8 @@ public sealed class User : EntityBase
         HasPasswordBeenSet = false;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    public void RegenerateSecurityStamp() => SecurityStamp = Guid.NewGuid().ToString();
 
     public void UpdateEmail(string newEmail)
     {

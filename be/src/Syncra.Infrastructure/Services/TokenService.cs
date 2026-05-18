@@ -28,7 +28,8 @@ public class TokenService : ITokenService
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
-            new("tenant_id", "default") // Placeholder for now, until tenant isolation is fully implemented
+            new("tenant_id", "default"),
+            new("security_stamp", user.SecurityStamp)
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

@@ -7,6 +7,8 @@ using Hangfire.PostgreSql;
 using Syncra.Application.Options;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Api.Filters;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace Syncra.Api;
 
@@ -110,6 +112,34 @@ public static class DependencyInjection
                     }
 
                     return Task.CompletedTask;
+                },
+                OnTokenValidated = async context =>
+                {
+                    try
+                    {
+                        var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                        var securityStampClaim = context.Principal?.FindFirstValue("security_stamp");
+
+                        if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(securityStampClaim))
+                        {
+                            context.Fail("Invalid token — missing required claims.");
+                            return;
+                        }
+
+                        var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                        var user = await dbContext.Users.FindAsync(Guid.Parse(userIdClaim));
+
+                        if (user == null || user.SecurityStamp != securityStampClaim)
+                        {
+                            context.Fail("Authentication failed — token has been invalidated.");
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[OnTokenValidated] Error: {ex.Message}");
+                        context.Fail("Authentication failed.");
+                    }
                 }
             };
         });

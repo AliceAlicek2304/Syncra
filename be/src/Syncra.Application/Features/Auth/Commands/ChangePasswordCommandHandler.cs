@@ -56,6 +56,7 @@ public sealed class ChangePasswordCommandHandler : IRequestHandler<ChangePasswor
 
             // Update user password via domain method
             user.UpdatePassword(newPasswordHash);
+            user.RegenerateSecurityStamp();
             await _userRepository.UpdateAsync(user);
 
             // Invalidate all existing user sessions for security
