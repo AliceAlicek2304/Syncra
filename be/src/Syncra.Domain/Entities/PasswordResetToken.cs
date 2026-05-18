@@ -17,7 +17,10 @@ public sealed class PasswordResetToken : EntityBase
 
     public void MarkAsUsed()
     {
-        UsedAtUtc = DateTime.UtcNow;
+        if (!UsedAtUtc.HasValue)
+        {
+            UsedAtUtc = DateTime.UtcNow;
+        }
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }
