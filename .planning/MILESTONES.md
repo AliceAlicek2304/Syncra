@@ -1,5 +1,22 @@
 # Milestones: Syncra.NET
 
+## v1.5 Google Auth & Account Linking (Shipped: 2026-05-18)
+
+**Phases completed:** 8 phases, 24 plans, 17 tasks
+
+**Key accomplishments:**
+
+1. Google OAuth login/signup with IAuthProvider multi-provider abstraction and ExternalLogin entity
+2. Account linking with collision detection, password verification, and unlink in Settings
+3. PostgreSQL + Redis token storage with lazy refresh and revocation detection
+4. WCAG 2.2 AA compliant LoginModal with focus trapping, ARIA labels, and keyboard navigation via useFocusTrap hook
+5. Allow apostrophes and special characters in workspace names (full stack)
+6. Forgot/reset password flow with Postmark emails, SHA256 token hashing, rate limiting, and session invalidation
+7. Change password in Settings with SecurityStamp JWT invalidation — all sessions revoked on password change
+8. Email verification after registration with auto-login, expired token recovery, and resend UI in Settings
+
+---
+
 ## v1.1 — Reliable Payments & Provider Abstraction
 
 **Target:** 2026-05-15
@@ -36,6 +53,7 @@
 6. Achieved 19/19 analytics tests passing, UAT complete for both phases
 
 **Stats:**
+
 - Commits: 8 (feature) + 2 (archive)
 - Files changed: 53
 - LOC: +3,010 / -565
@@ -66,6 +84,7 @@
 7. Achieved stable test suite — 95 passing tests across controllers, services, and domain
 
 **Stats:**
+
 - Commits: 155
 - Files changed: 495
 - LOC: ~39,266

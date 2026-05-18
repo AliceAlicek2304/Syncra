@@ -5,20 +5,11 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 
 ## Current State
 
-**Active:** v1.5 Google Auth & Calendar Integration
-
-**Goal:** Add Google OAuth login/signup with account linking, display Google Calendar events in the app, using ASP.NET Core Identity with a multi-provider-ready architecture.
-
-**Target features:**
-- Google OAuth login and signup
-- Account linking (email match prompt)
-- Google Calendar integration (display events in app)
-- Multi-provider OAuth architecture (abstract provider interface)
-- Redis-backed token storage with auto-refresh
-
-v1.3 optimized analytics performance with database indexing, query projections, and Redis caching. Delivered CSV analytics export with date range presets. Resolved EF Core concurrency crash in the export pipeline.
+**Active:** Planning v2.0
 
 **Shipped:**
+- <details><summary>v1.5 Google Auth & Account Linking (2026-05-18)</summary>Google OAuth login/signup, account linking with collision detection, PostgreSQL+Redis token storage with auto-refresh, WCAG 2.2 AA accessible LoginModal, forgot/reset password flow with Postmark emails, change password in Settings with SecurityStamp session invalidation, email verification after registration with auto-login.</details>
+- <details><summary>v1.4 Code Quality & Tech Debt (2026-05-14)</summary>Dashboard code quality fixes, component extraction, ESLint zero-warnings policy, test coverage for critical flows.</details>
 - <details><summary>v1.3 Performance & Analytics Optimization (2026-05-13)</summary>Database indexes for analytics, query projections (no Media Include), Redis-backed cache-aside pattern with 60-min TTL, cache invalidation on publish, CSV analytics export with presets (7d/30d/90d/YTD) + custom dates, concurrency fix for EF Core in export pipeline.</details>
 - <details><summary>v1.2 Update the FE (2026-05-08)</summary>High-fidelity frontend with Framer Motion animations, robust error handling, perceived performance polish via Skeleton Loaders, and full E2E test coverage.</details>
 - <details><summary>v1.1 Reliable Payments & Provider Abstraction (2026-05-01)</summary>Delivered a robust billing engine with IPaymentProvider abstraction, Redis-backed webhook idempotency, and a complete frontend Billing UX.</details>
@@ -30,13 +21,27 @@ v1.3 optimized analytics performance with database indexing, query projections, 
 - **Database:** PostgreSQL with EF Core 8
 - **Cache:** Redis
 - **Security:** JWT + OAuth 2.0
-- **Integrations:** Stripe (Billing), OpenAI (AI Features), Cloudflare R2 (Media)
+- **Integrations:** Stripe (Billing), OpenAI (AI Features), Cloudflare R2 (Media), Postmark (Email), Google OAuth
 
 ## Requirements
 
-### Active
-
 ### Validated
+- ✓ AUTH-01: Google OAuth login — v1.5 (Phase 15)
+- ✓ AUTH-02: Google OAuth signup with profile import — v1.5 (Phase 15)
+- ✓ AUTH-03: Multi-provider architecture (IAuthProvider) — v1.5 (Phase 15)
+- ✓ AUTH-04: OAuth callback handling — v1.5 (Phase 15)
+- ✓ AUTH-05: Change password (authenticated) — v1.5 (Phase 21)
+- ✓ AUTH-06: Set password for OAuth-only accounts — v1.5 (Phase 21)
+- ✓ LINK-01: Collision detection on email match — v1.5 (Phase 16)
+- ✓ LINK-02: Password-verified account linking — v1.5 (Phase 16)
+- ✓ LINK-03: View linked accounts in settings — v1.5 (Phase 16)
+- ✓ LINK-04: Unlink accounts — v1.5 (Phase 16)
+- ✓ TOKEN-01: Token persistence (PostgreSQL + Redis) — v1.5 (Phase 17)
+- ✓ TOKEN-02: Auto-refresh before expiry — v1.5 (Phase 17)
+- ✓ TOKEN-03: Revocation detection and UX — v1.5 (Phase 17)
+- ✓ A11Y-01: Focus trap in LoginModal — v1.5 (Phase 19)
+- ✓ A11Y-02: ARIA labels on interactive elements — v1.5 (Phase 19)
+- ✓ A11Y-03: Keyboard navigation — v1.5 (Phase 19)
 - ✓ REQ-12.1: Database Query Optimization — v1.3 (Phase 12)
 - ✓ REQ-12.2: Redis Caching Layer — v1.3 (Phase 12)
 - ✓ REQ-13.1: Advanced Analytics Reporting (CSV) — v1.3 (Phase 13)
@@ -51,10 +56,28 @@ v1.3 optimized analytics performance with database indexing, query projections, 
 - ✓ Foundation Hardening – v1.0
 - ✓ Tenant Resolution – v1.0
 
+### Active
+- [ ] Webhook reliability & idempotency (Phase 06 — researched, not yet planned)
+- [ ] Billing UX documentation (Phase 07 — pending)
+
+### Out of Scope
+- Google Calendar integration — user removed from v1.5 scope
+- Additional auth providers (GitHub, Microsoft, Apple) — deferred to v2.0
+- Mobile app — web-first approach
+
 ## Key Decisions
 
 | Decision | Status | Outcome |
 |----------|--------|---------|
+| SecurityStamp for JWT Revocation | Good | Password change invalidates all sessions via GUID stamp in JWT + OnTokenValidated handler |
+| Email Verification Auto-Login | Good | Verified users land in dashboard with valid JWT, no manual login needed |
+| OAuth Users Skip Verification | Good | Google/OAuth users auto-verified at signup |
+| Postmark for Transactional Emails | Good | Password reset, verification, change confirmation all via Postmark |
+| No ASP.NET Core Identity | Good | Google OAuth integrated with existing custom JWT auth pipeline |
+| Cookie-based OAuth → JWT Exchange | Good | Google.Apis.Auth.AspNetCore3 with OnTicketReceived event |
+| IAuthProvider Interface | Good | Multi-provider abstraction for future providers |
+| ExternalLogin Table | Good | Identity mapping (Google sub → UserId) |
+| Token Storage (PostgreSQL + Redis) | Good | Durable + fast retrieval, encrypted with IDataProtector |
 | Composite DB Indexes for Analytics | Good | Accelerated filter queries on Posts and AuditLogs |
 | Query Projections (no Media Include) | Good | Reduced memory overhead and DB transfer size |
 | Redis-backed Cache-Aside Pattern | Good | Cached analytics return in < 50ms |
@@ -72,12 +95,16 @@ v1.3 optimized analytics performance with database indexing, query projections, 
 | IdempotencyRecord for Stripe events | Good | Prevents duplicate webhook processing |
 | Redis-cached tenant resolution | Good | Reduces DB load significantly |
 | Result<T> pattern for analytics | Good | Explicit error handling, clean controller code |
+| ESLint Zero-Warnings Policy | Good | All source files pass lint with zero errors |
+| Component Extraction Pattern | Good | Pages >500 lines extracted into co-located sub-components |
+| Sub-Hook Pattern | Good | Complex hooks >250 lines decomposed into focused hooks |
 
 ## Constraints
 - Multi-tenant architecture (Workspace-scoped data)
 - OAuth token refresh must not silently fail
 - Stripe webhooks must be idempotent
 - Frontend must maintain high performance and "Pro Max" UI/UX standards
+- JWT-based auth with stateless tokens (SecurityStamp for server-side revocation)
 
 ## Evolution
 
@@ -97,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 after v1.5 milestone start*
+*Last updated: 2026-05-18 after v1.5 milestone complete*

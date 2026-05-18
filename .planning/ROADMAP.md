@@ -1,177 +1,81 @@
-# Roadmap: v1.5 Google Auth & Account Linking
+# Roadmap: Syncra.NET
 
-**Milestone:** v1.5 Google Auth & Calendar Integration (Calendar removed by user)
-**Created:** 2026-05-16
-**Last Updated:** 2026-05-17 (Phases 20-22 added: auth enhancements)
-**Granularity:** Standard
-**Coverage:** 11/11 requirements mapped
+## Milestones
+
+- ✅ **v1.0 Stability** — Phases 1-3 (shipped 2026-04-27)
+- ✅ **v1.1 Reliable Payments & Provider Abstraction** — Phases 4-7 (shipped 2026-05-01)
+- ✅ **v1.2 Update the FE** — Phases 8-11 (shipped 2026-05-08)
+- ✅ **v1.3 Performance & Analytics Optimization** — Phases 12-13 (shipped 2026-05-13)
+- ✅ **v1.4 Code Quality & Tech Debt** — Phase 14 (shipped 2026-05-14)
+- ✅ **v1.5 Google Auth & Account Linking** — Phases 15-22 (shipped 2026-05-18)
 
 ## Phases
 
-- [x] **Phase 15: Multi-Provider Auth Foundation + Google OAuth** - IAuthProvider abstraction, Google OAuth login/signup, profile import ✅
-- [x] **Phase 16: Account Linking & Management** - Collision detection, password verification, linked accounts management ✅
-    - [x] Collision detection & `linking_required` status
-    - [x] Secure password-verified linking flow
-    - [x] Settings UI for viewing/unlinking accounts
-- [x] **Phase 17: Token Storage + Auto-Refresh + Revocation** - PostgreSQL + Redis token storage, auto-refresh, graceful revocation handling ✅
-- [x] **Phase 19: Fix keyboard navigation & accessibility issues** - LoginModal focus trapping, aria-labels, keyboard navigation ✅
-- [x] **Phase 20: Forgot/Reset password flow** - Email-based password reset flow with token (completed 2026-05-17)
-- [x] **Phase 21: Change password in Settings** - Authenticated password change flow with session invalidation and email notification (completed 2026-05-17)
-- [ ] **Phase 22: Email verification after registration** - Verify email after signup
+<details>
+<summary>✅ v1.0 Stability (Phases 1-3) — SHIPPED 2026-04-27</summary>
 
-## Phase Details
+- [x] Phase 1: Foundation Hardening — completed 2026-04-27
+- [x] Phase 2: Tenant Resolution Optimization — completed 2026-04-27
+- [x] Phase 3: Test Coverage — completed 2026-04-27
 
-### Phase 15: Multi-Provider Auth Foundation + Google OAuth
-**Goal**: Users can authenticate with Google accounts through a multi-provider-ready architecture
-**Depends on**: Phase 14 (v1.4 code quality baseline)
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
-**Success Criteria** (what must be TRUE):
-  1. User can click "Sign in with Google" on login page and be redirected to Google consent, then returned to the app with a valid JWT session
-  2. First-time Google user gets a new account auto-created with name, email, and avatar imported from Google profile
-  3. Returning Google user is signed in to their existing account without creating a duplicate
-  4. IAuthProvider interface exists and can be implemented to add a future provider (GitHub, Microsoft, Apple) without modifying auth flow logic
-**Plans**: 5 plans (all complete)
-Plans:
-- [x] 15-01-PLAN.md — IAuthProvider interface + ExternalLogin entity ✅
-- [x] 15-02-PLAN.md — GoogleAuthProvider implementation + DI registration ✅
-- [x] 15-03-PLAN.md — OAuth login/callback endpoints + user creation logic ✅
-- [x] 15-04-PLAN.md — Google button in LoginModal + OAuth callback page ✅
-- [x] 15-05-PLAN.md — Fix missing Google OAuth configuration (gap closure) ✅
-**UI hint**: yes
+</details>
 
-### Phase 16: Account Linking
-**Goal**: Users can safely link their Google account to an existing email/password account
-**Depends on**: Phase 15
-**Requirements**: LINK-01, LINK-02, LINK-03, LINK-04
-**Success Criteria** (what must be TRUE):
-   1. When a Google email matches an existing email/password account, the system detects the collision and prompts the user to verify ownership with their password before linking
-   2. After password verification, the Google account is linked to the existing account (no duplicate created)
-   3. User can view all linked authentication methods (email/password, Google) in account settings
-   4. User can unlink their Google account from settings, and the account remains accessible via email/password
-**Plans**: 3 plans
-Plans:
-- [x] 16-01-PLAN.md — Backend collision detection & link endpoint ✅
-- [x] 16-02-PLAN.md — Frontend password verification modal ✅
-- [x] 16-03-PLAN.md — Settings UI for linked accounts & unlinking ✅
-**UI hint**: yes
+<details>
+<summary>✅ v1.1 Reliable Payments & Provider Abstraction (Phases 4-7) — SHIPPED 2026-05-01</summary>
 
-### Phase 17: Token Storage + Auto-Refresh + Revocation
-**Goal**: Google OAuth tokens are durably stored, automatically refreshed, and revocation is handled gracefully
-**Depends on**: Phase 15
-**Requirements**: TOKEN-01, TOKEN-02, TOKEN-03
-**Success Criteria** (what must be TRUE):
-   1. Google OAuth access and refresh tokens are persisted in PostgreSQL and cached in Redis for fast retrieval
-   2. Tokens are automatically refreshed before expiry without user intervention
-   3. When tokens are revoked (user withdraws consent), the system detects the failure and prompts the user to reconnect their Google account — no silent failures
-**Plans**: 3 plans
-Plans:
-- [x] 17-01-PLAN.md — Token schema + OAuthCallbackResult transport pipeline ✅
-- [x] 17-02-PLAN.md — GoogleTokenService: lazy refresh, Redis write-through, revocation detection ✅
-- [x] 17-03-PLAN.md — Frontend revocation UX: Reconnect prompt in LinkedAccountsSection ✅
+- [x] Phase 4: Payment Provider Abstraction — completed 2026-05-01
+- [x] Phase 5: Stripe Data Consistency Mapping — completed 2026-05-01
+- [x] Phase 6: Webhook Reliability & Idempotency — completed 2026-05-01
+- [x] Phase 7: Frontend Billing UX — completed 2026-05-01
 
-### Phase 19: Fix keyboard navigation & accessibility issues ✅
+</details>
 
-**Goal:** LoginModal traps focus, elements have proper aria-labels, keyboard navigation works correctly.
-**Requirements**: A11Y-01, A11Y-02, A11Y-03
-**Depends on:** Phase 15
-**Plans:** 1 plan (complete)
-**Success Criteria** (what must be TRUE):
-  1. Focus trap cycles Tab/Shift+Tab within the LoginModal and never reaches elements behind the backdrop
-  2. Close button has `aria-label="Close modal"`, Google button has `aria-label="Sign in with Google"`
-  3. Modal container has `role="dialog"` and `aria-modal="true"`
-  4. First focusable element receives focus when the modal opens; focus returns to triggering element on close
-  5. Escape key still closes the modal (preserved from existing behavior)
+<details>
+<summary>✅ v1.2 Update the FE (Phases 8-11) — SHIPPED 2026-05-08</summary>
 
-Plans:
-- [x] 19-01-PLAN.md — LoginModal focus trapping, aria-labels, keyboard navigation ✅
+- [x] Phase 8: Core API Integration & Auth — completed 2026-05-08
+- [x] Phase 9: Feature Integration (Ideas & Posts) — completed 2026-05-08
+- [x] Phase 10: Scheduling Analytics — completed 2026-05-08
+- [x] Phase 11: Pro Max Polish & E2E Testing — completed 2026-05-08
 
-## Progress Table
+</details>
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 15 - Multi-Provider Auth Foundation + Google OAuth | 5/5 | DONE | 2026-05-16 |
-| 16 - Account Linking | 3/3 | DONE | 2026-05-16 |
-| 17 - Token Storage + Auto-Refresh + Revocation | 3/3 | DONE | 2026-05-16 |
-| 18 - Allow apostrophes in workspace names | 1/1 | DONE | 2026-05-17 |
-| 19 - Fix keyboard navigation & accessibility issues | 1/1 | DONE | 2026-05-17 |
+<details>
+<summary>✅ v1.3 Performance & Analytics Optimization (Phases 12-13) — SHIPPED 2026-05-13</summary>
 
-## Coverage
+- [x] Phase 12: Database Query Optimization — completed 2026-05-13
+- [x] Phase 13: Advanced Analytics Reporting — completed 2026-05-13
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| AUTH-01 | Phase 15 | Covered |
-| AUTH-02 | Phase 15 | Covered |
-| AUTH-03 | Phase 15 | Covered |
-| AUTH-04 | Phase 15 | Covered |
-| LINK-01 | Phase 16 | Covered |
-| LINK-02 | Phase 16 | Covered |
-| LINK-03 | Phase 16 | Covered |
-| LINK-04 | Phase 16 | Covered |
-| TOKEN-01 | Phase 17 | Covered |
-| TOKEN-02 | Phase 17 | Covered |
-| TOKEN-03 | Phase 17 | Covered |
+</details>
 
-**Coverage:** 11/11 v1.5 requirements mapped ✓
+<details>
+<summary>✅ v1.4 Code Quality & Tech Debt (Phase 14) — SHIPPED 2026-05-14</summary>
 
-### Phase 18: Allow apostrophes in workspace names
+- [x] Phase 14: Fix Dashboard Code Quality Issues — completed 2026-05-14
 
-**Goal:** Remove character restrictions on workspace names across the full stack.
-**Requirements**: TBD
-**Depends on:** Phase 17
-**Plans:** 1 plan
+</details>
 
-Plans:
-- [x] 18-PLAN.md — Allow apostrophes and special characters in workspace names ✅
+<details>
+<summary>✅ v1.5 Google Auth & Account Linking (Phases 15-22) — SHIPPED 2026-05-18</summary>
 
-### Phase 20: Forgot/Reset password flow
+- [x] Phase 15: Multi-Provider Auth Foundation + Google OAuth (5/5 plans) — completed 2026-05-16
+- [x] Phase 16: Account Linking (3/3 plans) — completed 2026-05-16
+- [x] Phase 17: Token Storage + Auto-Refresh + Revocation (3/3 plans) — completed 2026-05-16
+- [x] Phase 18: Allow Apostrophes in Workspace Names (1/1 plans) — completed 2026-05-17
+- [x] Phase 19: Fix Keyboard Navigation & Accessibility (1/1 plans) — completed 2026-05-17
+- [x] Phase 20: Forgot/Reset Password Flow (4/4 plans) — completed 2026-05-17
+- [x] Phase 21: Change Password in Settings (4/4 plans) — completed 2026-05-17
+- [x] Phase 22: Email Verification After Registration (3/3 plans) — completed 2026-05-18
 
-**Goal:** Users who forget their password can request a password reset email, click a secure link with a short-lived token, and set a new password.
-**Requirements**: TBD
-**Depends on:** Phase 19
-**Success Criteria** (what must be TRUE):
-  1. User can enter their email on /forgot-password and always receives the same generic confirmation message regardless of whether the email exists
-  2. User receives a branded HTML email with a reset link that expires in 1 hour
-  3. User can click the link, land on /reset-password?token=xxx, set a new password, and get redirected to sign in
-  4. Rate limiting (1 req/email/60s) prevents email flooding, and invalid/used tokens return generic errors
-  5. After password reset, all existing user sessions are invalidated for security
-**Plans:** 4/4 plans complete
+</details>
 
-Plans:
-- [x] 20-01-PLAN.md — PasswordResetToken entity + repository + EF migration (Wave 1)
-- [x] 20-02-PLAN.md — Postmark email service + ForgotPassword command + endpoint (Wave 2)
-- [x] 20-03-PLAN.md — ResetPassword command + handler + endpoint (Wave 2)
-- [x] 20-04-PLAN.md — Frontend forgot/reset pages + LoginModal link (Wave 3)
+## Progress
 
-### Phase 21: Change password in Settings
-
-**Goal:** Securely allow authenticated users to change their password or set one if they signed up via OAuth.
-**Requirements**: AUTH-05, AUTH-06 (to be added)
-**Depends on:** Phase 20
-**Success Criteria** (what must be TRUE):
-  1. User can change their password from the Settings -> Security section.
-  2. Users who signed up via Google can "Set Password" for the first time without needing a "Current Password".
-  3. All existing sessions are invalidated after a password change, requiring the user to log in again.
-  4. User receives a confirmation email via Postmark after a successful password change/set.
-**Plans:** 3/3 plans complete
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 21 to break down)
-
-### Phase 22: Email verification after registration
-
-**Goal:** Users who register with email/password receive a verification email, and can verify by clicking a link that auto-logs them in. OAuth users skip verification (auto-verified by Google).
-**Requirements**: TBD
-**Depends on:** Phase 21
-**Success Criteria** (what must be TRUE):
-   1. User registers with email/password and receives a verification email within seconds
-   2. User can click the verification link, be logged in, and land in the dashboard (auto-login)
-   3. Clicking link after 7 days shows error and offers "resend" option
-   4. Verification status is stored in `user.EmailVerifiedAtUtc`
-   5. Google/OAuth users skip the verification flow (auto-verified at signup)
-   6. User can manually resend verification email from account settings (Settings > Account Security)
-**Plans:** 3 plans
-
-Plans:
-- [ ] 22-01-PLAN.md — EmailVerificationToken entity + repository + IEmailService.SendEmailVerificationAsync (Wave 1)
-- [ ] 22-02-PLAN.md — VerifyEmailCommand + handler + API endpoints + update RegisterCommandHandler & OAuthLoginCommandHandler (Wave 2)
-- [ ] 22-03-PLAN.md — VerifyEmailPage component + resend UI in Settings + API methods (Wave 3)
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1-3. Foundation & Stability | v1.0 | 12/12 | Complete | 2026-04-27 |
+| 4-7. Payments & Provider Abstraction | v1.1 | 13/13 | Complete | 2026-05-01 |
+| 8-11. Frontend & Core Features | v1.2 | 22/22 | Complete | 2026-05-08 |
+| 12-13. Performance & Analytics | v1.3 | 9/9 | Complete | 2026-05-13 |
+| 14. Code Quality & Tech Debt | v1.4 | 8/8 | Complete | 2026-05-14 |
+| 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |

@@ -2,24 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Google Auth & Calendar Integration
-current_phase: 20
-status: context_gathered
-last_updated: "2026-05-17T14:36:00.000Z"
+current_phase: All phases complete (15–22)
+status: completed
+last_updated: "2026-05-18T02:17:05.493Z"
+last_activity: 2026-05-18 — Milestone v1.5 completed and archived
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
-  percent: 62
+  completed_phases: 8
+  total_plans: 24
+  completed_plans: 25
+  percent: 100
 ---
 
 # Project State: Syncra.NET
 
 ## Metadata
 
-- **Current Phase:** 20 (Forgot/Reset password flow) — CONTEXT GATHERED
-- **Status:** Milestone v1.5 complete (phases 15–19). Phases 20–22 added for auth enhancements.
-- **Last Updated:** 2026-05-17 (Phases 20–22 added)
+- **Current Phase:** All phases complete (15–22)
+- **Status:** v1.5 milestone complete
+- **Last Updated:** 2026-05-18 (Milestone close)
 
 ## Project Reference
 
@@ -30,16 +31,17 @@ See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
 
 ## Current Position
 
-Phase: 20 — Forgot/Reset password flow
-Plan: Pending
-Status: PENDING
-Last activity: 2026-05-17 — Phases 20–22 added: Forgot password, Change password, Email verification.
+Phase: Milestone v1.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-05-18 — Milestone v1.5 completed and archived
 
 ## Phase 15 Summary
 
 **Goal:** Multi-provider auth foundation with Google OAuth login/signup
 
 **Backend (Wave 1-2):**
+
 - IOAuthProvider interface (ProviderName, GetLoginUrl, HandleCallbackAsync)
 - ExternalLogin entity + IExternalLoginRepository + ExternalLoginRepository
 - GoogleOAuthOptions (ClientId, ClientSecret, CallbackUrl, Scopes)
@@ -48,11 +50,13 @@ Last activity: 2026-05-17 — Phases 20–22 added: Forgot password, Change pass
 - AuthController endpoints: GET /oauth/{provider}/login, POST /oauth/{provider}/callback
 
 **Frontend (Wave 3):**
+
 - Google sign-in button in LoginModal with OAuth URL redirect
 - OAuthCallbackPage for handling Google callback and token storage
 - Auth API methods: getOAuthLoginUrl, oauthCallback
 
 **Commits:**
+
 - feat(auth): IOAuthProvider interface + ExternalLogin entity (Wave 1)
 - feat(auth): GoogleAuthProvider implementation (Wave 2)
 - feat(auth): OAuth endpoints + command handler with ExternalLogin repository
@@ -97,6 +101,13 @@ Last activity: 2026-05-17 — Phases 20–22 added: Forgot password, Change pass
 - **Token storage** — PostgreSQL (durable) + Redis (fast retrieval), encrypted with IDataProtector
 - **Calendar deferred** — user explicitly removed from v1.5 scope
 
+## Key Decisions (v1.5)
+
+- **SecurityStamp for JWT Revocation (D-23)**: Added GUID SecurityStamp to User entity, embedded in JWTs, validated on each request via OnTokenValidated handler. Password change regenerates stamp, invalidating all existing tokens.
+- **Email Verification Auto-Login**: Successful email verification token redirects user directly to dashboard with valid JWT session.
+- **OAuth Users Skip Verification**: Google/OAuth users are auto-verified at signup, no email verification needed.
+- **Postmark for Transactional Emails**: Password reset, email verification, and password change confirmation all sent via Postmark.
+
 ## Key Decisions (v1.4)
 
 - **ESLint Zero-Warnings Policy (D-19)**: All source files must pass `npm run lint` with zero errors; eslint-disable suppressions removed from all files.
@@ -122,3 +133,9 @@ Last activity: 2026-05-17 — Phases 20–22 added: Forgot password, Change pass
 
 - Google Calendar integration (user removed from v1.5 scope)
 - Additional auth providers (GitHub, Microsoft) — deferred to v2
+- Legacy UAT files from prior milestones (Phases 01, 04, 05, 08) — statuses unknown/resolved/completed/passed, no pending scenarios
+- Quick task 260501-nzv-configure-gsd-to-respect-gitignore-and-a — missing/stale reference
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
