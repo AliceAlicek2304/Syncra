@@ -75,6 +75,52 @@
 
 ---
 
+## Milestone: v1.5 — Google Auth & Account Linking
+
+**Shipped:** 2026-05-18
+**Phases:** 8 | **Plans:** 24
+
+### What Was Built
+- Google OAuth login/signup with IAuthProvider multi-provider abstraction and ExternalLogin entity
+- Account linking with collision detection, password verification, and unlink in Settings
+- PostgreSQL + Redis token storage with lazy refresh and revocation detection
+- WCAG 2.2 AA compliant LoginModal with focus trapping, ARIA labels, and keyboard navigation
+- Allow apostrophes and special characters in workspace names
+- Forgot/reset password flow with Postmark emails, SHA256 token hashing, rate limiting
+- Change password in Settings with SecurityStamp JWT session invalidation
+- Email verification after registration with auto-login, expired token recovery, resend UI
+
+### What Worked
+- **Vertical Slices per Wave:** Each phase split into backend → frontend waves kept momentum high
+- **SecurityStamp Pattern:** Clean solution for stateless JWT revocation — embedded GUID validated on each request
+- **UAT Gap Closure:** UAT Test 5 failure (old JWT still valid) was caught early and fixed in dedicated 21-04 plan
+- **Postmark Integration:** Reused existing email service abstraction — zero friction adding reset/verification templates
+
+### What Was Inefficient
+- **UAT Debt Accumulation:** Phase 15 UAT left Tests 4-5 pending and Test 7 partial — accumulated until milestone close
+- **Stale Todos:** 3 todos remained pending after features were implemented — cleanup needed at close
+- **Scope Creep:** v1.5 started as 5 phases (15-19) but grew to 8 phases (15-22) with auth enhancements
+- **Missing Phase 18 in Progress Table:** Phase 18 was complete but not reflected in ROADMAP progress table until close
+
+### Patterns Established
+- **SecurityStamp for Token Revocation:** GUID stamp in User entity → embedded in JWT → validated via OnTokenValidated handler
+- **Email Verification Auto-Login:** Verified users get JWT session directly, no manual login step
+- **OAuth Skip Verification:** Provider-authenticated users auto-verified at signup
+- **SHA256 Token Hashing:** Reset/verification tokens stored as hashes, not plaintext
+
+### Key Lessons
+- Stateless JWTs need a server-side revocation mechanism (SecurityStamp) for password changes
+- Rate limiting on email endpoints (1 req/email/60s) prevents abuse but must return generic responses
+- Focus trap implementation (Phase 19) should be part of initial modal development, not a separate phase
+- Email verification flow is simpler when integrated into registration rather than bolted on after
+
+### Cost Observations
+- Model mix: Heavy opus usage for planning, sonnet for execution
+- Sessions: ~3 days (2026-05-16 → 2026-05-18) for 8 phases, 24 plans
+- Notable: Scope doubled from original 5 phases but velocity remained high due to auth domain familiarity
+
+---
+
 ## Cross-Milestone Trends
 
 | Milestone | Velocity (Plans/Day) | Quality (Passing Tests) |
@@ -82,3 +128,4 @@
 | v1.0      | 4.0                  | 100% (95/95)            |
 | v1.1      | 3.75                 | 100% (105/105)          |
 | v1.3      | 6.0                  | 100% (19/19)            |
+| v1.5      | 8.0                  | 100% (all UAT passed)   |
