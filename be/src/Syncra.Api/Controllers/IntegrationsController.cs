@@ -197,5 +197,19 @@ public class IntegrationsController : ControllerBase
         return Ok(new { message = "Active page updated", workspaceId, integrationId, request.PageId });
     }
 
+    /// <summary>
+    /// POST /api/v1/workspaces/{workspaceId}/integrations/{integrationId}/pages/sync
+    /// Synchronizes pages from the provider for a specific Facebook integration.
+    /// </summary>
+    [HttpPost("{integrationId:guid}/pages/sync")]
+    public async Task<IActionResult> SyncIntegrationPages(
+        Guid workspaceId,
+        Guid integrationId,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new SyncIntegrationPagesCommand(workspaceId, integrationId), cancellationToken);
+        return Ok(new { message = "Pages synchronized successfully", workspaceId, integrationId });
+    }
+
     public sealed record SetActivePageRequest(string PageId);
 }

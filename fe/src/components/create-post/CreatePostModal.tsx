@@ -2,7 +2,7 @@ import { ImageIcon, X } from 'lucide-react'
 import { useCreatePostState } from './useCreatePostState'
 import CreatePostHeader from './CreatePostHeader'
 import CreatePostEditor, { ImageEditorPanel } from './CreatePostEditor'
-import { PlatformTabs, ScheduleRow, RightPanel } from './CreatePostSidebar'
+import { PlatformTabs, ScheduleRow, RightPanel, PageSelector } from './CreatePostSidebar'
 import CreatePostFooter from './CreatePostFooter'
 import type { CreatePostModalProps } from './types'
 import styles from '../CreatePostModal.module.css'
@@ -164,6 +164,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
               <>
                 {state.activePlatforms.length > 1 && <PlatformTabs state={state} refs={hookData.refs} actions={actions} />}
                 <CreatePostEditor state={state} refs={hookData.refs} actions={actions} />
+                <PageSelector state={state} refs={hookData.refs} actions={actions} />
                 <ScheduleRow state={state} refs={hookData.refs} actions={actions} />
                 <CreatePostFooter state={state} refs={hookData.refs} actions={actions} />
               </>

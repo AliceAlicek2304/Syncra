@@ -12,6 +12,14 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
 
   return (
     <div className={styles.footer}>
+      {state.subscription && (
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Sparkles size={12} style={{ color: '#10b981' }} />
+          Quota: {state.subscription.currentScheduledPostsThisMonth}/{state.subscription.maxScheduledPostsPerMonth} posts
+          <span style={{ opacity: 0.5 }}>•</span>
+          Plan: {state.subscription.planName}
+        </div>
+      )}
       <label className={styles.createAnotherLabel}>
         <input
           type="checkbox"

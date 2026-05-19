@@ -30,7 +30,8 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
             request.Title,
             request.Content,
             request.ScheduledAtUtc,
-            request.IntegrationId);
+            request.IntegrationId,
+            request.TargetPageId);
 
         
         if (request.MediaIds != null && request.MediaIds.Count > 0)

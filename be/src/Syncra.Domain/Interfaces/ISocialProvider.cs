@@ -29,4 +29,10 @@ public interface ISocialProvider
     /// </summary>
     Task<bool> RevokeTokenAsync(string accessToken, CancellationToken cancellationToken = default)
         => Task.FromResult(false);
+
+    /// <summary>
+    /// Fetches metadata for an existing account using the provided access token.
+    /// </summary>
+    Task<Dictionary<string, string>> FetchMetadataAsync(string accessToken, CancellationToken cancellationToken = default)
+        => Task.FromResult(new Dictionary<string, string>());
 }

@@ -83,6 +83,13 @@ export default function DashboardPage() {
   const [publishedCount, setPublishedCount] = useState(0)
   const [scheduledCount, setScheduledCount] = useState(0)
   const [platformCount, setPlatformCount] = useState(0)
+  const [activeIntegrationsCount, setActiveIntegrationsCount] = useState(0)
+  const [subscription, setSubscription] = useState<{ 
+    maxSocialAccounts: number | null; 
+    planName: string | null;
+    maxScheduledPostsPerMonth: number | null;
+    currentScheduledPostsThisMonth: number | null;
+  } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -92,6 +99,8 @@ export default function DashboardPage() {
       setPublishedCount(0)
       setScheduledCount(0)
       setPlatformCount(0)
+      setActiveIntegrationsCount(0)
+      setSubscription(null)
       setLoading(false)
       return
     }
@@ -100,17 +109,26 @@ export default function DashboardPage() {
       try {
         setLoading(true)
 
-        const [summaryRes, integrationsRes, recentPostsRes] = await Promise.all([
+        const [summaryRes, integrationsRes, recentPostsRes, subscriptionRes] = await Promise.all([
           api.get<WorkspaceAnalyticsSummaryDto>(`/workspaces/${activeWorkspace.id}/analytics/summary`, {
             params: { date: 30 }
           }),
           api.get<IntegrationDto[]>(`/workspaces/${activeWorkspace.id}/integrations`),
           api.get<PostDto[]>(`/workspaces/${activeWorkspace.id}/posts`, {
             params: { page: 1, pageSize: 6 }
-          })
+          }),
+          api.get<{ 
+            maxSocialAccounts: number | null; 
+            planName: string | null;
+            maxScheduledPostsPerMonth: number | null;
+            currentScheduledPostsThisMonth: number | null;
+          }>(`/workspaces/${activeWorkspace.id}/subscription`)
         ])
 
         const integrations = Array.isArray(integrationsRes.data) ? integrationsRes.data : []
+        setActiveIntegrationsCount(integrations.filter(i => i.isActive).length)
+        setSubscription(subscriptionRes.data)
+
         const integrationById = new Map(integrations.map((i) => [i.id, i]))
 
         const mapPostToDisplay = (post: PostDto): DisplayPost => {
@@ -167,6 +185,22 @@ export default function DashboardPage() {
     { label: 'Đã publish', value: publishedCount, delta: 'dữ liệu thực tế', icon: <BarChart3 size={18} />, color: '#ec4899' },
     { label: 'Platforms', value: platformCount, delta: 'đã dùng trong posts', icon: <Globe2 size={18} />, color: '#22d3ee' },
     { label: 'Đã lên lịch', value: scheduledCount, delta: 'đang chờ', icon: <CalendarClock size={18} />, color: '#f59e0b' },
+    { 
+      label: 'Giới hạn tài khoản', 
+      value: `${activeIntegrationsCount}/${subscription?.maxSocialAccounts ?? 1}`, 
+      delta: `Gói ${subscription?.planName ?? 'Free'}`, 
+      icon: <Sparkles size={18} />, 
+      color: '#10b981',
+      isStringValue: true 
+    },
+    { 
+      label: 'Giới hạn bài đăng/tháng', 
+      value: `${subscription?.currentScheduledPostsThisMonth ?? 0}/${subscription?.maxScheduledPostsPerMonth ?? 10}`, 
+      delta: 'Tháng này', 
+      icon: <CalendarClock size={18} />, 
+      color: '#6366f1',
+      isStringValue: true 
+    },
   ]
 
   return (
@@ -185,7 +219,7 @@ export default function DashboardPage() {
               {s.icon}
             </div>
             <div className={styles.statValue}>
-              <CountingNumber value={s.value} format={(v) => v.toString()} />
+              {s.isStringValue ? s.value : <CountingNumber value={s.value as number} format={(v) => v.toString()} />}
             </div>
             <div className={styles.statLabel}>{s.label}</div>
             <div className={styles.statDelta} style={{ color: s.color }}>{s.delta}</div>

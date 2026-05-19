@@ -7,6 +7,7 @@ public record CreatePostDto(
     [Required] string Content,
     DateTime? ScheduledAtUtc,
     Guid? IntegrationId,
+    string? TargetPageId,
     IReadOnlyCollection<Guid>? MediaIds
 );
 

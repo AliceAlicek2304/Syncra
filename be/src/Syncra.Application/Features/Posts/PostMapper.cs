@@ -16,5 +16,6 @@ public static class PostMapper
             post.ScheduledAt?.UtcValue,
             post.PublishedAtUtc,
             post.IntegrationId,
+            post.TargetPageId,
             post.Media.Select(m => m.Id).ToList());
 }

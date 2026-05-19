@@ -26,6 +26,8 @@ public class CurrentSubscriptionDto
     /// Maximum number of social accounts allowed by the current plan.
     /// </summary>
     public int? MaxSocialAccounts { get; set; }
+    public int? MaxScheduledPostsPerMonth { get; set; }
+    public int? CurrentScheduledPostsThisMonth { get; set; }
 
     /// <summary>
     /// When the subscription started (UTC).
@@ -79,6 +81,7 @@ public class CurrentSubscriptionDto
             PlanCode = "free",
             PlanName = "Free",
             MaxSocialAccounts = 1,
+            MaxScheduledPostsPerMonth = 10,
             IsDefault = true
         };
     }

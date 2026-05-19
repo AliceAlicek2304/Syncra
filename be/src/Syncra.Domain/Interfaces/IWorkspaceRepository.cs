@@ -11,5 +11,6 @@ public interface IWorkspaceRepository
     Task DeleteAsync(Guid id);
     Task<Workspace?> GetBySlugAsync(string slug);
     Task<Workspace?> GetBySlugWithMembersAsync(string slug);
+    Task<Workspace?> GetByIdWithSubscriptionAsync(Guid id);
     Task<IEnumerable<Workspace>> GetByUserIdAsync(Guid userId);
 }

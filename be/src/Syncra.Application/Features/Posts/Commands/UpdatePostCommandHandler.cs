@@ -45,6 +45,7 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
 
         // Handle integration change
         post.SetIntegration(request.IntegrationId);
+        post.SetTargetPage(request.TargetPageId);
 
         // Handle status transition
         if (!string.IsNullOrWhiteSpace(request.Status) &&

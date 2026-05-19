@@ -10,15 +10,18 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
 {
     private readonly IEnumerable<ISocialProvider> _providers;
     private readonly IIntegrationRepository _integrationRepository;
+    private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public OAuthCallbackCommandHandler(
         IEnumerable<ISocialProvider> providers,
         IIntegrationRepository integrationRepository,
+        IWorkspaceRepository workspaceRepository,
         IUnitOfWork unitOfWork)
     {
         _providers = providers;
         _integrationRepository = integrationRepository;
+        _workspaceRepository = workspaceRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -59,6 +62,21 @@ public sealed class OAuthCallbackCommandHandler : IRequestHandler<OAuthCallbackC
 
         if (integration == null)
         {
+            // Enforce quota check
+            var workspace = await _workspaceRepository.GetByIdWithSubscriptionAsync(request.WorkspaceId);
+            if (workspace == null)
+                throw new DomainException("not_found", "Workspace not found.");
+
+            var currentIntegrations = await _integrationRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+            var activeCount = currentIntegrations.Count(i => i.IsActive);
+            var maxAccounts = workspace.Subscription?.Plan?.MaxSocialAccounts ?? 1; // Default to 1 for Free plan
+
+            if (activeCount >= maxAccounts)
+            {
+                throw new DomainException("quota_exceeded", 
+                    $"You have reached the maximum number of social accounts ({maxAccounts}) for your current plan. Please upgrade your subscription to add more accounts.");
+            }
+
             integration = Integration.Create(
                 request.WorkspaceId, request.ProviderId,
                 result.ExternalUserId, result.AccessToken,

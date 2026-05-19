@@ -263,6 +263,27 @@ public sealed class PublishService : IPublishService
                 {
                     foreach (var kv in integrationMeta)
                         metadata[kv.Key] = kv.Value;
+
+                    // If TargetPageId is explicitly set, use it to find the specific page and its access token
+                    if (!string.IsNullOrEmpty(post.TargetPageId))
+                    {
+                        metadata["pageId"] = post.TargetPageId;
+
+                        // Look into pagesJson if it exists to find the token
+                        if (integrationMeta.TryGetValue("pagesJson", out var pagesJson) && !string.IsNullOrWhiteSpace(pagesJson))
+                        {
+                            var pages = System.Text.Json.JsonSerializer.Deserialize<List<FacebookPageMetadata>>(pagesJson);
+                            var targetPage = pages?.FirstOrDefault(p => p.Id == post.TargetPageId);
+                            if (targetPage != null && !string.IsNullOrEmpty(targetPage.AccessToken))
+                            {
+                                metadata["pageAccessToken"] = targetPage.AccessToken;
+                                if (!string.IsNullOrEmpty(targetPage.Name))
+                                {
+                                    metadata["pageName"] = targetPage.Name;
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch { /* ignore */ }
@@ -278,6 +299,8 @@ public sealed class PublishService : IPublishService
             Metadata = metadata
         };
     }
+
+    private sealed record FacebookPageMetadata(string Id, string? Name, string? AccessToken, string? Category);
 
     private static string BuildContent(Post post)
     {

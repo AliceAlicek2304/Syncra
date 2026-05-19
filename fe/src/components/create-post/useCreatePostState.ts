@@ -25,9 +25,30 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const { user } = useAuth()
   const { updatePost, removePost, refreshPosts } = useCalendar()
   const { activeWorkspace } = useWorkspace()
-  const { integrations } = useIntegrations()
-
   const isEditMode = !!editPost
+  const [subscription, setSubscription] = useState<{
+    maxScheduledPostsPerMonth: number;
+    currentScheduledPostsThisMonth: number;
+    planName: string;
+  } | null>(null)
+
+  useEffect(() => {
+    const fetchSub = async () => {
+      if (!activeWorkspace || !isOpen) return
+      try {
+        const res = await api.get(`/workspaces/${activeWorkspace.id}/subscription`)
+        setSubscription(res.data)
+      } catch {}
+    }
+    fetchSub()
+  }, [activeWorkspace, isOpen])
+
+  const {
+    integrations,
+    getIntegrationStatus,
+    getIntegration,
+    refetch: refetchIntegrations
+  } = useIntegrations()
 
   // Get connected platforms from integrations
   // MUST be memoized — a new array reference every render would trigger useEffect re-init,
@@ -60,6 +81,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
     TikTok: '', Instagram: '', Facebook: '', X: ''
   })
+  const [selectedPageByIntegration, setSelectedPageByIntegration] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
     TikTok: false, Instagram: false, Facebook: false, X: false
   })
@@ -134,6 +156,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initSchTime = ''
       let loadedFromDraft = false
       let initMedia: MediaFile[] = []
+      let initSelectedPages: Record<string, string> = {}
 
       // Edit mode - load from existing post
         if (editPost) {
@@ -146,6 +169,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
         initPlatforms = connectedPlatforms.includes(editPost.platform as Platform)
           ? [editPost.platform as Platform]
           : (connectedPlatforms.length > 0 ? [defaultPlatform] : [])
+        
+        if (editPost.integrationId && editPost.targetPageId) {
+          initSelectedPages[editPost.integrationId] = editPost.targetPageId
+        }
 
         initSchMode = true
         const mm = String(editPost.month + 1).padStart(2, '0')
@@ -202,6 +229,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
             }
             if (parsed.scheduleMode !== undefined) initSchMode = parsed.scheduleMode
             if (parsed.scheduleTime) initSchTime = parsed.scheduleTime
+            if (parsed.selectedPageByIntegration) initSelectedPages = parsed.selectedPageByIntegration
             loadedFromDraft = true
           }
         } catch (e) {
@@ -231,13 +259,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setActivePlatforms(initPlatforms)
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : defaultPlatform)
       setMedia(initMedia)
+      setSelectedPageByIntegration(editPost ? (initSelectedPages ?? {}) : {})
 
       initialSnapshotRef.current = JSON.stringify({
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
         media: initMedia,
         activePlatforms: initPlatforms,
         scheduleMode: initSchMode,
-        scheduleTime: initSchTime
+        scheduleTime: initSchTime,
+        selectedPageByIntegration: initSelectedPages
       })
     }, 0)
 
@@ -257,7 +287,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     media,
     activePlatforms,
     scheduleMode,
-    scheduleTime
+    scheduleTime,
+    selectedPageByIntegration
   })
 
   const activeP = PLATFORMS.find(p => p.id === activeTab) ?? PLATFORMS[0]
@@ -365,6 +396,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
           content: caption,
           status: 'draft',
           integrationId: integration?.id || null,
+          targetPageId: integration?.id ? selectedPageByIntegration[integration.id] : null,
           mediaIds
         })
 
@@ -401,6 +433,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
             content: platformCaption,
             scheduledAtUtc,
             integrationId: integration?.id || null,
+            targetPageId: integration?.id ? selectedPageByIntegration[integration.id] : null,
             mediaIds
           }
 
@@ -497,11 +530,12 @@ export function useCreatePostState(props: CreatePostModalProps) {
           }
 
           // Create post first (without scheduledAtUtc - will be draft)
-          const postPayload: Record<string, any> = {
+          const postPayload: CreatePostPayload = {
             title: platformCaption.slice(0, 50) || `Post on ${platform}`,
             content: platformCaption,
             scheduledAtUtc: null,
             integrationId: integration.id,
+            targetPageId: selectedPageByIntegration[integration.id] || null,
             mediaIds
           }
 
@@ -605,6 +639,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
             content: platformCaption,
             scheduledAtUtc: d.toISOString(),
             integrationId: integration.id,
+            targetPageId: selectedPageByIntegration[integration.id] || null,
             mediaIds
           })
         }
@@ -848,7 +883,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       dragId, dragOverId, aiPrompt, aiResults, aiIsGenerating, editingId,
       user, caption, charLimit, overLimit, hasPlatforms, activeP,
       hasIntegration, missingIntegrationPlatforms,
-      currentSnapshot, isEditMode, editPost, connectedPlatformIds, connectedPlatforms
+      currentSnapshot, isEditMode, editPost, connectedPlatformIds, connectedPlatforms,
+      selectedPageByIntegration, subscription
     },
     refs,
     actions: {
@@ -861,7 +897,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       handleSchedule, confirmPublishNow, confirmSchedule, togglePlatform, handleFiles, onDrop, removeMedia,
       handleDragStart, handleDragOver, handleDropOnThumb, handleDragEnd,
       handleReplaceVideo, handleReplaceFile, handleEditorSave, insertAtCursor,
-      handleGenerateAI, applyAISuggestion, handleDelete
+      handleGenerateAI, applyAISuggestion, handleDelete,
+      setSelectedPageByIntegration
     }
   }
 }

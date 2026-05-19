@@ -10,6 +10,7 @@ export interface PostDto {
   scheduledAtUtc: string | null
   publishedAtUtc: string | null
   integrationId: string | null
+  targetPageId: string | null
   mediaIds: string[]  // GUIDs returned from backend
 }
 
@@ -18,6 +19,7 @@ export interface CreatePostPayload {
   content: string
   scheduledAtUtc: string | null
   integrationId: string | null
+  targetPageId: string | null
   mediaIds: string[]
 }
 
@@ -27,6 +29,7 @@ export interface UpdatePostPayload {
   scheduledAtUtc?: string | null
   status?: string
   integrationId?: string | null
+  targetPageId?: string | null
   mediaIds?: string[]
 }
 

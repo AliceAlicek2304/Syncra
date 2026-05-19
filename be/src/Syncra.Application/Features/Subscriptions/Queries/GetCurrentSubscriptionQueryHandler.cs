@@ -9,10 +9,14 @@ public sealed class GetCurrentSubscriptionQueryHandler
     : IRequestHandler<GetCurrentSubscriptionQuery, CurrentSubscriptionDto>
 {
     private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IWorkspaceRepository _workspaceRepository;
 
-    public GetCurrentSubscriptionQueryHandler(ISubscriptionRepository subscriptionRepository)
+    public GetCurrentSubscriptionQueryHandler(
+        ISubscriptionRepository subscriptionRepository,
+        IWorkspaceRepository workspaceRepository)
     {
         _subscriptionRepository = subscriptionRepository;
+        _workspaceRepository = workspaceRepository;
     }
 
     public async Task<CurrentSubscriptionDto> Handle(
@@ -20,11 +24,18 @@ public sealed class GetCurrentSubscriptionQueryHandler
         CancellationToken cancellationToken)
     {
         var subscription = await _subscriptionRepository.GetCurrentForWorkspaceAsync(request.WorkspaceId);
+        var workspace = await _workspaceRepository.GetByIdAsync(request.WorkspaceId);
 
-        if (subscription is null)
-            return CurrentSubscriptionDto.Default(request.WorkspaceId);
+        var dto = subscription is null
+            ? CurrentSubscriptionDto.Default(request.WorkspaceId)
+            : MapToDto(subscription);
 
-        return MapToDto(subscription);
+        if (workspace != null)
+        {
+            dto.CurrentScheduledPostsThisMonth = workspace.GetUsageCount("scheduled_posts");
+        }
+
+        return dto;
     }
 
     private static CurrentSubscriptionDto MapToDto(Subscription subscription) => new()
@@ -33,6 +44,7 @@ public sealed class GetCurrentSubscriptionQueryHandler
         PlanCode = subscription.Plan?.Code,
         PlanName = subscription.Plan?.Name,
         MaxSocialAccounts = subscription.Plan?.MaxSocialAccounts,
+        MaxScheduledPostsPerMonth = subscription.Plan?.MaxScheduledPostsPerMonth,
         StartedAtUtc = subscription.StartsAtUtc,
         EndsAtUtc = subscription.EndsAtUtc,
         TrialEndsAtUtc = subscription.TrialEndsAtUtc,

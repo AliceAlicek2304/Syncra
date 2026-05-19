@@ -10,6 +10,7 @@ public record PostDto(
     DateTime? ScheduledAtUtc,
     DateTime? PublishedAtUtc,
     Guid? IntegrationId,
+    string? TargetPageId,
     IReadOnlyCollection<Guid> MediaIds
 );
 

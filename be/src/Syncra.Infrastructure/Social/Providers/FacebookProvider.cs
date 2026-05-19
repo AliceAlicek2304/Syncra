@@ -227,7 +227,23 @@ public class FacebookProvider : ISocialProvider
         }
     }
 
+    public async Task<Dictionary<string, string>> FetchMetadataAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        var metadata = new Dictionary<string, string>();
+        await PopulateUserProfileAsync(metadata, accessToken, cancellationToken);
+        await PopulatePageMetadataAsync(metadata, accessToken, cancellationToken);
+        return metadata;
+    }
+
     private async Task PopulateUserProfileAsync(AuthResult result, string accessToken, CancellationToken cancellationToken)
+    {
+        await PopulateUserProfileAsync(result.Metadata, accessToken, cancellationToken);
+        if (result.Metadata.TryGetValue("id", out var id)) result.ExternalUserId = id;
+        if (result.Metadata.TryGetValue("email", out var email)) result.ExternalUsername = email;
+        else if (result.Metadata.TryGetValue("name", out var name)) result.ExternalUsername = name;
+    }
+
+    private async Task PopulateUserProfileAsync(Dictionary<string, string> metadata, string accessToken, CancellationToken cancellationToken)
     {
         try
         {
@@ -240,15 +256,13 @@ public class FacebookProvider : ISocialProvider
             var profile = JsonSerializer.Deserialize<JsonNode>(responseString);
             if (profile == null) return;
 
-            result.ExternalUserId = profile["id"]?.ToString();
-
+            var id = profile["id"]?.ToString();
             var email = profile["email"]?.ToString();
             var name = profile["name"]?.ToString();
 
-            result.ExternalUsername = !string.IsNullOrEmpty(email) ? email : name;
-
-            if (!string.IsNullOrEmpty(name)) result.Metadata["name"] = name;
-            if (!string.IsNullOrEmpty(email)) result.Metadata["email"] = email;
+            if (!string.IsNullOrEmpty(id)) metadata["id"] = id;
+            if (!string.IsNullOrEmpty(name)) metadata["name"] = name;
+            if (!string.IsNullOrEmpty(email)) metadata["email"] = email;
         }
         catch
         {
@@ -256,6 +270,11 @@ public class FacebookProvider : ISocialProvider
     }
 
     private async Task PopulatePageMetadataAsync(AuthResult result, string userAccessToken, CancellationToken cancellationToken)
+    {
+        await PopulatePageMetadataAsync(result.Metadata, userAccessToken, cancellationToken);
+    }
+
+    private async Task PopulatePageMetadataAsync(Dictionary<string, string> metadata, string userAccessToken, CancellationToken cancellationToken)
     {
         try
         {
@@ -300,8 +319,8 @@ public class FacebookProvider : ISocialProvider
                 return;
             }
 
-            result.Metadata["pagesJson"] = JsonSerializer.Serialize(pages);
-            result.Metadata["pageCount"] = pages.Count.ToString();
+            metadata["pagesJson"] = JsonSerializer.Serialize(pages);
+            metadata["pageCount"] = pages.Count.ToString();
 
             var page = pages[0];
             var pageId = page.Id;
@@ -312,10 +331,10 @@ public class FacebookProvider : ISocialProvider
             _logger.LogInformation("Facebook page metadata: pageId={PageId} pageName={PageName} hasPageToken={HasToken}",
                 pageId, pageName, !string.IsNullOrEmpty(pageAccessToken));
 
-            if (!string.IsNullOrEmpty(pageId)) result.Metadata["pageId"] = pageId;
-            if (!string.IsNullOrEmpty(pageName)) result.Metadata["pageName"] = pageName;
-            if (!string.IsNullOrEmpty(pageAccessToken)) result.Metadata["pageAccessToken"] = pageAccessToken;
-            if (!string.IsNullOrEmpty(pageCategory)) result.Metadata["pageCategory"] = pageCategory;
+            if (!string.IsNullOrEmpty(pageId)) metadata["pageId"] = pageId;
+            if (!string.IsNullOrEmpty(pageName)) metadata["pageName"] = pageName;
+            if (!string.IsNullOrEmpty(pageAccessToken)) metadata["pageAccessToken"] = pageAccessToken;
+            if (!string.IsNullOrEmpty(pageCategory)) metadata["pageCategory"] = pageCategory;
         }
         catch (Exception ex)
         {

@@ -1,9 +1,11 @@
-import { Sparkles, ImageIcon, Search, Heart, MessageCircle, BookMarked, Share2, Music2, ThumbsUp, Repeat2, BarChart2, Settings2 } from 'lucide-react'
+import { useEffect } from 'react'
+import { Sparkles, ImageIcon, Search, Heart, MessageCircle, BookMarked, Share2, Music2, ThumbsUp, Repeat2, BarChart2, Settings2, ChevronDown } from 'lucide-react'
 import { Signal, Wifi, Battery, Home, Users, Inbox, User } from 'lucide-react'
 import { PLATFORMS } from './types'
 import { PlatformIcon } from './platformIcons'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import SchedulePicker from '../SchedulePicker'
+import { useIntegrations } from '../../hooks/useIntegrations'
 import styles from '../CreatePostModal.module.css'
 
 type SidebarProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
@@ -82,6 +84,58 @@ export function ScheduleRow({ state, actions }: SidebarProps) {
           }} 
         />
       )}
+    </div>
+  )
+}
+
+export function PageSelector({ state, actions }: SidebarProps) {
+  const { getPagesForIntegration, loadPagesForIntegration, isLoadingPages, getIntegration } = useIntegrations()
+  const activeIntegration = getIntegration(state.activeTab)
+  
+  const isFacebook = state.activeTab === 'Facebook'
+  
+  useEffect(() => {
+    if (isFacebook && activeIntegration && !state.selectedPageByIntegration[activeIntegration.id]) {
+      loadPagesForIntegration(activeIntegration.id)
+    }
+  }, [isFacebook, activeIntegration, loadPagesForIntegration, state.selectedPageByIntegration])
+
+  if (!isFacebook || !activeIntegration) return null
+
+  const pages = getPagesForIntegration(activeIntegration.id)
+  if (pages.length <= 1) return null
+
+  const selectedPageId = state.selectedPageByIntegration[activeIntegration.id] || pages.find(p => p.isActive)?.pageId || pages[0]?.pageId
+
+  return (
+    <div className={styles.scheduleRow} style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--glass-border)' }}>
+      <span className={styles.scheduleLabel}>Target Page:</span>
+      <div style={{ position: 'relative', flex: 1 }}>
+        <select 
+          className={styles.scheduleChip} 
+          style={{ 
+            padding: '4px 24px 4px 10px', 
+            outline: 'none', 
+            cursor: 'pointer', 
+            width: '100%',
+            appearance: 'none',
+            textAlign: 'left'
+          }}
+          value={selectedPageId}
+          onChange={(e) => {
+            actions.setSelectedPageByIntegration(prev => ({
+              ...prev,
+              [activeIntegration.id]: e.target.value
+            }))
+          }}
+        >
+          {pages.map(p => (
+            <option key={p.pageId} value={p.pageId}>{p.pageName || p.pageId}</option>
+          ))}
+        </select>
+        <ChevronDown size={12} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+      </div>
+      {isLoadingPages[activeIntegration.id] && <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 4 }}>Loading...</span>}
     </div>
   )
 }

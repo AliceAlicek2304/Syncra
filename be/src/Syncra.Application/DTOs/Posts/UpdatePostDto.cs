@@ -8,6 +8,7 @@ public record UpdatePostDto(
     DateTime? ScheduledAtUtc,
     string? Status,
     Guid? IntegrationId,
+    string? TargetPageId,
     IReadOnlyCollection<Guid>? MediaIds
 );
 

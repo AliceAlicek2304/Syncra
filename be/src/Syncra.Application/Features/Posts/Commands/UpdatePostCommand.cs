@@ -12,5 +12,6 @@ public record UpdatePostCommand(
     DateTime? ScheduledAtUtc,
     string? Status,
     Guid? IntegrationId,
+    string? TargetPageId,
     IReadOnlyCollection<Guid>? MediaIds
 ) : IRequest<PostDto?>;

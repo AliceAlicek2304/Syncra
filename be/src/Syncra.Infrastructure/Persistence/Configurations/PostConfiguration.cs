@@ -35,6 +35,7 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         builder.Property(e => e.PublishedAtUtc).HasColumnName("published_at_utc");
         builder.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
         builder.Property(e => e.IntegrationId).HasColumnName("integration_id");
+        builder.Property(e => e.TargetPageId).HasMaxLength(200).HasColumnName("target_page_id");
 
         // Publishing result properties
         builder.Property(e => e.PublishExternalId).HasMaxLength(200).HasColumnName("publish_external_id");

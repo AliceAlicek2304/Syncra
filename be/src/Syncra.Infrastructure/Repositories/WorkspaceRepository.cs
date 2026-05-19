@@ -24,6 +24,14 @@ public class WorkspaceRepository : Repository<Workspace>, IWorkspaceRepository
             .FirstOrDefaultAsync(o => o.Slug == slug);
     }
 
+    public async Task<Workspace?> GetByIdWithSubscriptionAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(w => w.Subscription)
+            .ThenInclude(s => s.Plan)
+            .FirstOrDefaultAsync(w => w.Id == id);
+    }
+
     public async Task<IEnumerable<Workspace>> GetByUserIdAsync(Guid userId)
     {
         return await _context.WorkspaceMembers

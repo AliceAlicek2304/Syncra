@@ -19,6 +19,7 @@ public sealed class Post : WorkspaceEntityBase
     public PostStatus Status { get; private set; } = PostStatus.Draft;
 
     public Guid? IntegrationId { get; private set; }
+    public string? TargetPageId { get; private set; }
 
     
     public string? PublishExternalId { get; private set; }
@@ -43,7 +44,8 @@ public sealed class Post : WorkspaceEntityBase
         string title,
         string content,
         DateTime? scheduledAtUtc = null,
-        Guid? integrationId = null)
+        Guid? integrationId = null,
+        string? targetPageId = null)
     {
         var now = DateTime.UtcNow;
         var scheduledTime = ScheduledTime.Create(scheduledAtUtc);
@@ -61,6 +63,7 @@ public sealed class Post : WorkspaceEntityBase
             ScheduledAt = scheduledTime,
             Status = status,
             IntegrationId = integrationId,
+            TargetPageId = targetPageId,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
@@ -79,6 +82,19 @@ public sealed class Post : WorkspaceEntityBase
 
         Title = PostTitle.Create(title);
         Content = PostContent.Create(content);
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetTargetPage(string? targetPageId)
+    {
+        if (Status == PostStatus.Published)
+        {
+            throw new DomainException(
+                "invalid_state",
+                "Cannot change target page of a published post.");
+        }
+
+        TargetPageId = targetPageId;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
