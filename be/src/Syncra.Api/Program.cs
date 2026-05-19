@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithMachineName()
+        .Enrich.WithProperty("Application", "Syncra.Api")
         .Enrich.With<RedactingEnricher>());
 
 builder.WebHost.UseSentry();
@@ -27,6 +30,7 @@ var app = builder.Build();
 
 app.UseStaticFiles();
 
+app.UseMiddleware<UserIdEnricher>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
