@@ -14,7 +14,7 @@ interface DropdownPortalProps {
  * right-aligned with the anchor element. Repositions on scroll/resize.
  */
 export default function DropdownPortal({ anchorRef, isOpen, children, width = 160 }: DropdownPortalProps) {
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+    const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null)
     const frameRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -23,10 +23,24 @@ export default function DropdownPortal({ anchorRef, isOpen, children, width = 16
         const compute = () => {
             if (!anchorRef.current) return
             const rect = anchorRef.current.getBoundingClientRect()
-            setPos({
-                top: rect.bottom + 6,
-                left: rect.right - width,
-            })
+            
+            // Estimate dropdown max height
+            const estimatedHeight = 250
+            const spaceBelow = window.innerHeight - rect.bottom
+
+            if (spaceBelow < estimatedHeight && rect.top > spaceBelow) {
+                // Render above anchor
+                setPos({
+                    bottom: window.innerHeight - rect.top + 6,
+                    left: rect.right - width,
+                })
+            } else {
+                // Render below anchor
+                setPos({
+                    top: rect.bottom + 6,
+                    left: rect.right - width,
+                })
+            }
         }
 
         compute()
@@ -52,7 +66,8 @@ export default function DropdownPortal({ anchorRef, isOpen, children, width = 16
         <div
             style={{
                 position: 'fixed',
-                top: pos.top,
+                top: pos.top !== undefined ? pos.top : undefined,
+                bottom: pos.bottom !== undefined ? pos.bottom : undefined,
                 left: pos.left,
                 width,
                 zIndex: 10000,
