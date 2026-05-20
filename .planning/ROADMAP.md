@@ -87,14 +87,14 @@
 | 12-13. Performance & Analytics | v1.3 | 9/9 | Complete | 2026-05-13 |
 | 14. Code Quality & Tech Debt | v1.4 | 8/8 | Complete | 2026-05-14 |
 | 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |
-| 23. Configure Logging (Serilog) | v1.6 | 1/2 | In Progress|  |
+| 23. Configure Logging (Serilog) | v1.6 | 2/3 | In Progress|  |
 
 ### Phase 23: Configure Logging (Serilog)
 
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 22
-**Plans:** 1/2 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 23 to break down)

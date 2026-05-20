@@ -48,10 +48,14 @@ export default function OAuthCallbackPage() {
       try {
         setStatus('Signing you in...');
         const response = await authApi.oauthCallback('google', code, state);
-        
+
+        console.log('[OAuth] Backend response:', { token: response.token?.substring(0, 20) + '...', refreshToken: response.refreshToken?.substring(0, 20) + '...' });
+
         // Handle successful login
         localStorage.setItem('syncra_access_token', response.token);
         localStorage.removeItem('syncra_workspace_id');
+        console.log(`[OAuth] Token saved to localStorage (length: ${response.token.length})`);
+
         setStatus('Success! Syncing account...');
         await hydrateSession();
         setStatus('Redirecting...');
