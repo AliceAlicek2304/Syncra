@@ -11,6 +11,9 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('syncra_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    if (config.url?.includes('/auth/me')) {
+      console.log('[Axios] GET /auth/me with token:', token.substring(0, 20) + '...');
+    }
   }
 
   const workspaceId = localStorage.getItem('syncra_workspace_id');

@@ -15,7 +15,12 @@ public sealed class User : EntityBase
     public DateTime? EmailVerifiedAtUtc { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
     public bool HasPasswordBeenSet { get; private set; } = true;
-    public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString();
+    private string _securityStamp = Guid.NewGuid().ToString();
+    public string SecurityStamp
+    {
+        get => string.IsNullOrWhiteSpace(_securityStamp) ? (_securityStamp = Guid.NewGuid().ToString()) : _securityStamp;
+        private set => _securityStamp = value;
+    }
 
     // Navigation properties
     public UserProfile? Profile { get; set; }
@@ -37,6 +42,7 @@ public sealed class User : EntityBase
             NormalizedEmail = Email.Create(email).Value.ToUpperInvariant(),
             PasswordHash = passwordHash,
             Status = "active",
+            SecurityStamp = Guid.NewGuid().ToString(),
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };

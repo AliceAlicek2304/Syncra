@@ -115,6 +115,7 @@ public static class DependencyInjection
                 },
                 OnTokenValidated = async context =>
                 {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                     try
                     {
                         var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -122,6 +123,8 @@ public static class DependencyInjection
 
                         if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(securityStampClaim))
                         {
+                            logger.LogWarning("Token validation failed: Missing claims. UserId: {UserId}, SecurityStamp: {SecurityStamp}", 
+                                userIdClaim ?? "null", securityStampClaim ?? "null");
                             context.Fail("Invalid token — missing required claims.");
                             return;
                         }
@@ -129,17 +132,35 @@ public static class DependencyInjection
                         var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
                         var user = await dbContext.Users.FindAsync(Guid.Parse(userIdClaim));
 
-                        if (user == null || user.SecurityStamp != securityStampClaim)
+                        if (user == null)
                         {
+                            logger.LogWarning("Token validation failed: User {UserId} not found in database", userIdClaim);
+                            context.Fail("Authentication failed — user not found.");
+                            return;
+                        }
+
+                        if (user.SecurityStamp != securityStampClaim)
+                        {
+                            logger.LogWarning("Token validation failed: SecurityStamp mismatch for user {UserId}. DB: {DbStamp}, Token: {TokenStamp}", 
+                                userIdClaim, user.SecurityStamp, securityStampClaim);
                             context.Fail("Authentication failed — token has been invalidated.");
                             return;
                         }
+                        
+                        logger.LogDebug("Token validated successfully for user {UserId}", userIdClaim);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[OnTokenValidated] Error: {ex.Message}");
+                        logger.LogError(ex, "Error during token validation for user {UserIdClaim}", 
+                            context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown");
                         context.Fail("Authentication failed.");
                     }
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogWarning(context.Exception, "JWT Authentication failed: {Message}", context.Exception.Message);
+                    return Task.CompletedTask;
                 }
             };
         });

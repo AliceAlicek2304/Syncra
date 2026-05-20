@@ -8,6 +8,7 @@
 - ✅ **v1.3 Performance & Analytics Optimization** — Phases 12-13 (shipped 2026-05-13)
 - ✅ **v1.4 Code Quality & Tech Debt** — Phase 14 (shipped 2026-05-14)
 - ✅ **v1.5 Google Auth & Account Linking** — Phases 15-22 (shipped 2026-05-18)
+- 🔜 **v1.6 Logging & Observability** — Phase 23+ (in progress)
 
 ## Phases
 
@@ -69,6 +70,13 @@
 
 </details>
 
+<details>
+<summary>🔜 v1.6 Logging & Observability (Phase 23+) — IN PROGRESS</summary>
+
+- [ ] Phase 23: Configure Logging (Serilog) — not started
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -79,3 +87,14 @@
 | 12-13. Performance & Analytics | v1.3 | 9/9 | Complete | 2026-05-13 |
 | 14. Code Quality & Tech Debt | v1.4 | 8/8 | Complete | 2026-05-14 |
 | 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |
+| 23. Configure Logging (Serilog) | v1.6 | 2/3 | In Progress|  |
+
+### Phase 23: Configure Logging (Serilog)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 22
+**Plans:** 2/3 plans executed
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 23 to break down)

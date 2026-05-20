@@ -5,7 +5,7 @@ namespace Syncra.Api.Logging;
 
 public class RedactingEnricher : ILogEventEnricher
 {
-    private static readonly string[] SensitiveKeywords = { "access_token", "client_secret", "Stripe-Signature", "password", "secret" };
+    private static readonly string[] SensitiveKeywords = { "access_token", "client_secret", "Stripe-Signature", "password", "secret", "refresh_token", "new_password", "authorization", "api_key", "current_password", "refreshToken", "newPassword", "currentPassword", "apiKey", "accessToken" };
 
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {

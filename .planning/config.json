@@ -6,7 +6,8 @@
   "workflow": {
     "research_first": true,
     "detailed_plans": true,
-    "review_required": true
+    "review_required": true,
+    "_auto_chain_active": false
   },
   "docs": {
     "source_of_truth": "docs/PRD-Syncra-DotNet-Backend.md",

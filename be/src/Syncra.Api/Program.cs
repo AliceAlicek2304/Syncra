@@ -11,8 +11,18 @@ using Syncra.Infrastructure.Jobs;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
+{
     configuration.ReadFrom.Configuration(context.Configuration)
-        .Enrich.With<RedactingEnricher>());
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithMachineName()
+        .Enrich.WithProperty("Application", "Syncra.Api")
+        .Enrich.With<RedactingEnricher>();
+
+    foreach (var policy in SensitiveDataDestructuringPolicies.Policies)
+    {
+        configuration.Destructure.With(policy);
+    }
+});
 
 builder.WebHost.UseSentry();
 
@@ -27,6 +37,8 @@ var app = builder.Build();
 
 app.UseStaticFiles();
 
+app.UseMiddleware<RequestBodyRedactionMiddleware>();
+app.UseMiddleware<UserIdEnricher>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

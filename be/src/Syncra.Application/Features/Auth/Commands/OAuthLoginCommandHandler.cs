@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.Common.Interfaces;
 using Syncra.Application.DTOs.Auth;
 using Syncra.Application.Interfaces;
@@ -21,6 +22,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITokenService _tokenService;
     private readonly IJwtOptions _jwtOptions;
+    private readonly ILogger<OAuthLoginCommandHandler> _logger;
 
     public OAuthLoginCommandHandler(
         IEnumerable<IOAuthProvider> providers,
@@ -31,7 +33,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         IRefreshTokenRepository refreshTokenRepository,
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
-        IJwtOptions jwtOptions)
+        IJwtOptions jwtOptions,
+        ILogger<OAuthLoginCommandHandler> logger)
     {
         _providers = providers;
         _userRepository = userRepository;
@@ -42,6 +45,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         _unitOfWork = unitOfWork;
         _tokenService = tokenService;
         _jwtOptions = jwtOptions;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> Handle(OAuthLoginCommand request, CancellationToken cancellationToken)
@@ -109,6 +113,9 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("[OAuth] User {Email} (Id: {UserId}) login successful. SecurityStamp: {SecurityStamp}. Token generated.", 
+            user.Email.Value, user.Id, user.SecurityStamp);
+        
         return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc);
     }
 
