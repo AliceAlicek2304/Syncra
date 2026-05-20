@@ -1,4 +1,5 @@
-using Serilog.Configuration;
+using Serilog.Core;
+using Serilog.Events;
 using Syncra.Application.Features.Auth.Commands;
 
 namespace Syncra.Api.Logging;
@@ -12,34 +13,60 @@ public static class SensitiveDataDestructuringPolicies
     private const string Redacted = "***REDACTED***";
 
     /// <summary>
-    /// Registers all sensitive-data destructuring policies on the given logger configuration.
-    /// Call from Program.cs: .Destructure.With(SensitiveDataDestructuringPolicies.Create)
+    /// All destructuring policies for sensitive auth command DTOs.
+    /// Register each with: .Destructure.With(policy)
     /// </summary>
-    public static LoggerConfiguration Create(LoggerConfiguration configuration)
+    public static IEnumerable<IDestructuringPolicy> Policies { get; } = new IDestructuringPolicy[]
     {
-        return configuration
-            .Destructure.ByTransforming<LoginCommand>(cmd => new
+        new DestructuringPolicy<LoginCommand>(cmd => new Dictionary<string, object?>
+        {
+            [nameof(LoginCommand.Email)] = cmd.Email,
+            [nameof(LoginCommand.Password)] = Redacted
+        }),
+        new DestructuringPolicy<RegisterCommand>(cmd => new Dictionary<string, object?>
+        {
+            [nameof(RegisterCommand.Email)] = cmd.Email,
+            [nameof(RegisterCommand.Password)] = Redacted,
+            [nameof(RegisterCommand.FirstName)] = cmd.FirstName,
+            [nameof(RegisterCommand.LastName)] = cmd.LastName
+        }),
+        new DestructuringPolicy<ChangePasswordCommand>(cmd => new Dictionary<string, object?>
+        {
+            [nameof(ChangePasswordCommand.UserId)] = cmd.UserId,
+            [nameof(ChangePasswordCommand.CurrentPassword)] = cmd.CurrentPassword != null ? Redacted : null,
+            [nameof(ChangePasswordCommand.NewPassword)] = Redacted
+        }),
+        new DestructuringPolicy<ResetPasswordCommand>(cmd => new Dictionary<string, object?>
+        {
+            ["Token"] = Redacted,
+            ["NewPassword"] = Redacted
+        })
+    };
+
+    /// <summary>
+    /// Generic destructuring policy that transforms a specific type into a
+    /// dictionary of redacted properties.
+    /// </summary>
+    private class DestructuringPolicy<T> : IDestructuringPolicy
+    {
+        private readonly Func<T, Dictionary<string, object?>> _transform;
+
+        public DestructuringPolicy(Func<T, Dictionary<string, object?>> transform)
+        {
+            _transform = transform;
+        }
+
+        public bool TryDestructure(object value, ILogEventPropertyValueFactory propertyFactory, out LogEventPropertyValue result)
+        {
+            if (value is T typed)
             {
-                cmd.Email,
-                Password = Redacted
-            })
-            .Destructure.ByTransforming<RegisterCommand>(cmd => new
-            {
-                cmd.Email,
-                Password = Redacted,
-                cmd.FirstName,
-                cmd.LastName
-            })
-            .Destructure.ByTransforming<ChangePasswordCommand>(cmd => new
-            {
-                cmd.UserId,
-                CurrentPassword = cmd.CurrentPassword != null ? Redacted : null,
-                NewPassword = Redacted
-            })
-            .Destructure.ByTransforming<ResetPasswordCommand>(cmd => new
-            {
-                Token = Redacted,
-                NewPassword = Redacted
-            });
+                var dict = _transform(typed);
+                result = propertyFactory.CreatePropertyValue(dict, true);
+                return true;
+            }
+
+            result = null!;
+            return false;
+        }
     }
 }

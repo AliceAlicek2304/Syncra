@@ -11,12 +11,18 @@ using Syncra.Infrastructure.Jobs;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
+{
     configuration.ReadFrom.Configuration(context.Configuration)
         .Enrich.WithEnvironmentName()
         .Enrich.WithMachineName()
         .Enrich.WithProperty("Application", "Syncra.Api")
-        .Enrich.With<RedactingEnricher>()
-        .Destructure.With(SensitiveDataDestructuringPolicies.Create));
+        .Enrich.With<RedactingEnricher>();
+
+    foreach (var policy in SensitiveDataDestructuringPolicies.Policies)
+    {
+        configuration.Destructure.With(policy);
+    }
+});
 
 builder.WebHost.UseSentry();
 
