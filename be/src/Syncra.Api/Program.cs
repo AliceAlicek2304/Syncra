@@ -31,6 +31,7 @@ var app = builder.Build();
 
 app.UseStaticFiles();
 
+app.UseMiddleware<RequestBodyRedactionMiddleware>();
 app.UseMiddleware<UserIdEnricher>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
