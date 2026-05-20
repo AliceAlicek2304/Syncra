@@ -15,7 +15,8 @@ builder.Host.UseSerilog((context, configuration) =>
         .Enrich.WithEnvironmentName()
         .Enrich.WithMachineName()
         .Enrich.WithProperty("Application", "Syncra.Api")
-        .Enrich.With<RedactingEnricher>());
+        .Enrich.With<RedactingEnricher>()
+        .Destructure.With(SensitiveDataDestructuringPolicies.Create));
 
 builder.WebHost.UseSentry();
 
