@@ -165,7 +165,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 26-03: `post.platform.published` / `post.platform.failed` handlers — update individual `PostPlatformTarget` records
+- [x] 26-03: `post.platform.published` / `post.platform.failed` handlers — update individual `PostPlatformTarget` records
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -230,7 +230,7 @@ Plans:
 | 23. Configure Logging (Serilog) | v1.6 | 3/3 | Complete | 2026-05-20 |
 | 24. Zernio Foundation | v2.0 | 3/3 | Complete | 2026-05-23 |
 | 25. Account Connect | v2.0 | 4/4 | Complete | 2026-05-23 |
-| 26. Post Scheduling | v2.0 | 2/4 | In Progress |  |
+| 26. Post Scheduling | v2.0 | 3/4 | In Progress|  |
 | 27. Analytics | v2.0 | 0/2 | Not started | - |
 | 28. Inbox | v2.0 | 0/4 | Not started | - |
 
