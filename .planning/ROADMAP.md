@@ -194,7 +194,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 27-02-PLAN.md — Best-time heatmap backend (D-01), HTTP 202/402/403/412 propagation (D-06/D-07/D-09), frontend analytics page + modal tabs
+- [x] 27-02-PLAN.md — Best-time heatmap backend (D-01), HTTP 202/402/403/412 propagation (D-06/D-07/D-09), frontend analytics page + modal tabs
 
 ---
 
@@ -236,7 +236,7 @@ Plans:
 | 24. Zernio Foundation | v2.0 | 3/3 | Complete | 2026-05-23 |
 | 25. Account Connect | v2.0 | 4/4 | Complete | 2026-05-23 |
 | 26. Post Scheduling | v2.0 | 3/4 | In Progress|  |
-| 27. Analytics | v2.0 | 1/2 | In Progress|  |
+| 27. Analytics | v2.0 | 2/2 | Complete   | 2026-05-23 |
 | 28. Inbox | v2.0 | 0/4 | Not started | - |
 
 _For milestone archives, see `.planning/milestones/v1.6-ROADMAP.md`_
