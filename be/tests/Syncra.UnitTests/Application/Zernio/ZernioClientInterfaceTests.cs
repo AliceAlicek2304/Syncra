@@ -16,10 +16,10 @@ public class ZernioClientInterfaceTests
 
         // Assert
         Assert.NotNull(method);
-        Assert.Equal(typeof(Task<ZernioCreatePostResult>), method!.ReturnType.GetGenericTypeDefinition() == typeof(Task<>)
-            ? method.ReturnType.GenericTypeArguments[0]
-            : method.ReturnType);
-        
+        Assert.True(method!.ReturnType.IsGenericType);
+        Assert.Equal(typeof(Task<>), method!.ReturnType.GetGenericTypeDefinition());
+        Assert.Equal(typeof(ZernioCreatePostResult), method!.ReturnType.GenericTypeArguments[0]);
+
         var parameters = method.GetParameters();
         Assert.Contains(parameters, p => p.Name == "request" && p.ParameterType == typeof(ZernioCreatePostRequest));
         Assert.Contains(parameters, p => p.Name == "cancellationToken" && p.ParameterType == typeof(CancellationToken));

@@ -38,4 +38,8 @@ public interface IZernioClient
         string selectedId,
         string? selectedName,
         CancellationToken cancellationToken = default);
+
+    Task<ZernioCreatePostResult> CreatePostAsync(
+        ZernioCreatePostRequest request,
+        CancellationToken cancellationToken = default);
 }

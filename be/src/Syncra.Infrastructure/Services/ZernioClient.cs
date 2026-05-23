@@ -15,6 +15,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly ConnectApi _connectApi;
     private readonly AccountsApi _accountsApi;
     private readonly ProfilesApi _profilesApi;
+    private readonly PostsApi _postsApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
@@ -29,6 +30,7 @@ public sealed class ZernioClient : IZernioClient
         _connectApi = new ConnectApi(config);
         _accountsApi = new AccountsApi(config);
         _profilesApi = new ProfilesApi(config);
+        _postsApi = new PostsApi(config);
         _logger = logger;
     }
 
@@ -241,6 +243,50 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error selecting option for platform {Platform}, profile {ProfileId}", platform, profileId);
             throw new DomainException("zernio_select_error", $"Failed to complete selection for {platform}", ex);
+        }
+    }
+
+    public async Task<ZernioCreatePostResult> CreatePostAsync(
+        ZernioCreatePostRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new CreatePostRequest
+            {
+                Content = request.Content,
+                PublishNow = request.PublishNow,
+                ScheduledFor = request.ScheduledForUtc ?? default,
+                Platforms = request.Platforms
+                    .Select(p => new CreatePostRequestPlatformsInner
+                    {
+                        Platform = p.Platform,
+                        AccountId = p.ZernioAccountId
+                    })
+                    .ToList()
+            };
+
+            var response = await _postsApi.CreatePostAsync(sdkRequest);
+            var createdPost = response.Post;
+
+            return new ZernioCreatePostResult(
+                createdPost.Id,
+                createdPost.Status?.ToString() ?? "scheduled",
+                request.Platforms.Count);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for post creation");
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to create posts.",
+                reason: "post_limit_reached",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { platforms = request.Platforms.Count });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error creating post");
+            throw new DomainException("zernio_create_post_error", "Failed to create Zernio post", ex);
         }
     }
 

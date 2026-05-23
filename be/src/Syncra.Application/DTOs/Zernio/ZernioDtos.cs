@@ -22,3 +22,18 @@ public sealed record ZernioSelectResultDto(
     string Platform,
     string DisplayName,
     string? ProfilePicture);
+
+public sealed record ZernioCreatePostPlatformTarget(
+    string Platform,
+    string ZernioAccountId);
+
+public sealed record ZernioCreatePostRequest(
+    string Content,
+    IReadOnlyList<ZernioCreatePostPlatformTarget> Platforms,
+    DateTime? ScheduledForUtc,
+    bool PublishNow);
+
+public sealed record ZernioCreatePostResult(
+    string ZernioPostId,
+    string Status,
+    int TargetCount);
