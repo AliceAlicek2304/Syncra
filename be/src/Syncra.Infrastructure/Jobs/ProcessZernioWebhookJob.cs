@@ -166,6 +166,54 @@ public sealed class ProcessZernioWebhookJob
                         break;
                 }
             }
+            else if (webhookEvent.EventType is "comment.received" or "review.new")
+            {
+                if (!root.TryGetProperty("account", out var inboxAccount))
+                {
+                    _logger.LogWarning(
+                        "Zernio webhook event {EventId} ('{EventType}') payload missing 'account' object — skipping.",
+                        webhookEventId,
+                        webhookEvent.EventType);
+                    webhookEvent.MarkProcessed(utcNow);
+                    await _db.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+
+                var externalAccountId = inboxAccount.TryGetProperty("id", out var acctIdElem)
+                    ? acctIdElem.GetString()
+                    : null;
+
+                if (string.IsNullOrWhiteSpace(externalAccountId))
+                {
+                    _logger.LogWarning(
+                        "Zernio webhook event {EventId} ('{EventType}') payload missing account.id — skipping.",
+                        webhookEventId,
+                        webhookEvent.EventType);
+                    webhookEvent.MarkProcessed(utcNow);
+                    await _db.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+
+                switch (webhookEvent.EventType)
+                {
+                    case "comment.received":
+                        await HandleCommentReceivedAsync(
+                            webhookEvent, root, externalAccountId, cancellationToken);
+                        break;
+
+                    default:
+                        _logger.LogInformation(
+                            "Zernio webhook event {EventId} has unhandled event type '{EventType}' — marking processed.",
+                            webhookEventId,
+                            webhookEvent.EventType);
+                        webhookEvent.MarkProcessed(utcNow);
+                        await _db.SaveChangesAsync(cancellationToken);
+                        break;
+                }
+
+                webhookEvent.MarkProcessed(utcNow);
+                await _db.SaveChangesAsync(cancellationToken);
+            }
             else if (webhookEvent.EventType.StartsWith("message."))
             {
                 if (!root.TryGetProperty("account", out var msgAccount))
@@ -915,6 +963,163 @@ public sealed class ProcessZernioWebhookJob
             "message.received: processed for workspace {WorkspaceId}, conversation {ConvId}.",
             workspaceId,
             conversation.Id);
+    }
+
+    /// <summary>
+    /// Processes a <c>comment.received</c> webhook: creates an <see cref="InboxComment"/> row,
+    /// deduplicating by <c>ZernioCommentId</c>, and notifies connected clients.
+    /// </summary>
+    private async Task HandleCommentReceivedAsync(
+        ZernioWebhookEvent webhookEvent,
+        JsonElement root,
+        string externalAccountId,
+        CancellationToken cancellationToken)
+    {
+        var workspaceId = webhookEvent.WorkspaceId;
+        var utcNow = DateTime.UtcNow;
+
+        // ── a. Extract payload fields ────────────────────────────────────────
+        if (!root.TryGetProperty("comment", out var commentElem))
+        {
+            _logger.LogWarning("comment.received: payload missing 'comment' object — skipping.");
+            return;
+        }
+
+        var zernioCommentId = commentElem.GetProperty("id").GetString();
+        if (string.IsNullOrWhiteSpace(zernioCommentId))
+        {
+            _logger.LogWarning("comment.received: payload missing comment.id — skipping.");
+            return;
+        }
+
+        var platform = commentElem.TryGetProperty("platform", out var platElem)
+            ? platElem.GetString()?.ToLowerInvariant()
+            : null;
+
+        var commentText = commentElem.TryGetProperty("text", out var textElem)
+            ? textElem.GetString()
+            : string.Empty;
+
+        var zernioPostId = commentElem.TryGetProperty("postId", out var postIdElem)
+            ? postIdElem.GetString()
+            : null;
+
+        var isReply = commentElem.TryGetProperty("isReply", out var isReplyElem)
+            && isReplyElem.GetBoolean();
+
+        var parentCommentId = commentElem.TryGetProperty("parentCommentId", out var parentIdElem)
+            ? parentIdElem.GetString()
+            : null;
+
+        var createdAt = commentElem.TryGetProperty("createdAt", out var createdAtElem)
+            && createdAtElem.TryGetDateTime(out var parsedCreatedAt)
+            ? parsedCreatedAt
+            : utcNow;
+
+        // Author info
+        string? authorName = null;
+        string? authorUsername = null;
+        string? authorPicture = null;
+        if (commentElem.TryGetProperty("author", out var authorElem))
+        {
+            authorName = authorElem.TryGetProperty("name", out var nameElem)
+                ? nameElem.GetString()
+                : null;
+            authorUsername = authorElem.TryGetProperty("username", out var usernameElem)
+                ? usernameElem.GetString()
+                : null;
+            authorPicture = authorElem.TryGetProperty("picture", out var picElem)
+                ? picElem.GetString()
+                : null;
+        }
+
+        // Account-level info
+        var accountElem = root.GetProperty("account");
+        var zernioAccountId = accountElem.TryGetProperty("id", out var acctIdElem)
+            ? acctIdElem.GetString()
+            : null;
+
+        // Post preview fields
+        string? postPreviewCaption = null;
+        string? postPreviewThumbnailUrl = null;
+        if (root.TryGetProperty("post", out var postElem))
+        {
+            // The webhook post object doesn't include caption/thumbnail;
+            // these are populated from backfill/list APIs per D-15.
+        }
+
+        // ── b. Look up SocialAccount ─────────────────────────────────────────
+        var socialAccount = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                a => a.WorkspaceId == workspaceId
+                  && a.ExternalAccountId == externalAccountId,
+                cancellationToken);
+
+        if (socialAccount == null)
+        {
+            _logger.LogWarning(
+                "comment.received: no SocialAccount found for workspace {WorkspaceId}, accountId {AccountId} — skipping.",
+                workspaceId,
+                externalAccountId);
+            return;
+        }
+
+        platform ??= socialAccount.Platform;
+
+        // ── c. Check for duplicate comment by ZernioCommentId ────────────────
+        var existingComment = await _db.InboxComments
+            .FirstOrDefaultAsync(
+                c => c.WorkspaceId == workspaceId
+                  && c.ZernioCommentId == zernioCommentId,
+                cancellationToken);
+
+        if (existingComment != null)
+        {
+            _logger.LogInformation(
+                "comment.received: duplicate comment {ZernioCommentId} detected — skipping.",
+                zernioCommentId);
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        // ── d. Create InboxComment ────────────────────────────────────────────
+        var comment = InboxComment.Create(
+            workspaceId,
+            zernioCommentId,
+            socialAccount.Id,
+            platform ?? socialAccount.Platform,
+            authorName ?? authorUsername ?? "Unknown",
+            commentText ?? string.Empty,
+            zernioPostId: zernioPostId,
+            zernioAccountId: zernioAccountId,
+            authorUsername: authorUsername,
+            authorPicture: authorPicture,
+            postPreviewCaption: postPreviewCaption,
+            postPreviewThumbnailUrl: postPreviewThumbnailUrl,
+            parentCommentId: parentCommentId,
+            isReply: isReply,
+            receivedAtUtc: createdAt);
+
+        _db.InboxComments.Add(comment);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // ── e. Notify connected clients ──────────────────────────────────────
+        await _inboxNotifier.NotifyItemCreatedAsync(
+            workspaceId,
+            "comment",
+            comment.Id.ToString(),
+            commentText ?? string.Empty,
+            platform ?? socialAccount.Platform,
+            socialAccount.Id.ToString(),
+            1,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "comment.received: processed for workspace {WorkspaceId}, comment {CommentId}.",
+            workspaceId,
+            comment.Id);
     }
 }
 
