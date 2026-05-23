@@ -25,6 +25,16 @@ export interface HeatmapDto {
   slots: HeatmapSlotDto[];
 }
 
+export interface AnalyticsError {
+  code: string;
+  message: string;
+  reason?: string;
+  platform?: string;
+  reauthorizeUrl?: string;
+  dashboardUrl?: string;
+  status: number;
+}
+
 export const analyticsApi = {
   getWorkspaceSummary: async (
     workspaceId: string,
@@ -40,11 +50,12 @@ export const analyticsApi = {
 
   getWorkspaceHeatmap: async (
     workspaceId: string,
-    dateDays: AnalyticsPresetDays
+    dateDays: AnalyticsPresetDays,
+    platform?: string
   ): Promise<HeatmapDto> => {
     const response = await api.get<HeatmapDto>(
       `workspaces/${workspaceId}/analytics/heatmap`,
-      { params: { date: dateDays } }
+      { params: { date: dateDays, ...(platform ? { platform } : {}) } }
     );
 
     return response.data;

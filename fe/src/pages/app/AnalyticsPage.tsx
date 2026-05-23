@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check } from 'lucide-react'
+import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check, RefreshCw, ExternalLink, Lock, AlertTriangle } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
@@ -15,9 +15,82 @@ const PRESET_LABELS: Record<7 | 30 | 90, string> = {
   90: 'Last 90 days',
 }
 
+const PLATFORM_OPTIONS = [
+  { label: 'All Platforms', value: '' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'LinkedIn', value: 'linkedin' },
+  { label: 'TikTok', value: 'tiktok' },
+  { label: 'Twitter', value: 'twitter' },
+]
+
+/** Banner for billing gate (402 / analytics_addon_required 403) */
+function BillingGateBanner({ error, onDismiss }: { error: { message: string; dashboardUrl?: string }; onDismiss: () => void }) {
+  return (
+    <div className={styles.errorBanner} data-testid="billing-gate-banner">
+      <div className={styles.bannerContent}>
+        <Lock size={16} className={styles.bannerIcon} />
+        <div className={styles.bannerText}>
+          <strong>Analytics Add-on Required</strong>
+          <p>{error.message}</p>
+        </div>
+      </div>
+      <div className={styles.bannerActions}>
+        {error.dashboardUrl && (
+          <a
+            href={error.dashboardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.bannerLink}
+          >
+            Upgrade Plan <ExternalLink size={12} />
+          </a>
+        )}
+        <button type="button" className={styles.bannerDismiss} onClick={onDismiss}>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Banner for scope reauthorization (412) */
+function ReauthorizeBanner({ error, onDismiss }: { error: { message: string; reauthorizeUrl?: string; platform?: string }; onDismiss: () => void }) {
+  return (
+    <div className={styles.reauthBanner} data-testid="reauth-banner">
+      <div className={styles.bannerContent}>
+        <AlertTriangle size={16} className={styles.bannerIcon} />
+        <div className={styles.bannerText}>
+          <strong>Re-authorization Required{error.platform ? ` — ${error.platform}` : ''}</strong>
+          <p>{error.message}</p>
+        </div>
+      </div>
+      <div className={styles.bannerActions}>
+        {error.reauthorizeUrl && (
+          <a
+            href={error.reauthorizeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.bannerLink}
+          >
+            Re-authorize <ExternalLink size={12} />
+          </a>
+        )}
+        <button type="button" className={styles.bannerDismiss} onClick={onDismiss}>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function AnalyticsPage() {
   const { activeWorkspace } = useWorkspace()
   const [showPresetDropdown, setShowPresetDropdown] = useState(false)
+  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false)
+  const [dismissedBilling, setDismissedBilling] = useState(false)
+  const [dismissedReauth, setDismissedReauth] = useState(false)
+
   const {
     presetDays,
     setPresetDays,
@@ -25,7 +98,14 @@ export default function AnalyticsPage() {
     summary,
     heatmap,
     isLoading,
+    isFetching,
     isError,
+    isBillingGateError,
+    isScopeError,
+    analyticsError,
+    heatmapPlatform,
+    setHeatmapPlatform,
+    refresh,
   } = useAnalyticsSummary({ workspaceId: activeWorkspace?.id })
 
   const weeklyBars = useMemo(() => {
@@ -73,6 +153,9 @@ export default function AnalyticsPage() {
     },
   ]
 
+  const showBillingGate = isBillingGateError && analyticsError && !dismissedBilling
+  const showReauth = isScopeError && analyticsError && !dismissedReauth
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -81,43 +164,81 @@ export default function AnalyticsPage() {
           <p className={styles.subtitle}>Tổng quan hiệu suất content tháng này</p>
         </div>
 
-        <div className={styles.presetWrap}>
+        <div className={styles.headerActions}>
+          <div className={styles.presetWrap}>
+            <button
+              type="button"
+              className={styles.presetBtn}
+              onClick={() => setShowPresetDropdown((v) => !v)}
+            >
+              <Calendar size={14} />
+              {PRESET_LABELS[presetDays]}
+              <ChevronDown size={14} />
+            </button>
+
+            {showPresetDropdown && (
+              <div className={`glass-card ${styles.presetDropdown}`}>
+                {([7, 30, 90] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    className={styles.presetOption}
+                    onClick={() => {
+                      setPresetDays(days)
+                      setShowPresetDropdown(false)
+                    }}
+                  >
+                    {presetDays === days && <Check size={14} color="var(--purple-300)" />}
+                    <span>{PRESET_LABELS[days]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <span className={styles.rangeLabel}>{rangeLabel}</span>
+          </div>
+
           <button
             type="button"
-            className={styles.presetBtn}
-            onClick={() => setShowPresetDropdown((v) => !v)}
+            className={styles.refreshBtn}
+            onClick={refresh}
+            disabled={isFetching}
+            data-testid="refresh-analytics-btn"
           >
-            <Calendar size={14} />
-            {PRESET_LABELS[presetDays]}
-            <ChevronDown size={14} />
+            <RefreshCw size={14} className={isFetching ? styles.refreshSpinning : ''} />
+            {isFetching ? 'Refreshing...' : 'Refresh'}
           </button>
-
-          {showPresetDropdown && (
-            <div className={`glass-card ${styles.presetDropdown}`}>
-              {([7, 30, 90] as const).map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  className={styles.presetOption}
-                  onClick={() => {
-                    setPresetDays(days)
-                    setShowPresetDropdown(false)
-                  }}
-                >
-                  {presetDays === days && <Check size={14} color="var(--purple-300)" />}
-                  <span>{PRESET_LABELS[days]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <span className={styles.rangeLabel}>{rangeLabel}</span>
         </div>
       </div>
 
-      {isError && (
-        <div className="glass-card" style={{ padding: '16px', color: 'var(--pink-500)', fontSize: '14px', border: '1px solid var(--pink-500)', background: 'rgba(236, 72, 153, 0.05)', marginBottom: '16px' }}>
-          Could not load analytics data. Please try again later.
+      {/* Billing gate banner */}
+      {showBillingGate && (
+        <BillingGateBanner
+          error={{ message: analyticsError.message, dashboardUrl: analyticsError.dashboardUrl }}
+          onDismiss={() => setDismissedBilling(true)}
+        />
+      )}
+
+      {/* Reauthorization banner */}
+      {showReauth && (
+        <ReauthorizeBanner
+          error={{
+            message: analyticsError.message,
+            reauthorizeUrl: analyticsError.reauthorizeUrl,
+            platform: analyticsError.platform,
+          }}
+          onDismiss={() => setDismissedReauth(true)}
+        />
+      )}
+
+      {/* Generic error banner for non-billing/non-scope errors */}
+      {isError && !isBillingGateError && !isScopeError && (
+        <div className={styles.genErrorBanner} data-testid="generic-error-banner">
+          <AlertTriangle size={16} />
+          <span>Could not load analytics data. Please try again later.</span>
+          <button type="button" className={styles.retryBtn} onClick={refresh}>
+            Retry
+          </button>
         </div>
       )}
 
@@ -176,7 +297,38 @@ export default function AnalyticsPage() {
       {/* Best Time to Post Heatmap */}
       <div className={`glass-card ${styles.heatmapCard}`}>
         <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
+            <div className={styles.platformFilterWrap}>
+              <button
+                type="button"
+                className={styles.platformFilterBtn}
+                onClick={() => setShowPlatformDropdown((v) => !v)}
+                data-testid="heatmap-platform-filter"
+              >
+                {PLATFORM_OPTIONS.find(p => p.value === (heatmapPlatform ?? ''))?.label ?? 'All Platforms'}
+                <ChevronDown size={12} />
+              </button>
+              {showPlatformDropdown && (
+                <div className={`glass-card ${styles.platformFilterDropdown}`}>
+                  {PLATFORM_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={styles.platformFilterOption}
+                      onClick={() => {
+                        setHeatmapPlatform(opt.value || undefined)
+                        setShowPlatformDropdown(false)
+                      }}
+                    >
+                      {heatmapPlatform === (opt.value || undefined) && <Check size={12} color="var(--purple-300)" />}
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <span className={styles.cardSub}>Phân tích dựa trên tương tác của audience</span>
         </div>
         {isLoading ? <SkeletonLoader height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}

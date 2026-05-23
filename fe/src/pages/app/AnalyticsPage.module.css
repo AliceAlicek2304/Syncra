@@ -13,6 +13,203 @@
   gap: 16px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-glass);
+  background: rgba(255,255,255,0.05);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.refreshBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refreshSpinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error Banners ──────────────────────────────────────────────── */
+
+.errorBanner,
+.reauthBanner,
+.genErrorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.errorBanner {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.reauthBanner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.genErrorBanner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.bannerContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bannerIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bannerText strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.bannerText p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.bannerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bannerLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c4b5fd;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.1);
+  transition: background 0.15s;
+}
+.bannerLink:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.bannerDismiss {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-glass);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.retryBtn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f87171;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.retryBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Platform filter for heatmap ─────────────────────────────── */
+
+.platformFilterWrap {
+  position: relative;
+}
+
+.platformFilterBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.platformFilterBtn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.platformFilterDropdown {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  z-index: 5;
+}
+
+.platformFilterOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.platformFilterOption:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border-glass);
+}
+
 .title {
   font-size: 22px;
   font-weight: 800;
