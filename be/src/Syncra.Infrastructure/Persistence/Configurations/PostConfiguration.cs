@@ -43,6 +43,10 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         builder.Property(e => e.PublishLastError).HasMaxLength(Post.PublishLastErrorMaxLength).HasColumnName("publish_last_error");
         builder.Property(e => e.PublishProviderResponseMetadata).HasColumnType("jsonb").HasColumnName("publish_provider_response_metadata");
 
+        // Zernio fields
+        builder.Property(e => e.ZernioPostId).HasMaxLength(200).HasColumnName("zernio_post_id");
+        builder.Property(e => e.ZernioTargetCount).HasDefaultValue(0).HasColumnName("zernio_target_count");
+
         // Relationships
         builder.HasOne(e => e.User)
             .WithMany(u => u.Posts)
@@ -60,5 +64,10 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
             .WithOne(m => m.Post)
             .HasForeignKey(m => m.PostId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasMany(e => e.PlatformTargets)
+            .WithOne(t => t.Post)
+            .HasForeignKey(t => t.PostId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

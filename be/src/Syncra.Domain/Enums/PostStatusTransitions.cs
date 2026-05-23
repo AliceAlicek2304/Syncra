@@ -10,6 +10,11 @@ public static class PostStatusTransitions
             (PostStatus.Scheduled, PostStatus.Publishing) => true,
             (PostStatus.Publishing, PostStatus.Published) => true,
             (PostStatus.Publishing, PostStatus.Failed) => true,
+            (PostStatus.Publishing, PostStatus.Partial) => true,
+            (PostStatus.Partial, PostStatus.Draft) => true,
+            (PostStatus.Partial, PostStatus.Publishing) => true,
+            (PostStatus.Partial, PostStatus.Published) => true,
+            (PostStatus.Partial, PostStatus.Failed) => true,
             _ => false
         };
 

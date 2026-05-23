@@ -32,6 +32,11 @@ public class AppDbContext : DbContext
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
+    public DbSet<ZernioProfile> ZernioProfiles => Set<ZernioProfile>();
+    public DbSet<SocialAccount> SocialAccounts => Set<SocialAccount>();
+    public DbSet<PostPlatformTarget> PostPlatformTargets => Set<PostPlatformTarget>();
+    public DbSet<ZernioWebhookEvent> ZernioWebhookEvents => Set<ZernioWebhookEvent>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 

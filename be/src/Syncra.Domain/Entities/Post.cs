@@ -27,11 +27,16 @@ public sealed class Post : WorkspaceEntityBase
     public string? PublishLastError { get; private set; }
     public string? PublishProviderResponseMetadata { get; private set; }
 
+    // Zernio fields
+    public string? ZernioPostId { get; private set; }
+    public int ZernioTargetCount { get; private set; }
+
     // Navigation properties
     public Workspace Workspace { get; set; } = null!;
     public User User { get; set; } = null!;
     public Integration? Integration { get; set; }
     public ICollection<Media> Media { get; set; } = new List<Media>();
+    public ICollection<PostPlatformTarget> PlatformTargets { get; set; } = new List<PostPlatformTarget>();
 
     // Private parameterless constructor for EF Core
     private Post() { }
@@ -273,11 +278,11 @@ public sealed class Post : WorkspaceEntityBase
 
     public void Retry()
     {
-        if (Status != PostStatus.Failed)
+        if (Status is not (PostStatus.Failed or PostStatus.Partial))
         {
             throw new DomainException(
                 "invalid_state",
-                "Only failed posts can be retried.");
+                "Only failed or partial posts can be retried.");
         }
 
         if (!IntegrationId.HasValue)
@@ -289,6 +294,29 @@ public sealed class Post : WorkspaceEntityBase
 
         Status = PostStatus.Draft;
         PublishLastError = null;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void MarkPublishPartial(DateTime utcNow, string? zernioPostId, int targetCount)
+    {
+        if (Status != PostStatus.Publishing)
+        {
+            throw new DomainException(
+                "invalid_state",
+                "Only publishing posts can be marked as partial.");
+        }
+
+        ZernioPostId = zernioPostId;
+        ZernioTargetCount = targetCount;
+        PublishLastAttemptAtUtc = utcNow;
+        Status = PostStatus.Partial;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void AssignZernioPost(string? zernioPostId, int targetCount)
+    {
+        ZernioPostId = zernioPostId;
+        ZernioTargetCount = targetCount;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
