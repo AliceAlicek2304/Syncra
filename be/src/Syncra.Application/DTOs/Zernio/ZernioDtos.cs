@@ -37,3 +37,59 @@ public sealed record ZernioCreatePostResult(
     string ZernioPostId,
     string Status,
     int TargetCount);
+
+// ── Analytics DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioDailyMetricsDto(
+    IReadOnlyList<ZernioDailyDataPointDto> DailyData,
+    IReadOnlyList<ZernioPlatformBreakdownDto>? PlatformBreakdown);
+
+public sealed record ZernioDailyDataPointDto(
+    string Date,
+    int PostCount,
+    long Impressions,
+    long Reach,
+    long Likes,
+    long Comments,
+    long Shares,
+    long Saves,
+    long Clicks,
+    long Views);
+
+public sealed record ZernioPlatformBreakdownDto(
+    string Platform,
+    int PostCount,
+    int Impressions,
+    int Reach,
+    int Likes,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Clicks,
+    int Views);
+
+public sealed record ZernioPostAnalyticsDto(
+    PostAnalyticsFields Analytics,
+    IReadOnlyList<ZernioPlatformPostMetricsDto>? PlatformAnalytics,
+    bool SyncPending);
+
+public sealed record PostAnalyticsFields(
+    int Impressions,
+    int Reach,
+    int Likes,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Clicks,
+    int Views,
+    decimal EngagementRate,
+    DateTime? LastUpdated);
+
+public sealed record ZernioPlatformPostMetricsDto(
+    string Platform,
+    string? PlatformPostId,
+    string? AccountId,
+    string? AccountUsername,
+    PostAnalyticsFields? Analytics,
+    string? PlatformPostUrl,
+    string? ErrorMessage);

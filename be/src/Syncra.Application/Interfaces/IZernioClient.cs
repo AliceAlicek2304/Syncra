@@ -50,4 +50,16 @@ public interface IZernioClient
     Task DeletePostAsync(
         string zernioPostId,
         CancellationToken cancellationToken = default);
+
+    // ── Analytics methods ───────────────────────────────────────
+
+    Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
+        string profileId,
+        DateTime? fromDate,
+        DateTime? toDate,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioPostAnalyticsDto> GetPostAnalyticsAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default);
 }

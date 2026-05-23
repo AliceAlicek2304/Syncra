@@ -16,6 +16,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly AccountsApi _accountsApi;
     private readonly ProfilesApi _profilesApi;
     private readonly PostsApi _postsApi;
+    private readonly AnalyticsApi _analyticsApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
@@ -31,6 +32,7 @@ public sealed class ZernioClient : IZernioClient
         _accountsApi = new AccountsApi(config);
         _profilesApi = new ProfilesApi(config);
         _postsApi = new PostsApi(config);
+        _analyticsApi = new AnalyticsApi(config);
         _logger = logger;
     }
 
@@ -339,6 +341,153 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error deleting post {PostId}", zernioPostId);
             throw new DomainException("zernio_delete_post_error", "Failed to delete Zernio post", ex);
+        }
+    }
+
+    // ── Analytics methods ────────────────────────────────────────────────────
+
+    public async Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
+        string profileId,
+        DateTime? fromDate,
+        DateTime? toDate,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _analyticsApi.GetDailyMetricsAsync(
+                platform: null,
+                profileId: profileId,
+                accountId: null,
+                fromDate: fromDate,
+                toDate: toDate,
+                source: null,
+                cancellationToken);
+
+            var dailyData = (response.DailyData ?? [])
+                .Select(d => new ZernioDailyDataPointDto(
+                    d.Date,
+                    d.PostCount,
+                    d.Metrics?.Impressions ?? 0,
+                    d.Metrics?.Reach ?? 0,
+                    d.Metrics?.Likes ?? 0,
+                    d.Metrics?.Comments ?? 0,
+                    d.Metrics?.Shares ?? 0,
+                    d.Metrics?.Saves ?? 0,
+                    d.Metrics?.Clicks ?? 0,
+                    d.Metrics?.Views ?? 0))
+                .ToList();
+
+            var platformBreakdown = (response.PlatformBreakdown ?? [])
+                .Select(p => new ZernioPlatformBreakdownDto(
+                    p.Platform,
+                    p.PostCount,
+                    p.Impressions,
+                    p.Reach,
+                    p.Likes,
+                    p.Comments,
+                    p.Shares,
+                    p.Saves,
+                    p.Clicks,
+                    p.Views))
+                .ToList();
+
+            return new ZernioDailyMetricsDto(dailyData, platformBreakdown.Count > 0 ? platformBreakdown : null);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio analytics billing gate triggered for profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access Zernio analytics.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching daily metrics for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_daily_metrics_error", "Failed to fetch daily metrics from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioPostAnalyticsDto> GetPostAnalyticsAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _analyticsApi.GetAnalyticsAsync(
+                postId: zernioPostId,
+                platform: null,
+                profileId: null,
+                accountId: null,
+                source: null,
+                fromDate: null,
+                toDate: null,
+                limit: null,
+                page: null,
+                sortBy: null,
+                order: null,
+                cancellationToken);
+
+            var singlePost = response.GetAnalyticsSinglePostResponse();
+            var syncPending = singlePost?.SyncStatus == Zernio.Model.AnalyticsSinglePostResponse.SyncStatusEnum.Pending;
+
+            var postAnalytics = singlePost?.Analytics;
+            var fields = postAnalytics != null
+                ? new PostAnalyticsFields(
+                    postAnalytics.Impressions,
+                    postAnalytics.Reach,
+                    postAnalytics.Likes,
+                    postAnalytics.Comments,
+                    postAnalytics.Shares,
+                    postAnalytics.Saves,
+                    postAnalytics.Clicks,
+                    postAnalytics.Views,
+                    postAnalytics.EngagementRate,
+                    postAnalytics.LastUpdated)
+                : null;
+
+            var platformAnalytics = singlePost?.PlatformAnalytics?
+                .Select(p => new ZernioPlatformPostMetricsDto(
+                    p.Platform,
+                    p.PlatformPostId,
+                    p.AccountId,
+                    p.AccountUsername,
+                    p.Analytics != null
+                        ? new PostAnalyticsFields(
+                            p.Analytics.Impressions,
+                            p.Analytics.Reach,
+                            p.Analytics.Likes,
+                            p.Analytics.Comments,
+                            p.Analytics.Shares,
+                            p.Analytics.Saves,
+                            p.Analytics.Clicks,
+                            p.Analytics.Views,
+                            p.Analytics.EngagementRate,
+                            p.Analytics.LastUpdated)
+                        : null,
+                    p.PlatformPostUrl,
+                    p.ErrorMessage))
+                .ToList();
+
+            return new ZernioPostAnalyticsDto(
+                fields ?? new PostAnalyticsFields(0, 0, 0, 0, 0, 0, 0, 0, 0, null),
+                platformAnalytics?.Count > 0 ? platformAnalytics : null,
+                syncPending);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio analytics billing gate for post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access Zernio post analytics.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching post analytics for {PostId}", zernioPostId);
+            throw new DomainException("zernio_post_analytics_error", "Failed to fetch post analytics from Zernio", ex);
         }
     }
 

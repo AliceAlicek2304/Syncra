@@ -1,3 +1,5 @@
+using Syncra.Application.DTOs.Zernio;
+
 namespace Syncra.Application.DTOs.Analytics;
 
 public record WorkspaceAnalyticsSummaryDto(
@@ -5,7 +7,8 @@ public record WorkspaceAnalyticsSummaryDto(
     double EngagementRate,
     long FollowerGrowth,
     int TotalPosts,
-    IReadOnlyList<WeeklyReachDto> WeeklyReach
+    IReadOnlyList<WeeklyReachDto> WeeklyReach,
+    IReadOnlyList<PlatformBreakdownDto>? PlatformBreakdown = null
 );
 
 public record WeeklyReachDto(
@@ -26,3 +29,17 @@ public record HeatmapSlotDto(
     int Hour,        // 0-23 UTC
     int Score        // số posts published tại slot này
 );
+
+public record PlatformBreakdownDto(
+    string Platform,
+    int PostCount,
+    int Impressions,
+    int Reach,
+    int Likes,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Clicks,
+    int Views,
+    bool RequiresReauth = false,
+    string? ReauthorizeUrl = null);
