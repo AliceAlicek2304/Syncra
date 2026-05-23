@@ -3,9 +3,22 @@
 ## Vision
 Syncra.NET is a social media scheduling and management platform backend built with .NET 8. It aims to provide a robust, scalable, and multi-tenant API for managing social media accounts, scheduling posts, and analyzing performance.
 
+## Current Milestone: v2.0 Zernio API Integration
+
+**Goal:** Replace individual platform API integrations with Zernio's unified API — enabling cross-platform post scheduling, analytics, inbox, broadcasts, and sequences across all 14 supported platforms from a single client.
+
+**Target features:**
+- Zernio .NET SDK + `IZernioClient` abstraction layer
+- Post scheduling via Zernio (unified cross-platform posting, queue support)
+- Analytics via Zernio (post metrics, daily stats, best-time analysis)
+- Platform account management via Zernio Connect (OAuth flow)
+- Webhook handling (post.published, post.failed, message.received, etc.)
+- Inbox integration (DMs, comments, reviews — unified across all accounts)
+- Broadcasts & Sequences (bulk messaging, drip campaigns)
+
 ## Current State
 
-**Active:** Planning v2.0
+**Active:** v2.0 Zernio API Integration
 
 **Shipped:**
 - <details><summary>v1.6 Logging & Observability (2026-05-20)</summary>Production Serilog pipeline with rolling JSON file logging, sensitive data destructuring, request body redaction middleware, UserId enrichment, and structured log properties (Environment, MachineName, Application).</details>
@@ -58,9 +71,13 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 - ✓ Tenant Resolution – v1.0
 
 ### Active
-- [ ] Webhook reliability & idempotency (Phase 06 — researched, not yet planned)
-- [ ] Billing UX documentation (Phase 07 — pending)
-- [ ] v2.0 planning (next milestone)
+- [ ] ZERNIO-01: Zernio .NET SDK + IZernioClient abstraction
+- [ ] ZERNIO-02: Post scheduling via Zernio unified API
+- [ ] ZERNIO-03: Analytics via Zernio
+- [ ] ZERNIO-04: Platform account management (Zernio Connect OAuth)
+- [ ] ZERNIO-05: Webhook handling for Zernio events
+- [ ] ZERNIO-06: Inbox integration (DMs, comments, reviews)
+- [ ] ZERNIO-07: Broadcasts & Sequences
 
 ### Out of Scope
 - Google Calendar integration — user removed from v1.5 scope
@@ -132,4 +149,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-23 after v1.6 milestone complete*
+*Last updated: 2026-05-23 — Milestone v2.0 Zernio API Integration started*
