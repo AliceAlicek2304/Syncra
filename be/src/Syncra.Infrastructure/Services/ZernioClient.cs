@@ -19,6 +19,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly PostsApi _postsApi;
     private readonly AnalyticsApi _analyticsApi;
     private readonly MessagesApi _messagesApi;
+    private readonly CommentsApi _commentsApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
@@ -36,6 +37,7 @@ public sealed class ZernioClient : IZernioClient
         _postsApi = new PostsApi(config);
         _analyticsApi = new AnalyticsApi(config);
         _messagesApi = new MessagesApi(config);
+        _commentsApi = new CommentsApi(config);
         _logger = logger;
     }
 
@@ -693,6 +695,105 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error sending inbox message to conversation {ConversationId}", conversationId);
             throw new DomainException("zernio_inbox_send_error", "Failed to send inbox message via Zernio", ex);
+        }
+    }
+
+    // ── Inbox Comment methods ───────────────────────────────────────────────
+
+    public async Task<ZernioInboxCommentsPageDto> ListInboxCommentsAsync(
+        string profileId,
+        DateTime? since = null,
+        string? cursor = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _commentsApi.ListInboxCommentsAsync(
+                profileId,
+                platform: platform,
+                minComments: null,
+                since: since,
+                sortBy: null,
+                sortOrder: null,
+                limit: null,
+                cursor: cursor,
+                accountId: accountId,
+                cancellationToken);
+
+            var items = (response.Data ?? [])
+                .Select(c => new ZernioInboxCommentItemDto(
+                    c.Id,
+                    c.Platform ?? string.Empty,
+                    c.Content ?? string.Empty,
+                    c.Picture,
+                    c.Permalink,
+                    c.CreatedTime,
+                    c.CommentCount,
+                    c.Cid))
+                .ToList();
+
+            return new ZernioInboxCommentsPageDto(
+                items,
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.NextCursor);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for list comments, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to access inbox comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing inbox comments for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_inbox_comments_error", "Failed to list inbox comments from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioReplyToCommentResponseDto> ReplyToInboxCommentAsync(
+        string profileId,
+        string zernioPostId,
+        string accountId,
+        string message,
+        string? commentId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new ReplyToInboxPostRequest
+            {
+                AccountId = accountId,
+                Message = message,
+                CommentId = commentId
+            };
+
+            var response = await _commentsApi.ReplyToInboxPostAsync(
+                zernioPostId,
+                sdkRequest,
+                cancellationToken);
+
+            return new ZernioReplyToCommentResponseDto(
+                response.Data?.CommentId ?? string.Empty,
+                response.Data?.Cid);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for reply to comment, post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to reply to comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error replying to comment on post {PostId}", zernioPostId);
+            throw new DomainException("zernio_inbox_reply_error", "Failed to reply to comment via Zernio", ex);
         }
     }
 
