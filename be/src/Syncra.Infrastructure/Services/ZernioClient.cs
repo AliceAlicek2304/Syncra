@@ -4,23 +4,31 @@ using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Syncra.Application.Options;
 using Syncra.Domain.Exceptions;
-using Zernio;
-using Zernio.Models;
+using Zernio.Api;
+using Zernio.Client;
+using Zernio.Model;
 
 namespace Syncra.Infrastructure.Services;
 
 public sealed class ZernioClient : IZernioClient
 {
-    private readonly ZernioOptions _options;
-    private readonly ZernioSdk _sdk;
+    private readonly ConnectApi _connectApi;
+    private readonly AccountsApi _accountsApi;
+    private readonly ProfilesApi _profilesApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
         IOptions<ZernioOptions> options,
         ILogger<ZernioClient> logger)
     {
-        _options = options.Value;
-        _sdk = new ZernioSdk(_options.ApiKey);
+        var config = new Configuration
+        {
+            AccessToken = options.Value.ApiKey
+        };
+
+        _connectApi = new ConnectApi(config);
+        _accountsApi = new AccountsApi(config);
+        _profilesApi = new ProfilesApi(config);
         _logger = logger;
     }
 
@@ -32,15 +40,16 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var connectUrl = await _sdk.ConnectUrlAsync(
-                profileId,
+            var response = await _connectApi.GetConnectUrlAsync(
                 platform,
+                profileId,
                 redirectUrl,
+                headless: null,
                 cancellationToken);
 
-            return new ZernioConnectUrlResult(connectUrl);
+            return new ZernioConnectUrlResult(response.AuthUrl);
         }
-        catch (ZernioException ex)
+        catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error getting connect URL for profile {ProfileId}", profileId);
             throw new DomainException("zernio_connect_error", "Failed to get connect URL from Zernio", ex);
@@ -53,17 +62,23 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var accounts = await _sdk.ListAccountsAsync(profileId, cancellationToken);
+            var response = await _accountsApi.ListAccountsAsync(
+                profileId,
+                platform: null,
+                includeOverLimit: null,
+                page: null,
+                limit: null,
+                cancellationToken);
 
-            return accounts
+            return response.Accounts
                 .Select(a => new ZernioAccountDto(
                     a.Id,
-                    a.Platform,
+                    a.Platform.ToString(),
                     a.DisplayName,
-                    a.IsConnected))
+                    a.IsActive))
                 .ToList();
         }
-        catch (ZernioException ex)
+        catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error listing accounts for profile {ProfileId}", profileId);
             throw new DomainException("zernio_list_accounts_error", "Failed to list Zernio accounts", ex);
@@ -77,9 +92,9 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            await _sdk.DisconnectAccountAsync(profileId, accountId, cancellationToken);
+            await _accountsApi.DeleteAccountAsync(accountId, cancellationToken);
         }
-        catch (ZernioException ex)
+        catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error disconnecting account {AccountId}", accountId);
             throw new DomainException("zernio_disconnect_error", "Failed to disconnect Zernio account", ex);
@@ -93,11 +108,17 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var profile = await _sdk.ProvisionProfileAsync(workspaceId, name, cancellationToken);
+            var request = new CreateProfileRequest
+            {
+                Name = name,
+                Description = workspaceId
+            };
 
-            return new ZernioProfileDto(profile.Id, profile.Name);
+            var response = await _profilesApi.CreateProfileAsync(request, cancellationToken);
+
+            return new ZernioProfileDto(response.Profile.Id, response.Profile.Name);
         }
-        catch (ZernioException ex)
+        catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error provisioning profile for workspace {WorkspaceId}", workspaceId);
             throw new DomainException("zernio_provision_error", "Failed to provision Zernio profile", ex);

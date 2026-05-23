@@ -32,6 +32,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApiServices(builder.Configuration);
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddHangfireServices(builder.Configuration);
+builder.Services.AddZernioIntegration(builder.Configuration);
 
 var app = builder.Build();
 

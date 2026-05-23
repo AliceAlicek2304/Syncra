@@ -129,4 +129,11 @@ public static class DependencyInjection
 
         return services;
     }
+
+    public static IServiceCollection AddZernioIntegration(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<ZernioOptions>(configuration.GetSection(ZernioOptions.SectionName));
+        services.AddScoped<IZernioClient, ZernioClient>();
+        return services;
+    }
 }

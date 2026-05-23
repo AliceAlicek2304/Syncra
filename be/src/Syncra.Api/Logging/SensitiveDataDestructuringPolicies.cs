@@ -1,6 +1,7 @@
 using Serilog.Core;
 using Serilog.Events;
 using Syncra.Application.Features.Auth.Commands;
+using Syncra.Application.Options;
 
 namespace Syncra.Api.Logging;
 
@@ -40,6 +41,10 @@ public static class SensitiveDataDestructuringPolicies
         {
             ["Token"] = Redacted,
             ["NewPassword"] = Redacted
+        }),
+        new DestructuringPolicy<ZernioOptions>(options => new Dictionary<string, object?>
+        {
+            [nameof(ZernioOptions.ApiKey)] = Redacted
         })
     };
 

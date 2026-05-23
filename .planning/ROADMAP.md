@@ -102,7 +102,7 @@
 Plans:
 **Wave 1**
 
-- [ ] 24-01: Zernio NuGet package + `IZernioClient` interface + `ZernioClient` Infrastructure implementation (mirrors `IPaymentProvider` pattern)
+- [x] 24-01: Zernio NuGet package + `IZernioClient` interface + `ZernioClient` Infrastructure implementation (mirrors `IPaymentProvider` pattern)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -217,7 +217,7 @@ Plans:
 | 14. Code Quality & Tech Debt | v1.4 | 8/8 | Complete | 2026-05-14 |
 | 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |
 | 23. Configure Logging (Serilog) | v1.6 | 3/3 | Complete | 2026-05-20 |
-| 24. Zernio Foundation | v2.0 | 0/3 | Not started | - |
+| 24. Zernio Foundation | v2.0 | 1/3 | In Progress|  |
 | 25. Account Connect | v2.0 | 0/4 | Not started | - |
 | 26. Post Scheduling | v2.0 | 0/4 | Not started | - |
 | 27. Analytics | v2.0 | 0/2 | Not started | - |
