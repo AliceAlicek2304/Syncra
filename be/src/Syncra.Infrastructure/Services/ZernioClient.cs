@@ -256,7 +256,6 @@ public sealed class ZernioClient : IZernioClient
             {
                 Content = request.Content,
                 PublishNow = request.PublishNow,
-                ScheduledFor = request.ScheduledForUtc ?? default,
                 Platforms = request.Platforms
                     .Select(p => new CreatePostRequestPlatformsInner
                     {
@@ -266,7 +265,12 @@ public sealed class ZernioClient : IZernioClient
                     .ToList()
             };
 
-            var response = await _postsApi.CreatePostAsync(sdkRequest);
+            if (!request.PublishNow && request.ScheduledForUtc.HasValue)
+            {
+                sdkRequest.ScheduledFor = request.ScheduledForUtc.Value;
+            }
+
+            var response = await _postsApi.CreatePostAsync(sdkRequest, null, cancellationToken);
             var createdPost = response.Post;
 
             return new ZernioCreatePostResult(
