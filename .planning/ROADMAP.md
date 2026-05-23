@@ -151,13 +151,24 @@ Plans:
   4. A user can retry a failed or partial post; platforms that already published are skipped — no duplicate content
   5. A user can delete a scheduled post, which cancels it in Zernio and removes it from the feed
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 26-01: `CreateZernioPostCommand` + handler — multi-platform post creation, `PostPlatformTarget` rows, dual-path routing (legacy vs Zernio)
-- [ ] 26-02: `post.scheduled`, `post.published`, `post.failed`, `post.partial`, `post.cancelled` webhook handlers; state machine guard (terminal state no-op)
+**Wave 1**
+
+- [x] 26-01: `CreateZernioPostCommand` + handler — multi-platform post creation, `PostPlatformTarget` rows, dual-path routing (legacy vs Zernio)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 26-02: `post.scheduled`, `post.published`, `post.failed`, `post.partial`, `post.cancelled` webhook handlers; state machine guard (terminal state no-op)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 26-03: `post.platform.published` / `post.platform.failed` handlers — update individual `PostPlatformTarget` records
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 26-04: Post retry command (`POST /v1/post/{id}/retry`) + delete/cancel command; frontend retry and delete actions on post cards
 
 ---
@@ -217,9 +228,9 @@ Plans:
 | 14. Code Quality & Tech Debt | v1.4 | 8/8 | Complete | 2026-05-14 |
 | 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |
 | 23. Configure Logging (Serilog) | v1.6 | 3/3 | Complete | 2026-05-20 |
-| 24. Zernio Foundation | v2.0 | 1/3 | In Progress|  |
-| 25. Account Connect | v2.0 | 3/4 | In Progress|  |
-| 26. Post Scheduling | v2.0 | 0/4 | Not started | - |
+| 24. Zernio Foundation | v2.0 | 3/3 | Complete | 2026-05-23 |
+| 25. Account Connect | v2.0 | 4/4 | Complete | 2026-05-23 |
+| 26. Post Scheduling | v2.0 | 2/4 | In Progress |  |
 | 27. Analytics | v2.0 | 0/2 | Not started | - |
 | 28. Inbox | v2.0 | 0/4 | Not started | - |
 

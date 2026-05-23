@@ -6,3 +6,5 @@
 {"id":"int-18715806","kind":"field_change","created_at":"2026-05-17T18:11:05.9190336Z","actor":"Syncra Dev","issue_id":"Syncra-qcs","extra":{"field":"status","new_value":"closed","old_value":"open","reason":"Closed"}}
 {"id":"int-a95c8d58","kind":"field_change","created_at":"2026-05-17T18:11:06.0370317Z","actor":"Syncra Dev","issue_id":"Syncra-jwi","extra":{"field":"status","new_value":"closed","old_value":"open","reason":"Closed"}}
 {"id":"int-6303d435","kind":"field_change","created_at":"2026-05-17T18:11:06.1443026Z","actor":"Syncra Dev","issue_id":"Syncra-var","extra":{"field":"status","new_value":"closed","old_value":"open","reason":"Closed"}}
+{"id":"int-79aa8740","kind":"field_change","created_at":"2026-05-23T11:38:25.4768515Z","actor":"Syncra Dev","issue_id":"Syncra-0b4","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
+{"id":"int-15612775","kind":"field_change","created_at":"2026-05-23T11:40:37.4078268Z","actor":"Syncra Dev","issue_id":"Syncra-dg6","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}

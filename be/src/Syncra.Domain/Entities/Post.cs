@@ -320,6 +320,22 @@ public sealed class Post : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void MarkZernioPublished(DateTime utcNow)
+    {
+        TransitionTo(PostStatus.Published);
+        PublishedAtUtc ??= utcNow;
+        PublishLastAttemptAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkZernioFailed(DateTime utcNow, string? error)
+    {
+        TransitionTo(PostStatus.Failed);
+        PublishLastAttemptAtUtc = utcNow;
+        PublishLastError = TruncateError(error);
+        UpdatedAtUtc = utcNow;
+    }
+
     private static string? TruncateError(string? error)
     {
         if (string.IsNullOrWhiteSpace(error))
