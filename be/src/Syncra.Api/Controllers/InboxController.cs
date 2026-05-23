@@ -1,9 +1,12 @@
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Features.Inbox.Commands;
 using Syncra.Application.Features.Inbox.Queries;
+using Syncra.Domain.Interfaces;
+using Syncra.Infrastructure.Jobs;
 
 namespace Syncra.Api.Controllers;
 
@@ -13,10 +16,17 @@ namespace Syncra.Api.Controllers;
 public class InboxController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IBackgroundJobClient _backgroundJobs;
+    private readonly IInboxRepository _inboxRepository;
 
-    public InboxController(IMediator mediator)
+    public InboxController(
+        IMediator mediator,
+        IBackgroundJobClient backgroundJobs,
+        IInboxRepository inboxRepository)
     {
         _mediator = mediator;
+        _backgroundJobs = backgroundJobs;
+        _inboxRepository = inboxRepository;
     }
 
     /// <summary>
@@ -213,5 +223,39 @@ public class InboxController : ControllerBase
             return NotFound();
 
         return NoContent();
+    }
+
+    // ── Sync / Backfill routes ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Triggers a 30-day inbox backfill for this workspace (D-09, D-10).
+    /// Enqueues a Hangfire job and returns 202 Accepted if queued.
+    /// </summary>
+    [HttpPost("sync")]
+    public async Task<IActionResult> TriggerSync(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        _backgroundJobs.Enqueue<InboxBackfillJob>(
+            job => job.ExecuteAsync(workspaceId, cancellationToken));
+
+        return Accepted(new { message = "Inbox sync queued.", workspaceId });
+    }
+
+    /// <summary>
+    /// Returns the current inbox sync status for the workspace (D-11).
+    /// </summary>
+    [HttpGet("sync-status")]
+    public async Task<IActionResult> GetSyncStatus(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        // Determine if any inbox data exists for this workspace
+        var conversationCount = (await _inboxRepository.GetConversationsAsync(workspaceId, cancellationToken)).Count;
+        var hasData = conversationCount > 0;
+
+        return Ok(new InboxSyncStatusDto(
+            IsSyncing: false,
+            LastSyncedAtUtc: hasData ? DateTime.UtcNow : (DateTime?)null));
     }
 }

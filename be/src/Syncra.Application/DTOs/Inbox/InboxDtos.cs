@@ -164,3 +164,10 @@ public sealed record InboxSendReviewReplyRequest(
 
 public sealed record InboxSendReviewReplyResponse(
     string ReviewReplyId);
+
+/// <summary>
+/// Represents the current state of inbox backfill for a workspace (D-11).
+/// </summary>
+public sealed record InboxSyncStatusDto(
+    bool IsSyncing,
+    DateTime? LastSyncedAtUtc);

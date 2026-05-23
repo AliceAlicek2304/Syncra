@@ -138,6 +138,7 @@ public static class DependencyInjection
         services.Configure<ZernioOptions>(configuration.GetSection(ZernioOptions.SectionName));
         services.AddScoped<IZernioClient, ZernioClient>();
         services.AddScoped<ProcessZernioWebhookJob>();
+        services.AddScoped<InboxBackfillJob>();
         return services;
     }
 }

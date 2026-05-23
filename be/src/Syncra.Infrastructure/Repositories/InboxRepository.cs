@@ -138,6 +138,23 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
                 cancellationToken);
     }
 
+    public async Task<InboxComment?> GetCommentByZernioIdAsync(
+        Guid workspaceId,
+        string zernioCommentId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxComments
+            .FirstOrDefaultAsync(
+                c => c.WorkspaceId == workspaceId
+                  && c.ZernioCommentId == zernioCommentId,
+                cancellationToken);
+    }
+
+    public async Task AddCommentAsync(InboxComment comment)
+    {
+        await _context.InboxComments.AddAsync(comment);
+    }
+
     // ── Reviews ────────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<InboxReview>> GetReviewsAsync(
@@ -188,5 +205,10 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
                 r => r.WorkspaceId == workspaceId
                   && r.ZernioReviewId == zernioReviewId,
                 cancellationToken);
+    }
+
+    public async Task AddReviewAsync(InboxReview review)
+    {
+        await _context.InboxReviews.AddAsync(review);
     }
 }
