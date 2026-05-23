@@ -1,0 +1,406 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Sync banner ─────────────────────────────────── */
+
+.syncBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.syncingBanner {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.syncBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.syncBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── Tab bar ─────────────────────────────────────── */
+
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: #374151;
+}
+
+.tabActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.filterArea {
+  margin-left: auto;
+}
+
+/* ── Tab panel ───────────────────────────────────── */
+
+.panel {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Master-detail layout (shared across tabs) ──── */
+
+.masterDetail {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.masterPanel {
+  width: 360px;
+  min-width: 280px;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.detailPanel {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.detailEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 14px;
+  gap: 8px;
+}
+
+/* ── List item (shared across tabs) ──────────────── */
+
+.listItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.listItem:hover {
+  background: #f3f4f6;
+}
+
+.listItemSelected {
+  background: #eff6ff;
+}
+
+.listItemUnread {
+  border-left: 3px solid #2563eb;
+}
+
+.avatarWrap {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatarPlaceholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.itemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemTime {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.itemPreview {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Detail header ───────────────────────────────── */
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.backBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+}
+
+.backBtn:hover {
+  background: #f3f4f6;
+}
+
+.detailTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ── Reply area (comments / reviews) ──────────────── */
+
+.replyArea {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+}
+
+.replyInput {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: border-color 0.15s;
+}
+
+.replyInput:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.replySendBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.replySendBtn:hover {
+  background: #1d4ed8;
+}
+
+.replySendBtn:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* ── Dm thread ────────────────────────────────────── */
+
+.thread {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.threadSent,
+.threadReceived {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.threadSent {
+  align-self: flex-end;
+  background: #2563eb;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.threadReceived {
+  align-self: flex-start;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom-left-radius: 4px;
+}
+
+.threadTime {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 2px;
+  text-align: right;
+}
+
+/* ── Comment / Review detail ──────────────────────── */
+
+.detailCard {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detailMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.detailAuthor {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.detailPlatform {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.detailBody {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.detailTime {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.reviewStars {
+  display: inline-flex;
+  gap: 1px;
+  margin-bottom: 6px;
+}
+
+/* ── Empty state ──────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 8px;
+  padding: 32px;
+  text-align: center;
+}
+
+.emptyIcon {
+  opacity: 0.4;
+}
