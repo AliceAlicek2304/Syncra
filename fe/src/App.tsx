@@ -41,6 +41,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import SocialAccountsSelect from './pages/Settings/SocialAccountsSelect'
 
 
 function Homepage() {
@@ -107,6 +108,7 @@ function AnimatedRoutes() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/social-accounts/select" element={<SocialAccountsSelect />} />
 
         
         <Route path="/app" element={

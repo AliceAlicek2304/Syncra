@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Instagram, Linkedin, Twitter, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock } from 'lucide-react'
+import { Settings, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,7 @@ import LinkedAccountsSection from '../../components/auth/LinkedAccountsSection'
 import ChangePasswordForm from '../../components/auth/ChangePasswordForm'
 import styles from './SettingsPage.module.css'
 import AccountSecuritySection from '../../components/auth/AccountSecuritySection'
+import SocialAccounts from '../Settings/SocialAccounts'
 
 
 const profileSchema = z.object({
@@ -201,31 +202,9 @@ export default function SettingsPage() {
 
           {/* Social Accounts */}
           <section className={`glass-card ${styles.section}`}>
-            <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Linked Accounts</h2>
-            <p className={styles.sectionDesc}>Kết nối và quản lý các nền tảng mạng xã hội của bạn.</p>
-            
-            <div className={styles.socialGrid}>
-              {[
-                { name: 'LinkedIn', icon: <Linkedin size={20} />, color: '#0077b5', status: 'Connected' },
-                { name: 'X / Twitter', icon: <Twitter size={20} />, color: '#fff', status: 'Connected' },
-                { name: 'Instagram', icon: <Instagram size={20} />, color: '#e4405f', status: 'Disconnected' },
-              ].map(item => (
-                <div key={item.name} className={styles.socialCard}>
-                  <div className={styles.socialIcon} style={{ background: item.color + '20', color: item.color }}>
-                    {item.icon}
-                  </div>
-                  <div className={styles.socialMeta}>
-                    <span className={styles.socialName}>{item.name}</span>
-                    <span className={`${styles.socialStatus} ${item.status === 'Connected' ? styles.statusActive : ''}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                  <button className={styles.socialAction}>
-                    {item.status === 'Connected' ? 'Manage' : 'Connect'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <h2 className={styles.sectionTitle}><ShieldCheck size={18} /> Social Accounts</h2>
+            <p className={styles.sectionDesc}>Connect and manage your social media platforms.</p>
+            <SocialAccounts />
           </section>
 
           {/* Billing Section */}
