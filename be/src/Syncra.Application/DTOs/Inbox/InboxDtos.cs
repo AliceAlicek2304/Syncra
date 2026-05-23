@@ -92,3 +92,27 @@ public sealed record ZernioInboxCommentsPageDto(
 public sealed record ZernioReplyToCommentResponseDto(
     string CommentId,
     string? Cid);
+
+public sealed record InboxCommentDto(
+    Guid Id,
+    string ZernioCommentId,
+    Guid? SocialAccountId,
+    string Platform,
+    string AuthorName,
+    string? AuthorUsername,
+    string? AuthorPicture,
+    string BodyText,
+    string? ZernioPostId,
+    string? ZernioAccountId,
+    string? PostPreviewCaption,
+    string? PostPreviewThumbnailUrl,
+    bool IsRead,
+    DateTime ReceivedAtUtc,
+    DateTime CreatedAtUtc);
+
+public sealed record InboxSendCommentReplyRequest(
+    string Message);
+
+public sealed record InboxSendCommentReplyResponse(
+    string CommentId,
+    string? Cid);

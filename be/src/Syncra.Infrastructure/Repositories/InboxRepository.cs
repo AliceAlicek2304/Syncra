@@ -97,4 +97,44 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
             .Where(c => c.WorkspaceId == workspaceId && !c.IsRead)
             .SumAsync(c => c.UnreadCount, cancellationToken);
     }
+
+    // ── Comments ────────────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<InboxComment>> GetCommentsAsync(
+        Guid workspaceId,
+        int limit = 50,
+        DateTime? before = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.InboxComments
+            .Where(c => c.WorkspaceId == workspaceId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(platform))
+            query = query.Where(c => c.Platform == platform.ToLowerInvariant());
+
+        if (!string.IsNullOrEmpty(accountId))
+            query = query.Where(c => c.ZernioAccountId == accountId);
+
+        if (before.HasValue)
+            query = query.Where(c => c.ReceivedAtUtc < before.Value);
+
+        return await query
+            .OrderByDescending(c => c.ReceivedAtUtc)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<InboxComment?> GetCommentByIdAsync(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxComments
+            .FirstOrDefaultAsync(
+                c => c.Id == commentId && c.WorkspaceId == workspaceId,
+                cancellationToken);
+    }
 }

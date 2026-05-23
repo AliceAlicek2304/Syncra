@@ -103,4 +103,58 @@ public class InboxController : ControllerBase
         var totalUnread = conversations.Sum(c => c.UnreadCount);
         return Ok(new InboxSummaryDto(totalUnread));
     }
+
+    /// <summary>
+    /// Lists inbox comments from local DB, newest first, with timestamp cursor pagination.
+    /// </summary>
+    [HttpGet("comments")]
+    public async Task<IActionResult> GetComments(
+        Guid workspaceId,
+        [FromQuery] int limit = 50,
+        [FromQuery] DateTime? before = null,
+        [FromQuery] string? platform = null,
+        [FromQuery] string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetInboxCommentsQuery(workspaceId, limit, before, platform, accountId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Replies to a comment via the Zernio API. Resolves post/account from the local comment record.
+    /// </summary>
+    [HttpPost("comments/{commentId:guid}/reply")]
+    public async Task<IActionResult> ReplyToComment(
+        Guid workspaceId,
+        Guid commentId,
+        [FromBody] InboxSendCommentReplyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ReplyToInboxCommentCommand(
+            workspaceId,
+            commentId,
+            request.Message);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Marks a comment as read.
+    /// </summary>
+    [HttpPatch("comments/{commentId:guid}/read")]
+    public async Task<IActionResult> MarkCommentRead(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new MarkCommentReadCommand(workspaceId, commentId);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result)
+            return NotFound();
+
+        return NoContent();
+    }
 }

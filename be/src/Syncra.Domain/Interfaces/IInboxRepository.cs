@@ -33,4 +33,19 @@ public interface IInboxRepository
     Task AddConversationAsync(InboxConversation conversation);
     Task AddMessageAsync(InboxMessage message);
     Task<int> GetUnreadTotalAsync(Guid workspaceId, CancellationToken cancellationToken = default);
+
+    // ── Comments ────────────────────────────────────────────────────────────
+
+    Task<IReadOnlyList<InboxComment>> GetCommentsAsync(
+        Guid workspaceId,
+        int limit = 50,
+        DateTime? before = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxComment?> GetCommentByIdAsync(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default);
 }
