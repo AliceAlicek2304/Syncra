@@ -13,11 +13,12 @@ public class PostAnalyticsMapperTests
     [Fact]
     public void DailyMetrics_To_WorkspaceAnalyticsSummaryDto_ComputesTotals()
     {
-        // Arrange — simulate a Zernio daily-metrics response with 2 data points
+        // Arrange — simulate a Zernio daily-metrics response with 2 data points from different weeks
+        // May 11 is a Monday (week 1), May 18 is a Monday (week 2)
         var dailyData = new[]
         {
-            new ZernioDailyDataPointDto("2026-05-20", 3, 1000, 800, 50, 10, 5, 20, 100, 500),
-            new ZernioDailyDataPointDto("2026-05-21", 2, 1500, 1200, 80, 15, 8, 30, 150, 700),
+            new ZernioDailyDataPointDto("2026-05-11", 3, 1000, 800, 50, 10, 5, 20, 100, 500),
+            new ZernioDailyDataPointDto("2026-05-18", 2, 1500, 1200, 80, 15, 8, 30, 150, 700),
         };
 
         var platformBreakdown = new[]

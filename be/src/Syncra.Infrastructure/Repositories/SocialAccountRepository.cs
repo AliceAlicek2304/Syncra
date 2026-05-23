@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Interfaces;
 using Syncra.Infrastructure.Persistence;
@@ -8,5 +9,10 @@ public class SocialAccountRepository : Repository<SocialAccount>, ISocialAccount
 {
     public SocialAccountRepository(AppDbContext context) : base(context)
     {
+    }
+
+    public async Task<IReadOnlyList<SocialAccount>> GetByWorkspaceIdAsync(Guid workspaceId)
+    {
+        return await _dbSet.Where(sa => sa.WorkspaceId == workspaceId).ToListAsync();
     }
 }

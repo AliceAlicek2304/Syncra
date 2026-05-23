@@ -16,6 +16,7 @@ public class ZernioWorkspaceAnalyticsServiceTests
     private readonly Mock<IZernioClient> _zernioClient = new();
     private readonly Mock<IZernioProfileRepository> _zernioProfileRepo = new();
     private readonly Mock<IPostRepository> _postRepo = new();
+    private readonly Mock<ISocialAccountRepository> _socialAccountRepo = new();
     private readonly Mock<IAnalyticsCache> _cache = new();
     private readonly Mock<ILogger<ZernioWorkspaceAnalyticsService>> _logger = new();
     private readonly ZernioWorkspaceAnalyticsService _service;
@@ -23,10 +24,14 @@ public class ZernioWorkspaceAnalyticsServiceTests
 
     public ZernioWorkspaceAnalyticsServiceTests()
     {
+        _socialAccountRepo.Setup(r => r.GetByWorkspaceIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(Array.Empty<SocialAccount>());
+
         _service = new ZernioWorkspaceAnalyticsService(
             _zernioClient.Object,
             _zernioProfileRepo.Object,
             _postRepo.Object,
+            _socialAccountRepo.Object,
             _cache.Object,
             _logger.Object);
     }
