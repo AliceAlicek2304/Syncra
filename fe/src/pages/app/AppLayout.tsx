@@ -13,6 +13,7 @@ import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
 import NotificationBell from '../../components/NotificationBell'
 import WorkspaceSelector from '../../components/WorkspaceSelector'
+import { useInboxBadge } from '../../hooks/useInboxBadge'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
@@ -33,6 +34,7 @@ export default function AppLayout() {
   const { success, error } = useToast()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+  const { unreadCount } = useInboxBadge()
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 
@@ -93,6 +95,9 @@ export default function AppLayout() {
                 <>
                   <span className={styles.navLabel}>{item.label}</span>
                   {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
+                  {item.to === '/app/inbox' && unreadCount > 0 && (
+                    <span className={styles.navBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                  )}
                 </>
               )}
             </NavLink>

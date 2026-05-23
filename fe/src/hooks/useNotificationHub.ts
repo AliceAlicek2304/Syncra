@@ -94,6 +94,15 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
       void queryClient.invalidateQueries({ queryKey: ['notifications', workspaceId] })
     })
 
+    connection.on('inbox.updated', () => {
+      // New inbox item arrived — invalidate all inbox queries for real-time badge update
+      void queryClient.invalidateQueries({ queryKey: ['inbox-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['inbox-conversations'] })
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+      void queryClient.invalidateQueries({ queryKey: ['inbox-reviews'] })
+      void queryClient.invalidateQueries({ queryKey: ['inbox-unread-badge'] })
+    })
+
     connection.on('post.statusUpdated', (payload: any) => {
       const { postId, status, zernioTargetCount, platformTargets } = payload
 
@@ -132,6 +141,7 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
 
     return () => {
       connection.off('notification.created')
+      connection.off('inbox.updated')
       connection.off('post.statusUpdated')
       void connection.stop()
     }
