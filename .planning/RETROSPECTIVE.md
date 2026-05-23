@@ -121,6 +121,45 @@
 
 ---
 
+## Milestone: v1.6 — Logging & Observability
+
+**Shipped:** 2026-05-23
+**Phases:** 1 | **Plans:** 3
+
+### What Was Built
+- Production Serilog pipeline with async-wrapped rolling JSON file logging (daily rotation, 30-day retention, 100MB limit)
+- Environment-aware configuration — compact JSON in production, human-readable console at Debug level in development
+- Request-scoped UserId enrichment via middleware (ClaimTypes.NameIdentifier fallback to OIDC sub claim)
+- Environment, MachineName, Application properties on every log event
+- SensitiveDataDestructuringPolicies for 8 auth command types — passwords/tokens redacted to `***REDACTED***`
+- RequestBodyRedactionMiddleware with JSON parsing, field redaction, and stream rewinding (1MB size guard)
+- Extended RedactingEnricher keyword list from 5 to 15 entries with snake_case and camelCase variants
+
+### What Worked
+- **Rapid Execution:** Single phase, 2 plans completed in ~1 hour — focused scope with no cross-cutting concerns
+- **IDestructuringPolicy Discovery:** Generic `DestructuringPolicy<T>` pattern emerged as clean, type-safe approach
+- **Deviation Auto-Fix:** Compilation error on Destructure API signature was caught and fixed within same session — no context switching
+- **No Scope Creep:** Clear boundary between base logging (Plan 01) and security redaction (Plan 02) kept focus tight
+
+### What Was Inefficient
+- **Overarching PLAN.md Artifact:** Master PLAN.md (13 items) decomposed into 23-01 and 23-02, but PLAN.md was left behind without SUMMARY — caused false tracking of "3rd pending plan"
+- **Manual Tracking Cleanup Needed:** ROADMAP.md and STATE.md needed manual updates after execution to reflect true completion
+
+### Patterns Established
+- **Nullable-Enforced Stream Rewinding:** RequestBodyRedactionMiddleware uses explicit null guard before Position = 0
+- **Safe JSON Fallback:** Non-JSON bodies pass through unchanged rather than breaking the request
+
+### Key Lessons
+- An overarching PLAN.md should either be deleted or given a SUMMARY when sub-plans replace it — leftover artifacts break automated tracking
+- Destructure.With() accepts IDestructuringPolicy, not a LoggerConfiguration delegate — test API compilation before committing to pattern
+- 1MB body size limit is a pragmatic guard against memory pressure on file uploads in redaction middleware
+
+### Cost Observations
+- Phase 23 completed in a single session (~17 min for 2 plans, 18 tasks, 19 files)
+- Most efficient milestone to date — 1 phase, no cross-phase coordination needed
+
+---
+
 ## Cross-Milestone Trends
 
 | Milestone | Velocity (Plans/Day) | Quality (Passing Tests) |
@@ -129,3 +168,4 @@
 | v1.1      | 3.75                 | 100% (105/105)          |
 | v1.3      | 6.0                  | 100% (19/19)            |
 | v1.5      | 8.0                  | 100% (all UAT passed)   |
+| v1.6      | 3.0                  | 100% (build verified)  |
