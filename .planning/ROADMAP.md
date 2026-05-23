@@ -218,7 +218,7 @@ Plans:
 | 15-22. Google Auth & Account Linking | v1.5 | 24/24 | Complete | 2026-05-18 |
 | 23. Configure Logging (Serilog) | v1.6 | 3/3 | Complete | 2026-05-20 |
 | 24. Zernio Foundation | v2.0 | 1/3 | In Progress|  |
-| 25. Account Connect | v2.0 | 2/4 | In Progress|  |
+| 25. Account Connect | v2.0 | 3/4 | In Progress|  |
 | 26. Post Scheduling | v2.0 | 0/4 | Not started | - |
 | 27. Analytics | v2.0 | 0/2 | Not started | - |
 | 28. Inbox | v2.0 | 0/4 | Not started | - |

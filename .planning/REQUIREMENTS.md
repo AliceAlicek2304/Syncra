@@ -25,7 +25,7 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 - [x] **CONN-02**: User can view all connected social accounts per workspace
 - [x] **CONN-03**: User can disconnect a social account from workspace
 - [x] **CONN-04**: System handles Zernio billing gates (`twitter_passthrough`, `free_tier_exceeded`) with user-facing error message and redirect URL
-- [ ] **CONN-05**: System syncs account status via `account.connected` / `account.disconnected` webhook events
+- [x] **CONN-05**: System syncs account status via `account.connected` / `account.disconnected` webhook events
 
 ### Post Scheduling (POST)
 
@@ -90,7 +90,7 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 | CONN-02 | 25 | Complete |
 | CONN-03 | 25 | Complete |
 | CONN-04 | 25 | Complete |
-| CONN-05 | 25 | Pending |
+| CONN-05 | 25 | Complete |
 | POST-01 | 26 | Pending |
 | POST-02 | 26 | Pending |
 | POST-03 | 26 | Pending |
