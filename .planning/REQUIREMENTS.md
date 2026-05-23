@@ -54,7 +54,7 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 - [ ] **INBX-02**: User can send a DM reply from the inbox
 - [ ] **INBX-03**: User can view comments on posts across all connected accounts
 - [ ] **INBX-04**: User can reply to a comment
-- [ ] **INBX-05**: User can view reviews (Facebook / Google Business) and reply to them
+- [x] **INBX-05**: User can view reviews (Facebook / Google Business) and reply to them
 
 ---
 
@@ -107,4 +107,4 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 | INBX-02 | 28 | Pending |
 | INBX-03 | 28 | Pending |
 | INBX-04 | 28 | Pending |
-| INBX-05 | 28 | Pending |
+| INBX-05 | 28 | Complete |

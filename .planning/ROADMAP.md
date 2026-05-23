@@ -211,14 +211,25 @@ Plans:
   4. A user can reply to a comment from the inbox
   5. A user can view Facebook and Google Business reviews and post a reply
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 28-01: `message.received` webhook handler + `InboxMessage` persistence; `MessagesApi` reply (`POST /v1/messages/{id}/reply`)
-- [ ] 28-02: `comment.received` webhook handler + `InboxComment` persistence; `MessagesApi` comment reply
-- [ ] 28-03: `review.new` webhook handler + `InboxReview` persistence (Facebook / Google Business); review reply
-- [ ] 28-04: `InboxController` — unified feed endpoint (DMs + comments + reviews, workspace-scoped, paginated); frontend Inbox page
+**Wave 1**
+
+- [x] 28-01-PLAN.md — DM entities + migration; `message.received` webhook; `IInboxNotifier`; conversation/message APIs + send reply (INBX-01, INBX-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 28-02-PLAN.md — `InboxComment` + `comment.received`; comment list + reply APIs (INBX-03, INBX-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 28-03-PLAN.md — `InboxReview` + `review.new`; review list + reply APIs (INBX-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 28-04-PLAN.md — 30-day backfill job; per-tab Inbox APIs; `InboxPage` (3 tabs, master-detail DMs, billing, SignalR) (INBX-01..05)
 
 ---
 
@@ -237,6 +248,6 @@ Plans:
 | 25. Account Connect | v2.0 | 4/4 | Complete | 2026-05-23 |
 | 26. Post Scheduling | v2.0 | 3/4 | In Progress|  |
 | 27. Analytics | v2.0 | 2/2 | Complete   | 2026-05-23 |
-| 28. Inbox | v2.0 | 0/4 | Not started | - |
+| 28. Inbox | v2.0 | 3/4 | In Progress|  |
 
 _For milestone archives, see `.planning/milestones/v1.6-ROADMAP.md`_
