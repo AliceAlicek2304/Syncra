@@ -297,6 +297,27 @@ public sealed class Post : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void StartZernioRetry()
+    {
+        if (Status is not (PostStatus.Failed or PostStatus.Partial))
+        {
+            throw new DomainException(
+                "invalid_state",
+                "Only failed or partial posts can be retried via Zernio.");
+        }
+
+        if (string.IsNullOrEmpty(ZernioPostId))
+        {
+            throw new DomainException(
+                "missing_zernio_post",
+                "Post has no ZernioPostId — not a Zernio-routed post.");
+        }
+
+        Status = PostStatus.Publishing;
+        PublishLastError = null;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void MarkPublishPartial(DateTime utcNow, string? zernioPostId, int targetCount)
     {
         if (Status != PostStatus.Publishing)

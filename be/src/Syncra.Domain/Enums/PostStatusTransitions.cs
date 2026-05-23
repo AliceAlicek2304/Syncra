@@ -15,6 +15,7 @@ public static class PostStatusTransitions
             (PostStatus.Partial, PostStatus.Publishing) => true,
             (PostStatus.Partial, PostStatus.Published) => true,
             (PostStatus.Partial, PostStatus.Failed) => true,
+            (PostStatus.Failed, PostStatus.Publishing) => true,
             _ => false
         };
 

@@ -294,6 +294,54 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task RetryPostAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _postsApi.RetryPostAsync(zernioPostId, cancellationToken);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered retrying post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to retry posts.",
+                reason: "post_management_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error retrying post {PostId}", zernioPostId);
+            throw new DomainException("zernio_retry_post_error", "Failed to retry Zernio post", ex);
+        }
+    }
+
+    public async Task DeletePostAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _postsApi.DeletePostAsync(zernioPostId, cancellationToken);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered deleting post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage posts.",
+                reason: "post_management_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error deleting post {PostId}", zernioPostId);
+            throw new DomainException("zernio_delete_post_error", "Failed to delete Zernio post", ex);
+        }
+    }
+
     // ── Private platform-specific list helpers ───────────────────────────────
 
     private async Task<IReadOnlyList<ZernioSelectOptionDto>> ListFacebookPagesAsync(

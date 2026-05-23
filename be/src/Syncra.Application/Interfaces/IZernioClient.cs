@@ -42,4 +42,12 @@ public interface IZernioClient
     Task<ZernioCreatePostResult> CreatePostAsync(
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default);
+
+    Task RetryPostAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default);
+
+    Task DeletePostAsync(
+        string zernioPostId,
+        CancellationToken cancellationToken = default);
 }
