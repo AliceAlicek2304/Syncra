@@ -121,7 +121,7 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
         // Fetch from Zernio
         var postAnalytics = await _zernioClient.GetPostAnalyticsAsync(post.ZernioPostId, cancellationToken);
 
-        // Map to PostMetricsDto
+        // Map to PostMetricsDto, preserving sync-pending status (D-09)
         var analytics = postAnalytics.Analytics;
         var dto = new PostMetricsDto(
             analytics.Impressions,
@@ -129,10 +129,14 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
             analytics.Clicks,
             analytics.Views,
             analytics.EngagementRate,
-            postAnalytics.PlatformAnalytics);
+            postAnalytics.PlatformAnalytics,
+            IsSyncPending: postAnalytics.SyncPending);
 
-        // Cache with 10-minute TTL (D-05)
-        await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(10), cancellationToken);
+        // Cache with 10-minute TTL (D-05) — only cache non-pending results
+        if (!postAnalytics.SyncPending)
+        {
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(10), cancellationToken);
+        }
 
         return Result.Success(dto);
     }

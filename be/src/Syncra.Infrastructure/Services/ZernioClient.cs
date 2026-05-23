@@ -379,6 +379,14 @@ public sealed class ZernioClient : IZernioClient
                 dashboardUrl: "https://zernio.com/dashboard/billing",
                 details: new { profileId });
         }
+        catch (ApiException ex) when (ex.ErrorCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio analytics scope error for best-time, profile {ProfileId}", profileId);
+            throw new ZernioAnalyticsScopeException(
+                platform ?? "unknown",
+                "Additional analytics permissions are required for best-time data. Re-authorize the connection.",
+                "https://zernio.com/dashboard/analytics/reauth");
+        }
         catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error fetching best-time for profile {ProfileId}", profileId);
@@ -441,6 +449,14 @@ public sealed class ZernioClient : IZernioClient
                 reason: "analytics_addon_required",
                 dashboardUrl: "https://zernio.com/dashboard/billing",
                 details: new { profileId });
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio analytics scope error for daily metrics, profile {ProfileId}", profileId);
+            throw new ZernioAnalyticsScopeException(
+                "unknown",
+                "Additional analytics permissions are required for daily metrics. Re-authorize the connection.",
+                "https://zernio.com/dashboard/analytics/reauth");
         }
         catch (ApiException ex)
         {
@@ -523,6 +539,14 @@ public sealed class ZernioClient : IZernioClient
                 reason: "analytics_addon_required",
                 dashboardUrl: "https://zernio.com/dashboard/billing",
                 details: new { zernioPostId });
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio analytics scope error for post {PostId}", zernioPostId);
+            throw new ZernioAnalyticsScopeException(
+                "unknown",
+                "Additional analytics permissions are required for post analytics. Re-authorize the connection.",
+                "https://zernio.com/dashboard/analytics/reauth");
         }
         catch (ApiException ex)
         {

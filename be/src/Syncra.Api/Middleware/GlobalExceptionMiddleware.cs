@@ -31,7 +31,7 @@ public class GlobalExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        if (exception is not DomainException and not FluentValidation.ValidationException and not KeyNotFoundException and not ZernioBillingRequiredException)
+        if (exception is not DomainException and not FluentValidation.ValidationException and not KeyNotFoundException and not ZernioBillingRequiredException and not ZernioAnalyticsScopeException)
         {
             logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
             SentrySdk.CaptureException(exception);
@@ -108,6 +108,18 @@ public class GlobalExceptionMiddleware
                 });
                 break;
 
+            case ZernioBillingRequiredException billingEx when billingEx.Reason == "analytics_addon_required":
+                logger.LogWarning("Billing gate triggered — analytics add-on required. Reason: {Reason}", billingEx.Reason);
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "analytics_addon_required",
+                    message = billingEx.Message,
+                    reason = billingEx.Reason,
+                    details = billingEx.Details
+                });
+                break;
+
             case ZernioBillingRequiredException billingEx:
                 logger.LogWarning("Billing gate triggered. Reason: {Reason}, Dashboard: {Url}", billingEx.Reason, billingEx.DashboardUrl);
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
@@ -118,6 +130,17 @@ public class GlobalExceptionMiddleware
                     reason = billingEx.Reason,
                     dashboardUrl = billingEx.DashboardUrl,
                     details = billingEx.Details
+                });
+                break;
+
+            case ZernioAnalyticsScopeException scopeEx:
+                context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "analytics_scope_required",
+                    message = scopeEx.Message,
+                    platform = scopeEx.Platform,
+                    reauthorizeUrl = scopeEx.ReauthorizeUrl
                 });
                 break;
 

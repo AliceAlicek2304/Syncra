@@ -16,6 +16,7 @@ using Moq;
 using Syncra.Application.DTOs.Analytics;
 using Syncra.Application.Features.Analytics.Queries;
 using Syncra.Domain.Common;
+using Syncra.Domain.Exceptions;
 using Syncra.Domain.Models.Social;
 using Syncra.Infrastructure.Persistence;
 using Xunit;
@@ -184,6 +185,73 @@ public class AnalyticsControllerTests : IClassFixture<WebApplicationFactory<Prog
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("Post not found", content);
+    }
+
+    [Fact]
+    public async Task GetPostAnalytics_SyncPending_ReturnsAccepted()
+    {
+        var workspaceId = Guid.NewGuid();
+        var postId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        _mediatorMock.Setup(m => m.Send(
+            It.Is<GetPostAnalyticsQuery>(q => q.WorkspaceId == workspaceId && q.PostId == postId && q.Date == 30),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PostMetricsDto>.Success(
+                new PostMetricsDto(0, 0, 0, 0, 0m, null, IsSyncPending: true)));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("syncing", content);
+    }
+
+    [Fact]
+    public async Task GetPostAnalytics_AnalyticsAddonRequired_ReturnsForbidden()
+    {
+        var workspaceId = Guid.NewGuid();
+        var postId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        _mediatorMock.Setup(m => m.Send(
+            It.IsAny<GetPostAnalyticsQuery>(),
+            It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ZernioBillingRequiredException(
+                "Analytics add-on is required to access this feature.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: null));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPostAnalytics_ScopeRequired_ReturnsPreconditionFailed()
+    {
+        var workspaceId = Guid.NewGuid();
+        var postId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+
+        _mediatorMock.Setup(m => m.Send(
+            It.IsAny<GetPostAnalyticsQuery>(),
+            It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ZernioAnalyticsScopeException(
+                "instagram",
+                "Additional analytics permissions are required.",
+                "https://zernio.com/dashboard/analytics/reauth"));
+
+        var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30");
+
+        Assert.Equal(HttpStatusCode.PreconditionFailed, response.StatusCode);
     }
 
     [Fact]

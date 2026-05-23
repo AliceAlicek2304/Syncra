@@ -8,4 +8,5 @@ public sealed record PostMetricsDto(
     int Clicks,
     int Views,
     decimal EngagementRate,
-    IReadOnlyList<ZernioPlatformPostMetricsDto>? PlatformAnalytics);
+    IReadOnlyList<ZernioPlatformPostMetricsDto>? PlatformAnalytics,
+    bool IsSyncPending = false);

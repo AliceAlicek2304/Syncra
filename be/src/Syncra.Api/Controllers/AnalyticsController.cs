@@ -41,7 +41,7 @@ public class AnalyticsController : ControllerBase
         var result = await _mediator.Send(
             new GetPostAnalyticsQuery(workspaceId, postId, date),
             cancellationToken);
-        return result.ToActionResult();
+        return result.ToAnalyticsActionResult();
     }
 
     [HttpGet("post/{postId:guid}/debug")]
