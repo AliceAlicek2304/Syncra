@@ -201,6 +201,12 @@ public sealed class ProcessZernioWebhookJob
                             webhookEvent, root, externalAccountId, cancellationToken);
                         break;
 
+                    case "review.new":
+                    case "review.updated":
+                        await HandleReviewNewAsync(
+                            webhookEvent, root, externalAccountId, cancellationToken);
+                        break;
+
                     default:
                         _logger.LogInformation(
                             "Zernio webhook event {EventId} has unhandled event type '{EventType}' — marking processed.",
@@ -1120,6 +1126,162 @@ public sealed class ProcessZernioWebhookJob
             "comment.received: processed for workspace {WorkspaceId}, comment {CommentId}.",
             workspaceId,
             comment.Id);
+    }
+
+    /// <summary>
+    /// Processes a <c>review.new</c> (or <c>review.updated</c>) webhook: creates or updates an
+    /// <see cref="InboxReview"/> row, deduplicating by <c>ZernioReviewId</c>, and notifies
+    /// connected clients.
+    /// </summary>
+    private async Task HandleReviewNewAsync(
+        ZernioWebhookEvent webhookEvent,
+        JsonElement root,
+        string externalAccountId,
+        CancellationToken cancellationToken)
+    {
+        var workspaceId = webhookEvent.WorkspaceId;
+        var utcNow = DateTime.UtcNow;
+
+        // ── a. Extract payload fields ────────────────────────────────────────
+        if (!root.TryGetProperty("review", out var reviewElem))
+        {
+            _logger.LogWarning("review.new: payload missing 'review' object — skipping.");
+            return;
+        }
+
+        var zernioReviewId = reviewElem.GetProperty("id").GetString();
+        if (string.IsNullOrWhiteSpace(zernioReviewId))
+        {
+            _logger.LogWarning("review.new: payload missing review.id — skipping.");
+            return;
+        }
+
+        var platform = reviewElem.TryGetProperty("platform", out var platElem)
+            ? platElem.GetString()?.ToLowerInvariant()
+            : null;
+
+        var rating = reviewElem.TryGetProperty("rating", out var ratingElem)
+            ? ratingElem.GetInt32()
+            : 0;
+
+        var reviewText = reviewElem.TryGetProperty("text", out var textElem)
+            ? textElem.GetString()
+            : string.Empty;
+
+        var hasReply = reviewElem.TryGetProperty("hasReply", out var hasReplyElem)
+            && hasReplyElem.GetBoolean();
+
+        string? replyText = null;
+        DateTime? replyCreatedAt = null;
+        if (hasReply && reviewElem.TryGetProperty("reply", out var replyElem))
+        {
+            replyText = replyElem.TryGetProperty("text", out var replyTextElem)
+                ? replyTextElem.GetString()
+                : null;
+            replyCreatedAt = replyElem.TryGetProperty("createdAt", out var replyCreatedAtElem)
+                && replyCreatedAtElem.TryGetDateTime(out var parsedReplyAt)
+                ? parsedReplyAt
+                : null;
+        }
+
+        var createdAt = reviewElem.TryGetProperty("createdAt", out var createdAtElem)
+            && createdAtElem.TryGetDateTime(out var parsedCreatedAt)
+            ? parsedCreatedAt
+            : utcNow;
+
+        // Reviewer info
+        string? reviewerName = null;
+        string? reviewerImage = null;
+        if (reviewElem.TryGetProperty("reviewer", out var reviewerElem))
+        {
+            reviewerName = reviewerElem.TryGetProperty("name", out var nameElem)
+                ? nameElem.GetString()
+                : null;
+            reviewerImage = reviewerElem.TryGetProperty("profileImage", out var imgElem)
+                ? imgElem.GetString()
+                : null;
+        }
+
+        // Account-level info
+        var accountElem = root.GetProperty("account");
+        var zernioAccountId = accountElem.TryGetProperty("id", out var acctIdElem)
+            ? acctIdElem.GetString()
+            : null;
+
+        // ── b. Look up SocialAccount ─────────────────────────────────────────
+        var socialAccount = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                a => a.WorkspaceId == workspaceId
+                  && a.ExternalAccountId == externalAccountId,
+                cancellationToken);
+
+        if (socialAccount == null)
+        {
+            _logger.LogWarning(
+                "review.new: no SocialAccount found for workspace {WorkspaceId}, accountId {AccountId} — skipping.",
+                workspaceId,
+                externalAccountId);
+            return;
+        }
+
+        platform ??= socialAccount.Platform;
+
+        // ── c. Check for duplicate review by ZernioReviewId ──────────────────
+        var existingReview = await _db.InboxReviews
+            .FirstOrDefaultAsync(
+                r => r.WorkspaceId == workspaceId
+                  && r.ZernioReviewId == zernioReviewId,
+                cancellationToken);
+
+        if (existingReview != null)
+        {
+            _logger.LogInformation(
+                "review.new: duplicate review {ZernioReviewId} detected — updating reply state if changed.",
+                zernioReviewId);
+
+            // Update reply data in case reply was added via platform
+            existingReview.UpdateReply(replyText, replyCreatedAt);
+            existingReview.UpdateReviewerInfo(reviewerName, reviewerImage);
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        // ── d. Create InboxReview ────────────────────────────────────────────
+        var review = InboxReview.Create(
+            workspaceId,
+            zernioReviewId,
+            socialAccount.Id,
+            platform ?? socialAccount.Platform,
+            reviewerName ?? "Unknown",
+            rating,
+            reviewText ?? string.Empty,
+            zernioAccountId: zernioAccountId,
+            reviewerImageUrl: reviewerImage,
+            hasReply: hasReply,
+            replyText: replyText,
+            replyCreatedAtUtc: replyCreatedAt,
+            receivedAtUtc: createdAt);
+
+        _db.InboxReviews.Add(review);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // ── e. Notify connected clients ──────────────────────────────────────
+        await _inboxNotifier.NotifyItemCreatedAsync(
+            workspaceId,
+            "review",
+            review.Id.ToString(),
+            reviewText ?? string.Empty,
+            platform ?? socialAccount.Platform,
+            socialAccount.Id.ToString(),
+            1,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "review.new: processed for workspace {WorkspaceId}, review {ReviewId}.",
+            workspaceId,
+            review.Id);
     }
 }
 
