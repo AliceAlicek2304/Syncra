@@ -16,6 +16,7 @@ public class PostPlatformTargetConfiguration : BaseWorkspaceEntityConfiguration<
         builder.Property(e => e.ExternalPostId).HasMaxLength(PostPlatformTarget.ExternalPostIdMaxLength).HasColumnName("external_post_id");
         builder.Property(e => e.ExternalPostUrl).HasMaxLength(2000).HasColumnName("external_post_url");
         builder.Property(e => e.ErrorMessage).HasMaxLength(PostPlatformTarget.ErrorMessageMaxLength).HasColumnName("error_message");
+        builder.Property(e => e.ZernioAccountId).HasMaxLength(PostPlatformTarget.ZernioAccountIdMaxLength).HasColumnName("zernio_account_id");
         builder.Property(e => e.AttemptCount).HasDefaultValue(0).HasColumnName("attempt_count");
         builder.Property(e => e.LastAttemptAtUtc).HasColumnName("last_attempt_at_utc");
         builder.Property(e => e.PostId).IsRequired().HasColumnName("post_id");

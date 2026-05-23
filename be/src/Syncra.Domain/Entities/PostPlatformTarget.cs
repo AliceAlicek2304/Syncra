@@ -7,12 +7,14 @@ public sealed class PostPlatformTarget : WorkspaceEntityBase
     public const int PlatformMaxLength = 50;
     public const int ExternalPostIdMaxLength = 500;
     public const int ErrorMessageMaxLength = 1000;
+    public const int ZernioAccountIdMaxLength = 200;
 
     public string Platform { get; private set; } = string.Empty;
     public PostPlatformStatus Status { get; private set; } = PostPlatformStatus.Pending;
     public string? ExternalPostId { get; private set; }
     public string? ExternalPostUrl { get; private set; }
     public string? ErrorMessage { get; private set; }
+    public string? ZernioAccountId { get; private set; }
     public int AttemptCount { get; private set; }
     public DateTime? LastAttemptAtUtc { get; private set; }
 
@@ -57,6 +59,12 @@ public sealed class PostPlatformTarget : WorkspaceEntityBase
         LastAttemptAtUtc = utcNow;
         AttemptCount++;
         UpdatedAtUtc = utcNow;
+    }
+
+    public void SetZernioAccountId(string accountId)
+    {
+        ZernioAccountId = accountId;
+        UpdatedAtUtc = DateTime.UtcNow;
     }
 
     public void ResetForRetry()
