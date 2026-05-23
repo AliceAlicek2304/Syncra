@@ -88,4 +88,13 @@ public sealed class InboxReview : WorkspaceEntityBase
         ReplyCreatedAtUtc = replyCreatedAtUtc;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    public void UpdateReviewerInfo(string? reviewerName, string? reviewerImageUrl)
+    {
+        if (!string.IsNullOrEmpty(reviewerName))
+            ReviewerName = reviewerName;
+        if (reviewerImageUrl != null)
+            ReviewerImageUrl = reviewerImageUrl;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }
