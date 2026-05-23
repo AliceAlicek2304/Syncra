@@ -1,0 +1,26 @@
+using Syncra.Application.DTOs.Zernio;
+
+namespace Syncra.Application.Interfaces;
+
+public interface IZernioClient
+{
+    Task<ZernioConnectUrlResult> GetConnectUrlAsync(
+        string profileId,
+        string platform,
+        string redirectUrl,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
+        string profileId,
+        CancellationToken cancellationToken = default);
+
+    Task DisconnectAccountAsync(
+        string profileId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioProfileDto> ProvisionProfileAsync(
+        string workspaceId,
+        string name,
+        CancellationToken cancellationToken = default);
+}
