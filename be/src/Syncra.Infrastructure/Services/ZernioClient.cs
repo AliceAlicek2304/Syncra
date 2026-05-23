@@ -20,6 +20,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly AnalyticsApi _analyticsApi;
     private readonly MessagesApi _messagesApi;
     private readonly CommentsApi _commentsApi;
+    private readonly ReviewsApi _reviewsApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
@@ -38,6 +39,7 @@ public sealed class ZernioClient : IZernioClient
         _analyticsApi = new AnalyticsApi(config);
         _messagesApi = new MessagesApi(config);
         _commentsApi = new CommentsApi(config);
+        _reviewsApi = new ReviewsApi(config);
         _logger = logger;
     }
 
@@ -794,6 +796,108 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error replying to comment on post {PostId}", zernioPostId);
             throw new DomainException("zernio_inbox_reply_error", "Failed to reply to comment via Zernio", ex);
+        }
+    }
+
+    // ── Inbox Review methods ────────────────────────────────────────────────
+
+    public async Task<ZernioInboxReviewsPageDto> ListInboxReviewsAsync(
+        string profileId,
+        string? cursor = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _reviewsApi.ListInboxReviewsAsync(
+                profileId,
+                platform: platform,
+                minRating: null,
+                maxRating: null,
+                hasReply: null,
+                sortBy: null,
+                sortOrder: null,
+                limit: null,
+                cursor: cursor,
+                accountId: accountId,
+                cancellationToken);
+
+            var items = (response.Data ?? [])
+                .Select(r => new ZernioInboxReviewItemDto(
+                    r.Id,
+                    r.Platform ?? string.Empty,
+                    r.AccountId,
+                    r.AccountUsername,
+                    r.Reviewer?.Name,
+                    r.Reviewer?.ProfileImage,
+                    r.Rating,
+                    r.Text,
+                    r.Created,
+                    r.HasReply,
+                    r.Reply?.Text,
+                    r.Reply?.Created))
+                .ToList();
+
+            return new ZernioInboxReviewsPageDto(
+                items,
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.NextCursor);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for list reviews, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to access reviews.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing inbox reviews for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_inbox_reviews_error", "Failed to list inbox reviews from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioReplyToReviewResponseDto> ReplyToInboxReviewAsync(
+        string profileId,
+        string reviewId,
+        string accountId,
+        string message,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new ReplyToInboxReviewRequest
+            {
+                AccountId = accountId,
+                Message = message
+            };
+
+            var response = await _reviewsApi.ReplyToInboxReviewAsync(
+                reviewId,
+                sdkRequest,
+                cancellationToken);
+
+            return new ZernioReplyToReviewResponseDto(
+                response.Reply?.Id ?? string.Empty,
+                response.Reply?.Text ?? string.Empty,
+                response.Reply?.Created ?? DateTime.UtcNow);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for reply to review {ReviewId}", reviewId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to reply to reviews.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { reviewId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error replying to review {ReviewId}", reviewId);
+            throw new DomainException("zernio_inbox_reply_error", "Failed to reply to review via Zernio", ex);
         }
     }
 

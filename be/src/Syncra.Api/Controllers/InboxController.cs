@@ -157,4 +157,61 @@ public class InboxController : ControllerBase
 
         return NoContent();
     }
+
+    // ── Review routes ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Lists inbox reviews from local DB, newest first, with timestamp cursor pagination.
+    /// Filters to Facebook and Google Business platforms in service layer.
+    /// </summary>
+    [HttpGet("reviews")]
+    public async Task<IActionResult> GetReviews(
+        Guid workspaceId,
+        [FromQuery] int limit = 50,
+        [FromQuery] DateTime? before = null,
+        [FromQuery] string? platform = null,
+        [FromQuery] string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetInboxReviewsQuery(workspaceId, limit, before, platform, accountId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Replies to a review via the Zernio API. Updates local HasReply state on success.
+    /// </summary>
+    [HttpPost("reviews/{reviewId:guid}/reply")]
+    public async Task<IActionResult> ReplyToReview(
+        Guid workspaceId,
+        Guid reviewId,
+        [FromBody] InboxSendReviewReplyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ReplyToInboxReviewCommand(
+            workspaceId,
+            reviewId,
+            request.Message);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Marks a review as read.
+    /// </summary>
+    [HttpPatch("reviews/{reviewId:guid}/read")]
+    public async Task<IActionResult> MarkReviewRead(
+        Guid workspaceId,
+        Guid reviewId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new MarkReviewReadCommand(workspaceId, reviewId);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result)
+            return NotFound();
+
+        return NoContent();
+    }
 }

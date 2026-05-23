@@ -116,3 +116,51 @@ public sealed record InboxSendCommentReplyRequest(
 public sealed record InboxSendCommentReplyResponse(
     string CommentId,
     string? Cid);
+
+// ── Review DTOs ─────────────────────────────────────────────────────────────
+
+public sealed record ZernioInboxReviewItemDto(
+    string Id,
+    string Platform,
+    string? AccountId,
+    string? AccountUsername,
+    string? ReviewerName,
+    string? ReviewerImageUrl,
+    int Rating,
+    string? Text,
+    DateTime Created,
+    bool HasReply,
+    string? ReplyText,
+    DateTime? ReplyCreated);
+
+public sealed record ZernioInboxReviewsPageDto(
+    IReadOnlyList<ZernioInboxReviewItemDto> Items,
+    bool HasMore,
+    string? NextCursor);
+
+public sealed record ZernioReplyToReviewResponseDto(
+    string ReplyId,
+    string Text,
+    DateTime CreatedAt);
+
+public sealed record InboxReviewDto(
+    Guid Id,
+    string ZernioReviewId,
+    Guid? SocialAccountId,
+    string Platform,
+    string ReviewerName,
+    string? ReviewerImageUrl,
+    int StarRating,
+    string? ReviewText,
+    bool HasReply,
+    string? ReplyText,
+    DateTime? ReplyCreatedAtUtc,
+    bool IsRead,
+    DateTime ReceivedAtUtc,
+    DateTime CreatedAtUtc);
+
+public sealed record InboxSendReviewReplyRequest(
+    string Message);
+
+public sealed record InboxSendReviewReplyResponse(
+    string ReviewReplyId);
