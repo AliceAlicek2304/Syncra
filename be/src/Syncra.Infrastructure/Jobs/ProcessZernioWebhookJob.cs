@@ -142,6 +142,14 @@ public sealed class ProcessZernioWebhookJob
                         await HandlePostCancelledAsync(webhookEvent, root, cancellationToken);
                         break;
 
+                    case "post.platform.published":
+                        await HandlePostPlatformPublishedAsync(webhookEvent, root, cancellationToken);
+                        break;
+
+                    case "post.platform.failed":
+                        await HandlePostPlatformFailedAsync(webhookEvent, root, cancellationToken);
+                        break;
+
                     default:
                         _logger.LogInformation(
                             "Zernio webhook event {EventId} has unhandled event type '{EventType}' — marking processed.",
@@ -571,4 +579,96 @@ public sealed class ProcessZernioWebhookJob
             post.PlatformTargets.Select(t => new PostStatusTargetPayload(t.Id, t.Platform, t.Status.ToString(), t.ExternalPostUrl, t.ErrorMessage, t.ZernioAccountId)).ToList(),
             cancellationToken);
     }
+
+    private async Task HandlePostPlatformPublishedAsync(ZernioWebhookEvent webhookEvent, JsonElement root, CancellationToken cancellationToken)
+    {
+        var zernioPostId = root.GetProperty("post").GetProperty("id").GetString();
+        var platformName = root.GetProperty("platform").GetProperty("name").GetString()?.ToLowerInvariant();
+        var zernioAccountId = root.GetProperty("account").GetProperty("accountId").GetString();
+
+        if (string.IsNullOrWhiteSpace(zernioPostId) || string.IsNullOrWhiteSpace(platformName) || string.IsNullOrWhiteSpace(zernioAccountId))
+        {
+            _logger.LogWarning("Zernio webhook event {EventId} (post.platform.published) payload missing required keys — skipping.", webhookEvent.Id);
+            return;
+        }
+
+        var post = await _db.Posts
+            .Include(p => p.PlatformTargets)
+            .FirstOrDefaultAsync(p => p.ZernioPostId == zernioPostId && p.WorkspaceId == webhookEvent.WorkspaceId, cancellationToken);
+
+        if (post == null)
+        {
+            _logger.LogWarning("Post not found for ZernioPostId {ZernioPostId} in workspace {WorkspaceId} — will retry.", zernioPostId, webhookEvent.WorkspaceId);
+            throw new InvalidOperationException("post_not_yet_persisted");
+        }
+
+        var target = post.PlatformTargets.FirstOrDefault(t => t.Platform == platformName && t.ZernioAccountId == zernioAccountId);
+        if (target == null)
+        {
+            _logger.LogWarning("No PostPlatformTarget matched ({Platform}, {AccountId}) for post {PostId} — skipping.", platformName, zernioAccountId, post.Id);
+            return;
+        }
+
+        var externalPostId = root.GetProperty("platform").TryGetProperty("platformPostId", out var pid) ? pid.GetString() : null;
+        var publishedUrl = root.GetProperty("platform").TryGetProperty("publishedUrl", out var url) ? url.GetString() : null;
+
+        target.MarkPublished(externalPostId ?? string.Empty, publishedUrl, DateTime.UtcNow);
+
+        webhookEvent.MarkProcessed(DateTime.UtcNow);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _postStatusNotifier.NotifyAsync(
+            post.WorkspaceId,
+            post.Id,
+            post.Status.ToString(),
+            post.ZernioTargetCount,
+            post.PlatformTargets.Select(t => new PostStatusTargetPayload(t.Id, t.Platform, t.Status.ToString(), t.ExternalPostUrl, t.ErrorMessage, t.ZernioAccountId)).ToList(),
+            cancellationToken);
+    }
+
+    private async Task HandlePostPlatformFailedAsync(ZernioWebhookEvent webhookEvent, JsonElement root, CancellationToken cancellationToken)
+    {
+        var zernioPostId = root.GetProperty("post").GetProperty("id").GetString();
+        var platformName = root.GetProperty("platform").GetProperty("name").GetString()?.ToLowerInvariant();
+        var zernioAccountId = root.GetProperty("account").GetProperty("accountId").GetString();
+
+        if (string.IsNullOrWhiteSpace(zernioPostId) || string.IsNullOrWhiteSpace(platformName) || string.IsNullOrWhiteSpace(zernioAccountId))
+        {
+            _logger.LogWarning("Zernio webhook event {EventId} (post.platform.failed) payload missing required keys — skipping.", webhookEvent.Id);
+            return;
+        }
+
+        var post = await _db.Posts
+            .Include(p => p.PlatformTargets)
+            .FirstOrDefaultAsync(p => p.ZernioPostId == zernioPostId && p.WorkspaceId == webhookEvent.WorkspaceId, cancellationToken);
+
+        if (post == null)
+        {
+            _logger.LogWarning("Post not found for ZernioPostId {ZernioPostId} in workspace {WorkspaceId} — will retry.", zernioPostId, webhookEvent.WorkspaceId);
+            throw new InvalidOperationException("post_not_yet_persisted");
+        }
+
+        var target = post.PlatformTargets.FirstOrDefault(t => t.Platform == platformName && t.ZernioAccountId == zernioAccountId);
+        if (target == null)
+        {
+            _logger.LogWarning("No PostPlatformTarget matched ({Platform}, {AccountId}) for post {PostId} — skipping.", platformName, zernioAccountId, post.Id);
+            return;
+        }
+
+        var error = root.GetProperty("platform").TryGetProperty("error", out var e) ? (e.GetString() ?? "Unknown error") : "Unknown error";
+
+        target.MarkFailed(error, DateTime.UtcNow);
+
+        webhookEvent.MarkProcessed(DateTime.UtcNow);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _postStatusNotifier.NotifyAsync(
+            post.WorkspaceId,
+            post.Id,
+            post.Status.ToString(),
+            post.ZernioTargetCount,
+            post.PlatformTargets.Select(t => new PostStatusTargetPayload(t.Id, t.Platform, t.Status.ToString(), t.ExternalPostUrl, t.ErrorMessage, t.ZernioAccountId)).ToList(),
+            cancellationToken);
+    }
 }
+
