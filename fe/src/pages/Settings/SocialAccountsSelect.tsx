@@ -53,7 +53,7 @@ export default function SocialAccountsSelect() {
           `social-accounts/${platform}/pages`,
           { params: { tempToken, state } }
         );
-        setItems(response.data);
+        setItems((response.data as { options: PageItem[] }).options);
         setLoadState('loaded');
       } catch (err) {
         const msg =
@@ -75,7 +75,7 @@ export default function SocialAccountsSelect() {
     setIsSubmitting(true);
     try {
       await api.post(`social-accounts/${platform}/select-page`, {
-        pageId: selectedId,
+        selectedId: selectedId,
         tempToken,
         state,
       });

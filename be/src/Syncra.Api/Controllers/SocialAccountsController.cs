@@ -220,8 +220,7 @@ public sealed class SocialAccountsController : ControllerBase
         {
             if (!existing.IsActive)
             {
-                existing.Deactivate(); // reset state
-                // Reactivate via Create equivalent — update fields
+                existing.Reactivate();
                 existing.Update(result.DisplayName, result.ProfilePicture);
             }
             else
