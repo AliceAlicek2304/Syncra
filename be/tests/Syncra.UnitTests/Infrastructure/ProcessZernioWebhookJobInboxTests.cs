@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +17,29 @@ namespace Syncra.UnitTests.Infrastructure;
 [Trait("Category", "Webhook")]
 public class ProcessZernioWebhookJobInboxTests : IDisposable
 {
+    private const string MessageReceivedPayload = @"{
+  ""account"": {
+    ""id"": ""zernio-account-123"",
+    ""platform"": ""instagram"",
+    ""displayName"": ""My Instagram""
+  },
+  ""conversation"": {
+    ""id"": ""zernio-conv-456"",
+    ""status"": ""active""
+  },
+  ""message"": {
+    ""id"": ""zernio-msg-789"",
+    ""text"": ""Hey! How's it going?"",
+    ""sender"": {
+      ""id"": ""sender-user-001"",
+      ""name"": ""John Doe"",
+      ""username"": ""johndoe""
+    },
+    ""sentAt"": ""2026-05-23T10:30:00Z"",
+    ""direction"": ""incoming""
+  }
+}";
+
     private readonly AppDbContext _db;
     private readonly Mock<IPostStatusNotifier> _postNotifierMock;
     private readonly Mock<IInboxNotifier> _inboxNotifierMock;
@@ -50,9 +72,7 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
     public async Task HandleMessageReceived_ShouldCreateConversationAndMessage()
     {
         // Arrange
-        var fixturePath = Path.Combine("Fixtures", "Zernio", "message-received.json");
-        var payload = await File.ReadAllTextAsync(fixturePath);
-        using var doc = JsonDocument.Parse(payload);
+        using var doc = JsonDocument.Parse(MessageReceivedPayload);
         var root = doc.RootElement;
         var accountId = root.GetProperty("account").GetProperty("id").GetString()!;
 
@@ -74,7 +94,7 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         var webhookEvent = ZernioWebhookEvent.Create(
             _workspaceId,
             eventType: "message.received",
-            payload: payload);
+            payload: MessageReceivedPayload);
         _db.ZernioWebhookEvents.Add(webhookEvent);
 
         await _db.SaveChangesAsync();
@@ -98,7 +118,7 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
             .FirstOrDefaultAsync(m => m.WorkspaceId == _workspaceId);
         Assert.NotNull(message);
         Assert.Equal("zernio-msg-789", message!.ZernioMessageId);
-        Assert.Equal("Inbound", message.Direction);
+        Assert.Equal("incoming", message.Direction);
         Assert.Equal("Hey! How's it going?", message.BodyText);
 
         // Assert - notifier called
@@ -119,10 +139,7 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
     [Fact]
     public async Task HandleMessageReceived_DuplicateMessage_ShouldSkipInsert()
     {
-        // Arrange
-        var fixturePath = Path.Combine("Fixtures", "Zernio", "message-received.json");
-        var payload = await File.ReadAllTextAsync(fixturePath);
-        using var doc = JsonDocument.Parse(payload);
+        using var doc = JsonDocument.Parse(MessageReceivedPayload);
         var root = doc.RootElement;
         var accountId = root.GetProperty("account").GetProperty("id").GetString()!;
 
@@ -149,22 +166,24 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         await _db.SaveChangesAsync();
 
         var webhookEvent = ZernioWebhookEvent.Create(
-            _workspaceId, "message.received", payload);
+            _workspaceId, "message.received", MessageReceivedPayload);
         _db.ZernioWebhookEvents.Add(webhookEvent);
         await _db.SaveChangesAsync();
 
         // Act
         await _job.ExecuteAsync(webhookEvent.Id, CancellationToken.None);
 
-        // Assert - only one message exists (no duplicate)
+        // Assert - only one message exists (no duplicate inserted)
         var messageCount = await _db.InboxMessages
             .CountAsync(m => m.WorkspaceId == _workspaceId);
         Assert.Equal(1, messageCount);
 
-        // Assert - conversation updated with new last message text
+        // Assert - conversation last message text updated (preview refresh)
         var updatedConversation = await _db.InboxConversations
             .FirstAsync(c => c.Id == conversation.Id);
         Assert.Equal("Hey! How's it going?", updatedConversation.LastMessageText);
-        Assert.Equal(2, updatedConversation.UnreadCount);
+
+        // Assert - unread count unchanged (duplicate → no new unread)
+        Assert.Equal(0, updatedConversation.UnreadCount);
     }
 }

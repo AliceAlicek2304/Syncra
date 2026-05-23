@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<Controllers.PaymentWebhookOrchestrator>();
         services.AddScoped<Syncra.Application.Interfaces.INotificationDispatcher, Syncra.Api.Services.NotificationDispatcher>();
         services.AddScoped<Syncra.Application.Interfaces.IPostStatusNotifier, Syncra.Api.Services.PostStatusNotifier>();
+        services.AddScoped<Syncra.Application.Interfaces.IInboxNotifier, Syncra.Api.Services.InboxNotifier>();
 
         return services;
     }

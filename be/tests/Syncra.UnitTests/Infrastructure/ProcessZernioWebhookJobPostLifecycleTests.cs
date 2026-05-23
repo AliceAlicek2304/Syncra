@@ -20,6 +20,7 @@ public class ProcessZernioWebhookJobPostLifecycleTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly Mock<IPostStatusNotifier> _notifierMock;
+    private readonly Mock<IInboxNotifier> _inboxNotifierMock;
     private readonly Mock<ILogger<ProcessZernioWebhookJob>> _loggerMock;
     private readonly ProcessZernioWebhookJob _job;
     private readonly Guid _workspaceId;
@@ -36,9 +37,10 @@ public class ProcessZernioWebhookJobPostLifecycleTests : IDisposable
 
         _db = new AppDbContext(options);
         _notifierMock = new Mock<IPostStatusNotifier>();
+        _inboxNotifierMock = new Mock<IInboxNotifier>();
         _loggerMock = new Mock<ILogger<ProcessZernioWebhookJob>>();
 
-        _job = new ProcessZernioWebhookJob(_db, _loggerMock.Object, _notifierMock.Object);
+        _job = new ProcessZernioWebhookJob(_db, _loggerMock.Object, _notifierMock.Object, _inboxNotifierMock.Object);
     }
 
     public void Dispose()

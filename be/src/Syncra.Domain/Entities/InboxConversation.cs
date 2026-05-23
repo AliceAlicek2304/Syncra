@@ -72,4 +72,11 @@ public sealed class InboxConversation : WorkspaceEntityBase
         LastMessageAtUtc = sentAtUtc;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    public void UpdateParticipant(string? participantName, string? participantAvatarUrl)
+    {
+        ParticipantName = participantName;
+        ParticipantAvatarUrl = participantAvatarUrl;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }

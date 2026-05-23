@@ -28,12 +28,18 @@ public sealed class ProcessZernioWebhookJob
     private readonly AppDbContext _db;
     private readonly ILogger<ProcessZernioWebhookJob> _logger;
     private readonly IPostStatusNotifier _postStatusNotifier;
+    private readonly IInboxNotifier _inboxNotifier;
 
-    public ProcessZernioWebhookJob(AppDbContext db, ILogger<ProcessZernioWebhookJob> logger, IPostStatusNotifier postStatusNotifier)
+    public ProcessZernioWebhookJob(
+        AppDbContext db,
+        ILogger<ProcessZernioWebhookJob> logger,
+        IPostStatusNotifier postStatusNotifier,
+        IInboxNotifier inboxNotifier)
     {
         _db = db;
         _logger = logger;
         _postStatusNotifier = postStatusNotifier;
+        _inboxNotifier = inboxNotifier;
     }
 
     public async Task ExecuteAsync(Guid webhookEventId, CancellationToken cancellationToken = default)
@@ -159,6 +165,54 @@ public sealed class ProcessZernioWebhookJob
                         await _db.SaveChangesAsync(cancellationToken);
                         break;
                 }
+            }
+            else if (webhookEvent.EventType.StartsWith("message."))
+            {
+                if (!root.TryGetProperty("account", out var msgAccount))
+                {
+                    _logger.LogWarning(
+                        "Zernio webhook event {EventId} ('{EventType}') payload missing 'account' object — skipping.",
+                        webhookEventId,
+                        webhookEvent.EventType);
+                    webhookEvent.MarkProcessed(utcNow);
+                    await _db.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+
+                var externalAccountId = msgAccount.TryGetProperty("id", out var acctIdElem)
+                    ? acctIdElem.GetString()
+                    : null;
+
+                if (string.IsNullOrWhiteSpace(externalAccountId))
+                {
+                    _logger.LogWarning(
+                        "Zernio webhook event {EventId} ('{EventType}') payload missing account.id — skipping.",
+                        webhookEventId,
+                        webhookEvent.EventType);
+                    webhookEvent.MarkProcessed(utcNow);
+                    await _db.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+
+                switch (webhookEvent.EventType)
+                {
+                    case "message.received":
+                        await HandleMessageReceivedAsync(
+                            webhookEvent, root, externalAccountId, cancellationToken);
+                        break;
+
+                    default:
+                        _logger.LogInformation(
+                            "Zernio webhook event {EventId} has unhandled event type '{EventType}' — marking processed.",
+                            webhookEventId,
+                            webhookEvent.EventType);
+                        webhookEvent.MarkProcessed(utcNow);
+                        await _db.SaveChangesAsync(cancellationToken);
+                        break;
+                }
+
+                webhookEvent.MarkProcessed(utcNow);
+                await _db.SaveChangesAsync(cancellationToken);
             }
             else
             {
@@ -669,6 +723,198 @@ public sealed class ProcessZernioWebhookJob
             post.ZernioTargetCount,
             post.PlatformTargets.Select(t => new PostStatusTargetPayload(t.Id, t.Platform, t.Status.ToString(), t.ExternalPostUrl, t.ErrorMessage, t.ZernioAccountId)).ToList(),
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Processes a <c>message.received</c> webhook: upserts the <see cref="InboxConversation"/> and
+    /// creates a new <see cref="InboxMessage"/>, deduplicating by <c>ZernioMessageId</c>.
+    /// </summary>
+    private async Task HandleMessageReceivedAsync(
+        ZernioWebhookEvent webhookEvent,
+        JsonElement root,
+        string externalAccountId,
+        CancellationToken cancellationToken)
+    {
+        var workspaceId = webhookEvent.WorkspaceId;
+        var utcNow = DateTime.UtcNow;
+
+        // ── a. Extract payload fields ────────────────────────────────────────
+        var platform = root.GetProperty("account").TryGetProperty("platform", out var platElem)
+            ? platElem.GetString()?.ToLowerInvariant()
+            : null;
+
+        if (!root.TryGetProperty("conversation", out var convElem))
+        {
+            _logger.LogWarning("message.received: payload missing 'conversation' object — skipping.");
+            return;
+        }
+
+        var zernioConversationId = convElem.GetProperty("id").GetString();
+        if (string.IsNullOrWhiteSpace(zernioConversationId))
+        {
+            _logger.LogWarning("message.received: payload missing conversation.id — skipping.");
+            return;
+        }
+
+        if (!root.TryGetProperty("message", out var msgElem))
+        {
+            _logger.LogWarning("message.received: payload missing 'message' object — skipping.");
+            return;
+        }
+
+        var zernioMessageId = msgElem.GetProperty("id").GetString();
+        if (string.IsNullOrWhiteSpace(zernioMessageId))
+        {
+            _logger.LogWarning("message.received: payload missing message.id — skipping.");
+            return;
+        }
+
+        var messageText = msgElem.TryGetProperty("text", out var textElem)
+            ? textElem.GetString() ?? string.Empty
+            : string.Empty;
+
+        var direction = msgElem.TryGetProperty("direction", out var dirElem)
+            ? dirElem.GetString()
+            : "incoming";
+
+        var sentAt = msgElem.TryGetProperty("sentAt", out var sentAtElem) && sentAtElem.TryGetDateTime(out var parsedSentAt)
+            ? parsedSentAt
+            : utcNow;
+
+        // Sender info from message.sender
+        string? participantName = null;
+        string? participantAvatarUrl = null;
+        if (msgElem.TryGetProperty("sender", out var senderElem))
+        {
+            participantName = senderElem.TryGetProperty("name", out var nameElem)
+                ? nameElem.GetString()
+                : senderElem.TryGetProperty("username", out var usernameElem)
+                    ? usernameElem.GetString()
+                    : null;
+            participantAvatarUrl = senderElem.TryGetProperty("picture", out var picElem)
+                ? picElem.GetString()
+                : null;
+        }
+
+        // ── b. Look up SocialAccount ─────────────────────────────────────────
+        var socialAccount = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                a => a.WorkspaceId == workspaceId
+                  && a.ExternalAccountId == externalAccountId,
+                cancellationToken);
+
+        if (socialAccount == null)
+        {
+            _logger.LogWarning(
+                "message.received: no SocialAccount found for workspace {WorkspaceId}, accountId {AccountId} — skipping.",
+                workspaceId,
+                externalAccountId);
+            return;
+        }
+
+        platform ??= socialAccount.Platform;
+
+        // ── c. Check for duplicate message by ZernioMessageId ────────────────
+        var existingMessage = await _db.InboxMessages
+            .FirstOrDefaultAsync(
+                m => m.WorkspaceId == workspaceId
+                  && m.ZernioMessageId == zernioMessageId,
+                cancellationToken);
+
+        if (existingMessage != null)
+        {
+            _logger.LogInformation(
+                "message.received: duplicate message {ZernioMsgId} detected — skipping.",
+                zernioMessageId);
+
+            // Still update the conversation's last message text
+            var conv = await _db.InboxConversations
+                .FirstOrDefaultAsync(
+                    c => c.WorkspaceId == workspaceId
+                      && c.ZernioConversationId == zernioConversationId,
+                    cancellationToken);
+
+            if (conv != null)
+            {
+                conv.UpdateLastMessage(messageText, utcNow);
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        // ── d. Upsert InboxConversation ──────────────────────────────────────
+        var conversation = await _db.InboxConversations
+            .FirstOrDefaultAsync(
+                c => c.WorkspaceId == workspaceId
+                  && c.ZernioConversationId == zernioConversationId,
+                cancellationToken);
+
+        if (conversation == null)
+        {
+            conversation = InboxConversation.Create(
+                workspaceId,
+                zernioConversationId,
+                socialAccount.Id,
+                platform,
+                participantName ?? "Unknown",
+                participantAvatarUrl,
+                messageText,
+                utcNow);
+
+            conversation.IncrementUnread();
+            _db.InboxConversations.Add(conversation);
+
+            _logger.LogInformation(
+                "message.received: created InboxConversation {ConvId} for workspace {WorkspaceId}.",
+                conversation.Id,
+                workspaceId);
+        }
+        else
+        {
+            conversation.UpdateLastMessage(messageText, utcNow);
+            conversation.IncrementUnread();
+
+            // Update participant info if this is an incoming message
+            if (string.Equals(direction, "incoming", StringComparison.OrdinalIgnoreCase) && participantName != null)
+            {
+                conversation.UpdateParticipant(participantName, participantAvatarUrl);
+            }
+
+            _logger.LogInformation(
+                "message.received: updated existing InboxConversation {ConvId} for workspace {WorkspaceId}.",
+                conversation.Id,
+                workspaceId);
+        }
+
+        // ── e. Create InboxMessage ──────────────────────────────────────────
+        var message = InboxMessage.Create(
+            workspaceId,
+            conversation.Id,
+            zernioMessageId,
+            direction ?? "incoming",
+            messageText,
+            sentAt);
+
+        _db.InboxMessages.Add(message);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // ── f. Notify connected clients ─────────────────────────────────────
+        await _inboxNotifier.NotifyItemCreatedAsync(
+            workspaceId,
+            "dm",
+            conversation.Id.ToString(),
+            messageText,
+            platform,
+            socialAccount.Id.ToString(),
+            1,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "message.received: processed for workspace {WorkspaceId}, conversation {ConvId}.",
+            workspaceId,
+            conversation.Id);
     }
 }
 
