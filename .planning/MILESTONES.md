@@ -1,5 +1,30 @@
 # Milestones: Syncra.NET
 
+## v1.6 Logging & Observability (Shipped: 2026-05-23)
+
+**Phases completed:** 1 phase (Phase 23), 3 plans, 18 tasks
+
+**Key accomplishments:**
+
+1. Production Serilog pipeline with async-wrapped rolling JSON file logging (daily rotation, 30-day retention, 100MB limit)
+2. Environment-aware configuration — JSON in production, human-readable console at Debug level in development
+3. Request-scoped UserId enrichment via middleware with fallback to OIDC `sub` claim
+4. SensitiveDataDestructuringPolicies for 8 auth commands — passwords/tokens redacted to `***REDACTED***`
+5. RequestBodyRedactionMiddleware with JSON parsing, sensitive field redaction, and stream rewinding
+6. Extended RedactingEnricher keyword list from 5 to 15 entries (snake_case and camelCase variants)
+7. Environment, MachineName, Application properties on every log event
+
+**Stats:**
+
+- Commits: 8 (feature) + 1 (merge)
+- Files changed: 19 (created: 3, modified: 16)
+- LOC: +686 / -33
+- Duration: 2026-05-19 → 2026-05-20 (~1 day)
+
+**Known deferred items at close:** 7 (see STATE.md Deferred Items)
+
+---
+
 ## v1.5 Google Auth & Account Linking (Shipped: 2026-05-18)
 
 **Phases completed:** 8 phases, 24 plans, 17 tasks

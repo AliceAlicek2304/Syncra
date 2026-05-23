@@ -8,6 +8,7 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 **Active:** Planning v2.0
 
 **Shipped:**
+- <details><summary>v1.6 Logging & Observability (2026-05-20)</summary>Production Serilog pipeline with rolling JSON file logging, sensitive data destructuring, request body redaction middleware, UserId enrichment, and structured log properties (Environment, MachineName, Application).</details>
 - <details><summary>v1.5 Google Auth & Account Linking (2026-05-18)</summary>Google OAuth login/signup, account linking with collision detection, PostgreSQL+Redis token storage with auto-refresh, WCAG 2.2 AA accessible LoginModal, forgot/reset password flow with Postmark emails, change password in Settings with SecurityStamp session invalidation, email verification after registration with auto-login.</details>
 - <details><summary>v1.4 Code Quality & Tech Debt (2026-05-14)</summary>Dashboard code quality fixes, component extraction, ESLint zero-warnings policy, test coverage for critical flows.</details>
 - <details><summary>v1.3 Performance & Analytics Optimization (2026-05-13)</summary>Database indexes for analytics, query projections (no Media Include), Redis-backed cache-aside pattern with 60-min TTL, cache invalidation on publish, CSV analytics export with presets (7d/30d/90d/YTD) + custom dates, concurrency fix for EF Core in export pipeline.</details>
@@ -59,6 +60,7 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 ### Active
 - [ ] Webhook reliability & idempotency (Phase 06 — researched, not yet planned)
 - [ ] Billing UX documentation (Phase 07 — pending)
+- [ ] v2.0 planning (next milestone)
 
 ### Out of Scope
 - Google Calendar integration — user removed from v1.5 scope
@@ -98,6 +100,11 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 | ESLint Zero-Warnings Policy | Good | All source files pass lint with zero errors |
 | Component Extraction Pattern | Good | Pages >500 lines extracted into co-located sub-components |
 | Sub-Hook Pattern | Good | Complex hooks >250 lines decomposed into focused hooks |
+| Serilog.Sinks.File v7.0.0 | Good | Required by Serilog.AspNetCore 10.0.0 transitive dependency |
+| UserIdEnricher fallback chain | Good | ClaimTypes.NameIdentifier → sub for OIDC compatibility |
+| IDestructuringPolicy collection | Good | Generic DestructuringPolicy<T> for type-safe extensibility |
+| 1MB body size limit | Good | Prevents memory pressure on file uploads in RequestBodyRedactionMiddleware |
+| Async-wrapped file sink | Good | Avoids request latency from disk I/O |
 
 ## Constraints
 - Multi-tenant architecture (Workspace-scoped data)
@@ -105,6 +112,7 @@ Syncra.NET is a social media scheduling and management platform backend built wi
 - Stripe webhooks must be idempotent
 - Frontend must maintain high performance and "Pro Max" UI/UX standards
 - JWT-based auth with stateless tokens (SecurityStamp for server-side revocation)
+- Sensitive data (passwords, tokens, secrets) must never appear in log output
 
 ## Evolution
 
@@ -124,4 +132,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v1.5 milestone complete*
+*Last updated: 2026-05-23 after v1.6 milestone complete*
