@@ -93,3 +93,14 @@ public sealed record ZernioPlatformPostMetricsDto(
     PostAnalyticsFields? Analytics,
     string? PlatformPostUrl,
     string? ErrorMessage);
+
+// ── Best-time DTOs ──────────────────────────────────────────
+
+public sealed record ZernioBestTimeDto(
+    IReadOnlyList<ZernioBestTimeSlotDto> Slots);
+
+public sealed record ZernioBestTimeSlotDto(
+    int DayOfWeek,    // 0=Monday, 6=Sunday (UTC)
+    int Hour,         // 0-23 (UTC)
+    double AvgEngagement,
+    int PostCount);

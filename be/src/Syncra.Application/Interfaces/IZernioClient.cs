@@ -62,4 +62,9 @@ public interface IZernioClient
     Task<ZernioPostAnalyticsDto> GetPostAnalyticsAsync(
         string zernioPostId,
         CancellationToken cancellationToken = default);
+
+    Task<ZernioBestTimeDto> GetBestTimeAsync(
+        string profileId,
+        string? platform = null,
+        CancellationToken cancellationToken = default);
 }

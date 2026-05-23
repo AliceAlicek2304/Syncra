@@ -346,6 +346,46 @@ public sealed class ZernioClient : IZernioClient
 
     // ── Analytics methods ────────────────────────────────────────────────────
 
+    public async Task<ZernioBestTimeDto> GetBestTimeAsync(
+        string profileId,
+        string? platform = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _analyticsApi.GetBestTimeToPostAsync(
+                platform: platform,
+                profileId: profileId,
+                accountId: null,
+                source: null,
+                cancellationToken);
+
+            var slots = (response.Slots ?? [])
+                .Select(s => new ZernioBestTimeSlotDto(
+                    s.DayOfWeek,
+                    s.Hour,
+                    (double)s.AvgEngagement,
+                    s.PostCount))
+                .ToList();
+
+            return new ZernioBestTimeDto(slots);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio analytics billing gate for best-time, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access best-time analytics.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching best-time for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_best_time_error", "Failed to fetch best-time analytics from Zernio", ex);
+        }
+    }
+
     public async Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
         string profileId,
         DateTime? fromDate,

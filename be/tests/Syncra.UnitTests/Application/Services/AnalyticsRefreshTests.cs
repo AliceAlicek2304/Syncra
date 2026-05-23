@@ -30,12 +30,11 @@ public class AnalyticsRefreshTests
             $"zernio:analytics:summary:{workspaceId}:30",
             $"zernio:analytics:summary:{workspaceId}:90"
         };
-        var expectedZernioHeatmapKeys = new[]
-        {
-            $"zernio:analytics:heatmap:{workspaceId}:7",
-            $"zernio:analytics:heatmap:{workspaceId}:30",
-            $"zernio:analytics:heatmap:{workspaceId}:90"
-        };
+
+        // Known platform slugs for heatmap key deletion
+        var knownPlatforms = new[] { "all", "facebook", "instagram", "tiktok", "twitter",
+            "linkedin", "youtube", "pinterest", "snapchat", "googlebusiness" };
+
         var expectedLegacySummaryKeys = new[]
         {
             $"analytics:summary:{workspaceId}:7",
@@ -64,9 +63,15 @@ public class AnalyticsRefreshTests
         foreach (var key in expectedZernioSummaryKeys)
             _cache.Verify(c => c.RemoveAsync(key, default), Times.Once);
 
-        // Verify all Zernio heatmap keys deleted (prep for plan 02)
-        foreach (var key in expectedZernioHeatmapKeys)
-            _cache.Verify(c => c.RemoveAsync(key, default), Times.Once);
+        // Verify all platform-specific heatmap keys deleted
+        foreach (var days in new[] { 7, 30, 90 })
+        {
+            foreach (var platform in knownPlatforms)
+            {
+                var key = $"zernio:analytics:heatmap:{workspaceId}:{days}:{platform}";
+                _cache.Verify(c => c.RemoveAsync(key, default), Times.Once);
+            }
+        }
 
         // Verify all legacy summary keys deleted
         foreach (var key in expectedLegacySummaryKeys)
@@ -76,7 +81,7 @@ public class AnalyticsRefreshTests
         foreach (var key in expectedLegacyHeatmapKeys)
             _cache.Verify(c => c.RemoveAsync(key, default), Times.Once);
 
-        // Verify total count (12 keys: 4 types × 3 presets)
-        _cache.Verify(c => c.RemoveAsync(It.IsAny<string>(), default), Times.Exactly(12));
+        // Verify total count (39 keys: 3 summary + 30 heatmap + 3 legacy summary + 3 legacy heatmap)
+        _cache.Verify(c => c.RemoveAsync(It.IsAny<string>(), default), Times.Exactly(39));
     }
 }

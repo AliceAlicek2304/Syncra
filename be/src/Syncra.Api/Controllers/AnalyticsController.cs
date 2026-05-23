@@ -76,10 +76,11 @@ public class AnalyticsController : ControllerBase
     public async Task<IActionResult> GetWorkspaceHeatmap(
         Guid workspaceId,
         [FromQuery] int date = 90,
+        [FromQuery] string? platform = null,
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(
-            new GetWorkspaceHeatmapQuery(workspaceId, date),
+            new GetWorkspaceHeatmapQuery(workspaceId, date, platform),
             cancellationToken);
         return result.ToActionResult();
     }

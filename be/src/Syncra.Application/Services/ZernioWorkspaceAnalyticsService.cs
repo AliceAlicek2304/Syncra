@@ -137,6 +137,57 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
         return Result.Success(dto);
     }
 
+    public async Task<Result<HeatmapDto>> GetHeatmapAsync(
+        Guid workspaceId,
+        int date = 90,
+        string? platform = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate preset
+        if (!ValidPresets.Contains(date))
+            date = 90;
+
+        // Cache-aside: check cache first (D-03)
+        var platformSuffix = string.IsNullOrEmpty(platform) ? "all" : platform;
+        var cacheKey = $"zernio:analytics:heatmap:{workspaceId}:{date}:{platformSuffix}";
+        var cached = await _cache.GetAsync<HeatmapDto>(cacheKey, cancellationToken);
+        if (cached != null)
+        {
+            _logger.LogInformation(
+                "Cache hit for Zernio heatmap: {WorkspaceId}, days={Date}, platform={Platform}",
+                workspaceId, date, platformSuffix);
+            return Result.Success(cached);
+        }
+
+        // Resolve Zernio profile — if absent, return empty heatmap
+        var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId);
+        if (profile is null || !profile.IsActive)
+        {
+            _logger.LogInformation("No active Zernio profile for workspace {WorkspaceId}", workspaceId);
+            return Result.Success(new HeatmapDto(Array.Empty<HeatmapSlotDto>()));
+        }
+
+        // Fetch best-time slots from Zernio (UTC, no timezone shift - D-01/D-02)
+        var bestTime = await _zernioClient.GetBestTimeAsync(
+            profile.ZernioProfileId, platform, cancellationToken);
+
+        // Map Zernio slots to HeatmapSlotDto — preserve UTC DayOfWeek and Hour (D-01)
+        // Score = avg_engagement rounded to int using AwayFromZero (documented in plan)
+        var slots = bestTime.Slots
+            .Select(s => new HeatmapSlotDto(
+                DayOfWeek: s.DayOfWeek,
+                Hour: s.Hour,
+                Score: (int)Math.Round(s.AvgEngagement, MidpointRounding.AwayFromZero)))
+            .ToList();
+
+        var result = new HeatmapDto(slots);
+
+        // Cache with 60-minute TTL (D-03)
+        await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(60), cancellationToken);
+
+        return Result.Success(result);
+    }
+
     // ── Private helpers ─────────────────────────────────────────
 
     private static WorkspaceAnalyticsSummaryDto EmptySummary()

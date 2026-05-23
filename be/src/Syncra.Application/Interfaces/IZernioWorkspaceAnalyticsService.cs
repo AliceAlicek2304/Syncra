@@ -14,4 +14,10 @@ public interface IZernioWorkspaceAnalyticsService
         Guid workspaceId,
         Guid postId,
         CancellationToken cancellationToken = default);
+
+    Task<Result<HeatmapDto>> GetHeatmapAsync(
+        Guid workspaceId,
+        int date = 90,
+        string? platform = null,
+        CancellationToken cancellationToken = default);
 }
