@@ -59,4 +59,12 @@ public sealed class SocialAccount : WorkspaceEntityBase
         IsActive = false;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    public void Reactivate()
+    {
+        if (IsActive) return;
+
+        IsActive = true;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }
