@@ -137,4 +137,56 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
                 c => c.Id == commentId && c.WorkspaceId == workspaceId,
                 cancellationToken);
     }
+
+    // ── Reviews ────────────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<InboxReview>> GetReviewsAsync(
+        Guid workspaceId,
+        int limit = 50,
+        DateTime? before = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.InboxReviews
+            .Where(r => r.WorkspaceId == workspaceId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(platform))
+            query = query.Where(r => r.Platform == platform.ToLowerInvariant());
+
+        if (!string.IsNullOrEmpty(accountId))
+            query = query.Where(r => r.ZernioAccountId == accountId);
+
+        if (before.HasValue)
+            query = query.Where(r => r.ReceivedAtUtc < before.Value);
+
+        return await query
+            .OrderByDescending(r => r.ReceivedAtUtc)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<InboxReview?> GetReviewByIdAsync(
+        Guid workspaceId,
+        Guid reviewId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxReviews
+            .FirstOrDefaultAsync(
+                r => r.Id == reviewId && r.WorkspaceId == workspaceId,
+                cancellationToken);
+    }
+
+    public async Task<InboxReview?> GetReviewByZernioIdAsync(
+        Guid workspaceId,
+        string zernioReviewId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxReviews
+            .FirstOrDefaultAsync(
+                r => r.WorkspaceId == workspaceId
+                  && r.ZernioReviewId == zernioReviewId,
+                cancellationToken);
+    }
 }

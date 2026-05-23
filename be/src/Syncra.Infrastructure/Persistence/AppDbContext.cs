@@ -43,6 +43,7 @@ public class AppDbContext : DbContext
     public DbSet<InboxConversation> InboxConversations => Set<InboxConversation>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
     public DbSet<InboxComment> InboxComments => Set<InboxComment>();
+    public DbSet<InboxReview> InboxReviews => Set<InboxReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -48,4 +48,24 @@ public interface IInboxRepository
         Guid workspaceId,
         Guid commentId,
         CancellationToken cancellationToken = default);
+
+    // ── Reviews ─────────────────────────────────────────────────────────────
+
+    Task<IReadOnlyList<InboxReview>> GetReviewsAsync(
+        Guid workspaceId,
+        int limit = 50,
+        DateTime? before = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxReview?> GetReviewByIdAsync(
+        Guid workspaceId,
+        Guid reviewId,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxReview?> GetReviewByZernioIdAsync(
+        Guid workspaceId,
+        string zernioReviewId,
+        CancellationToken cancellationToken = default);
 }
