@@ -11,3 +11,14 @@ public sealed record ZernioAccountDto(
 public sealed record ZernioProfileDto(
     string Id,
     string Name);
+
+public sealed record ZernioSelectOptionDto(
+    string Id,
+    string Name,
+    string? AvatarUrl = null);
+
+public sealed record ZernioSelectResultDto(
+    string AccountId,
+    string Platform,
+    string DisplayName,
+    string? ProfilePicture);

@@ -8,6 +8,7 @@ public interface IZernioClient
         string profileId,
         string platform,
         string redirectUrl,
+        bool? headless = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
@@ -22,5 +23,19 @@ public interface IZernioClient
     Task<ZernioProfileDto> ProvisionProfileAsync(
         string workspaceId,
         string name,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ZernioSelectOptionDto>> ListSelectOptionsAsync(
+        string profileId,
+        string platform,
+        string tempToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioSelectResultDto> SelectOptionAsync(
+        string profileId,
+        string platform,
+        string tempToken,
+        string selectedId,
+        string? selectedName,
         CancellationToken cancellationToken = default);
 }

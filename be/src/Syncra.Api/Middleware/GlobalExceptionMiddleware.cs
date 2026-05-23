@@ -31,7 +31,7 @@ public class GlobalExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        if (exception is not DomainException and not FluentValidation.ValidationException and not KeyNotFoundException)
+        if (exception is not DomainException and not FluentValidation.ValidationException and not KeyNotFoundException and not ZernioBillingRequiredException)
         {
             logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
             SentrySdk.CaptureException(exception);
@@ -105,6 +105,19 @@ public class GlobalExceptionMiddleware
                 {
                     code = "provider_error",
                     message = stripeEx.StripeError?.Message ?? stripeEx.Message
+                });
+                break;
+
+            case ZernioBillingRequiredException billingEx:
+                logger.LogWarning("Billing gate triggered. Reason: {Reason}, Dashboard: {Url}", billingEx.Reason, billingEx.DashboardUrl);
+                context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "PAYMENT_REQUIRED",
+                    message = billingEx.Message,
+                    reason = billingEx.Reason,
+                    dashboardUrl = billingEx.DashboardUrl,
+                    details = billingEx.Details
                 });
                 break;
 
