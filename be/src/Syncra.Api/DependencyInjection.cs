@@ -62,6 +62,7 @@ public static class DependencyInjection
 
         // Filters
         services.AddScoped<Filters.IdempotencyFilter>();
+        services.AddScoped<Filters.ZernioWebhookSignatureFilter>();
         services.AddScoped<Controllers.PaymentWebhookOrchestrator>();
         services.AddScoped<Syncra.Application.Interfaces.INotificationDispatcher, Syncra.Api.Services.NotificationDispatcher>();
 
