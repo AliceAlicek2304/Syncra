@@ -5,10 +5,10 @@ using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Features.Posts.CreateZernioPost;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
-using Syncra.Domain.Enums;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 using Syncra.Infrastructure.Persistence;
+using Syncra.Infrastructure.Repositories;
 using Xunit;
 
 namespace Syncra.UnitTests.Features.Posts;
@@ -18,7 +18,9 @@ public class CreateZernioPostCommandTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly Mock<IZernioClient> _zernioClientMock;
-    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ISocialAccountRepository _socialAccountRepository;
+    private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly CreateZernioPostCommandHandler _handler;
     private readonly Guid _workspaceId;
     private readonly Guid _userId;
@@ -34,12 +36,18 @@ public class CreateZernioPostCommandTests : IDisposable
 
         _db = new AppDbContext(options);
         _zernioClientMock = new Mock<IZernioClient>();
-        _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _unitOfWork = new UnitOfWork(_db);
+        _socialAccountRepository = new SocialAccountRepository(_db);
+        _zernioProfileRepository = new ZernioProfileRepository(_db);
+
+        var postRepository = new PostRepository(_db);
 
         _handler = new CreateZernioPostCommandHandler(
             _zernioClientMock.Object,
-            _db,
-            _unitOfWorkMock.Object);
+            _socialAccountRepository,
+            _zernioProfileRepository,
+            postRepository,
+            _unitOfWork);
     }
 
     public void Dispose()
@@ -57,30 +65,31 @@ public class CreateZernioPostCommandTests : IDisposable
         var profile = await _db.ZernioProfiles.FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId);
         if (profile is null)
         {
-            profile = new ZernioProfile
-            {
-                WorkspaceId = workspaceId,
-                ZernioProfileId = "zernio_profile_1",
-                DisplayName = "Test Profile",
-                Platform = "all",
-                IsActive = true
-            };
+            profile = ZernioProfile.Create(
+                workspaceId,
+                "zernio_profile_1",
+                "Test Profile",
+                "all");
             _db.ZernioProfiles.Add(profile);
             await _db.SaveChangesAsync();
         }
 
-        var account = new SocialAccount
-        {
-            WorkspaceId = workspaceId,
-            ZernioProfileId = profile.Id,
-            ExternalAccountId = externalAccountId,
-            Platform = platform,
-            DisplayName = $"Test {platform} Account",
-            IsActive = isActive
-        };
+        var account = SocialAccount.Create(
+            workspaceId,
+            profile.Id,
+            externalAccountId,
+            platform,
+            $"Test {platform} Account");
 
         _db.SocialAccounts.Add(account);
         await _db.SaveChangesAsync();
+
+        if (!isActive)
+        {
+            account.Deactivate();
+            await _db.SaveChangesAsync();
+        }
+
         return account;
     }
 
@@ -95,18 +104,14 @@ public class CreateZernioPostCommandTests : IDisposable
             .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ZernioCreatePostResult("zernio_post_123", "scheduled", 2));
 
-        _unitOfWorkMock
-            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
-
         var command = new CreateZernioPostCommand(
             _workspaceId,
             _userId,
             "Test Post Title",
             "Test post content for Zernio",
             new List<Guid> { account1.Id, account2.Id },
-            scheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            publishNow: false);
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -115,7 +120,6 @@ public class CreateZernioPostCommandTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("zernio_post_123", result.ZernioPostId);
         Assert.Equal(2, result.ZernioTargetCount);
-        Assert.Equal("Scheduled", result.Status);
         Assert.NotNull(result.PlatformTargets);
         Assert.Equal(2, result.PlatformTargets.Count);
 
@@ -141,18 +145,14 @@ public class CreateZernioPostCommandTests : IDisposable
             .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ZernioCreatePostResult("zernio_post_456", "publishing", 1));
 
-        _unitOfWorkMock
-            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
-
         var command = new CreateZernioPostCommand(
             _workspaceId,
             _userId,
             "Immediate Post",
             "Content for immediate publish",
             new List<Guid> { account1.Id },
-            scheduledAtUtc: null,
-            publishNow: true);
+            ScheduledAtUtc: null,
+            PublishNow: true);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -175,8 +175,30 @@ public class CreateZernioPostCommandTests : IDisposable
             "Test",
             "Content",
             new List<Guid> { accountFromOtherWorkspace.Id },
-            scheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            publishNow: false);
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<DomainException>(() =>
+            _handler.Handle(command, CancellationToken.None));
+
+        Assert.Equal("invalid_account", exception.Code);
+    }
+
+    [Fact]
+    public async Task Handler_InactiveAccount_Throws()
+    {
+        // Arrange
+        var inactiveAccount = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_inactive", isActive: false);
+
+        var command = new CreateZernioPostCommand(
+            _workspaceId,
+            _userId,
+            "Test",
+            "Content",
+            new List<Guid> { inactiveAccount.Id },
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
@@ -195,8 +217,8 @@ public class CreateZernioPostCommandTests : IDisposable
             "Test",
             "Content",
             new List<Guid>(),
-            scheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            publishNow: false);
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>

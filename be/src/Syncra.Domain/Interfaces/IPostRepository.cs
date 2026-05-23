@@ -36,4 +36,10 @@ public interface IPostRepository
         DateTime startUtc,
         DateTime endUtc,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a post by ID with Media, Integration, and PlatformTargets eagerly loaded.
+    /// Use for read-by-id queries that need platform target details.
+    /// </summary>
+    Task<Post?> GetByIdWithPlatformTargetsAsync(Guid id);
 }

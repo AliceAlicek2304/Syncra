@@ -16,5 +16,14 @@ public static class PostMapper
             post.ScheduledAt.UtcValue,
             post.PublishedAtUtc,
             post.IntegrationId,
-            post.Media.Select(m => m.Id).ToList());
+            post.Media.Select(m => m.Id).ToList(),
+            post.ZernioPostId,
+            post.ZernioTargetCount,
+            post.PlatformTargets?.Select(t => new PostPlatformTargetDto(
+                t.Id,
+                t.Platform,
+                t.Status.ToString(),
+                t.ExternalPostUrl,
+                t.ErrorMessage,
+                t.ZernioAccountId)).ToList() ?? new List<PostPlatformTargetDto>());
 }

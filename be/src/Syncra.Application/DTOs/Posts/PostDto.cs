@@ -10,6 +10,17 @@ public record PostDto(
     DateTime? ScheduledAtUtc,
     DateTime? PublishedAtUtc,
     Guid? IntegrationId,
-    IReadOnlyCollection<Guid> MediaIds
+    IReadOnlyCollection<Guid> MediaIds,
+    string? ZernioPostId,
+    int ZernioTargetCount,
+    IReadOnlyList<PostPlatformTargetDto> PlatformTargets
 );
 
+public record PostPlatformTargetDto(
+    Guid Id,
+    string Platform,
+    string Status,
+    string? ExternalPostUrl,
+    string? ErrorMessage,
+    string? ZernioAccountId
+);

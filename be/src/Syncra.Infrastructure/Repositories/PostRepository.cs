@@ -24,6 +24,7 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         return await _dbSet
             .Include(p => p.Media)
+            .Include(p => p.PlatformTargets)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -75,6 +76,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         var query = _dbSet
             .Where(p => p.WorkspaceId == workspaceId)
             .Include(p => p.Media)
+            .Include(p => p.PlatformTargets)
             .AsQueryable();
 
         // Apply filters at database level
@@ -103,6 +105,15 @@ public class PostRepository : Repository<Post>, IPostRepository
             .ToListAsync(cancellationToken);
 
         return (result, totalCount);
+    }
+
+    public async Task<Post?> GetByIdWithPlatformTargetsAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(p => p.Media)
+            .Include(p => p.Integration)
+            .Include(p => p.PlatformTargets)
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<IEnumerable<Syncra.Domain.Models.Analytics.AnalyticsPostData>> GetAnalyticsDataAsync(

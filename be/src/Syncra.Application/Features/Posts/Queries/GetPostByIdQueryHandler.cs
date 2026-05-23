@@ -1,7 +1,6 @@
 using MediatR;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Domain.Interfaces;
-using Syncra.Domain.Entities;
 
 namespace Syncra.Application.Features.Posts.Queries;
 
@@ -16,7 +15,7 @@ public sealed class GetPostByIdQueryHandler : IRequestHandler<GetPostByIdQuery, 
 
     public async Task<PostDto?> Handle(GetPostByIdQuery request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.PostId);
+        var post = await _postRepository.GetByIdWithPlatformTargetsAsync(request.PostId);
         if (post is null || post.WorkspaceId != request.WorkspaceId)
         {
             return null;
