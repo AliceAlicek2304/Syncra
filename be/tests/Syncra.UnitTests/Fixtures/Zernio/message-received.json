@@ -1,0 +1,23 @@
+﻿{
+  "account": {
+    "id": "zernio-account-123",
+    "platform": "instagram",
+    "displayName": "My Instagram"
+  },
+  "conversation": {
+    "id": "zernio-conv-456",
+    "status": "active"
+  },
+  "message": {
+    "id": "zernio-msg-789",
+    "text": "Hey! How's it going?",
+    "sender": {
+      "id": "sender-user-001",
+      "name": "John Doe",
+      "username": "johndoe",
+      "picture": "https://example.com/avatar.jpg"
+    },
+    "sentAt": "2026-05-23T10:30:00Z",
+    "direction": "incoming"
+  }
+}
