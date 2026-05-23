@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Zernio API Integration
-status: executing
-last_updated: "2026-05-23T07:30:00.000Z"
+status: planning
+last_updated: "2026-05-23T10:30:00.000Z"
 last_activity: 2026-05-23
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 7
   completed_plans: 7
-  percent: 0
+  percent: 20
 ---
 
 # Project State: Syncra.NET
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Phase 25 — account-connect
+**Current focus:** Phase 26 — post-scheduling
 
 ## Current Position
 
 Phase: 25 (account-connect) — COMPLETE
 Plan: 4 of 4
-Status: Phase complete
+Status: Verified and complete. Ready for Phase 26.
 Last activity: 2026-05-23
 
-Progress: [██████████] 100%
+Progress: [██░░░░░░░░] 20%
 
 ## Accumulated Context
 
@@ -62,6 +62,13 @@ Progress: [██████████] 100%
 - `IZernioClient` in Application layer; Zernio NuGet confined to Infrastructure (mirrors `IPaymentProvider`)
 - Webhook body: raw read via `Request.Body` — NOT `[FromBody]` (same pattern as `StripeWebhookController`)
 - Old social provider layer stays in parallel (not deleted in v2.0); dual-path routing via `Post.ZernioPostId`
+
+## Phase 25 — Complete
+
+All 4 plans executed and verified. 3 post-execution gaps found and fixed:
+1. `SelectPage` reactivation bug (`Deactivate` → `Reactivate`)
+2. `/pages` response wrapper shape (`response.data` → `response.data.options`)
+3. `/select-page` DTO field (`pageId` → `selectedId`)
 
 ## Known Blockers
 
