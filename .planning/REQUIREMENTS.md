@@ -21,10 +21,10 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 
 ### Account Connect (CONN)
 
-- [ ] **CONN-01**: User can initiate OAuth connection for any Zernio-supported social platform (14 platforms)
-- [ ] **CONN-02**: User can view all connected social accounts per workspace
-- [ ] **CONN-03**: User can disconnect a social account from workspace
-- [ ] **CONN-04**: System handles Zernio billing gates (`twitter_passthrough`, `free_tier_exceeded`) with user-facing error message and redirect URL
+- [x] **CONN-01**: User can initiate OAuth connection for any Zernio-supported social platform (14 platforms)
+- [x] **CONN-02**: User can view all connected social accounts per workspace
+- [x] **CONN-03**: User can disconnect a social account from workspace
+- [x] **CONN-04**: System handles Zernio billing gates (`twitter_passthrough`, `free_tier_exceeded`) with user-facing error message and redirect URL
 - [ ] **CONN-05**: System syncs account status via `account.connected` / `account.disconnected` webhook events
 
 ### Post Scheduling (POST)
@@ -43,9 +43,9 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 
 ### Webhooks (HOOK)
 
-- [ ] **HOOK-01**: System verifies Zernio webhook HMAC-SHA256 signatures via `X-Zernio-Signature` header
+- [x] **HOOK-01**: System verifies Zernio webhook HMAC-SHA256 signatures via `X-Zernio-Signature` header
 - [ ] **HOOK-02**: System processes post lifecycle events: `post.scheduled`, `post.published`, `post.failed`, `post.partial`, `post.cancelled`
-- [ ] **HOOK-03**: System deduplicates webhook deliveries using `X-Zernio-Event-Id` header (idempotency table)
+- [x] **HOOK-03**: System deduplicates webhook deliveries using `X-Zernio-Event-Id` header (idempotency table)
 - [ ] **HOOK-04**: System handles per-platform events `post.platform.published` and `post.platform.failed` to update individual `PostPlatformTarget` records
 
 ### Inbox (INBX)
@@ -86,10 +86,10 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 | ZRNIO-02 | 24 | Pending |
 | ZRNIO-03 | 24 | Pending |
 | ZRNIO-04 | 24 | Pending |
-| CONN-01 | 25 | Pending |
-| CONN-02 | 25 | Pending |
-| CONN-03 | 25 | Pending |
-| CONN-04 | 25 | Pending |
+| CONN-01 | 25 | Complete |
+| CONN-02 | 25 | Complete |
+| CONN-03 | 25 | Complete |
+| CONN-04 | 25 | Complete |
 | CONN-05 | 25 | Pending |
 | POST-01 | 26 | Pending |
 | POST-02 | 26 | Pending |
@@ -99,9 +99,9 @@ Replace individual platform API integrations with Zernio's unified API — enabl
 | ANLYT-01 | 27 | Pending |
 | ANLYT-02 | 27 | Pending |
 | ANLYT-03 | 27 | Pending |
-| HOOK-01 | 25 | Pending |
+| HOOK-01 | 25 | Complete |
 | HOOK-02 | 26 | Pending |
-| HOOK-03 | 25 | Pending |
+| HOOK-03 | 25 | Complete |
 | HOOK-04 | 26 | Pending |
 | INBX-01 | 28 | Pending |
 | INBX-02 | 28 | Pending |
