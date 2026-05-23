@@ -1,78 +1,35 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Logging & Observability
-current_phase: 23 (complete)
-status: completed
-last_updated: "2026-05-23T02:19:51.363Z"
-last_activity: 2026-05-23 — Milestone v1.6 completed and archived
+milestone: v2.0
+milestone_name: Zernio API Integration
+status: planning
+last_updated: "2026-05-23T00:00:00.000Z"
+last_activity: 2026-05-23
 progress:
-  total_phases: 22
-  completed_phases: 20
-  total_plans: 77
-  completed_plans: 84
-  percent: 91
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: Syncra.NET
 
-## Metadata
-
-- **Current Phase:** 23 (complete)
-- **Status:** v1.6 milestone complete
-- **Last Updated:** 2026-05-23 (Phase 23 completed)
-
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-16 after v1.5 milestone start)
+See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Planning next milestone (v2.0)
+**Current focus:** v2.0 Zernio API Integration — Phase 24 next
 
 ## Current Position
 
-Phase: Milestone v1.6 complete
+Phase: 24 of 28 (Zernio Foundation)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-23 — Milestone v1.6 completed and archived
+Status: Ready to plan
+Last activity: 2026-05-23 — v2.0 roadmap created (Phases 24-28 defined)
 
-## Phase 15 Summary
-
-**Goal:** Multi-provider auth foundation with Google OAuth login/signup
-
-**Backend (Wave 1-2):**
-
-- IOAuthProvider interface (ProviderName, GetLoginUrl, HandleCallbackAsync)
-- ExternalLogin entity + IExternalLoginRepository + ExternalLoginRepository
-- GoogleOAuthOptions (ClientId, ClientSecret, CallbackUrl, Scopes)
-- GoogleAuthProvider with full OAuth flow (state generation, code exchange, user info)
-- OAuthLoginCommand + OAuthLoginCommandHandler (new user creation, workspace, token generation)
-- AuthController endpoints: GET /oauth/{provider}/login, POST /oauth/{provider}/callback
-
-**Frontend (Wave 3):**
-
-- Google sign-in button in LoginModal with OAuth URL redirect
-- OAuthCallbackPage for handling Google callback and token storage
-- Auth API methods: getOAuthLoginUrl, oauthCallback
-
-**Commits:**
-
-- feat(auth): IOAuthProvider interface + ExternalLogin entity (Wave 1)
-- feat(auth): GoogleAuthProvider implementation (Wave 2)
-- feat(auth): OAuth endpoints + command handler with ExternalLogin repository
-- feat(frontend): Google OAuth button and callback page
-
-## Milestone History
-
-| Milestone | Phases | Plans | Status | Date |
-|-----------|--------|-------|--------|------|
-| v1.0 Stability | 1-3 | 12 | Shipped | 2026-04-27 |
-| v1.1 Reliable Payments & Provider Abstraction | 4-7 | 13 | Shipped | 2026-05-01 |
-| v1.2 Update the FE | 8-11 | 22 | Shipped | 2026-05-08 |
-| v1.3 Performance & Analytics Optimization | 12-13 | 9 | Shipped | 2026-05-13 |
-| v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
-| v1.5 Google Auth & Calendar Integration | 15-19 | 13 | Milestone Complete | 2026-05-17 |
-| v1.6 Logging & Observability | 23 | 3 | Milestone Complete | 2026-05-20 |
+Progress: [░░░░░░░░░░] 0%
 
 ## Accumulated Context
 
@@ -87,47 +44,24 @@ Last activity: 2026-05-23 — Milestone v1.6 completed and archived
 - Phase 23 added: Configure Logging (Serilog) - clean up noisy development logs
 - Phase 23 completed: Production Serilog pipeline with sensitive data redaction
 - v1.6 Logging & Observability milestone shipped 2026-05-23
+- Phases 24-28 defined: v2.0 Zernio API Integration roadmap created
 
-### v1.5 Roadmap Summary
+### v2.0 Roadmap Summary
 
 | Phase | Goal | Requirements |
 |-------|------|--------------|
-| 15 | Multi-Provider Auth + Google OAuth login/signup | AUTH-01, AUTH-02, AUTH-03, AUTH-04 |
-| 16 | Account Linking (email collision, password verify, unlink) | LINK-01, LINK-02, LINK-03, LINK-04 |
-| 17 | Token Storage + Auto-Refresh + Revocation | TOKEN-01, TOKEN-02, TOKEN-03 |
+| 24 | Zernio Foundation (SDK, DI, DB entities, log redaction) | ZRNIO-01..04 |
+| 25 | Account Connect (OAuth, webhook infra, HMAC, idempotency) | CONN-01..05, HOOK-01, HOOK-03 |
+| 26 | Post Scheduling (create, schedule, lifecycle webhooks, retry, delete) | POST-01..05, HOOK-02, HOOK-04 |
+| 27 | Analytics (post metrics, daily stats, best-time) | ANLYT-01..03 |
+| 28 | Inbox (DMs, comments, reviews — unified across accounts) | INBX-01..05 |
 
-### Key Architectural Decisions (v1.5)
+### Key Architectural Constraints (v2.0)
 
-- **No ASP.NET Core Identity** — integrate Google OAuth with existing custom JWT auth pipeline
-- **Cookie-based OAuth → JWT exchange** — Google.Apis.Auth.AspNetCore3 with OnTicketReceived event
-- **IAuthProvider interface** — multi-provider abstraction for future providers
-- **ExternalLogin table** — new identity mapping (Google sub → UserId)
-- **Token storage** — PostgreSQL (durable) + Redis (fast retrieval), encrypted with IDataProtector
-- **Calendar deferred** — user explicitly removed from v1.5 scope
-
-## Key Decisions (v1.5)
-
-- **SecurityStamp for JWT Revocation (D-23)**: Added GUID SecurityStamp to User entity, embedded in JWTs, validated on each request via OnTokenValidated handler. Password change regenerates stamp, invalidating all existing tokens.
-- **Email Verification Auto-Login**: Successful email verification token redirects user directly to dashboard with valid JWT session.
-- **OAuth Users Skip Verification**: Google/OAuth users are auto-verified at signup, no email verification needed.
-- **Postmark for Transactional Emails**: Password reset, email verification, and password change confirmation all sent via Postmark.
-
-## Key Decisions (v1.4)
-
-- **ESLint Zero-Warnings Policy (D-19)**: All source files must pass `npm run lint` with zero errors; eslint-disable suppressions removed from all files.
-- **Component Extraction Pattern (D-20)**: Pages exceeding 500 lines extracted into co-located sub-components with CSS modules; original page becomes an orchestrator under 250 lines.
-- **Sub-Hook Pattern (D-21)**: Complex hooks (>250 lines) decomposed into smaller focused hooks (media, AI) composed in the parent hook.
-- **Test Critical Flows (D-22)**: Extracted components, custom hooks, dashboard states, and upload pipeline all covered by vitest tests (62 new tests).
-
-## Key Decisions (v1.3)
-
-- **Composite DB Indexes (D-12)**: Accelerated analytics queries on Posts and AuditLogs.
-- **Query Projections (D-13)**: `.Select()` + `.AsNoTracking()` instead of `Include(Media)`.
-- **Redis Cache-Aside Pattern (D-14)**: Cached analytics return in < 50ms, 60-min TTL.
-- **Cache Invalidation on Publish (D-15)**: Ensures analytics reflect latest data.
-- **CSV Export Only (D-16)**: PDF deferred — CSV simpler and bandwidth-efficient.
-- **Presets + Custom Date Range (D-17)**: 7d/30d/90d/YTD buttons plus calendar picker.
-- **Sequential DbContext Access (D-18)**: Fixed EF Core concurrency crash in export pipeline.
+- `SocialAccount`, `PostPlatformTarget`, `ZernioWebhookEvent` entities + `PostStatus.Partial` MUST land in Phase 24
+- `IZernioClient` in Application layer; Zernio NuGet confined to Infrastructure (mirrors `IPaymentProvider`)
+- Webhook body: raw read via `Request.Body` — NOT `[FromBody]` (same pattern as `StripeWebhookController`)
+- Old social provider layer stays in parallel (not deleted in v2.0); dual-path routing via `Post.ZernioPostId`
 
 ## Known Blockers
 
@@ -140,16 +74,20 @@ Items acknowledged and deferred at milestone close on 2026-05-23:
 | Category | Item | Status |
 |----------|------|--------|
 | uat_gaps | Phase 01 (01-UAT.md) | unknown |
-| uat_gaps | Phase 04 (04-UAT.md) | resolved |
-| uat_gaps | Phase 05 (05-UAT.md) | completed |
-| uat_gaps | Phase 08 (08-UAT.md) | passed |
-| uat_gaps | Phase 15 (15-UAT.md) | passed |
-| uat_gaps | Phase 21 (21-UAT.md) | passed |
 | quick_task | 260501-nzv-configure-gsd-to-respect-gitignore-and-a | missing |
 
 - Google Calendar integration (user removed from v1.5 scope)
 - Additional auth providers (GitHub, Microsoft) — deferred to v2
 
-## Operator Next Steps
+## Milestone History
 
-- Start the next milestone with /gsd-new-milestone
+| Milestone | Phases | Plans | Status | Date |
+|-----------|--------|-------|--------|------|
+| v1.0 Stability | 1-3 | 12 | Shipped | 2026-04-27 |
+| v1.1 Reliable Payments & Provider Abstraction | 4-7 | 13 | Shipped | 2026-05-01 |
+| v1.2 Update the FE | 8-11 | 22 | Shipped | 2026-05-08 |
+| v1.3 Performance & Analytics Optimization | 12-13 | 9 | Shipped | 2026-05-13 |
+| v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
+| v1.5 Google Auth & Account Linking | 15-22 | 24 | Shipped | 2026-05-18 |
+| v1.6 Logging & Observability | 23 | 3 | Shipped | 2026-05-20 |
+| v2.0 Zernio API Integration | 24-28 | TBD | In progress | — |
