@@ -5,6 +5,7 @@ import CreatePostHeader from './CreatePostHeader'
 import CreatePostEditor, { ImageEditorPanel } from './CreatePostEditor'
 import { PlatformTabs, ScheduleRow, RightPanel } from './CreatePostSidebar'
 import CreatePostFooter from './CreatePostFooter'
+import { AccountSelectionSection } from './AccountSelectionSection'
 import type { CreatePostModalProps } from './types'
 import styles from '../CreatePostModal.module.css'
 
@@ -163,6 +164,14 @@ export default function CreatePostModal(props: CreatePostModalProps) {
         })()}
 
         <CreatePostHeader state={state} refs={hookData.refs} actions={actions} />
+
+        {state.socialAccounts && state.socialAccounts.length > 0 && (
+          <AccountSelectionSection
+            accounts={state.socialAccounts}
+            selectedAccountIds={state.selectedSocialAccountIds}
+            onChange={actions.setSelectedSocialAccountIds}
+          />
+        )}
 
         <div className={styles.body}>
           <div className={styles.composer}>

@@ -48,8 +48,13 @@ export default function CalendarPage() {
     const mapped: Record<string, CalPost[]> = {}
     calendarPosts.forEach((post) => {
       const key = getPostKey(post.localYear, post.localMonth, post.localDay)
-      const status = post.status === 'published' || post.status === 'scheduled' || post.status === 'draft' ? post.status : 'draft'
-      const color = status === 'published' ? '#22d3ee' : status === 'scheduled' ? '#a78bfa' : '#94a3b8'
+      const status = post.status;
+      let color = '#94a3b8'; // draft
+      if (status === 'published') color = '#22d3ee';
+      else if (status === 'publishing') color = '#fbbf24';
+      else if (status === 'partial') color = '#f97316';
+      else if (status === 'failed') color = '#ef4444';
+      else if (status === 'scheduled') color = '#a78bfa';
       mapped[key] = [...(mapped[key] ?? []), {
         id: post.id, title: post.title || 'Untitled post', platform: post.platforms?.[0] ?? 'Post',
         status, time: post.localTime, color, caption: post.content ?? '', hashtags: [],
@@ -100,7 +105,7 @@ export default function CalendarPage() {
   const handleOpenEditPost = (post: CalPost) => {
     const match = calendarPosts.find((p) => p.id === post.id)
     if (!match) return
-    openEditPost({ id: match.id, year: match.localYear, month: match.localMonth, day: match.localDay, title: post.title, platform: post.platform, status: post.status, time: post.time, color: post.color, caption: post.caption, hashtags: post.hashtags, image: post.image } as ScheduledPost)
+    openEditPost({ id: match.id, year: match.localYear, month: match.localMonth, day: match.localDay, title: post.title, platform: post.platform, status: post.status, time: post.time, color: post.color, caption: post.caption, hashtags: post.hashtags, image: post.image, zernioPostId: match.zernioPostId, platformTargets: match.platformTargets } as ScheduledPost)
   }
 
   const selectedPosts = useMemo(() => {

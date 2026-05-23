@@ -53,7 +53,8 @@ export default function SocialAccountsSelect() {
           `social-accounts/${platform}/pages`,
           { params: { tempToken, state } }
         );
-        setItems((response.data as { options: PageItem[] }).options);
+        const resData = response.data as any;
+        setItems(resData.options ? resData.options : resData);
         setLoadState('loaded');
       } catch (err) {
         const msg =

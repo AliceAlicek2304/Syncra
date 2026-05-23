@@ -1,5 +1,5 @@
 export type ViewMode = 'month' | 'week' | 'day'
-export type PostStatus = 'published' | 'scheduled' | 'draft'
+export type PostStatus = 'idea' | 'published' | 'publishing' | 'partial' | 'failed' | 'scheduled' | 'draft'
 
 export interface CalPost {
   id: string
@@ -39,6 +39,9 @@ export function getPostKey(year: number, month: number, day: number) {
 
 export function getStatusLabel(s: PostStatus) {
   if (s === 'published') return 'Posted'
+  if (s === 'publishing') return 'Publishing'
+  if (s === 'partial') return 'Partial'
+  if (s === 'failed') return 'Failed'
   if (s === 'scheduled') return 'Scheduled'
   return 'Draft'
 }

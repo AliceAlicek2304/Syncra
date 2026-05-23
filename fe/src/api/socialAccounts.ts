@@ -19,5 +19,8 @@ export const socialAccountsApi = {
       }
     });
     return response.data;
+  },
+  listSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
+    return socialAccountsApi.getSocialAccounts(workspaceId);
   }
 };

@@ -13,6 +13,13 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'u-1', displayName: 'Test User' } }),
 }))
 
+vi.mock('../../context/ToastContext', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+  }),
+}))
+
 vi.mock('../../api/analytics', () => ({
   analyticsApi: {
     getWorkspaceSummary: vi.fn(),

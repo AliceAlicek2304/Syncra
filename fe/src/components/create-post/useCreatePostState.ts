@@ -1,9 +1,13 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import { useCalendar } from '../../context/calendarContextBase'
 import { useCreatePostMedia } from '../../hooks/useCreatePostMedia'
 import { useCreatePostAI } from '../../hooks/useCreatePostAI'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { shortId } from '../../utils/shortId'
+import { postsApi } from '../../api/posts'
+import { socialAccountsApi } from '../../api/socialAccounts'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
 function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
@@ -22,6 +26,55 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const mediaHook = useCreatePostMedia()
   const aiHook = useCreatePostAI()
+  const queryClient = useQueryClient()
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const { data: socialAccounts = [] } = useQuery({
+    queryKey: ['social-accounts', workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: () => socialAccountsApi.listSocialAccounts(workspaceId!),
+  })
+
+  const [selectedSocialAccountIds, setSelectedSocialAccountIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if (socialAccounts.length > 0 && selectedSocialAccountIds.length === 0) {
+      setSelectedSocialAccountIds(socialAccounts.filter(a => a.isActive).map(a => a.id))
+    }
+  }, [socialAccounts])
+
+  const retryZernioPost = useMutation({
+    mutationFn: async (postId: string) => {
+      if (!workspaceId) throw new Error('No workspace id')
+      return postsApi.retryZernioPost(workspaceId, postId)
+    },
+    onSuccess: () => {
+      onToast?.({ message: 'Retrying failed targets...', type: 'success' })
+      void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+      onClose()
+    },
+    onError: () => {
+      onToast?.({ message: 'Failed to retry post.', type: 'error' })
+    }
+  })
+
+  const deleteZernioPost = useMutation({
+    mutationFn: async (postId: string) => {
+      if (!workspaceId) throw new Error('No workspace id')
+      return postsApi.deleteZernioPost(workspaceId, postId)
+    },
+    onSuccess: () => {
+      onToast?.({ message: 'Post cancelled and deleted.', type: 'success' })
+      void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+      onClose()
+    },
+    onError: () => {
+      onToast?.({ message: 'Failed to delete post.', type: 'error' })
+    }
+  })
 
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
   const [activeTab, setActiveTab] = useState<Platform>('TikTok')
@@ -137,7 +190,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const caption = captionsByPlatform[activeTab] ?? ''
 
   const setActiveCaption = (next: string) => {
-    setCaptionsByPlatform(prev => ({ ...prev, [activeTab]: next }))
+    if (socialAccounts.filter(a => a.isActive).length > 0) {
+      setCaptionsByPlatform({
+        TikTok: next,
+        Instagram: next,
+        Facebook: next,
+        X: next
+      })
+    } else {
+      setCaptionsByPlatform(prev => ({ ...prev, [activeTab]: next }))
+    }
     setTouched(prev => ({ ...prev, [activeTab]: true }))
   }
 
@@ -152,7 +214,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const activeP = PLATFORMS.find(p => p.id === activeTab) ?? PLATFORMS[0]
   const charLimit = activeP.maxChars
   const overLimit = caption.length > charLimit
-  const hasPlatforms = activePlatforms.length > 0
+  const hasPlatforms = socialAccounts.filter(a => a.isActive).length > 0 
+    ? selectedSocialAccountIds.length > 0 
+    : activePlatforms.length > 0
 
   const reset = useCallback(() => {
     mediaHook.resetMedia()
@@ -265,7 +329,42 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowPublishConfirmDialog(true)
   }
 
-  const confirmSchedule = () => {
+  const confirmSchedule = async () => {
+    if (selectedSocialAccountIds.length >= 1) {
+      if (!workspaceId) return
+      
+      const content = caption || ''
+      const title = content.slice(0, 50) || 'Untitled Post'
+      const scheduledAtUtc = scheduleMode && scheduleTime ? new Date(scheduleTime).toISOString() : undefined
+      const publishNow = !scheduleMode
+
+      try {
+        await postsApi.createZernioPost(workspaceId, {
+          title,
+          content,
+          socialAccountIds: selectedSocialAccountIds,
+          scheduledAtUtc,
+          publishNow
+        })
+        
+        onToast?.({
+          message: `Post ${publishNow ? 'published' : 'scheduled'} successfully on Zernio!`,
+          type: 'success'
+        })
+        
+        void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+        void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+        
+        localStorage.removeItem('syncra_draft')
+        setShowPublishConfirmDialog(false)
+        reset()
+        if (!createAnother) onClose()
+      } catch (err) {
+        onToast?.({ message: 'Failed to create post. Please try again.', type: 'error' })
+      }
+      return
+    }
+
     let year: number, month: number, day: number, time: string
 
     if (scheduleTime && scheduleMode) {
@@ -397,9 +496,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
     emojiRef,
   }
 
+  const derivedActivePlatforms = useMemo(() => {
+    if (socialAccounts.filter(a => a.isActive).length > 0) {
+      return ['TikTok'] as Platform[]
+    }
+    return activePlatforms
+  }, [socialAccounts, activePlatforms])
+
   return {
     state: {
-      activePlatforms, activeTab, captionsByPlatform, touched,
+      activePlatforms: derivedActivePlatforms, activeTab, captionsByPlatform, touched,
       showPreview, tone, showEmoji,
       createAnother, scheduleMode, scheduleTime, showUnsavedDialog,
       showPublishConfirmDialog,
@@ -414,6 +520,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       aiPrompt: aiHook.aiPrompt,
       aiResults: aiHook.aiResults,
       aiIsGenerating: aiHook.aiIsGenerating,
+      socialAccounts,
+      selectedSocialAccountIds,
     },
     refs,
     actions: {
@@ -436,6 +544,11 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setShowAI: aiHook.setShowAI, setAiPrompt: aiHook.setAiPrompt,
       setAiResults: aiHook.setAiResults, setAiIsGenerating: aiHook.setAiIsGenerating,
       insertAtCursor,
+      retryZernioPost: () => { if (editPost) retryZernioPost.mutate(editPost.id) },
+      deleteZernioPost: () => { if (editPost) deleteZernioPost.mutate(editPost.id) },
+      isRetryingZernio: retryZernioPost.isPending,
+      isDeletingZernio: deleteZernioPost.isPending,
+      setSelectedSocialAccountIds,
     }
   }
 }

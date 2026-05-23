@@ -1,8 +1,9 @@
-import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { TrendingUp, BarChart3, Globe2, CalendarClock, Sparkles, ArrowUpRight, RefreshCw, ExternalLink, RotateCcw, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { ErrorBoundary } from 'react-error-boundary'
 import { WidgetErrorFallback } from '../../components/WidgetErrorFallback'
@@ -13,6 +14,10 @@ import { analyticsApi } from '../../api/analytics'
 import { postsApi } from '../../api/posts'
 import type { Post } from '../../api/posts'
 import api from '../../lib/axios'
+import { useToast } from '../../context/ToastContext'
+import { PlatformOutcomesModal } from '../../components/posts/PlatformOutcomesModal'
+import { RetryConfirmDialog } from '../../components/posts/RetryConfirmDialog'
+import { CancelConfirmDialog } from '../../components/posts/CancelConfirmDialog'
 import styles from './DashboardPage.module.css'
 
 const STATUS_LABELS: Record<Post['status'], string> = {
@@ -21,6 +26,7 @@ const STATUS_LABELS: Record<Post['status'], string> = {
   scheduled: '⏰ Scheduled',
   published: '✅ Published',
   publishing: '🔄 Publishing',
+  partial: '⚠️ Partial',
   failed: '❌ Failed',
 }
 
@@ -84,6 +90,47 @@ export default function DashboardPage() {
   const workspaceId = activeWorkspace?.id
   const { summary, recentPosts, integrations } = useDashboardData(workspaceId)
 
+  const [selectedOutcomePost, setSelectedOutcomePost] = useState<Post | null>(null)
+  const [selectedRetryPost, setSelectedRetryPost] = useState<Post | null>(null)
+  const [selectedCancelPost, setSelectedCancelPost] = useState<Post | null>(null)
+
+  const queryClient = useQueryClient()
+  const { success: showSuccess, error: showError } = useToast()
+
+  const retryMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      if (!workspaceId) throw new Error('No workspace id')
+      return postsApi.retryZernioPost(workspaceId, postId)
+    },
+    onSuccess: () => {
+      showSuccess('Post retry started successfully')
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts', workspaceId] })
+      void queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+      setSelectedRetryPost(null)
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to retry post'
+      showError(msg)
+    }
+  })
+
+  const cancelMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      if (!workspaceId) throw new Error('No workspace id')
+      return postsApi.deleteZernioPost(workspaceId, postId)
+    },
+    onSuccess: () => {
+      showSuccess('Post cancelled successfully')
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts', workspaceId] })
+      void queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+      setSelectedCancelPost(null)
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Could not cancel this post in Zernio. Your post remains scheduled. Please try again.'
+      showError(msg)
+    }
+  })
+
   const isLoading = summary.isLoading || recentPosts.isLoading || integrations.isLoading
   const isError = summary.isError || recentPosts.isError || integrations.isError
 
@@ -125,6 +172,30 @@ export default function DashboardPage() {
     : null
 
   const posts = recentPosts.data ?? []
+  const hasZernioPosts = posts.some((p) => p.zernioPostId)
+
+  const renderPlatformSummary = (p: Post) => {
+    if (!p.zernioPostId) return null
+    const targets = p.platformTargets || []
+    const y = p.zernioTargetCount || targets.length || 0
+    if (y === 0) return null
+    const x = targets.filter(
+      (t) => t.status?.toLowerCase() === 'published'
+    ).length
+    
+    let color = '#ef4444' // red if all failed
+    if (x === y) {
+      color = '#22c55e' // green if all published
+    } else if (x > 0) {
+      color = '#f97316' // orange if partial
+    }
+    
+    return (
+      <div style={{ fontSize: '12px', fontWeight: 700, color, marginTop: '4px' }}>
+        {x}/{y} published
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -214,12 +285,13 @@ export default function DashboardPage() {
                   <th scope="col">Trạng thái</th>
                   <th scope="col">Reach</th>
                   <th scope="col">Thời gian</th>
+                  {hasZernioPosts && <th scope="col">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {[1,2,3,4].map(i => (
                   <tr key={i}>
-                    <td colSpan={5}><SkeletonLoader height="36px" /></td>
+                    <td colSpan={hasZernioPosts ? 6 : 5}><SkeletonLoader height="36px" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -245,12 +317,16 @@ export default function DashboardPage() {
                   <th scope="col">Trạng thái</th>
                   <th scope="col">Reach</th>
                   <th scope="col">Thời gian</th>
+                  {hasZernioPosts && <th scope="col">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {posts.slice(0, 4).map((p) => (
                   <tr key={p.id}>
-                    <td className={styles.postTitle}>{p.title}</td>
+                    <td className={styles.postTitle}>
+                      <div>{p.title}</div>
+                      {renderPlatformSummary(p)}
+                    </td>
                     <td><span className={styles.platformTag}>{getPostPlatforms(p)}</span></td>
                     <td>
                       <span className={`${styles.status} ${styles[`status_${p.status}`] || ''}`}>
@@ -259,6 +335,48 @@ export default function DashboardPage() {
                     </td>
                     <td className={styles.reach}>—</td>
                     <td className={styles.date}>{formatPostDate(p)}</td>
+                    {hasZernioPosts && (
+                      <td className={styles.actionsCell}>
+                        {p.zernioPostId ? (
+                          <div className={styles.actionButtons}>
+                            <button
+                              className={styles.detailTrigger}
+                              onClick={() => setSelectedOutcomePost(p)}
+                              title="View platform outcomes"
+                              aria-label={`View platform outcomes for ${p.title}`}
+                            >
+                              <ExternalLink size={14} />
+                            </button>
+                            
+                            {(p.status === 'failed' || p.status === 'partial') && (
+                              <button
+                                className={styles.retryBtn}
+                                onClick={() => setSelectedRetryPost(p)}
+                                disabled={retryMutation.isPending && selectedRetryPost?.id === p.id}
+                                aria-label={`Retry failed platforms for ${p.title}`}
+                              >
+                                <RotateCcw size={12} />
+                                <span>Retry</span>
+                              </button>
+                            )}
+                            
+                            {p.status === 'scheduled' && (
+                              <button
+                                className={styles.cancelBtn}
+                                onClick={() => setSelectedCancelPost(p)}
+                                disabled={cancelMutation.isPending && selectedCancelPost?.id === p.id}
+                                aria-label={`Cancel scheduled post ${p.title}`}
+                              >
+                                <X size={12} />
+                                <span>Cancel</span>
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -286,6 +404,51 @@ export default function DashboardPage() {
 
       {/* Onboarding */}
       <OnboardingTour />
+
+      {/* Platform outcomes modal */}
+      {selectedOutcomePost && (
+        <PlatformOutcomesModal
+          post={selectedOutcomePost}
+          open={Boolean(selectedOutcomePost)}
+          onClose={() => setSelectedOutcomePost(null)}
+          onRetry={
+            selectedOutcomePost.platformTargets?.some(
+              (t) => t.status?.toLowerCase() === 'failed'
+            )
+              ? () => {
+                  setSelectedRetryPost(selectedOutcomePost)
+                  setSelectedOutcomePost(null)
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {/* Retry confirmation dialog */}
+      {selectedRetryPost && (
+        <RetryConfirmDialog
+          failedTargets={selectedRetryPost.platformTargets?.filter(
+            (t) => t.status?.toLowerCase() === 'failed'
+          ) || []}
+          open={Boolean(selectedRetryPost)}
+          onCancel={() => setSelectedRetryPost(null)}
+          onConfirm={async () => {
+            await retryMutation.mutateAsync(selectedRetryPost.id)
+          }}
+        />
+      )}
+
+      {/* Cancel confirmation dialog */}
+      {selectedCancelPost && (
+        <CancelConfirmDialog
+          post={selectedCancelPost}
+          open={Boolean(selectedCancelPost)}
+          onCancel={() => setSelectedCancelPost(null)}
+          onConfirm={async () => {
+            await cancelMutation.mutateAsync(selectedCancelPost.id)
+          }}
+        />
+      )}
     </div>
   )
 }

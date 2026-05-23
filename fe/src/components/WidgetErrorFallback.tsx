@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import styles from './WidgetErrorFallback.module.css';
 
 interface WidgetErrorFallbackProps {
-  error: Error;
+  error: unknown;
   resetErrorBoundary: () => void;
 }
 

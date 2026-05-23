@@ -26,18 +26,14 @@ public class ZernioClientInterfaceTests
     }
 
     [Fact]
-    public void IZernioClient_ShouldNotAddExtraZernioPostMethods()
+    public void IZernioClient_ShouldDeclarePostManagementMethods()
     {
         // Arrange
         var interfaceType = typeof(IZernioClient);
         var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
-
-        // Only the existing methods + CreatePostAsync should be present
-        // RetryPostAsync and DeletePostAsync are added in plan 26-04 per D-04
         var methodNames = methods.Select(m => m.Name).ToHashSet();
 
-        // This plan adds only CreatePostAsync
-        var existingMethods = new[]
+        var expectedMethods = new[]
         {
             "GetConnectUrlAsync",
             "ListAccountsAsync",
@@ -45,15 +41,14 @@ public class ZernioClientInterfaceTests
             "ProvisionProfileAsync",
             "ListSelectOptionsAsync",
             "SelectOptionAsync",
-            "CreatePostAsync"
+            "CreatePostAsync",
+            "RetryPostAsync",
+            "DeletePostAsync"
         };
 
-        foreach (var name in existingMethods)
+        foreach (var name in expectedMethods)
         {
             Assert.Contains(name, methodNames);
         }
-
-        Assert.DoesNotContain("RetryPostAsync", methodNames);
-        Assert.DoesNotContain("DeletePostAsync", methodNames);
     }
 }

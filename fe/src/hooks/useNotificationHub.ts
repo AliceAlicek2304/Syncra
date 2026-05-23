@@ -3,6 +3,8 @@ import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { notificationsApi } from '../api/notifications'
 import type { NotificationItem } from '../api/notifications'
+import { useToast } from '../context/ToastContext'
+import type { Post } from '../api/posts'
 
 interface UseNotificationHubArgs {
   workspaceId?: string
@@ -10,6 +12,7 @@ interface UseNotificationHubArgs {
 
 export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
   const notificationsQuery = useQuery({
     queryKey: ['notifications', workspaceId],
@@ -91,9 +94,36 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
       void queryClient.invalidateQueries({ queryKey: ['notifications', workspaceId] })
     })
 
-    connection.on('post.statusUpdated', (postId: string) => {
+    connection.on('post.statusUpdated', (payload: any) => {
+      const { postId, status, zernioTargetCount, platformTargets } = payload
+
+      queryClient.setQueriesData<Post[]>(
+        { queryKey: [workspaceId] },
+        (oldData) => {
+          if (!oldData) return oldData
+          return oldData.map((post) =>
+            post.id === postId
+              ? { ...post, status, zernioTargetCount, platformTargets }
+              : post
+          )
+        }
+      )
+
       void queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
       void queryClient.invalidateQueries({ queryKey: ['post', workspaceId, postId] })
+      void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+
+      if (status === 'published') {
+        const publishedCount = platformTargets?.filter((t: any) => t.status === 'Published' || t.status === 'published').length || 0
+        const totalCount = zernioTargetCount || platformTargets?.length || 0
+        success(`Post published to ${publishedCount}/${totalCount} platforms`)
+      } else if (status === 'partial') {
+        const failedCount = platformTargets?.filter((t: any) => t.status === 'Failed' || t.status === 'failed').length || 0
+        success(`Post partially published — ${failedCount} failed`)
+      } else if (status === 'failed') {
+        error('Post failed on all platforms')
+      }
     })
 
     void connection.start().catch(() => {
@@ -105,7 +135,7 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
       connection.off('post.statusUpdated')
       void connection.stop()
     }
-  }, [queryClient, workspaceId])
+  }, [queryClient, workspaceId, success, error])
 
   const notificationsData = notificationsQuery.data
   const notifications = notificationsData ?? []

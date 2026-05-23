@@ -263,6 +263,30 @@ export function RightPanel({ state, actions }: SidebarProps) {
           <span>{state.activeTab}</span> Preview
         </div>
         <div className={styles.previewBody}>
+          {state.editPost?.platformTargets && state.editPost.platformTargets.length > 0 && (
+            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>Platform Statuses</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {state.editPost.platformTargets.map((pt, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>{pt.platform}</span>
+                    <span style={{ 
+                      padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 500,
+                      background: pt.status === 'Failed' ? 'rgba(239, 68, 68, 0.15)' : 
+                                 pt.status === 'Published' ? 'rgba(34, 197, 94, 0.15)' :
+                                 pt.status === 'Pending' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255,255,255,0.1)',
+                      color: pt.status === 'Failed' ? '#ef4444' :
+                             pt.status === 'Published' ? '#22c55e' :
+                             pt.status === 'Pending' ? '#eab308' : 'var(--text-secondary)'
+                    }}>
+                      {pt.status.toUpperCase()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {!state.hasPlatforms ? (
             <div className={styles.previewEmpty}>
               <div className={styles.previewEmptyIcon}>

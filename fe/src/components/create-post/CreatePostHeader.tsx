@@ -20,18 +20,20 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
         {state.isEditMode ? 'Edit Post' : 'Create Post'}
       </span>
 
-      <div className={styles.platformChips}>
-        {PLATFORMS.map(p => (
-          <button
-            key={p.id}
-            className={`${styles.chip} ${CHIP_CLASS[p.id]} ${state.activePlatforms.includes(p.id) ? styles.chipActive : ''}`}
-            onClick={() => actions.togglePlatform(p.id)}
-          >
-            <span><PlatformIcon platform={p.id} size={14} /></span>
-            {p.label}
-          </button>
-        ))}
-      </div>
+      {(!state.socialAccounts || state.socialAccounts.filter(a => a.isActive).length === 0) && (
+        <div className={styles.platformChips}>
+          {PLATFORMS.map(p => (
+            <button
+              key={p.id}
+              className={`${styles.chip} ${CHIP_CLASS[p.id]} ${state.activePlatforms.includes(p.id) ? styles.chipActive : ''}`}
+              onClick={() => actions.togglePlatform(p.id)}
+            >
+              <span><PlatformIcon platform={p.id} size={14} /></span>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.headerSpacer} />
 

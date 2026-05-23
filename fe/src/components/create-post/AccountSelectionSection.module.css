@@ -1,0 +1,117 @@
+.container {
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.groupsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.platformGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupHeader {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 0px;
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  aria-label: "Account Selection";
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  height: 32px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s linear;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+}
+
+.chip:hover {
+  border-color: rgba(139, 92, 246, 0.35);
+  color: var(--text-primary);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.chipActive {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--purple-400);
+}
+
+.checkboxInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.displayName {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Empty State styling */
+.emptyState {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.emptyText {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.settingsLink {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--purple-400);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+
+.settingsLink:hover {
+  color: var(--text-primary);
+}
