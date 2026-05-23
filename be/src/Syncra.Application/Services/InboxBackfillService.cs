@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Common;
 using Syncra.Domain.Entities;
