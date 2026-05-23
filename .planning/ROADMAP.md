@@ -184,12 +184,17 @@ Plans:
   2. A user can view a daily engagement chart aggregated across all connected accounts for a selectable date range
   3. A user can view a best-times heatmap per platform based on historical Zernio engagement data
 
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 
-- [ ] 27-01: `ZernioAnalyticsService` — post metrics (`GET /v1/analytics/posts/{id}`), daily stats (`GET /v1/analytics/daily`); Redis cache extension for Zernio responses
-- [ ] 27-02: Best-time analysis (`GET /v1/analytics/best-time`); `AnalyticsController` endpoints; frontend analytics panel update (Zernio metrics tab)
+**Wave 1**
+
+- [ ] 27-01-PLAN.md — Zernio client + workspace analytics service (daily summary, post metrics), Redis cache (D-03/D-05), refresh invalidation (D-04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 27-02-PLAN.md — Best-time heatmap backend (D-01), HTTP 202/402/403/412 propagation (D-06/D-07/D-09), frontend analytics page + modal tabs
 
 ---
 
