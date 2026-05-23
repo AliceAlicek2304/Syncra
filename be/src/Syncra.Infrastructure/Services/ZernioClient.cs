@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Syncra.Application.Options;
@@ -17,6 +18,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly ProfilesApi _profilesApi;
     private readonly PostsApi _postsApi;
     private readonly AnalyticsApi _analyticsApi;
+    private readonly MessagesApi _messagesApi;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
@@ -33,6 +35,7 @@ public sealed class ZernioClient : IZernioClient
         _profilesApi = new ProfilesApi(config);
         _postsApi = new PostsApi(config);
         _analyticsApi = new AnalyticsApi(config);
+        _messagesApi = new MessagesApi(config);
         _logger = logger;
     }
 
@@ -552,6 +555,144 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error fetching post analytics for {PostId}", zernioPostId);
             throw new DomainException("zernio_post_analytics_error", "Failed to fetch post analytics from Zernio", ex);
+        }
+    }
+
+    // ── Inbox DM methods ────────────────────────────────────────────────────
+
+    public async Task<ZernioInboxConversationsPageDto> ListInboxConversationsAsync(
+        string profileId,
+        string? cursor = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _messagesApi.ListInboxConversationsAsync(
+                profileId,
+                platform: null,
+                status: null,
+                sortOrder: null,
+                limit: null,
+                cursor: cursor,
+                accountId: null,
+                cancellationToken);
+
+            var items = (response.Data ?? [])
+                .Select(c => new ZernioInboxConversationItemDto(
+                    c.Id,
+                    c.Platform ?? string.Empty,
+                    c.ParticipantName,
+                    c.AccountUsername,
+                    c.ParticipantPicture,
+                    c.LastMessage,
+                    c.UpdatedTime,
+                    c.Status?.ToString()))
+                .ToList();
+
+            return new ZernioInboxConversationsPageDto(
+                items,
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.NextCursor);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for list conversations, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to access inbox conversations.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing inbox conversations for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_inbox_list_error", "Failed to list inbox conversations from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxMessagesPageDto> ListInboxMessagesAsync(
+        string conversationId,
+        string? cursor = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _messagesApi.GetInboxConversationMessagesAsync(
+                conversationId,
+                accountId: null,
+                limit: null,
+                cursor: cursor,
+                sortOrder: null,
+                cancellationToken);
+
+            var items = (response.Messages ?? [])
+                .Select(m => new ZernioInboxMessageItemDto(
+                    m.Id,
+                    m.Message,
+                    m.Direction?.ToString(),
+                    m.CreatedAt,
+                    null,
+                    m.ReadAt != default))
+                .ToList();
+
+            return new ZernioInboxMessagesPageDto(
+                items,
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.NextCursor);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for list messages, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to access inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing inbox messages for conversation {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_messages_error", "Failed to list inbox messages from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioSendMessageResponseDto> SendInboxMessageAsync(
+        string profileId,
+        string conversationId,
+        string accountId,
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new SendInboxMessageRequest
+            {
+                AccountId = accountId,
+                Message = text
+            };
+
+            var response = await _messagesApi.SendInboxMessageAsync(
+                conversationId,
+                sdkRequest,
+                cancellationToken);
+
+            return new ZernioSendMessageResponseDto(
+                response.Data?.MessageId ?? string.Empty,
+                response.Data?.SentAt ?? DateTime.UtcNow);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for send message, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to send inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error sending inbox message to conversation {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_send_error", "Failed to send inbox message via Zernio", ex);
         }
     }
 

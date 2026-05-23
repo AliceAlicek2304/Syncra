@@ -108,6 +108,19 @@ public class GlobalExceptionMiddleware
                 });
                 break;
 
+            case ZernioBillingRequiredException billingEx when billingEx.Reason == "inbox_addon_required":
+                logger.LogWarning("Billing gate triggered — inbox add-on required. Reason: {Reason}", billingEx.Reason);
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "inbox_addon_required",
+                    message = billingEx.Message,
+                    reason = billingEx.Reason,
+                    dashboardUrl = billingEx.DashboardUrl,
+                    details = billingEx.Details
+                });
+                break;
+
             case ZernioBillingRequiredException billingEx when billingEx.Reason == "analytics_addon_required":
                 logger.LogWarning("Billing gate triggered — analytics add-on required. Reason: {Reason}", billingEx.Reason);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;

@@ -1,3 +1,4 @@
+using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.DTOs.Zernio;
 
 namespace Syncra.Application.Interfaces;
@@ -49,6 +50,25 @@ public interface IZernioClient
 
     Task DeletePostAsync(
         string zernioPostId,
+        CancellationToken cancellationToken = default);
+
+    // ── Inbox DM methods ────────────────────────────────────────
+
+    Task<ZernioInboxConversationsPageDto> ListInboxConversationsAsync(
+        string profileId,
+        string? cursor = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxMessagesPageDto> ListInboxMessagesAsync(
+        string conversationId,
+        string? cursor = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioSendMessageResponseDto> SendInboxMessageAsync(
+        string profileId,
+        string conversationId,
+        string accountId,
+        string text,
         CancellationToken cancellationToken = default);
 
     // ── Analytics methods ───────────────────────────────────────
