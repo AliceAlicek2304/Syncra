@@ -23,7 +23,7 @@ public sealed record InboxMessageDto(
     string? ZernioAccountId,
     DateTime CreatedAtUtc);
 
-public sealed record SendInboxMessageRequest(
+public sealed record InboxSendMessageRequest(
     string Text,
     string AccountId);
 
@@ -73,3 +73,22 @@ public sealed record ZernioSendMessageResponseDto(
 
 public sealed record InboxSummaryDto(
     int UnreadTotal);
+
+public sealed record ZernioInboxCommentItemDto(
+    string Id,
+    string Platform,
+    string Content,
+    string? Picture,
+    string? Permalink,
+    DateTime CreatedTime,
+    int CommentCount,
+    string? Cid);
+
+public sealed record ZernioInboxCommentsPageDto(
+    IReadOnlyList<ZernioInboxCommentItemDto> Items,
+    bool HasMore,
+    string? NextCursor);
+
+public sealed record ZernioReplyToCommentResponseDto(
+    string CommentId,
+    string? Cid);

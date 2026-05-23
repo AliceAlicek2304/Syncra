@@ -71,6 +71,24 @@ public interface IZernioClient
         string text,
         CancellationToken cancellationToken = default);
 
+    // ── Inbox Comment methods ───────────────────────────────────
+
+    Task<ZernioInboxCommentsPageDto> ListInboxCommentsAsync(
+        string profileId,
+        DateTime? since = null,
+        string? cursor = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioReplyToCommentResponseDto> ReplyToInboxCommentAsync(
+        string profileId,
+        string zernioPostId,
+        string accountId,
+        string message,
+        string? commentId = null,
+        CancellationToken cancellationToken = default);
+
     // ── Analytics methods ───────────────────────────────────────
 
     Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
