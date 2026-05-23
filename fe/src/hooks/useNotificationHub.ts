@@ -91,12 +91,18 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
       void queryClient.invalidateQueries({ queryKey: ['notifications', workspaceId] })
     })
 
+    connection.on('post.statusUpdated', (postId: string) => {
+      void queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+      void queryClient.invalidateQueries({ queryKey: ['post', workspaceId, postId] })
+    })
+
     void connection.start().catch(() => {
       // no-op: polling fallback remains active via query refetch interval (30s)
     })
 
     return () => {
       connection.off('notification.created')
+      connection.off('post.statusUpdated')
       void connection.stop()
     }
   }, [queryClient, workspaceId])

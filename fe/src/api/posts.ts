@@ -10,7 +10,7 @@ export interface Post {
   id: string;
   title: string;
   content?: string;          // master caption
-  status: 'idea' | 'draft' | 'scheduled' | 'published' | 'publishing' | 'failed';
+  status: 'idea' | 'draft' | 'scheduled' | 'published' | 'publishing' | 'partial' | 'failed';
   scheduledAtUtc?: string;   // ISO 8601
   platforms?: string[];
   platformContents?: PlatformContent[];
@@ -18,6 +18,18 @@ export interface Post {
   groupId?: string;
   createdAt: string;
   updatedAt: string;
+  zernioPostId?: string;
+  zernioTargetCount?: number;
+  platformTargets?: PostPlatformTargetDto[];
+}
+
+export interface PostPlatformTargetDto {
+  id: string;
+  platform: string;
+  status: 'Pending' | 'Published' | 'Failed';
+  externalPostUrl?: string;
+  errorMessage?: string;
+  zernioAccountId?: string;
 }
 
 export interface GetPostsParams {
@@ -50,6 +62,14 @@ export interface UpdatePostRequest {
   scheduledAtUtc?: string;
 }
 
+export interface CreateZernioPostRequest {
+  title: string;
+  content: string;
+  socialAccountIds: string[];
+  scheduledAtUtc?: string;
+  publishNow: boolean;
+}
+
 export const postsApi = {
   createPost: async (workspaceId: string, data: CreatePostRequest): Promise<Post> => {
     const response = await api.post<Post>(`workspaces/${workspaceId}/posts`, data);
@@ -78,5 +98,19 @@ export const postsApi = {
 
   deletePost: async (workspaceId: string, postId: string): Promise<void> => {
     await api.delete(`workspaces/${workspaceId}/posts/${postId}`);
+  },
+
+  createZernioPost: async (workspaceId: string, data: CreateZernioPostRequest): Promise<Post> => {
+    const response = await api.post<Post>(`workspaces/${workspaceId}/posts/zernio`, data);
+    return response.data;
+  },
+
+  retryZernioPost: async (workspaceId: string, postId: string): Promise<Post> => {
+    const response = await api.post<Post>(`workspaces/${workspaceId}/posts/zernio/${postId}/retry`);
+    return response.data;
+  },
+
+  deleteZernioPost: async (workspaceId: string, postId: string): Promise<void> => {
+    await api.delete(`workspaces/${workspaceId}/posts/zernio/${postId}`);
   },
 };
