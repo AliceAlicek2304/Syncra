@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
         services.AddScoped<ISocialAccountRepository, SocialAccountRepository>();
         services.AddScoped<IZernioProfileRepository, ZernioProfileRepository>();
+        services.AddScoped<IInboxRepository, InboxRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
         services.AddScoped<IntegrationTokenRefreshJob>();
