@@ -33,6 +33,7 @@ import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import SettingsPage from './pages/app/SettingsPage'
 import HelpPage from './pages/app/HelpPage'
+import InboxPage from './pages/inbox/InboxPage'
 
 import { useNavigate } from 'react-router-dom'
 import LoginModal from './components/auth/LoginModal'
@@ -133,6 +134,7 @@ function AnimatedRoutes() {
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
           <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
           <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+          <Route path="inbox" element={<PageWrapper><InboxPage /></PageWrapper>} />
           <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
         </Route>
         

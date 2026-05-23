@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -18,6 +18,7 @@ import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+  { to: '/app/inbox', icon: <Inbox size={18} />, label: 'Inbox' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
