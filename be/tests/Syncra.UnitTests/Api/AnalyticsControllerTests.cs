@@ -157,7 +157,8 @@ public class AnalyticsControllerTests : IClassFixture<WebApplicationFactory<Prog
         _mediatorMock.Setup(m => m.Send(
             It.Is<GetPostAnalyticsQuery>(q => q.WorkspaceId == workspaceId && q.PostId == postId && q.Date == 30),
             It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<List<AnalyticsData>>.Success(new List<AnalyticsData>()));
+            .ReturnsAsync(Result<PostMetricsDto>.Success(
+                new PostMetricsDto(100, 50, 10, 500, 5.5m, null)));
 
         var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30");
 
@@ -176,7 +177,7 @@ public class AnalyticsControllerTests : IClassFixture<WebApplicationFactory<Prog
         _mediatorMock.Setup(m => m.Send(
             It.IsAny<GetPostAnalyticsQuery>(),
             It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<List<AnalyticsData>>.Failure("Post not found"));
+            .ReturnsAsync(Result<PostMetricsDto>.Failure("Post not found"));
 
         var response = await client.GetAsync($"/api/v1/workspaces/{workspaceId}/analytics/post/{postId}?date=30");
 

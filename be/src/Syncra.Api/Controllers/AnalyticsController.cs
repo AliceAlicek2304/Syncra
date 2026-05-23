@@ -84,6 +84,21 @@ public class AnalyticsController : ControllerBase
         return result.ToActionResult();
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshAnalytics(
+        Guid workspaceId,
+        [FromQuery] int? date,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new RefreshAnalyticsCommand(workspaceId),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : result.ToActionResult();
+    }
+
     [HttpGet("export")]
     public async Task<IActionResult> ExportAnalytics(
         Guid workspaceId,

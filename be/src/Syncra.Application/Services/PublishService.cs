@@ -228,6 +228,10 @@ public sealed class PublishService : IPublishService
         {
             var cacheKeys = new[]
             {
+                // Zernio analytics cache keys
+                $"zernio:analytics:summary:{workspaceId}:30",
+                $"zernio:analytics:heatmap:{workspaceId}:90",
+                // Legacy analytics cache keys
                 $"analytics:summary:{workspaceId}:30",
                 $"analytics:heatmap:{workspaceId}:90"
             };
