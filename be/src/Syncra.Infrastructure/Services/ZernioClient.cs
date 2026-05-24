@@ -147,11 +147,11 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var request = new CreateProfileRequest
-            {
-                Name = name,
-                Description = workspaceId
-            };
+            var request = new CreateProfileRequest(
+                name: name,
+                description: workspaceId,
+                color: null
+            );
 
             var response = await _profilesApi.CreateProfileAsync(request, cancellationToken);
 
