@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck, Trash2
+  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck, Trash2, Link2, ChevronRight
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
@@ -42,6 +42,45 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'googleads', label: 'Google Ads', color: '#4285f4', isSupported: false },
   { id: 'xads', label: 'X Ads', color: '#201515', isSupported: false },
   { id: 'snapchat', label: 'Snapchat', color: '#fffc00', isSupported: true },
+];
+
+const PLATFORM_GROUPS: { title: string; platformIds: string[] }[] = [
+  {
+    title: 'Social',
+    platformIds: [
+      'tiktok',
+      'instagram',
+      'facebook',
+      'youtube',
+      'linkedin',
+      'twitter',
+      'threads',
+      'bluesky',
+      'pinterest',
+      'reddit',
+      'googlebusiness',
+      'snapchat',
+    ],
+  },
+  {
+    title: 'Communication',
+    platformIds: [
+      'telegram',
+      'discord',
+      'whatsapp',
+    ],
+  },
+  {
+    title: 'Ads',
+    platformIds: [
+      'metaads',
+      'linkedinads',
+      'pinterestads',
+      'tiktokads',
+      'googleads',
+      'xads',
+    ],
+  },
 ];
 
 function PlatformIcon({ platform, size = 20 }: { platform: string; size?: number }) {
@@ -462,6 +501,11 @@ export default function ConnectionsPage() {
   const [selectedWorkspaceFilter, setSelectedWorkspaceFilter] = useState<string>('all');
   const [selectedPlatformFilter, setSelectedPlatformFilter] = useState<string>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
+
+  const platformsById = ALL_PLATFORMS.reduce<Record<string, PlatformConfig>>((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {});
 
   // Filter dropdown visibility
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
@@ -1091,7 +1135,7 @@ export default function ConnectionsPage() {
             <div className={styles.drawerBody}>
               {/* Workspace Selection */}
               <div className={styles.formGroup} style={{ position: 'relative' }}>
-                <label className={styles.formLabel}>Workspace</label>
+                <label className={styles.formLabel}>Profile</label>
                 <button
                   className={styles.drawerDropdownTrigger}
                   onClick={() => setIsConnWorkspaceDropdownOpen(!isConnWorkspaceDropdownOpen)}
@@ -1137,14 +1181,11 @@ export default function ConnectionsPage() {
                 )}
               </div>
 
-              {/* Platforms Grid Section */}
+              {/* Platforms List Section */}
               <div className={styles.platformsSection}>
-                <h3 className={styles.platformsSectionTitle}>Platforms</h3>
-
-                <div className={styles.platformsGridContainer}>
-                  {/* Blur Overlay if no workspace is selected */}
+                <div className={styles.platformsListContainer}>
                   {!selectedWorkspaceForConnection && (
-                    <div className={styles.platformsGridBlurOverlay}>
+                    <div className={styles.platformsListBlurOverlay}>
                       <div className={styles.blurCard}>
                         <h4 className={styles.blurCardTitle}>Select a workspace first</h4>
                         <p className={styles.blurCardText}>Pick a workspace above to choose what to connect.</p>
@@ -1152,23 +1193,49 @@ export default function ConnectionsPage() {
                     </div>
                   )}
 
-                  <div className={`${styles.platformsGrid} ${!selectedWorkspaceForConnection ? styles.platformsGridBlur : ''}`}>
-                    {ALL_PLATFORMS.map(p => (
-                      <button
-                        key={p.id}
-                        className={styles.platformButton}
-                        onClick={() => handleConnectPlatform(p.id)}
-                        disabled={!selectedWorkspaceForConnection}
-                      >
-                        <div
-                          className={styles.platformBtnIconWrap}
-                          style={{ color: p.color, backgroundColor: `${p.color}12` }}
-                        >
-                          <PlatformIcon platform={p.id} size={22} />
+                  <div className={`${styles.platformsList} ${!selectedWorkspaceForConnection ? styles.platformsListBlur : ''}`}>
+                    {PLATFORM_GROUPS.map(group => (
+                      <div key={group.title} className={styles.platformGroup}>
+                        <div className={styles.platformGroupTitle}>{group.title.toUpperCase()}</div>
+                        <div className={styles.platformGroupItems}>
+                          {group.platformIds.map((platformId) => {
+                            const platform = platformsById[platformId];
+                            if (!platform) return null;
+                            const isDisabled = !selectedWorkspaceForConnection || !platform.isSupported;
+                            return (
+                              <button
+                                key={platform.id}
+                                type="button"
+                                className={styles.platformListItem}
+                                onClick={() => handleConnectPlatform(platform.id)}
+                                disabled={isDisabled}
+                              >
+                                <div className={styles.platformListLeft}>
+                                  <div
+                                    className={styles.platformListIcon}
+                                    style={{ color: platform.color, backgroundColor: `${platform.color}12` }}
+                                  >
+                                    <PlatformIcon platform={platform.id} size={18} />
+                                  </div>
+                                  <span className={styles.platformListLabel}>{platform.label}</span>
+                                </div>
+                                <div className={styles.platformListRight}>
+                                  {!platform.isSupported ? (
+                                    <span className={styles.platformListSoon}>Coming soon</span>
+                                  ) : (
+                                    <>
+                                      <span className={styles.platformListAction}>
+                                        <Link2 size={14} />
+                                      </span>
+                                      <ChevronRight size={16} className={styles.platformListChevron} />
+                                    </>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <span className={styles.platformBtnLabel}>{p.label}</span>
-                        {!p.isSupported && <span className={styles.comingSoonBadge}>Soon</span>}
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
