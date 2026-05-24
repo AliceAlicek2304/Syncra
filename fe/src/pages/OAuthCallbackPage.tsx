@@ -59,7 +59,7 @@ export default function OAuthCallbackPage() {
         setStatus('Success! Syncing account...');
         await hydrateSession();
         setStatus('Redirecting...');
-        navigate('/app/dashboard', { replace: true });
+        navigate('/app/connections', { replace: true });
       } catch (err: unknown) {
         console.error('OAuth callback error:', err);
         
@@ -91,7 +91,7 @@ export default function OAuthCallbackPage() {
     await hydrateSession();
     setStatus('Redirecting...');
     setLinkingState(prev => ({ ...prev, showModal: false }));
-    navigate('/app/dashboard', { replace: true });
+    navigate('/app/connections', { replace: true });
   };
 
   return (

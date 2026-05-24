@@ -57,7 +57,7 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
 
   const handleGoogleLogin = async () => {
     try {
-      const { loginUrl } = await authApi.getOAuthLoginUrl('google', '/app/dashboard');
+      const { loginUrl } = await authApi.getOAuthLoginUrl('google', '/app/connections');
       window.location.href = loginUrl;
     } catch (err: unknown) {
       console.error('Google login error:', err);

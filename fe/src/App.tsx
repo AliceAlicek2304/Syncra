@@ -59,7 +59,7 @@ function Homepage() {
   }
 
   const handleLoginSuccess = () => {
-    navigate('/app/dashboard')
+    navigate('/app/connections')
   }
 
   const handleCloseSignup = () => {
@@ -67,7 +67,7 @@ function Homepage() {
   }
 
   const handleSignupSuccess = () => {
-    navigate('/app/dashboard')
+    navigate('/app/connections')
   }
 
   return (
@@ -128,9 +128,9 @@ function AnimatedRoutes() {
             </BillingProvider>
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="dashboard/connections" replace />} />
-          <Route path="dashboard" element={<Navigate to="dashboard/connections" replace />} />
-          <Route path="dashboard/connections" element={<PageWrapper><ConnectionsPage /></PageWrapper>} />
+          <Route index element={<Navigate to="connections" replace />} />
+          <Route path="dashboard" element={<Navigate to="/app/connections" replace />} />
+          <Route path="connections" element={<PageWrapper><ConnectionsPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
           <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
           <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />

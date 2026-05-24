@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, LayoutDashboard, Sparkles, Repeat,
+  Search, Plug, Sparkles, Repeat,
   TrendingUp, CalendarDays, BarChart3, Settings,
   PlusSquare, Command
 } from 'lucide-react'
@@ -25,7 +25,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commands: CommandItem[] = [
-    { id: 'dash', label: 'Go to Dashboard', icon: <LayoutDashboard size={18} />, action: () => navigate('/app/dashboard'), category: 'Navigation' },
+    { id: 'connections', label: 'Go to Connections', icon: <Plug size={18} />, action: () => navigate('/app/connections'), category: 'Navigation' },
     { id: 'ideas', label: 'Ideas', icon: <Sparkles size={18} />, action: () => navigate('/app/ideas'), category: 'Navigation' },
     { id: 'repurpose', label: 'AI Repurpose Engine', icon: <Repeat size={18} />, action: () => navigate('/app/repurpose'), category: 'Navigation' },
     { id: 'trends', label: 'Trend Radar', icon: <TrendingUp size={18} />, action: () => navigate('/app/trends'), category: 'Navigation' },

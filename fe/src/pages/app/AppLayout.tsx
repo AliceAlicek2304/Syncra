@@ -18,8 +18,7 @@ import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
-  { to: '/app/dashboard/connections', icon: <Plug size={18} />, label: 'Connections' },
-  { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+  { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/inbox', icon: <Inbox size={18} />, label: 'Inbox' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
@@ -40,7 +39,7 @@ export default function AppLayout() {
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 
-  const isConnectionsPage = location.pathname.endsWith('/dashboard/connections')
+  const isConnectionsPage = location.pathname.endsWith('/connections')
 
   const handleLogout = () => {
     logout()

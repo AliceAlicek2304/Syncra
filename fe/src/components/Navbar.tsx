@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Menu, X, LayoutDashboard, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
+import { Menu, X, Plug, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
@@ -15,7 +15,7 @@ const NAV_LINKS = [
 ]
 
 const USER_MENU = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
+  { label: 'Connections', icon: Plug, path: '/app/connections' },
   { label: 'Ideas', icon: Lightbulb, path: '/app/ideas' }, 
   { label: 'Calendar', icon: Calendar, path: '/app/calendar' },
   { label: 'Analytics', icon: BarChart2, path: '/app/analytics' },
@@ -166,9 +166,9 @@ export default function Navbar() {
               <button
                 className="btn-secondary"
                 style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => { navigate('/app/dashboard'); setMenuOpen(false) }}
+                onClick={() => { navigate('/app/connections'); setMenuOpen(false) }}
               >
-                Dashboard
+                Connections
               </button>
             ) : (
               <>

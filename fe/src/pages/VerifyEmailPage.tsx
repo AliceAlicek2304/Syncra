@@ -39,13 +39,13 @@ export default function VerifyEmailPage() {
         setStatus('Success! Syncing account...');
         await hydrateSession();
 
-        setStatus('Redirecting to dashboard...');
+        setStatus('Redirecting...');
         setIsVerifying(false);
         showSuccess('Email verified successfully!');
 
-        // Redirect to dashboard after brief delay so user sees success state
+        // Redirect to connections after brief delay so user sees success state
         setTimeout(() => {
-          navigate('/app/dashboard', { replace: true });
+          navigate('/app/connections', { replace: true });
         }, 1000);
       } catch (err: unknown) {
         console.error('Email verification error:', err);
