@@ -220,8 +220,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const activeP = PLATFORMS.find(p => p.id === activeTab) ?? PLATFORMS[0]
   const charLimit = activeP.maxChars
   const overLimit = caption.length > charLimit
-  const hasPlatforms = socialAccounts.filter(a => a.isActive).length > 0 
-    ? selectedSocialAccountIds.length > 0 
+  const hasPlatforms = socialAccounts.filter(a => a.isActive).length > 0
+    ? selectedSocialAccountIds.length > 0
     : activePlatforms.length > 0
 
   const reset = useCallback(() => {
@@ -338,7 +338,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const confirmSchedule = async () => {
     if (selectedSocialAccountIds.length >= 1) {
       if (!workspaceId) return
-      
+
       const content = caption || ''
       const title = content.slice(0, 50) || 'Untitled Post'
       const scheduledAtUtc = scheduleMode && scheduleTime ? new Date(scheduleTime).toISOString() : undefined
@@ -352,15 +352,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
           scheduledAtUtc,
           publishNow
         })
-        
+
         onToast?.({
           message: `Post ${publishNow ? 'published' : 'scheduled'} successfully on Zernio!`,
           type: 'success'
         })
-        
+
         void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
-        
+
         localStorage.removeItem('syncra_draft')
         setShowPublishConfirmDialog(false)
         reset()

@@ -133,19 +133,4 @@ public class PostsController : ControllerBase
 
         return NoContent();
     }
-
-    [HttpPost("{postId:guid}/publish")]
-    public async Task<IActionResult> PublishPost(
-        Guid workspaceId,
-        Guid postId,
-        [FromBody] PublishPostRequestDto? dto,
-        CancellationToken cancellationToken)
-    {
-        var userId = User.GetUserId();
-        if (userId is null) return Unauthorized();
-
-        var command = new PublishPostCommand(workspaceId, postId, userId.Value, dto?.DryRun ?? false);
-        var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
-    }
 }

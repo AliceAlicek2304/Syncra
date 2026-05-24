@@ -18,19 +18,6 @@ public class AnalyticsController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("{integrationId:guid}")]
-    public async Task<IActionResult> GetIntegrationAnalytics(
-        Guid workspaceId,
-        Guid integrationId,
-        [FromQuery] int date = 30,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await _mediator.Send(
-            new GetIntegrationAnalyticsQuery(workspaceId, integrationId, date),
-            cancellationToken);
-        return result.ToActionResult();
-    }
-
     [HttpGet("post/{postId:guid}")]
     public async Task<IActionResult> GetPostAnalytics(
         Guid workspaceId,

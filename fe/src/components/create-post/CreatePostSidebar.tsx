@@ -53,13 +53,13 @@ export function ScheduleRow({ state, actions }: SidebarProps) {
         Schedule
       </button>
       {state.scheduleMode && (
-        <SchedulePicker 
-          value={state.scheduleTime} 
-          onChange={val => actions.setScheduleTime(val)} 
+        <SchedulePicker
+          value={state.scheduleTime}
+          onChange={val => actions.setScheduleTime(val)}
           onClear={() => {
-              actions.setScheduleMode(false)
-              actions.setScheduleTime('')
-          }} 
+            actions.setScheduleMode(false)
+            actions.setScheduleTime('')
+          }}
         />
       )}
     </div>
@@ -270,14 +270,14 @@ export function RightPanel({ state, actions }: SidebarProps) {
                 {state.editPost.platformTargets.map((pt, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>{pt.platform}</span>
-                    <span style={{ 
+                    <span style={{
                       padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 500,
-                      background: pt.status === 'Failed' ? 'rgba(239, 68, 68, 0.15)' : 
-                                 pt.status === 'Published' ? 'rgba(34, 197, 94, 0.15)' :
-                                 pt.status === 'Pending' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255,255,255,0.1)',
+                      background: pt.status === 'Failed' ? 'rgba(239, 68, 68, 0.15)' :
+                        pt.status === 'Published' ? 'rgba(34, 197, 94, 0.15)' :
+                          pt.status === 'Pending' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255,255,255,0.1)',
                       color: pt.status === 'Failed' ? '#ef4444' :
-                             pt.status === 'Published' ? '#22c55e' :
-                             pt.status === 'Pending' ? '#eab308' : 'var(--text-secondary)'
+                        pt.status === 'Published' ? '#22c55e' :
+                          pt.status === 'Pending' ? '#eab308' : 'var(--text-secondary)'
                     }}>
                       {pt.status.toUpperCase()}
                     </span>

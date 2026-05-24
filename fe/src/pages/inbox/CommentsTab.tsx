@@ -2,43 +2,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { MessageCircle, ArrowLeft, Loader2, Send } from 'lucide-react';
 import { useInbox } from '../../hooks/useInbox';
 import type { InboxCommentDto } from '../../api/inbox';
+import { formatDateTime, getInitials, stringToColor } from './utils';
 import styles from './InboxPage.module.css';
 
 interface CommentsTabProps {
   workspaceId?: string;
   platform?: string;
   accountId?: string;
-}
-
-function formatTime(utc: string): string {
-  const d = new Date(utc);
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function stringToColor(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
-  ];
-  return colors[Math.abs(hash) % colors.length];
 }
 
 function CommentListItem({
@@ -70,7 +40,7 @@ function CommentListItem({
       <div className={styles.itemBody}>
         <div className={styles.itemHeader}>
           <span className={styles.itemName}>{comment.authorName}</span>
-          <span className={styles.itemTime}>{formatTime(comment.receivedAtUtc)}</span>
+          <span className={styles.itemTime}>{formatDateTime(comment.receivedAtUtc)}</span>
         </div>
         <div className={styles.itemPreview}>{comment.bodyText}</div>
       </div>
@@ -132,7 +102,7 @@ function CommentDetail({
         )}
 
         <div className={styles.detailBody}>{comment.bodyText}</div>
-        <div className={styles.detailTime}>{formatTime(comment.receivedAtUtc)}</div>
+        <div className={styles.detailTime}>{formatDateTime(comment.receivedAtUtc)}</div>
       </div>
 
       {/* Reply input */}

@@ -78,15 +78,6 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/api/v1/hubs/notifications");
 app.MapHealthChecks("/health");
 
-// Schedule recurring jobs
-using (var scope = app.Services.CreateScope())
-{
-    var scheduler = scope.ServiceProvider.GetRequiredService<IIntegrationTokenRefreshJobScheduler>();
-    scheduler.ScheduleRecurringJob();
-
-    var duePostScheduler = scope.ServiceProvider.GetRequiredService<IDuePostPublishJobScheduler>();
-    duePostScheduler.ScheduleRecurringJob();
-}
-
+// Program entry point
 app.Run();
 public partial class Program { }

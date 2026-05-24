@@ -2,43 +2,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { Star, ArrowLeft, Loader2, Send } from 'lucide-react';
 import { useInbox } from '../../hooks/useInbox';
 import type { InboxReviewDto } from '../../api/inbox';
+import { formatDateTime, getInitials, stringToColor } from './utils';
 import styles from './InboxPage.module.css';
 
 interface ReviewsTabProps {
   workspaceId?: string;
   platform?: string;
   accountId?: string;
-}
-
-function formatTime(utc: string): string {
-  const d = new Date(utc);
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function stringToColor(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
-  ];
-  return colors[Math.abs(hash) % colors.length];
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -85,7 +55,7 @@ function ReviewListItem({
       <div className={styles.itemBody}>
         <div className={styles.itemHeader}>
           <span className={styles.itemName}>{review.reviewerName}</span>
-          <span className={styles.itemTime}>{formatTime(review.receivedAtUtc)}</span>
+          <span className={styles.itemTime}>{formatDateTime(review.receivedAtUtc)}</span>
         </div>
         <div className={styles.itemPreview}>
           <StarRating rating={review.starRating} />{' '}
@@ -141,7 +111,7 @@ function ReviewDetail({
         {review.reviewText && (
           <div className={styles.detailBody}>{review.reviewText}</div>
         )}
-        <div className={styles.detailTime}>{formatTime(review.receivedAtUtc)}</div>
+        <div className={styles.detailTime}>{formatDateTime(review.receivedAtUtc)}</div>
       </div>
 
       {/* Existing reply */}
@@ -151,7 +121,7 @@ function ReviewDetail({
             <strong>Your reply:</strong> {review.replyText}
           </div>
           {review.replyCreatedAtUtc && (
-            <div className={styles.detailTime}>{formatTime(review.replyCreatedAtUtc)}</div>
+            <div className={styles.detailTime}>{formatDateTime(review.replyCreatedAtUtc)}</div>
           )}
         </div>
       )}

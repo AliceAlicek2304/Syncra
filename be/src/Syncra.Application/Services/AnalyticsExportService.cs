@@ -9,12 +9,12 @@ namespace Syncra.Application.Services;
 
 public sealed class AnalyticsExportService : IAnalyticsExportService
 {
-    private readonly IWorkspaceAnalyticsService _analyticsService;
+    private readonly IZernioWorkspaceAnalyticsService _analyticsService;
     private readonly IPostRepository _postRepository;
     private readonly ILogger<AnalyticsExportService> _logger;
 
     public AnalyticsExportService(
-        IWorkspaceAnalyticsService analyticsService,
+        IZernioWorkspaceAnalyticsService analyticsService,
         IPostRepository postRepository,
         ILogger<AnalyticsExportService> logger)
     {
@@ -39,7 +39,7 @@ public sealed class AnalyticsExportService : IAnalyticsExportService
             return Result.Failure<byte[]>(summaryResult.Error!);
         }
 
-        var heatmapResult = await _analyticsService.GetHeatmapAsync(workspaceId, days, cancellationToken);
+        var heatmapResult = await _analyticsService.GetHeatmapAsync(workspaceId, days, cancellationToken: cancellationToken);
         if (heatmapResult.IsFailure)
         {
             _logger.LogError("Failed to fetch heatmap: {Error}", heatmapResult.Error);

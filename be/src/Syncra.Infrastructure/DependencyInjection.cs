@@ -12,7 +12,6 @@ using Syncra.Domain.Interfaces;
 using Syncra.Application.Options;
 using Syncra.Application.Common.Interfaces;
 using Syncra.Application.Providers;
-using Syncra.Infrastructure.Social;
 using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Storage;
 using StackExchange.Redis;
@@ -61,12 +60,6 @@ public static class DependencyInjection
         services.AddScoped<IInboxRepository, InboxRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
-        services.AddScoped<IntegrationTokenRefreshJob>();
-        services.AddScoped<IIntegrationTokenRefreshJobScheduler, IntegrationTokenRefreshJobScheduler>();
-        services.AddScoped<DuePostPublishJob>();
-        services.AddScoped<IDuePostPublishJobScheduler, DuePostPublishJobScheduler>();
-
-        services.AddSocialIntegrations(configuration);
 
         // Redis distributed cache for analytics query results.
         // Falls back to in-memory cache when no Redis connection string is configured (e.g. local dev).
