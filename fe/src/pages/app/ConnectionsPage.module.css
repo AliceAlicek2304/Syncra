@@ -301,13 +301,12 @@
   background-color: #ffffff;
   border: 1px solid #e5dfd3;
   border-radius: 12px;
-  padding: 20px;
   box-shadow: 0 2px 8px rgba(32, 21, 21, 0.02);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   min-height: 240px;
   transition: all 0.25s ease;
+  overflow: hidden;
 }
 
 .card:hover {
@@ -316,162 +315,293 @@
   border-color: #c5c0b1;
 }
 
-.cardHeader {
+.cardContent {
+  padding: 12px;
+  gap: 8px;
+  flex: 1;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+}
+
+.cardHeaderRow {
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
 }
 
 .cardHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
-.platformIconWrap {
+.avatarContainer {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e5dfd3;
+}
+
+.avatarBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  color: #ffffff;
+}
+
+.avatarBadgeIcon {
+  transform: scale(0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.avatarFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5dfd3;
+  color: #ffffff;
+}
+
+.avatarFallbackIcon {
+  transform: scale(0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.headerInfo {
+  min-width: 0;
 }
 
 .cardPlatformName {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   color: #201515;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  margin: 0;
 }
 
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  background-color: #f0fdf4; /* Light Green */
-  color: #16a34a; /* Text Green */
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.statusDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background-color: #16a34a;
+  padding: 0px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  background-color: #d1fae5; /* Green 100 */
+  color: #065f46; /* Green 800 */
+  margin-top: 2px;
 }
 
 .infoBtn {
+  padding: 2px;
+  color: #939084;
   background: transparent;
   border: none;
-  color: #939084;
-  cursor: pointer;
-  padding: 4px;
   border-radius: 4px;
+  cursor: pointer;
   display: inline-flex;
-  transition: color 0.15s;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .infoBtn:hover {
   color: #201515;
+  background-color: #f8f4f0;
 }
 
-.cardBody {
-  margin: 16px 0;
+.cardDetails {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.workspaceDisplay {
-  font-size: 13px;
-  font-weight: 600;
-  color: #ff4f00;
-  margin-bottom: 2px;
-}
-
-.connectionMeta {
-  font-size: 12px;
-  color: #939084;
-  margin-bottom: 12px;
-}
-
-.handleBlock {
+.detailsRow {
   display: flex;
   align-items: center;
-  background-color: #f8f4f0;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px dashed #e5dfd3;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.handleDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #fbbf24;
-  margin-right: 8px;
+.detailsLeft {
+  min-width: 0;
 }
 
-.handleText {
-  font-size: 12px;
-  font-weight: 600;
+.displayNameText {
+  font-size: 14px;
+  font-weight: 500;
   color: #201515;
-  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #939084;
+  margin-top: 1px;
+}
+
+.platformLabelText {
+  font-weight: 500;
+}
+
+.metaSeparator {
+  color: #c5c0b1;
+}
+
+.dateText {
+  color: #939084;
+}
+
 .copyBtn {
+  padding: 4px;
+  border-radius: 4px;
   background: transparent;
   border: none;
   color: #939084;
   cursor: pointer;
-  padding: 2px;
+  flex-shrink: 0;
   display: inline-flex;
-  transition: color 0.15s;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .copyBtn:hover {
   color: #201515;
+  background-color: #f8f4f0;
 }
 
-.cardActions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  border-top: 1px solid #f8f4f0;
-  padding-top: 14px;
+.workspaceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspaceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #f8f4f0;
+  color: #605d52;
+  border: 1px solid #e5dfd3;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.workspaceBadge:hover {
+  background-color: #e5dfd3;
+  color: #201515;
+}
+
+.workspaceBadgeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.workspaceBadgeText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .managePagesBtn {
-  padding: 8px 12px;
-  background-color: #ffffff;
-  color: #201515;
-  border: 1px solid #e5dfd3;
-  border-radius: 8px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
   font-weight: 600;
+  border-radius: 6px;
+  padding: 0 12px;
+  flex: 1;
+  height: 28px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  border: 1px solid #e5dfd3;
+  background-color: #ffffff;
+  color: #605d52;
 }
 
 .managePagesBtn:hover {
   background-color: #f8f4f0;
+  color: #201515;
   border-color: #c5c0b1;
 }
 
 .disconnectBtn {
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0 12px;
+  flex: 1;
+  height: 28px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e5dfd3;
   background-color: #ffffff;
   color: #605d52;
-  border: 1px solid #e5dfd3;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
 }
 
 .disconnectBtn:hover {
@@ -479,6 +609,7 @@
   border-color: rgba(239, 68, 68, 0.2);
   color: #ef4444;
 }
+
 
 /* ── States ── */
 .loadingState, .emptyState {

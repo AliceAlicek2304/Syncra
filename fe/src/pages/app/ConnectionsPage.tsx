@@ -11,6 +11,22 @@ import { socialAccountsApi } from '../../api/socialAccounts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
 
+const getWorkspaceColor = (workspaceId: string) => {
+  const colors = [
+    'rgb(255, 237, 160)', // Warm yellow
+    'rgb(254, 205, 211)', // Soft pink
+    'rgb(219, 234, 254)', // Soft blue
+    'rgb(220, 252, 231)', // Soft green
+    'rgb(243, 232, 255)', // Soft purple
+    'rgb(254, 215, 170)', // Soft orange
+  ];
+  let hash = 0;
+  for (let i = 0; i < workspaceId.length; i++) {
+    hash = workspaceId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 // ── Platform Metadata ────────────────────────────────────────────────────────
 interface PlatformConfig {
   id: string;
@@ -558,69 +574,129 @@ export default function ConnectionsPage() {
 
             return (
               <div key={account.id} className={styles.card}>
-                {/* Info and Card Top */}
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardHeaderLeft}>
-                    <div 
-                      className={styles.platformIconWrap}
-                      style={{ 
-                        backgroundColor: `${platformConfig?.color || '#ff4f00'}15`,
-                        color: platformConfig?.color || '#ff4f00',
-                        borderColor: `${platformConfig?.color || '#ff4f00'}30`
-                      }}
-                    >
-                      <PlatformIcon platform={account.platform} size={18} />
-                    </div>
-                    <div>
-                      <h3 className={styles.cardPlatformName}>{platformConfig?.label || account.platform}</h3>
-                      <div className={styles.statusBadge}>
-                        <span className={styles.statusDot} />
-                        <span>connected</span>
+                <div className={styles.cardContent}>
+                  {/* Header Row */}
+                  <div className={styles.cardHeaderRow}>
+                    <div className={styles.cardHeaderLeft}>
+                      {/* Avatar container */}
+                      <div className={styles.avatarContainer}>
+                        {account.avatarUrl ? (
+                          <>
+                            <img
+                              src={account.avatarUrl}
+                              alt={`${account.displayName || account.platform} profile`}
+                              className={styles.avatarImg}
+                              referrerPolicy="no-referrer"
+                            />
+                            <div
+                              className={styles.avatarBadge}
+                              style={{
+                                backgroundColor: platformConfig?.color || '#ff4f00',
+                              }}
+                            >
+                              <div className={styles.avatarBadgeIcon}>
+                                <PlatformIcon platform={account.platform} size={10} />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div
+                            className={styles.avatarFallback}
+                            style={{
+                              backgroundColor: platformConfig?.color || '#ff4f00',
+                            }}
+                          >
+                            <div className={styles.avatarFallbackIcon}>
+                              <PlatformIcon platform={account.platform} size={18} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Platform & Status */}
+                      <div className={styles.headerInfo}>
+                        <h3 className={styles.cardPlatformName}>
+                          {platformConfig?.label || account.platform}
+                        </h3>
+                        <span title="connected" className={styles.statusBadge}>
+                          connected
+                        </span>
                       </div>
                     </div>
-                  </div>
-                  <button className={styles.infoBtn} title="Connection details">
-                    <Info size={14} />
-                  </button>
-                </div>
 
-                {/* Card Body */}
-                <div className={styles.cardBody}>
-                  <div className={styles.workspaceDisplay}>
-                    {account.workspace.name}
-                  </div>
-                  <div className={styles.connectionMeta}>
-                    {account.workspace.name} • {displayDate}
-                  </div>
-                  <div className={styles.handleBlock}>
-                    <span className={styles.handleDot} />
-                    <span className={styles.handleText}>{account.displayName || account.externalAccountId}</span>
-                    <button 
-                      className={styles.copyBtn} 
-                      onClick={() => handleCopyId(account.displayName || account.externalAccountId)}
-                      title="Copy handle"
-                    >
-                      <Copy size={12} />
+                    {/* Info Button */}
+                    <button className={styles.infoBtn} title="View account health">
+                      <Info size={16} />
                     </button>
                   </div>
-                </div>
 
-                {/* Card Actions */}
-                <div className={styles.cardActions}>
-                  <button className={styles.managePagesBtn}>
-                    Manage Pages
-                  </button>
-                  <button 
-                    className={styles.disconnectBtn}
-                    onClick={() => {
-                      if (confirm(`Are you sure you want to disconnect ${account.displayName}?`)) {
-                        disconnectMutation.mutate({ accountId: account.id, workspaceId: account.workspace.id });
-                      }
-                    }}
-                    disabled={disconnectMutation.isPending}
-                  >
-                    Disconnect
-                  </button>
+                  {/* Body Details (mt-auto style) */}
+                  <div className={styles.cardDetails}>
+                    <div className={styles.detailsRow}>
+                      <div className={styles.detailsLeft}>
+                        <div className={styles.displayNameText}>
+                          {account.displayName || account.externalAccountId}
+                        </div>
+                        <div className={styles.metaRow}>
+                          <span 
+                            className={styles.platformLabelText}
+                            style={{ color: platformConfig?.color || '#2563eb' }}
+                          >
+                            {platformConfig?.label || account.platform}
+                          </span>
+                          <span className={styles.metaSeparator}>·</span>
+                          <span className={styles.dateText}>{displayDate}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.copyBtn}
+                        onClick={() => handleCopyId(account.id)}
+                        title={`Copy ID: ${account.id}`}
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
+
+                    {/* Workspace Selector Badge */}
+                    <div className={styles.workspaceRow}>
+                      <button
+                        className={styles.workspaceBadge}
+                        title={`Go to profile: ${account.workspace.name}`}
+                      >
+                        <div
+                          className={styles.workspaceBadgeDot}
+                          style={{
+                            backgroundColor: getWorkspaceColor(account.workspace.id),
+                          }}
+                        />
+                        <span className={styles.workspaceBadgeText}>
+                          {account.workspace.name}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className={styles.actionsRow}>
+                      <button className={styles.managePagesBtn}>
+                        Manage Pages
+                      </button>
+                      <button
+                        className={styles.disconnectBtn}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to disconnect ${account.displayName}?`)) {
+                            disconnectMutation.mutate({
+                              accountId: account.id,
+                              workspaceId: account.workspace.id,
+                            });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
