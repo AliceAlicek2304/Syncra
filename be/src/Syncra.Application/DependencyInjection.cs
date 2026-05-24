@@ -21,10 +21,6 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
 
-        services.AddScoped<Interfaces.IIntegrationTokenRefreshService, Services.IntegrationTokenRefreshService>();
-        services.AddScoped<Interfaces.IPublishService, Services.PublishService>();
-        services.AddScoped<Interfaces.IIntegrationAnalyticsService, Services.IntegrationAnalyticsService>();
-        services.AddScoped<Interfaces.IWorkspaceAnalyticsService, Services.WorkspaceAnalyticsService>();
         services.AddScoped<Interfaces.IAnalyticsExportService, Services.AnalyticsExportService>();
         services.AddScoped<Interfaces.IZernioWorkspaceAnalyticsService, Services.ZernioWorkspaceAnalyticsService>();
         services.AddScoped<Interfaces.IInboxBackfillService, Services.InboxBackfillService>();
@@ -32,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripeProductWebhookHandlers>();
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripePriceWebhookHandlers>();
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripeSubscriptionWebhookHandlers>();
+        services.AddScoped<Interfaces.IRepurposeService, Services.RepurposeService>();
         return services;
     }
 }
