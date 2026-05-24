@@ -926,3 +926,226 @@
   border-radius: 4px;
   border: 1px solid #e5dfd3;
 }
+
+/* ── Centered Modal (Account Health) ── */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(32, 21, 21, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalCard {
+  background-color: #ffffff;
+  border: 1px solid #e5dfd3;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(32, 21, 21, 0.12);
+  display: flex;
+  flex-direction: column;
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modalContent {
+  padding: 24px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #201515;
+  margin-bottom: 4px;
+}
+
+.modalSubtitle {
+  font-size: 13px;
+  color: #939084;
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: #939084;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  transition: all 0.15s;
+}
+
+.modalCloseBtn:hover {
+  background-color: #f8f4f0;
+  color: #201515;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.healthStatusBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.modalSection {
+  background-color: #f8f4f0;
+  border: 1px solid #e5dfd3;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.modalSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #201515;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.metaLabel {
+  color: #605d52;
+}
+
+.metaValue {
+  color: #201515;
+  font-weight: 500;
+}
+
+.metaValueSuccess {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.permGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.permGridBadge {
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  text-align: center;
+}
+
+.permSubSection {
+  margin-bottom: 12px;
+}
+
+.permSubSection:last-child {
+  margin-bottom: 0;
+}
+
+.permSubTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #939084;
+  margin-bottom: 6px;
+}
+
+.permTagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.permTagActive {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  font-weight: 500;
+}
+
+.permTagOptional {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  font-weight: 500;
+}
+
+.modalFooter {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modalCloseActionBtn {
+  padding: 8px 16px;
+  background-color: #ffffff;
+  color: #201515;
+  border: 1px solid #e5dfd3;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modalCloseActionBtn:hover {
+  background-color: #f8f4f0;
+  border-color: #c5c0b1;
+}

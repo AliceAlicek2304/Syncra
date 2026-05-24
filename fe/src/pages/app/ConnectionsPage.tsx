@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle
+  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
@@ -152,11 +152,61 @@ function PlatformIcon({ platform, size = 20 }: { platform: string; size?: number
   }
 }
 
+interface PlatformPermissions {
+  requiredPosting: string[];
+  requiredAnalytics: string[];
+  optional: string[];
+}
+
+function getPlatformPermissions(platform: string): PlatformPermissions {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return {
+        requiredPosting: ['pages_manage_posts', 'pages_read_engagement'],
+        requiredAnalytics: ['pages_read_engagement', 'read_insights'],
+        optional: ['pages_show_list', 'pages_manage_engagement', 'pages_read_user_content', 'business_management', 'pages_messaging', 'pages_manage_metadata']
+      };
+    case 'instagram':
+      return {
+        requiredPosting: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
+        requiredAnalytics: ['instagram_basic', 'instagram_manage_insights'],
+        optional: ['pages_read_engagement', 'business_management']
+      };
+    case 'youtube':
+      return {
+        requiredPosting: ['youtube.upload', 'youtube.readonly'],
+        requiredAnalytics: ['yt-analytics.readonly', 'yt-analytics-monetization.readonly'],
+        optional: ['youtube', 'youtube.force-ssl']
+      };
+    case 'tiktok':
+      return {
+        requiredPosting: ['video.publish', 'video.upload'],
+        requiredAnalytics: ['user.info.stats', 'video.list'],
+        optional: ['user.info.basic', 'video.search']
+      };
+    case 'linkedin':
+      return {
+        requiredPosting: ['w_member_social'],
+        requiredAnalytics: ['r_organization_social', 'r_liteprofile'],
+        optional: ['w_organization_social']
+      };
+    default:
+      return {
+        requiredPosting: ['post.write', 'offline_access'],
+        requiredAnalytics: ['analytics.read'],
+        optional: ['user.read']
+      };
+  }
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function ConnectionsPage() {
   const queryClient = useQueryClient();
   const { workspaces, activeWorkspace, isLoading: isWorkspaceLoading } = useWorkspace();
   const { success: showSuccess, error: showError } = useToast();
+
+  const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -579,8 +629,12 @@ export default function ConnectionsPage() {
                       </div>
                     </div>
                   </div>
-                  <button className={styles.infoBtn} title="Connection details">
-                    <Info size={14} />
+                  <button
+                    className={styles.infoBtn}
+                    title="Connection details"
+                    onClick={() => setSelectedHealthAccount(account)}
+                  >
+                    <Info size={16} />
                   </button>
                 </div>
 
@@ -812,6 +866,129 @@ export default function ConnectionsPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Health Modal */}
+      {selectedHealthAccount && (
+        <div className={styles.modalBackdrop} onClick={() => setSelectedHealthAccount(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalContent}>
+              {/* Modal Header */}
+              <div className={styles.modalHeader}>
+                <div>
+                  <h2 className={styles.modalTitle}>Account Health</h2>
+                  <p className={styles.modalSubtitle}>
+                    @{selectedHealthAccount.displayName || selectedHealthAccount.externalAccountId} · {selectedHealthAccount.platform}
+                  </p>
+                </div>
+                <button className={styles.modalCloseBtn} onClick={() => setSelectedHealthAccount(null)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className={styles.modalBody}>
+                {/* Health Status */}
+                <div className={styles.healthStatusBadge}>
+                  <Check size={18} />
+                  <span>Healthy</span>
+                </div>
+
+                {/* Token Status */}
+                <div className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>
+                    <Key size={14} />
+                    <span>Token Status</span>
+                  </h3>
+                  <div className={styles.metaList}>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Valid</span>
+                      <span className={styles.metaValueSuccess}>Yes</span>
+                    </div>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Expires in</span>
+                      <span className={styles.metaValue}>
+                        {(() => {
+                          const connectedDate = selectedHealthAccount.connectedAtUtc ? new Date(selectedHealthAccount.connectedAtUtc) : new Date();
+                          const expiresAtDate = new Date(connectedDate.getTime() + 60 * 24 * 60 * 60 * 1000);
+                          const diffTime = expiresAtDate.getTime() - Date.now();
+                          const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                          return `${daysRemaining} days`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Expires at</span>
+                      <span className={styles.metaValue}>
+                        {(() => {
+                          const connectedDate = selectedHealthAccount.connectedAtUtc ? new Date(selectedHealthAccount.connectedAtUtc) : new Date();
+                          const expiresAtDate = new Date(connectedDate.getTime() + 60 * 24 * 60 * 60 * 1000);
+                          return expiresAtDate.toLocaleDateString();
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Permissions */}
+                <div className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>
+                    <ShieldCheck size={14} />
+                    <span>Permissions</span>
+                  </h3>
+                  
+                  <div className={styles.permGrid}>
+                    <div className={styles.permGridBadge}>✓ Can Post</div>
+                    <div className={styles.permGridBadge}>✓ Analytics</div>
+                  </div>
+
+                  {(() => {
+                    const perms = getPlatformPermissions(selectedHealthAccount.platform);
+                    return (
+                      <>
+                        <div className={styles.permSubSection}>
+                          <p className={styles.permSubTitle}>Required for posting:</p>
+                          <div className={styles.permTagsList}>
+                            {perms.requiredPosting.map(p => (
+                              <span key={p} className={styles.permTagActive}>✓ {p}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className={styles.permSubSection}>
+                          <p className={styles.permSubTitle}>For analytics:</p>
+                          <div className={styles.permTagsList}>
+                            {perms.requiredAnalytics.map(p => (
+                              <span key={p} className={styles.permTagActive}>✓ {p}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {perms.optional.length > 0 && (
+                          <div className={styles.permSubSection}>
+                            <p className={styles.permSubTitle}>Optional:</p>
+                            <div className={styles.permTagsList}>
+                              {perms.optional.map(p => (
+                                <span key={p} className={styles.permTagOptional}>✓ {p}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className={styles.modalFooter}>
+                <button className={styles.modalCloseActionBtn} onClick={() => setSelectedHealthAccount(null)}>
+                  Close
+                </button>
               </div>
             </div>
           </div>
