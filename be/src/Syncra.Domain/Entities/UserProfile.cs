@@ -2,6 +2,8 @@ namespace Syncra.Domain.Entities;
 
 public sealed class UserProfile : EntityBase
 {
+    public const int AvatarUrlMaxLength = 2048;
+
     public Guid UserId { get; set; }
     public string? DisplayName { get; set; }
     public string? FirstName { get; set; }

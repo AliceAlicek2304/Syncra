@@ -5,7 +5,7 @@ public sealed class InboxConversation : WorkspaceEntityBase
     public const int ZernioConversationIdMaxLength = 200;
     public const int PlatformMaxLength = 50;
     public const int ParticipantNameMaxLength = 200;
-    public const int ParticipantAvatarUrlMaxLength = 500;
+    public const int ParticipantAvatarUrlMaxLength = 2048;
     public const int LastMessageTextMaxLength = 2000;
 
     public string ZernioConversationId { get; private set; } = string.Empty;

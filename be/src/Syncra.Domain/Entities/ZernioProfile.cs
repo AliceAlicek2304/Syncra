@@ -6,7 +6,7 @@ public sealed class ZernioProfile : WorkspaceEntityBase
 {
     public const int DisplayNameMaxLength = 200;
     public const int PlatformMaxLength = 50;
-    public const int AvatarUrlMaxLength = 500;
+    public const int AvatarUrlMaxLength = 2048;
 
     public string ZernioProfileId { get; private set; } = string.Empty;
     public string DisplayName { get; private set; } = string.Empty;

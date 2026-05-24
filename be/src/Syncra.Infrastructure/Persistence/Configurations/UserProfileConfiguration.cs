@@ -15,7 +15,7 @@ public class UserProfileConfiguration : BaseEntityConfiguration<UserProfile>
         builder.Property(e => e.DisplayName).HasMaxLength(200).HasColumnName("display_name");
         builder.Property(e => e.FirstName).HasMaxLength(100).HasColumnName("first_name");
         builder.Property(e => e.LastName).HasMaxLength(100).HasColumnName("last_name");
-        builder.Property(e => e.AvatarUrl).HasMaxLength(500).HasColumnName("avatar_url");
+        builder.Property(e => e.AvatarUrl).HasMaxLength(UserProfile.AvatarUrlMaxLength).HasColumnName("avatar_url");
         builder.Property(e => e.Timezone).HasMaxLength(100).HasColumnName("timezone");
         builder.Property(e => e.Locale).HasMaxLength(10).HasColumnName("locale");
     }

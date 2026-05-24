@@ -5,7 +5,7 @@ public sealed class SocialAccount : WorkspaceEntityBase
     public const int ExternalAccountIdMaxLength = 200;
     public const int PlatformMaxLength = 50;
     public const int DisplayNameMaxLength = 200;
-    public const int AvatarUrlMaxLength = 500;
+    public const int AvatarUrlMaxLength = 2048;
 
     public string ExternalAccountId { get; private set; } = string.Empty;
     public string Platform { get; private set; } = string.Empty;
