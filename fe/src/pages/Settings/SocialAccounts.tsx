@@ -228,6 +228,7 @@ export default function SocialAccounts() {
   const handleConnect = async (platform: string) => {
     if (!activeWorkspace) return;
     setConnectingPlatform(platform);
+    let isRedirecting = false;
     try {
       const callbackUrl = `${window.location.origin}/Syncra/social-accounts/select`;
       const response = await api.get<{ connectUrl: string }>(
@@ -239,6 +240,7 @@ export default function SocialAccounts() {
           }
         }
       );
+      isRedirecting = true;
       window.location.href = response.data.connectUrl;
     } catch (err) {
       if (!handleBillingError(err)) {
@@ -248,7 +250,9 @@ export default function SocialAccounts() {
         showError(msg);
       }
     } finally {
-      setConnectingPlatform(null);
+      if (!isRedirecting) {
+        setConnectingPlatform(null);
+      }
     }
   };
 
