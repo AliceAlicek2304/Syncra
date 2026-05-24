@@ -9,7 +9,7 @@
 - ✅ **v1.4 Code Quality & Tech Debt** — Phase 14 (shipped 2026-05-14)
 - ✅ **v1.5 Google Auth & Account Linking** — Phases 15-22 (shipped 2026-05-18)
 - ✅ **v1.6 Logging & Observability** — Phase 23 (shipped 2026-05-20)
-- 🚧 **v2.0 Zernio API Integration** — Phases 24-28 (in progress)
+- ✅ **v2.0 Zernio API Integration** — Phases 24-29 (shipped 2026-05-24)
 
 ## Phases
 
@@ -231,6 +231,16 @@ Plans:
 
 - [x] 28-04-PLAN.md — 30-day backfill job; per-tab Inbox APIs; `InboxPage` (3 tabs, master-detail DMs, billing, SignalR) (INBX-01..05)
 
+### Phase 29: Backend integration for frontend-only pages and platform list cleanup
+
+**Goal:** Replace mock/frontend-only data on Repurpose and Trend Radar pages with real backend API calls, and create a centralized Zernio platform registry used consistently across the entire frontend.
+**Requirements**: TBD
+**Depends on:** Phase 28
+**Plans:** 1 plan
+
+Plans:
+- [x] 29-01: Platform registry + Repurpose + Trends APIs — completed 2026-05-24
+
 ---
 
 ## Progress
@@ -249,5 +259,6 @@ Plans:
 | 26. Post Scheduling | v2.0 | 4/4 | Complete | 2026-05-23 |
 | 27. Analytics | v2.0 | 2/2 | Complete   | 2026-05-23 |
 | 28. Inbox | v2.0 | 4/4 | Complete   | 2026-05-23 |
+| 29. Backend Integration & Platform Registry | v2.0 | 1/1 | Complete   | 2026-05-24 |
 
 _For milestone archives, see `.planning/milestones/v1.6-ROADMAP.md`_
