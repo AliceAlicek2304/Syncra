@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck
+  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck, Trash2
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
-import { socialAccountsApi, type AccountHealthDto } from '../../api/socialAccounts';
+import { socialAccountsApi } from '../../api/socialAccounts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
 
@@ -152,13 +152,14 @@ function PlatformIcon({ platform, size = 20 }: { platform: string; size?: number
   }
 }
 
+/*
 interface PlatformPermissions {
   requiredPosting: string[];
   requiredAnalytics: string[];
   optional: string[];
 }
 
-function getPlatformPermissions(platform: string): PlatformPermissions {
+function _getPlatformPermissions(platform: string): PlatformPermissions {
   const p = platform.toLowerCase();
   switch (p) {
     case 'facebook':
@@ -199,11 +200,12 @@ function getPlatformPermissions(platform: string): PlatformPermissions {
       };
   }
 }
+*/
 
 // ── Account Health Modal ─────────────────────────────────────────────────────
 
 function HealthModal({ account, workspaceId, onClose }: {
-  account: SocialAccountDto & { workspace: { id: string; name: string; color: string; isDefault: boolean } };
+  account: SocialAccountDto;
   workspaceId: string;
   onClose: () => void;
 }) {
@@ -376,42 +378,42 @@ function HealthModal({ account, workspaceId, onClose }: {
   );
 }
 
-interface MockPageOption {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  category: string;
-}
 
-function getPlatformPages(platform: string, displayName: string): MockPageOption[] {
-  const p = platform.toLowerCase();
-  switch (p) {
-    case 'facebook':
-      return [
-        { id: 'fb-1', name: displayName, avatarUrl: '', category: 'Dịch vụ kỹ thuật' },
-        { id: 'fb-2', name: `${displayName} Team`, avatarUrl: '', category: 'Doanh nghiệp địa phương' },
-        { id: 'fb-3', name: `${displayName} Community`, avatarUrl: '', category: 'Cộng đồng' }
-      ];
-    case 'instagram':
-      return [
-        { id: 'ig-1', name: displayName, avatarUrl: '', category: 'Trang cá nhân' },
-        { id: 'ig-2', name: `${displayName}_business`, avatarUrl: '', category: 'Người sáng tạo nội dung' }
-      ];
-    case 'youtube':
-      return [
-        { id: 'yt-1', name: displayName, avatarUrl: '', category: 'Kênh chính thức' },
-        { id: 'yt-2', name: `${displayName} Vlogs`, avatarUrl: '', category: 'Giải trí' }
-      ];
-    case 'tiktok':
-      return [
-        { id: 'tt-1', name: displayName, avatarUrl: '', category: 'Tài khoản cá nhân' },
-        { id: 'tt-2', name: `${displayName} Pro`, avatarUrl: '', category: 'Thương hiệu' }
-      ];
-    default:
-      return [
-        { id: 'gen-1', name: displayName, avatarUrl: '', category: 'Mặc định' }
-      ];
-  }
+// ── Disconnect Confirm Modal ─────────────────────────────────────────────────
+function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPending }: {
+  account: SocialAccountDto & { workspace: { name: string } };
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.disconnectModalCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.disconnectModalContent}>
+          <div className={styles.disconnectModalHeader}>
+            <div className={styles.disconnectHeaderLeft}>
+              <Trash2 size={20} className={styles.disconnectIcon} />
+              <h2 className={styles.disconnectModalTitle}>Disconnect account</h2>
+            </div>
+            <button className={styles.modalCloseBtn} onClick={onClose} disabled={isPending}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className={styles.disconnectModalBody}>
+            <p className={styles.disconnectText}>Are you sure you want to disconnect this account?</p>
+          </div>
+          <div className={styles.disconnectModalFooter}>
+            <button className={styles.disconnectCancelBtn} onClick={onClose} disabled={isPending}>
+              Cancel
+            </button>
+            <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending}>
+              {isPending ? 'Disconnecting...' : 'Disconnect'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -422,6 +424,7 @@ export default function ConnectionsPage() {
 
   const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
   const [selectedManagePagesAccount, setSelectedManagePagesAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
+  const [accountToDisconnect, setAccountToDisconnect] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -552,6 +555,36 @@ export default function ConnectionsPage() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to disconnect social account';
+      showError(msg);
+    }
+  });
+
+  // Facebook pages query (only for Facebook accounts in manage pages drawer)
+  const fbAccountId = selectedManagePagesAccount?.platform?.toLowerCase() === 'facebook'
+    ? selectedManagePagesAccount.id
+    : null;
+
+  const { data: fbPagesData, isLoading: isFbPagesLoading } = useQuery({
+    queryKey: ['facebook-pages', fbAccountId],
+    queryFn: () => socialAccountsApi.getFacebookPages(
+      selectedManagePagesAccount!.workspace.id,
+      fbAccountId!
+    ),
+    enabled: fbAccountId !== null,
+  });
+
+  // Switch Facebook page mutation
+  const switchFbPageMutation = useMutation({
+    mutationFn: async ({ accountId, workspaceId, selectedPageId }: { accountId: string; workspaceId: string; selectedPageId: string }) => {
+      await socialAccountsApi.updateFacebookPage(workspaceId, accountId, selectedPageId);
+    },
+    onSuccess: () => {
+      showSuccess('Facebook page switched successfully');
+      setSelectedManagePagesAccount(null);
+      void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to switch Facebook page';
       showError(msg);
     }
   });
@@ -826,15 +859,33 @@ export default function ConnectionsPage() {
                 {/* Info and Card Top */}
                 <div className={styles.cardHeader}>
                   <div className={styles.cardHeaderLeft}>
-                    <div
-                      className={styles.platformIconWrap}
-                      style={{
-                        backgroundColor: `${platformConfig?.color || '#ff4f00'}15`,
-                        color: platformConfig?.color || '#ff4f00',
-                        borderColor: `${platformConfig?.color || '#ff4f00'}30`
-                      }}
-                    >
-                      <PlatformIcon platform={account.platform} size={18} />
+                    <div className={styles.cardAvatarWrap}>
+                      {account.avatarUrl ? (
+                        <>
+                          <img
+                            src={account.avatarUrl}
+                            alt=""
+                            className={styles.cardAvatar}
+                          />
+                          <div
+                            className={styles.cardPlatformBadge}
+                            style={{ color: platformConfig?.color || '#ff4f00' }}
+                          >
+                            <PlatformIcon platform={account.platform} size={17} />
+                          </div>
+                        </>
+                      ) : (
+                        <div
+                          className={styles.platformIconWrap}
+                          style={{
+                            backgroundColor: `${platformConfig?.color || '#ff4f00'}15`,
+                            color: platformConfig?.color || '#ff4f00',
+                            borderColor: `${platformConfig?.color || '#ff4f00'}30`
+                          }}
+                        >
+                          <PlatformIcon platform={account.platform} size={18} />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <h3 className={styles.cardPlatformName}>{platformConfig?.label || account.platform}</h3>
@@ -891,11 +942,7 @@ export default function ConnectionsPage() {
                   </button>
                   <button
                     className={styles.disconnectBtn}
-                    onClick={() => {
-                      if (confirm(`Are you sure you want to disconnect ${account.displayName}?`)) {
-                        disconnectMutation.mutate({ accountId: account.id, workspaceId: account.workspace.id });
-                      }
-                    }}
+                    onClick={() => setAccountToDisconnect(account)}
                     disabled={disconnectMutation.isPending}
                   >
                     Disconnect
@@ -1115,50 +1162,83 @@ export default function ConnectionsPage() {
 
             <div className={styles.drawerBody}>
               <div className={styles.pagesList}>
-                {getPlatformPages(selectedManagePagesAccount.platform, selectedManagePagesAccount.displayName || selectedManagePagesAccount.externalAccountId).map((page, index) => {
-                  const isCurrent = index === 0;
-                  return (
-                    <button
-                      key={page.id}
-                      type="button"
-                      className={styles.pageSelectorBtn}
-                      onClick={() => {
-                        showSuccess(`Switched to ${page.name}`);
-                        setSelectedManagePagesAccount(null);
-                      }}
-                    >
-                      <div className={styles.pageAvatarWrap}>
-                        {selectedManagePagesAccount.avatarUrl ? (
+                {selectedManagePagesAccount.platform.toLowerCase() === 'facebook' ? (
+                  isFbPagesLoading ? (
+                    <div className={styles.pagesLoading}>
+                      <Loader2 size={20} className={styles.spinner} />
+                      <span>Loading pages...</span>
+                    </div>
+                  ) : fbPagesData?.pages && fbPagesData.pages.length > 0 ? (
+                    fbPagesData.pages.map((page) => {
+                      const isCurrent = page.id === fbPagesData.selectedPageId;
+                      return (
+                        <button
+                          key={page.id}
+                          type="button"
+                          className={styles.pageSelectorBtn}
+                          disabled={isCurrent || switchFbPageMutation.isPending}
+                          onClick={() => {
+                            switchFbPageMutation.mutate({
+                              accountId: selectedManagePagesAccount.id,
+                              workspaceId: selectedManagePagesAccount.workspace.id,
+                              selectedPageId: page.id,
+                            });
+                          }}
+                        >
+                          <div className={styles.pageAvatarWrap}>
+                            {selectedManagePagesAccount.avatarUrl ? (
                           <img
                             src={selectedManagePagesAccount.avatarUrl}
                             alt={page.name}
                             className={styles.pageAvatar}
                           />
-                        ) : (
-                          <div
-                            className={styles.pagePlatformFallback}
-                            style={{
-                              color: ALL_PLATFORMS.find(p => p.id === selectedManagePagesAccount.platform.toLowerCase())?.color || '#ff4f00'
-                            }}
-                          >
-                            <PlatformIcon platform={selectedManagePagesAccount.platform} size={18} />
+                            ) : (
+                              <div
+                                className={styles.pagePlatformFallback}
+                                style={{
+                                  color: ALL_PLATFORMS.find(p => p.id === 'facebook')?.color || '#1877f2'
+                                }}
+                              >
+                                <PlatformIcon platform="facebook" size={18} />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className={styles.pageInfo}>
-                        <div className={styles.pageNameRow}>
-                          <span className={styles.pageName}>{page.name}</span>
-                          {isCurrent && <span className={styles.currentBadge}>Current</span>}
-                        </div>
-                        <p className={styles.pageCategory}>{page.category}</p>
-                      </div>
-                    </button>
-                  );
-                })}
+                          <div className={styles.pageInfo}>
+                            <div className={styles.pageNameRow}>
+                              <span className={styles.pageName}>{page.name}</span>
+                              {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                            </div>
+                            <p className={styles.pageCategory}>{page.category || 'Facebook Page'}</p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.pagesEmpty}>No pages found for this account.</p>
+                  )
+                ) : (
+                  <p className={styles.pagesEmpty}>Page switching is not available for this platform yet.</p>
+                )}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Disconnect Confirm Modal */}
+      {accountToDisconnect && (
+        <DisconnectConfirmModal
+          account={accountToDisconnect}
+          onClose={() => setAccountToDisconnect(null)}
+          onConfirm={() => {
+            disconnectMutation.mutate({
+              accountId: accountToDisconnect.id,
+              workspaceId: accountToDisconnect.workspace.id,
+            });
+            setAccountToDisconnect(null);
+          }}
+          isPending={disconnectMutation.isPending}
+        />
       )}
     </div>
   );
