@@ -11,6 +11,7 @@ import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
 import BillingGateOverlay from '../../components/BillingGateOverlay';
 import styles from './SocialAccounts.module.css';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -163,6 +164,7 @@ function PlatformIcon({ platformKey, color }: { platformKey: PlatformKey; color:
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SocialAccounts() {
+  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace();
   const [accounts, setAccounts] = useState<SocialAccountDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
@@ -176,11 +178,18 @@ export default function SocialAccounts() {
 
   const { success: showSuccess, error: showError } = useToast();
 
+  const showLoading = isLoading || workspaceLoading || !activeWorkspace;
+
   // ─ Fetch connected accounts ─────────────────────────────────────────────
 
   const fetchAccounts = useCallback(async () => {
+    if (!activeWorkspace) return;
     try {
-      const response = await api.get<SocialAccountDto[]>('social-accounts');
+      const response = await api.get<SocialAccountDto[]>('social-accounts', {
+        headers: {
+          'X-Workspace-Id': activeWorkspace.id
+        }
+      });
       setAccounts(response.data);
     } catch (err) {
       const msg =
@@ -190,11 +199,13 @@ export default function SocialAccounts() {
     } finally {
       setIsLoading(false);
     }
-  }, [showError]);
+  }, [showError, activeWorkspace]);
 
   useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+    if (activeWorkspace) {
+      fetchAccounts();
+    }
+  }, [activeWorkspace, fetchAccounts]);
 
   // ─ Billing gate helper ───────────────────────────────────────────────────
 
@@ -214,12 +225,18 @@ export default function SocialAccounts() {
   // ─ Connect flow ──────────────────────────────────────────────────────────
 
   const handleConnect = async (platform: string) => {
+    if (!activeWorkspace) return;
     setConnectingPlatform(platform);
     try {
       const callbackUrl = `${window.location.origin}/Syncra/social-accounts/select`;
       const response = await api.get<{ connectUrl: string }>(
         `social-accounts/connect-url/${platform}`,
-        { params: { redirectUrl: callbackUrl } }
+        {
+          params: { redirectUrl: callbackUrl },
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        }
       );
       window.location.href = response.data.connectUrl;
     } catch (err) {
@@ -245,11 +262,15 @@ export default function SocialAccounts() {
   };
 
   const confirmDisconnect = async () => {
-    if (!pendingDisconnect) return;
+    if (!pendingDisconnect || !activeWorkspace) return;
     setDisconnecting(pendingDisconnect.accountId);
     setPendingDisconnect(null);
     try {
-      await api.delete(`social-accounts/${pendingDisconnect.accountId}`);
+      await api.delete(`social-accounts/${pendingDisconnect.accountId}`, {
+        headers: {
+          'X-Workspace-Id': activeWorkspace.id
+        }
+      });
       showSuccess(`${pendingDisconnect.displayName} disconnected successfully`);
       await fetchAccounts();
     } catch (err) {
@@ -339,7 +360,7 @@ export default function SocialAccounts() {
                 <button
                   className={styles.btnConnect}
                   onClick={() => handleConnect(platform.key)}
-                  disabled={isConnecting || isLoading}
+                  disabled={isConnecting || showLoading}
                 >
                   {isConnecting ? (
                     <>
@@ -360,7 +381,7 @@ export default function SocialAccounts() {
       </div>
 
       {/* Loading skeleton */}
-      {isLoading && (
+      {showLoading && (
         <div className={styles.loadingOverlay}>
           <Loader2 size={24} className={styles.spinner} />
           <span>Loading accounts...</span>
@@ -409,7 +430,7 @@ export default function SocialAccounts() {
       />
 
       {/* Empty state */}
-      {!isLoading && accounts.length === 0 && (
+      {!showLoading && accounts.length === 0 && (
         <div className={styles.emptyState}>
           <Wifi size={32} className={styles.emptyIcon} />
           <h4>No Social Accounts Connected</h4>

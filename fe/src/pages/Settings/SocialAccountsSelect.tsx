@@ -4,6 +4,7 @@ import { Check, ArrowRight, Loader2, AlertTriangle, Building2 } from 'lucide-rea
 import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SocialAccountsSelect() {
+  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { success: showSuccess, error: showError } = useToast();
@@ -39,6 +41,7 @@ export default function SocialAccountsSelect() {
 
   useEffect(() => {
     if (hasInitialized.current) return;
+    if (workspaceLoading || !activeWorkspace) return;
     hasInitialized.current = true;
 
     if (!platform || !tempToken || !state) {
@@ -51,7 +54,12 @@ export default function SocialAccountsSelect() {
       try {
         const response = await api.get<PageItem[]>(
           `social-accounts/${platform}/pages`,
-          { params: { tempToken, state } }
+          {
+            params: { tempToken, state },
+            headers: {
+              'X-Workspace-Id': activeWorkspace.id
+            }
+          }
         );
         const resData = response.data as any;
         setItems(resData.options ? resData.options : resData);
@@ -66,12 +74,12 @@ export default function SocialAccountsSelect() {
     };
 
     fetchPages();
-  }, [platform, tempToken, state]);
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading]);
 
   // ─ Submit selection ─────────────────────────────────────────────────────
 
   const handleConfirm = async () => {
-    if (!selectedId) return;
+    if (!selectedId || !activeWorkspace) return;
 
     setIsSubmitting(true);
     try {
@@ -79,6 +87,10 @@ export default function SocialAccountsSelect() {
         selectedId: selectedId,
         tempToken,
         state,
+      }, {
+        headers: {
+          'X-Workspace-Id': activeWorkspace.id
+        }
       });
       showSuccess(`${platform} account connected successfully`);
       navigate('/app/settings', { replace: true });

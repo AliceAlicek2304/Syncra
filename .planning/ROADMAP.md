@@ -169,7 +169,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 26-04: Post retry command (`POST /v1/post/{id}/retry`) + delete/cancel command; frontend retry and delete actions on post cards
+- [x] 26-04: Post retry command (`POST /v1/post/{id}/retry`) + delete/cancel command; frontend retry and delete actions on post cards
 
 ---
 
@@ -229,7 +229,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 28-04-PLAN.md — 30-day backfill job; per-tab Inbox APIs; `InboxPage` (3 tabs, master-detail DMs, billing, SignalR) (INBX-01..05)
+- [x] 28-04-PLAN.md — 30-day backfill job; per-tab Inbox APIs; `InboxPage` (3 tabs, master-detail DMs, billing, SignalR) (INBX-01..05)
 
 ---
 
@@ -246,8 +246,8 @@ Plans:
 | 23. Configure Logging (Serilog) | v1.6 | 3/3 | Complete | 2026-05-20 |
 | 24. Zernio Foundation | v2.0 | 3/3 | Complete | 2026-05-23 |
 | 25. Account Connect | v2.0 | 4/4 | Complete | 2026-05-23 |
-| 26. Post Scheduling | v2.0 | 3/4 | In Progress|  |
+| 26. Post Scheduling | v2.0 | 4/4 | Complete | 2026-05-23 |
 | 27. Analytics | v2.0 | 2/2 | Complete   | 2026-05-23 |
-| 28. Inbox | v2.0 | 3/4 | In Progress|  |
+| 28. Inbox | v2.0 | 4/4 | Complete   | 2026-05-23 |
 
 _For milestone archives, see `.planning/milestones/v1.6-ROADMAP.md`_

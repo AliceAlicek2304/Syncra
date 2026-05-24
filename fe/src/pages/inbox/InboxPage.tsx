@@ -16,10 +16,11 @@ const TABS: { key: InboxTab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function InboxPage() {
-  const { workspaceId } = useWorkspace();
+  const { activeWorkspace } = useWorkspace();
+  const workspaceId = activeWorkspace?.id;
   const [activeTab, setActiveTab] = useState<InboxTab>('dm');
-  const [platformFilter, setPlatformFilter] = useState<string | undefined>();
-  const [accountFilter, setAccountFilter] = useState<string | undefined>();
+  const [platformFilter] = useState<string | undefined>();
+  const [accountFilter] = useState<string | undefined>();
 
   const {
     isSyncing,

@@ -30,6 +30,16 @@ builder.WebHost.UseSentry();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApiServices(builder.Configuration);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCors", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddZernioIntegration(builder.Configuration);
@@ -54,6 +64,8 @@ if (app.Environment.IsDevelopment())
 
     app.UseHangfireDashboard("/hangfire");
 }
+
+app.UseCors("DevCors");
 
 app.UseRouting();
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { workspacesApi } from '../api/workspaces';
@@ -30,6 +30,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveWorkspaceIdState(workspace.id);
     localStorage.setItem('syncra_workspace_id', workspace.id);
   };
+
+  useEffect(() => {
+    if (!isLoading && workspaces.length > 0) {
+      const currentId = localStorage.getItem('syncra_workspace_id');
+      const exists = workspaces.some(w => w.id === currentId);
+      if (!currentId || !exists) {
+        localStorage.setItem('syncra_workspace_id', workspaces[0].id);
+        setActiveWorkspaceIdState(workspaces[0].id);
+      }
+    }
+  }, [workspaces, isLoading]);
 
   return (
     <WorkspaceContext.Provider value={{ workspaces, activeWorkspace, isLoading, setActiveWorkspace }}>
