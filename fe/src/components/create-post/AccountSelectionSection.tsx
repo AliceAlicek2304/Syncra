@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import type { SocialAccountDto } from '../../api/socialAccounts'
 import { ExtendedPlatformIcon } from './platformIcons'
 import styles from './AccountSelectionSection.module.css'
@@ -50,6 +51,19 @@ export function AccountSelectionSection({
   const uniquePlatforms = Object.keys(grouped)
   const showGroupHeaders = uniquePlatforms.length >= 2
 
+  const getPlatformLabel = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'tiktok': return 'TikTok Profile'
+      case 'facebook': return 'Facebook Page'
+      case 'instagram': return 'Instagram Business'
+      case 'twitter': return 'X Account'
+      case 'linkedin': return 'LinkedIn Profile'
+      case 'youtube': return 'YouTube Channel'
+      case 'pinterest': return 'Pinterest Board'
+      default: return `${platform} Account`
+    }
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.sectionLabel}>Post to</div>
@@ -61,13 +75,15 @@ export function AccountSelectionSection({
               {showGroupHeaders && (
                 <div className={styles.groupHeader}>{platform.toUpperCase()}</div>
               )}
-              <div className={styles.chipsRow}>
+              <div className={styles.accountsGrid}>
                 {platformAccounts.map((account) => {
                   const isChecked = selectedAccountIds.includes(account.id)
+                  const initials = (account.displayName || 'U').charAt(0).toUpperCase()
+                  
                   return (
                     <label
                       key={account.id}
-                      className={`${styles.chip} ${isChecked ? styles.chipActive : ''}`}
+                      className={`${styles.accountCard} ${isChecked ? styles.accountCardActive : ''}`}
                     >
                       <input
                         type="checkbox"
@@ -75,8 +91,28 @@ export function AccountSelectionSection({
                         onChange={() => handleToggle(account.id)}
                         className={styles.checkboxInput}
                       />
-                      <ExtendedPlatformIcon platform={account.platform} size={16} />
-                      <span className={styles.displayName}>{account.displayName}</span>
+                      
+                      <div className={styles.avatarContainer}>
+                        {account.avatarUrl ? (
+                          <img src={account.avatarUrl} alt={account.displayName} className={styles.avatar} />
+                        ) : (
+                          <div className={styles.avatarFallback}>{initials}</div>
+                        )}
+                        <div className={`${styles.platformBadge} ${styles[`badge_${account.platform}`] || styles.badge_default}`}>
+                          <ExtendedPlatformIcon platform={account.platform} size={8} />
+                        </div>
+                      </div>
+
+                      <div className={styles.accountInfo}>
+                        <span className={styles.accountName}>{account.displayName}</span>
+                        <span className={styles.platformName}>{getPlatformLabel(account.platform)}</span>
+                      </div>
+
+                      {isChecked && (
+                        <div className={styles.checkmark}>
+                          <Check size={10} strokeWidth={3} />
+                        </div>
+                      )}
                     </label>
                   )
                 })}

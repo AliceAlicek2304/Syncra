@@ -1,75 +1,68 @@
 .container {
-  padding: 8px 20px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-glass);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sectionLabel {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.groupsContainer {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.platformGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.groupHeader {
-  font-size: 12px;
+.sectionLabel {
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--text-muted);
   font-weight: 700;
-  margin-bottom: 0px;
+  letter-spacing: 1.5px;
 }
 
-.chipsRow {
+.groupsContainer {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.platformGroup {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.chip {
-  display: flex;
-  aria-label: "Account Selection";
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  height: 32px;
-  border-radius: 100px;
-  font-size: 12px;
+.groupHeader {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
   font-weight: 700;
+}
+
+.accountsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.accountCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
   border: 1px solid var(--border-glass);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
-  transition: all 0.18s linear;
-  white-space: nowrap;
-  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  user-select: none;
 }
 
-.chip:hover {
-  border-color: rgba(139, 92, 246, 0.35);
-  color: var(--text-primary);
+.accountCard:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.04);
+  transform: translateY(-1px);
+}
+
+.accountCardActive {
+  border-color: var(--purple-500);
   background: rgba(139, 92, 246, 0.08);
-}
-
-.chipActive {
-  border-color: rgba(139, 92, 246, 0.55);
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--purple-400);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
 }
 
 .checkboxInput {
@@ -83,14 +76,102 @@
   border: 0;
 }
 
-.displayName {
-  font-size: 12px;
+.avatarContainer {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-glass);
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
   font-weight: 700;
+  border: 1.5px solid var(--border-glass);
+}
+
+.platformBadge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: 1.5px solid #03060c;
+  font-size: 8px;
+}
+
+.badge_facebook { background: #1877F2; }
+.badge_instagram { background: #E1306C; }
+.badge_tiktok { background: #000000; }
+.badge_twitter { background: #1f1f1f; }
+.badge_linkedin { background: #0A66C2; }
+.badge_youtube { background: #FF0000; }
+.badge_pinterest { background: #BD081C; }
+.badge_default { background: var(--text-muted); }
+
+.accountInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.accountName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platformName {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.checkmark {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--purple-500);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: scaleIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 /* Empty State styling */
 .emptyState {
-  padding: 12px 20px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;

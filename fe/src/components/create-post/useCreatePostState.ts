@@ -79,10 +79,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['tiktok'])
   const [activeTab, setActiveTab] = useState<Platform>('tiktok')
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
-    tiktok: '', instagram: '', facebook: '', twitter: ''
+    tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: ''
   })
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
-    tiktok: false, instagram: false, facebook: false, twitter: false
+    tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false
   })
 
   const [showPreview, setShowPreview] = useState(true)
@@ -113,7 +113,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     if (didInitRef.current) return
 
     setTimeout(() => {
-      let nextCaptions = { tiktok: '', instagram: '', facebook: '', twitter: '' } as PlatformCaptionMap
+      let nextCaptions = { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' } as PlatformCaptionMap
       let initPlatforms: Platform[] = ['tiktok']
       let initSchMode = false
       let initSchTime = ''
@@ -124,7 +124,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
           tiktok: editPost.caption,
           instagram: editPost.caption,
           facebook: editPost.caption,
-          twitter: editPost.caption
+          twitter: editPost.caption,
+          linkedin: editPost.caption,
+          youtube: editPost.caption,
+          pinterest: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
 
@@ -169,14 +172,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
       }
 
       setCaptionsByPlatform(nextCaptions)
-      setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false })
+      setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
       setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['tiktok'])
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'tiktok')
 
       initialSnapshotRef.current = JSON.stringify({
-        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', instagram: '', facebook: '', twitter: '' },
+        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' },
         media: mediaHook.media,
         activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['tiktok'],
         scheduleMode: initSchMode,
@@ -195,7 +198,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
         tiktok: next,
         instagram: next,
         facebook: next,
-        twitter: next
+        twitter: next,
+        linkedin: next,
+        youtube: next,
+        pinterest: next
       })
     } else {
       setCaptionsByPlatform(prev => ({ ...prev, [activeTab]: next }))
@@ -497,11 +503,22 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }
 
   const derivedActivePlatforms = useMemo(() => {
-    if (socialAccounts.filter(a => a.isActive).length > 0) {
-      return ['tiktok'] as Platform[]
+    const activeAccounts = socialAccounts.filter(a => a.isActive)
+    if (activeAccounts.length > 0) {
+      const selectedAccounts = activeAccounts.filter(a => selectedSocialAccountIds.includes(a.id))
+      const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform as Platform)))
+      return platforms
     }
     return activePlatforms
-  }, [socialAccounts, activePlatforms])
+  }, [socialAccounts, selectedSocialAccountIds, activePlatforms])
+
+  useEffect(() => {
+    if (derivedActivePlatforms.length > 0) {
+      if (!derivedActivePlatforms.includes(activeTab)) {
+        setActiveTab(derivedActivePlatforms[0])
+      }
+    }
+  }, [derivedActivePlatforms, activeTab])
 
   return {
     state: {
