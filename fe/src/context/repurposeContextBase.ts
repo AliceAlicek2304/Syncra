@@ -1,7 +1,25 @@
 import { createContext, useContext } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
-export type RepurposePlatform = 'LinkedIn' | 'X' | 'Instagram' | 'Newsletter'
+/**
+ * All 14 Zernio platform IDs available for repurpose content generation.
+ * Uses lowercase Zernio API IDs for consistency across the frontend.
+ */
+export type RepurposePlatform =
+  | 'bluesky'
+  | 'facebook'
+  | 'googlebusiness'
+  | 'instagram'
+  | 'linkedin'
+  | 'pinterest'
+  | 'reddit'
+  | 'snapchat'
+  | 'telegram'
+  | 'threads'
+  | 'tiktok'
+  | 'twitter'
+  | 'whatsapp'
+  | 'youtube'
 export type AtomType = 'POST' | 'THREAD' | 'CAROUSEL' | 'INSIGHT' | 'TIP' | 'QUOTE'
 
 export interface RepurposeAtom {

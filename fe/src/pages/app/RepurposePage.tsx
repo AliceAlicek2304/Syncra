@@ -1,4 +1,5 @@
 import { Sparkles, Zap, Layers } from 'lucide-react'
+import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import styles from './RepurposePage.module.css'
 import InputSection from '../../components/repurpose/InputSection'
 import ConfigBar from '../../components/repurpose/ConfigBar'
@@ -28,7 +29,7 @@ export default function RepurposePage() {
         <div className={styles.headerMeta}>
           <div className={styles.metaChip}>
             <Layers size={13} />
-            <span>4 Platforms</span>
+            <span>{ZERNIO_PLATFORMS.length} Platforms</span>
           </div>
           <div className={styles.metaChip}>
             <Zap size={13} />

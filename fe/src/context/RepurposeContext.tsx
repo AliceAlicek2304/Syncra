@@ -8,7 +8,7 @@ import type { RepurposeAtom } from './repurposeContextBase'
 export function RepurposeProvider({ children }: { children: ReactNode }) {
     const [config, setConfig] = useState<RepurposeConfig>({
         sourceText: '',
-        targetPlatforms: ['LinkedIn', 'X'],
+        targetPlatforms: ['linkedin', 'twitter'],
         tone: 'default',
         extractAtoms: false
     })
