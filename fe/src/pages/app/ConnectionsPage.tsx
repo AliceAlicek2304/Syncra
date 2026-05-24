@@ -407,7 +407,14 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
               Cancel
             </button>
             <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending}>
-              {isPending ? 'Disconnecting...' : 'Disconnect'}
+              {isPending ? (
+                <span className={styles.btnLoadingWrap}>
+                  <Loader2 size={13} className={styles.btnSpinner} />
+                  <span>Disconnecting...</span>
+                </span>
+              ) : (
+                'Disconnect'
+              )}
             </button>
           </div>
         </div>
@@ -550,12 +557,14 @@ export default function ConnectionsPage() {
     },
     onSuccess: () => {
       showSuccess("Disconnected successfully");
+      setAccountToDisconnect(null);
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard-integrations'] });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to disconnect social account';
       showError(msg);
+      setAccountToDisconnect(null);
     }
   });
 
@@ -1242,7 +1251,6 @@ export default function ConnectionsPage() {
               accountId: accountToDisconnect.id,
               workspaceId: accountToDisconnect.workspace.id,
             });
-            setAccountToDisconnect(null);
           }}
           isPending={disconnectMutation.isPending}
         />

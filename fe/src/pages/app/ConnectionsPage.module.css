@@ -1503,10 +1503,17 @@
   background-color: #b91c1c;
 }
 
-.disconnectCancelBtn:disabled,
-.disconnectConfirmBtn:disabled {
-  opacity: 0.6;
+.disconnectCancelBtn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.disconnectConfirmBtn:disabled {
+  cursor: not-allowed;
+  background-color: #f8f4f0;
+  color: #939084;
+  border: 1px solid #e5dfd3;
+  opacity: 1;
 }
 
 .btnLoadingWrap {
