@@ -121,4 +121,10 @@ public interface IZernioClient
         string profileId,
         string? platform = null,
         CancellationToken cancellationToken = default);
+
+    // ── Account Health methods ──────────────────────────────────
+
+    Task<ZernioAccountHealthDto> GetAccountHealthAsync(
+        string accountId,
+        CancellationToken cancellationToken = default);
 }

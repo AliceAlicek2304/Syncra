@@ -1012,17 +1012,37 @@
   gap: 16px;
 }
 
-.healthStatusBadge {
+.healthBadge {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.healthBadgeOk {
   background-color: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #16a34a;
-  font-size: 14px;
+}
+
+.healthBadgeWarn {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #d97706;
+}
+
+.healthBadgeError {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.healthBadgeLabel {
   font-weight: 600;
+  text-transform: capitalize;
 }
 
 .modalSection {
@@ -1063,8 +1083,24 @@
   font-weight: 500;
 }
 
-.metaValueSuccess {
+.healthLoading {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.healthLoading p {
+  margin-top: 12px;
+  color: #605d52;
+  font-size: 14px;
+}
+
+.metaValueOk {
   color: #16a34a;
+  font-weight: 600;
+}
+
+.metaValueBad {
+  color: #dc2626;
   font-weight: 600;
 }
 
@@ -1075,7 +1111,7 @@
   margin-bottom: 12px;
 }
 
-.permGridBadge {
+.permBadgeOk {
   padding: 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -1083,6 +1119,17 @@
   background-color: #f0fdf4;
   color: #16a34a;
   border: 1px solid #bbf7d0;
+  text-align: center;
+}
+
+.permBadgeFail {
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   text-align: center;
 }
 
@@ -1107,7 +1154,7 @@
   gap: 6px;
 }
 
-.permTagActive {
+.permTagOk {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1117,14 +1164,72 @@
   font-weight: 500;
 }
 
-.permTagOptional {
+.permTagFail {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   font-weight: 500;
+}
+
+.permTagMuted {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #f8f4f0;
+  color: #605d52;
+  border: 1px solid #e5dfd3;
+  font-weight: 500;
+}
+
+.issuesBox {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.issuesBoxTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issuesList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.recsBox {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.recsBoxTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d97706;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recsList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #92400e;
 }
 
 .modalFooter {
@@ -1148,4 +1253,93 @@
 .modalCloseActionBtn:hover {
   background-color: #f8f4f0;
   border-color: #c5c0b1;
+}
+
+/* ── Pages Selector Drawer ── */
+.pagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pageSelectorBtn {
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid #e5dfd3;
+  background-color: #ffffff;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pageSelectorBtn:hover {
+  background-color: #f8f4f0;
+  border-color: #c5c0b1;
+}
+
+.pageAvatarWrap {
+  flex-shrink: 0;
+}
+
+.pageAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.pagePlatformFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f4f0;
+}
+
+.pageInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.pageNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #201515;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.currentBadge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #f8f4f0;
+  color: #605d52;
+  border: 1px solid #e5dfd3;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pageCategory {
+  font-size: 12px;
+  color: #939084;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

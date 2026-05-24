@@ -11,6 +11,30 @@ export interface SocialAccountDto {
   zernioProfileId: string;
 }
 
+export interface AccountHealthDto {
+  accountId: string;
+  platform: string;
+  username: string;
+  displayName: string;
+  status: 'healthy' | 'warning' | 'error';
+  tokenStatus: {
+    valid: boolean;
+    expiresAt: string | null;
+    expiresIn: string | null;
+    needsRefresh: boolean;
+  };
+  permissions: {
+    posting: { scope: string; granted: boolean; required: boolean }[];
+    analytics: { scope: string; granted: boolean; required: boolean }[];
+    optional: { scope: string; granted: boolean; required: boolean }[];
+    canPost: boolean;
+    canFetchAnalytics: boolean;
+    missingRequired: string[];
+  };
+  issues: string[];
+  recommendations: string[];
+}
+
 export const socialAccountsApi = {
   getSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
     const response = await api.get<SocialAccountDto[]>('social-accounts', {
@@ -22,5 +46,13 @@ export const socialAccountsApi = {
   },
   listSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
     return socialAccountsApi.getSocialAccounts(workspaceId);
+  },
+  getAccountHealth: async (workspaceId: string, accountId: string): Promise<AccountHealthDto> => {
+    const response = await api.get<AccountHealthDto>(`social-accounts/${accountId}/health`, {
+      headers: {
+        'X-Workspace-Id': workspaceId
+      }
+    });
+    return response.data;
   }
 };

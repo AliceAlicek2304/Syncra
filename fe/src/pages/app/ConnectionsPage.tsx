@@ -7,7 +7,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
-import { socialAccountsApi } from '../../api/socialAccounts';
+import { socialAccountsApi, type AccountHealthDto } from '../../api/socialAccounts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
 
@@ -200,6 +200,220 @@ function getPlatformPermissions(platform: string): PlatformPermissions {
   }
 }
 
+// ── Account Health Modal ─────────────────────────────────────────────────────
+
+function HealthModal({ account, workspaceId, onClose }: {
+  account: SocialAccountDto & { workspace: { id: string; name: string; color: string; isDefault: boolean } };
+  workspaceId: string;
+  onClose: () => void;
+}) {
+  const { data: health, isLoading, error } = useQuery({
+    queryKey: ['account-health', account.id],
+    queryFn: () => socialAccountsApi.getAccountHealth(workspaceId, account.id),
+    enabled: !!workspaceId,
+  });
+
+  const s = health?.status.toLowerCase() ?? '';
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalContent}>
+          <div className={styles.modalHeader}>
+            <div>
+              <h2 className={styles.modalTitle}>Account Health</h2>
+              <p className={styles.modalSubtitle}>
+                @{account.displayName || account.externalAccountId} · {account.platform}
+              </p>
+            </div>
+            <button className={styles.modalCloseBtn} onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className={styles.modalBody}>
+            {isLoading ? (
+              <div className={styles.healthLoading}>
+                <Loader2 size={24} className={styles.spinner} />
+                <p>Loading health data...</p>
+              </div>
+            ) : error ? (
+              <div className={styles.healthBadgeError}>
+                <X size={18} />
+                <span>Failed to load health data</span>
+              </div>
+            ) : health ? (
+              <>
+                <div className={`${styles.healthBadge} ${s === 'healthy' ? styles.healthBadgeOk : s === 'warning' ? styles.healthBadgeWarn : styles.healthBadgeError}`}>
+                  {s === 'healthy' ? <Check size={18} /> : <X size={18} />}
+                  <span className={styles.healthBadgeLabel}>{health.status}</span>
+                </div>
+
+                <div className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>
+                    <Key size={14} />
+                    <span>Token Status</span>
+                  </h3>
+                  <div className={styles.metaList}>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Valid</span>
+                      <span className={health.tokenStatus.valid ? styles.metaValueOk : styles.metaValueBad}>
+                        {health.tokenStatus.valid ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Expires in</span>
+                      <span className={styles.metaValue}>
+                        {health.tokenStatus.expiresIn ?? (health.tokenStatus.expiresAt
+                          ? `${Math.max(0, Math.ceil((new Date(health.tokenStatus.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days`
+                          : 'Unknown')}
+                      </span>
+                    </div>
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaLabel}>Expires at</span>
+                      <span className={styles.metaValue}>
+                        {health.tokenStatus.expiresAt
+                          ? new Date(health.tokenStatus.expiresAt).toLocaleDateString()
+                          : 'Unknown'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>
+                    <ShieldCheck size={14} />
+                    <span>Permissions</span>
+                  </h3>
+                  <div className={styles.permGrid}>
+                    <div className={health.permissions.canPost ? styles.permBadgeOk : styles.permBadgeFail}>
+                      {health.permissions.canPost ? '✓' : '✗'} Can Post
+                    </div>
+                    <div className={health.permissions.canFetchAnalytics ? styles.permBadgeOk : styles.permBadgeFail}>
+                      {health.permissions.canFetchAnalytics ? '✓' : '✗'} Analytics
+                    </div>
+                  </div>
+
+                  {health.permissions.posting.length > 0 && (
+                    <div className={styles.permSubSection}>
+                      <p className={styles.permSubTitle}>Required for posting:</p>
+                      <div className={styles.permTagsList}>
+                        {health.permissions.posting.map(s => (
+                          <span key={s.scope} className={s.granted ? styles.permTagOk : styles.permTagFail}>
+                            {s.granted ? '✓' : '✗'} {s.scope}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {health.permissions.analytics.length > 0 && (
+                    <div className={styles.permSubSection}>
+                      <p className={styles.permSubTitle}>For analytics:</p>
+                      <div className={styles.permTagsList}>
+                        {health.permissions.analytics.map(s => (
+                          <span key={s.scope} className={s.granted ? styles.permTagOk : styles.permTagFail}>
+                            {s.granted ? '✓' : '✗'} {s.scope}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {health.permissions.optional.length > 0 && (
+                    <div className={styles.permSubSection}>
+                      <p className={styles.permSubTitle}>Optional:</p>
+                      <div className={styles.permTagsList}>
+                        {health.permissions.optional.map(s => (
+                          <span key={s.scope} className={s.granted ? styles.permTagOk : styles.permTagMuted}>
+                            {s.granted ? '✓' : '✗'} {s.scope}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {health.issues.length > 0 && (
+                  <div className={styles.issuesBox}>
+                    <h3 className={styles.issuesBoxTitle}>
+                      <X size={14} />
+                      <span>Issues</span>
+                    </h3>
+                    <ul className={styles.issuesList}>
+                      {health.issues.map((issue, i) => (
+                        <li key={i}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {health.recommendations.length > 0 && (
+                  <div className={styles.recsBox}>
+                    <h3 className={styles.recsBoxTitle}>
+                      <HelpCircle size={14} />
+                      <span>Recommendations</span>
+                    </h3>
+                    <ul className={styles.recsList}>
+                      {health.recommendations.map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button className={styles.modalCloseActionBtn} onClick={onClose}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface MockPageOption {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  category: string;
+}
+
+function getPlatformPages(platform: string, displayName: string): MockPageOption[] {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return [
+        { id: 'fb-1', name: displayName, avatarUrl: '', category: 'Dịch vụ kỹ thuật' },
+        { id: 'fb-2', name: `${displayName} Team`, avatarUrl: '', category: 'Doanh nghiệp địa phương' },
+        { id: 'fb-3', name: `${displayName} Community`, avatarUrl: '', category: 'Cộng đồng' }
+      ];
+    case 'instagram':
+      return [
+        { id: 'ig-1', name: displayName, avatarUrl: '', category: 'Trang cá nhân' },
+        { id: 'ig-2', name: `${displayName}_business`, avatarUrl: '', category: 'Người sáng tạo nội dung' }
+      ];
+    case 'youtube':
+      return [
+        { id: 'yt-1', name: displayName, avatarUrl: '', category: 'Kênh chính thức' },
+        { id: 'yt-2', name: `${displayName} Vlogs`, avatarUrl: '', category: 'Giải trí' }
+      ];
+    case 'tiktok':
+      return [
+        { id: 'tt-1', name: displayName, avatarUrl: '', category: 'Tài khoản cá nhân' },
+        { id: 'tt-2', name: `${displayName} Pro`, avatarUrl: '', category: 'Thương hiệu' }
+      ];
+    default:
+      return [
+        { id: 'gen-1', name: displayName, avatarUrl: '', category: 'Mặc định' }
+      ];
+  }
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function ConnectionsPage() {
   const queryClient = useQueryClient();
@@ -207,6 +421,7 @@ export default function ConnectionsPage() {
   const { success: showSuccess, error: showError } = useToast();
 
   const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
+  const [selectedManagePagesAccount, setSelectedManagePagesAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -668,7 +883,10 @@ export default function ConnectionsPage() {
 
                 {/* Card Actions */}
                 <div className={styles.cardActions}>
-                  <button className={styles.managePagesBtn}>
+                  <button
+                    className={styles.managePagesBtn}
+                    onClick={() => setSelectedManagePagesAccount(account)}
+                  >
                     Manage Pages
                   </button>
                   <button
@@ -873,122 +1091,70 @@ export default function ConnectionsPage() {
       )}
 
       {/* Account Health Modal */}
-      {selectedHealthAccount && (
-        <div className={styles.modalBackdrop} onClick={() => setSelectedHealthAccount(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalContent}>
-              {/* Modal Header */}
-              <div className={styles.modalHeader}>
-                <div>
-                  <h2 className={styles.modalTitle}>Account Health</h2>
-                  <p className={styles.modalSubtitle}>
-                    @{selectedHealthAccount.displayName || selectedHealthAccount.externalAccountId} · {selectedHealthAccount.platform}
-                  </p>
-                </div>
-                <button className={styles.modalCloseBtn} onClick={() => setSelectedHealthAccount(null)}>
-                  <X size={20} />
-                </button>
+      {selectedHealthAccount && <HealthModal
+        account={selectedHealthAccount}
+        workspaceId={activeWorkspace?.id ?? ''}
+        onClose={() => setSelectedHealthAccount(null)}
+      />}
+
+      {/* Manage Pages Drawer */}
+      {selectedManagePagesAccount && (
+        <div className={styles.drawerBackdrop} onClick={() => setSelectedManagePagesAccount(null)}>
+          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.drawerHeader}>
+              <div>
+                <h2 className={styles.drawerTitle}>
+                  Switch {selectedManagePagesAccount.platform.charAt(0).toUpperCase() + selectedManagePagesAccount.platform.slice(1)} {selectedManagePagesAccount.platform.toLowerCase() === 'youtube' ? 'channel' : selectedManagePagesAccount.platform.toLowerCase() === 'instagram' ? 'account' : 'page'}
+                </h2>
+                <p className={styles.drawerSubtitle}>Pick a different page to publish from.</p>
               </div>
+              <button className={styles.drawerCloseBtn} onClick={() => setSelectedManagePagesAccount(null)}>
+                <X size={18} />
+              </button>
+            </div>
 
-              {/* Modal Body */}
-              <div className={styles.modalBody}>
-                {/* Health Status */}
-                <div className={styles.healthStatusBadge}>
-                  <Check size={18} />
-                  <span>Healthy</span>
-                </div>
-
-                {/* Token Status */}
-                <div className={styles.modalSection}>
-                  <h3 className={styles.modalSectionTitle}>
-                    <Key size={14} />
-                    <span>Token Status</span>
-                  </h3>
-                  <div className={styles.metaList}>
-                    <div className={styles.metaRow}>
-                      <span className={styles.metaLabel}>Valid</span>
-                      <span className={styles.metaValueSuccess}>Yes</span>
-                    </div>
-                    <div className={styles.metaRow}>
-                      <span className={styles.metaLabel}>Expires in</span>
-                      <span className={styles.metaValue}>
-                        {(() => {
-                          const connectedDate = selectedHealthAccount.connectedAtUtc ? new Date(selectedHealthAccount.connectedAtUtc) : new Date();
-                          const expiresAtDate = new Date(connectedDate.getTime() + 60 * 24 * 60 * 60 * 1000);
-                          const diffTime = expiresAtDate.getTime() - Date.now();
-                          const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-                          return `${daysRemaining} days`;
-                        })()}
-                      </span>
-                    </div>
-                    <div className={styles.metaRow}>
-                      <span className={styles.metaLabel}>Expires at</span>
-                      <span className={styles.metaValue}>
-                        {(() => {
-                          const connectedDate = selectedHealthAccount.connectedAtUtc ? new Date(selectedHealthAccount.connectedAtUtc) : new Date();
-                          const expiresAtDate = new Date(connectedDate.getTime() + 60 * 24 * 60 * 60 * 1000);
-                          return expiresAtDate.toLocaleDateString();
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Permissions */}
-                <div className={styles.modalSection}>
-                  <h3 className={styles.modalSectionTitle}>
-                    <ShieldCheck size={14} />
-                    <span>Permissions</span>
-                  </h3>
-                  
-                  <div className={styles.permGrid}>
-                    <div className={styles.permGridBadge}>✓ Can Post</div>
-                    <div className={styles.permGridBadge}>✓ Analytics</div>
-                  </div>
-
-                  {(() => {
-                    const perms = getPlatformPermissions(selectedHealthAccount.platform);
-                    return (
-                      <>
-                        <div className={styles.permSubSection}>
-                          <p className={styles.permSubTitle}>Required for posting:</p>
-                          <div className={styles.permTagsList}>
-                            {perms.requiredPosting.map(p => (
-                              <span key={p} className={styles.permTagActive}>✓ {p}</span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.permSubSection}>
-                          <p className={styles.permSubTitle}>For analytics:</p>
-                          <div className={styles.permTagsList}>
-                            {perms.requiredAnalytics.map(p => (
-                              <span key={p} className={styles.permTagActive}>✓ {p}</span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {perms.optional.length > 0 && (
-                          <div className={styles.permSubSection}>
-                            <p className={styles.permSubTitle}>Optional:</p>
-                            <div className={styles.permTagsList}>
-                              {perms.optional.map(p => (
-                                <span key={p} className={styles.permTagOptional}>✓ {p}</span>
-                              ))}
-                            </div>
+            <div className={styles.drawerBody}>
+              <div className={styles.pagesList}>
+                {getPlatformPages(selectedManagePagesAccount.platform, selectedManagePagesAccount.displayName || selectedManagePagesAccount.externalAccountId).map((page, index) => {
+                  const isCurrent = index === 0;
+                  return (
+                    <button
+                      key={page.id}
+                      type="button"
+                      className={styles.pageSelectorBtn}
+                      onClick={() => {
+                        showSuccess(`Switched to ${page.name}`);
+                        setSelectedManagePagesAccount(null);
+                      }}
+                    >
+                      <div className={styles.pageAvatarWrap}>
+                        {selectedManagePagesAccount.avatarUrl ? (
+                          <img
+                            src={selectedManagePagesAccount.avatarUrl}
+                            alt={page.name}
+                            className={styles.pageAvatar}
+                          />
+                        ) : (
+                          <div
+                            className={styles.pagePlatformFallback}
+                            style={{
+                              color: ALL_PLATFORMS.find(p => p.id === selectedManagePagesAccount.platform.toLowerCase())?.color || '#ff4f00'
+                            }}
+                          >
+                            <PlatformIcon platform={selectedManagePagesAccount.platform} size={18} />
                           </div>
                         )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className={styles.modalFooter}>
-                <button className={styles.modalCloseActionBtn} onClick={() => setSelectedHealthAccount(null)}>
-                  Close
-                </button>
+                      </div>
+                      <div className={styles.pageInfo}>
+                        <div className={styles.pageNameRow}>
+                          <span className={styles.pageName}>{page.name}</span>
+                          {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                        </div>
+                        <p className={styles.pageCategory}>{page.category}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

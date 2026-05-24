@@ -140,6 +140,72 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioAccountHealthDto> GetAccountHealthAsync(
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _accountsApi.GetAccountHealthAsync(accountId, cancellationToken);
+
+            var posting = (response.Permissions?.Posting ?? [])
+                .Select(s => new ZernioScopeDto(
+                    s.Scope,
+                    s.Granted,
+                    s.Required))
+                .ToList();
+
+            var analytics = (response.Permissions?.Analytics ?? [])
+                .Select(s => new ZernioScopeDto(
+                    s.Scope,
+                    s.Granted,
+                    s.Required))
+                .ToList();
+
+            var optional = (response.Permissions?.Optional ?? [])
+                .Select(s => new ZernioScopeDto(
+                    s.Scope,
+                    s.Granted,
+                    s.Required))
+                .ToList();
+
+            return new ZernioAccountHealthDto(
+                AccountId: response.AccountId,
+                Platform: response.Platform,
+                Username: response.Username,
+                DisplayName: response.DisplayName,
+                Status: response.Status?.ToString() ?? "error",
+                TokenStatus: new ZernioTokenStatusDto(
+                    response.TokenStatus?.Valid ?? false,
+                    response.TokenStatus?.ExpiresAt,
+                    response.TokenStatus?.ExpiresIn,
+                    response.TokenStatus?.NeedsRefresh ?? false),
+                Permissions: new ZernioHealthPermissionsDto(
+                    posting,
+                    analytics,
+                    optional,
+                    response.Permissions?.CanPost ?? false,
+                    response.Permissions?.CanFetchAnalytics ?? false,
+                    response.Permissions?.MissingRequired ?? []),
+                Issues: response.Issues ?? [],
+                Recommendations: response.Recommendations ?? []);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for account health {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to access account health details.",
+                reason: "health_check_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error getting account health for {AccountId}", accountId);
+            throw new DomainException("zernio_health_error", "Failed to get account health from Zernio", ex);
+        }
+    }
+
     public async Task<ZernioProfileDto> ProvisionProfileAsync(
         string workspaceId,
         string name,

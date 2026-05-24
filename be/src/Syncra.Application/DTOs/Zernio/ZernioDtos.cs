@@ -104,3 +104,35 @@ public sealed record ZernioBestTimeSlotDto(
     int Hour,         // 0-23 (UTC)
     double AvgEngagement,
     int PostCount);
+
+// ── Account Health DTOs ─────────────────────────────────────────
+
+public sealed record ZernioAccountHealthDto(
+    string AccountId,
+    string Platform,
+    string Username,
+    string DisplayName,
+    string Status,
+    ZernioTokenStatusDto TokenStatus,
+    ZernioHealthPermissionsDto Permissions,
+    IReadOnlyList<string> Issues,
+    IReadOnlyList<string> Recommendations);
+
+public sealed record ZernioTokenStatusDto(
+    bool Valid,
+    DateTime? ExpiresAt,
+    string? ExpiresIn,
+    bool NeedsRefresh);
+
+public sealed record ZernioHealthPermissionsDto(
+    IReadOnlyList<ZernioScopeDto> Posting,
+    IReadOnlyList<ZernioScopeDto> Analytics,
+    IReadOnlyList<ZernioScopeDto> Optional,
+    bool CanPost,
+    bool CanFetchAnalytics,
+    IReadOnlyList<string> MissingRequired);
+
+public sealed record ZernioScopeDto(
+    string Scope,
+    bool Granted,
+    bool Required);

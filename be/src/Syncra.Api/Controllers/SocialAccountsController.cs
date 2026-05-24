@@ -343,6 +343,38 @@ public sealed class SocialAccountsController : ControllerBase
         return NoContent();
     }
 
+    // ── GET /api/v1/social-accounts/{accountId}/health ──────────────────────
+
+    /// <summary>
+    /// Returns detailed health info for a specific social account from Zernio.
+    /// </summary>
+    [HttpGet("{accountId:guid}/health")]
+    public async Task<IActionResult> GetHealth(
+        Guid accountId,
+        CancellationToken cancellationToken)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive, cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var health = await _zernioClient.GetAccountHealthAsync(
+            accountId: account.ExternalAccountId,
+            cancellationToken: cancellationToken);
+
+        return Ok(health);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private async Task<ZernioProfile> GetOrProvisionZernioProfileAsync(
