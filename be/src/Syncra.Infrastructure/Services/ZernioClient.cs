@@ -953,12 +953,11 @@ public sealed class ZernioClient : IZernioClient
     private async Task<ZernioSelectResultDto> SelectFacebookPageAsync(
         string profileId, string tempToken, string pageId, CancellationToken cancellationToken)
     {
-        var request = new SelectFacebookPageRequest
-        {
-            ProfileId = profileId,
-            PageId = pageId,
-            TempToken = tempToken
-        };
+        var request = new SelectFacebookPageRequest(
+            profileId: profileId,
+            pageId: pageId,
+            tempToken: tempToken
+        );
         var response = await _connectApi.SelectFacebookPageAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,
@@ -970,12 +969,11 @@ public sealed class ZernioClient : IZernioClient
     private async Task<ZernioSelectResultDto> SelectLinkedInOrganizationAsync(
         string profileId, string tempToken, string organizationId, CancellationToken cancellationToken)
     {
-        var request = new SelectLinkedInOrganizationRequest
-        {
-            ProfileId = profileId,
-            TempToken = tempToken,
-            SelectedOrganization = new { id = organizationId }
-        };
+        var request = new SelectLinkedInOrganizationRequest(
+            profileId: profileId,
+            tempToken: tempToken,
+            selectedOrganization: new { id = organizationId }
+        );
         var response = await _connectApi.SelectLinkedInOrganizationAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,
@@ -987,12 +985,11 @@ public sealed class ZernioClient : IZernioClient
     private async Task<ZernioSelectResultDto> SelectGoogleBusinessLocationAsync(
         string profileId, string tempToken, string locationId, CancellationToken cancellationToken)
     {
-        var request = new SelectGoogleBusinessLocationRequest
-        {
-            ProfileId = profileId,
-            LocationId = locationId,
-            PendingDataToken = tempToken
-        };
+        var request = new SelectGoogleBusinessLocationRequest(
+            profileId: profileId,
+            locationId: locationId,
+            pendingDataToken: tempToken
+        );
         var response = await _connectApi.SelectGoogleBusinessLocationAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,
@@ -1004,13 +1001,12 @@ public sealed class ZernioClient : IZernioClient
     private async Task<ZernioSelectResultDto> SelectPinterestBoardAsync(
         string profileId, string tempToken, string boardId, string? boardName, CancellationToken cancellationToken)
     {
-        var request = new SelectPinterestBoardRequest
-        {
-            ProfileId = profileId,
-            BoardId = boardId,
-            BoardName = boardName,
-            TempToken = tempToken
-        };
+        var request = new SelectPinterestBoardRequest(
+            profileId: profileId,
+            boardId: boardId,
+            boardName: boardName,
+            tempToken: tempToken
+        );
         var response = await _connectApi.SelectPinterestBoardAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,
@@ -1022,15 +1018,14 @@ public sealed class ZernioClient : IZernioClient
     private async Task<ZernioSelectResultDto> SelectSnapchatProfileAsync(
         string profileId, string tempToken, string publicProfileId, CancellationToken cancellationToken)
     {
-        var request = new SelectSnapchatProfileRequest
-        {
-            ProfileId = profileId,
-            SelectedPublicProfile = new SelectSnapchatProfileRequestSelectedPublicProfile
+        var request = new SelectSnapchatProfileRequest(
+            profileId: profileId,
+            selectedPublicProfile: new SelectSnapchatProfileRequestSelectedPublicProfile
             {
                 Id = publicProfileId
             },
-            TempToken = tempToken
-        };
+            tempToken: tempToken
+        );
         var response = await _connectApi.SelectSnapchatProfileAsync(request, xConnectToken: null, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,
