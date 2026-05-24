@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
+import {
   Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
@@ -10,22 +10,6 @@ import type { SocialAccountDto } from '../../api/socialAccounts';
 import { socialAccountsApi } from '../../api/socialAccounts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
-
-const getWorkspaceColor = (workspaceId: string) => {
-  const colors = [
-    'rgb(255, 237, 160)', // Warm yellow
-    'rgb(254, 205, 211)', // Soft pink
-    'rgb(219, 234, 254)', // Soft blue
-    'rgb(220, 252, 231)', // Soft green
-    'rgb(243, 232, 255)', // Soft purple
-    'rgb(254, 215, 170)', // Soft orange
-  ];
-  let hash = 0;
-  for (let i = 0; i < workspaceId.length; i++) {
-    hash = workspaceId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
 
 // ── Platform Metadata ────────────────────────────────────────────────────────
 interface PlatformConfig {
@@ -370,14 +354,14 @@ export default function ConnectionsPage() {
           <p className={styles.subtitle}>Manage workspaces and platform integrations</p>
         </div>
         <div className={styles.headerActions}>
-          <button 
+          <button
             className={styles.newConnBtn}
             onClick={() => setIsNewConnectionOpen(true)}
           >
             <Plus size={16} />
             <span>New Connection</span>
           </button>
-          <button 
+          <button
             className={styles.newProfileBtn}
             onClick={() => setIsNewWorkspaceOpen(true)}
           >
@@ -390,10 +374,10 @@ export default function ConnectionsPage() {
       <div className={styles.filterBar} ref={dropdownRef}>
         <div className={styles.filterLeft}>
           <span className={styles.filterLabel}>Platforms</span>
-          
+
           {/* Workspace Filter Dropdown */}
           <div className={styles.dropdownContainer}>
-            <button 
+            <button
               className={styles.dropdownTrigger}
               onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
             >
@@ -402,7 +386,7 @@ export default function ConnectionsPage() {
             </button>
             {isWorkspaceDropdownOpen && (
               <div className={styles.dropdownMenu}>
-                <button 
+                <button
                   className={`${styles.dropdownItem} ${selectedWorkspaceFilter === 'all' ? styles.activeItem : ''}`}
                   onClick={() => {
                     setSelectedWorkspaceFilter('all');
@@ -413,7 +397,7 @@ export default function ConnectionsPage() {
                   {selectedWorkspaceFilter === 'all' && <Check size={14} />}
                 </button>
                 {workspaces.map(ws => (
-                  <button 
+                  <button
                     key={ws.id}
                     className={`${styles.dropdownItem} ${selectedWorkspaceFilter === ws.id ? styles.activeItem : ''}`}
                     onClick={() => {
@@ -430,7 +414,7 @@ export default function ConnectionsPage() {
                   </button>
                 ))}
                 <div className={styles.dropdownDivider} />
-                <button 
+                <button
                   className={styles.dropdownAddBtn}
                   onClick={() => {
                     setIsWorkspaceDropdownOpen(false);
@@ -448,7 +432,7 @@ export default function ConnectionsPage() {
         <div className={styles.filterRight}>
           {/* Platform Filter Dropdown */}
           <div className={styles.dropdownContainer}>
-            <button 
+            <button
               className={styles.dropdownTriggerSecondary}
               onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
             >
@@ -457,7 +441,7 @@ export default function ConnectionsPage() {
             </button>
             {isPlatformDropdownOpen && (
               <div className={`${styles.dropdownMenu} ${styles.platformDropdownScroll}`}>
-                <button 
+                <button
                   className={`${styles.dropdownItem} ${selectedPlatformFilter === 'all' ? styles.activeItem : ''}`}
                   onClick={() => {
                     setSelectedPlatformFilter('all');
@@ -468,7 +452,7 @@ export default function ConnectionsPage() {
                   {selectedPlatformFilter === 'all' && <Check size={14} />}
                 </button>
                 {ALL_PLATFORMS.map(p => (
-                  <button 
+                  <button
                     key={p.id}
                     className={`${styles.dropdownItem} ${selectedPlatformFilter === p.id ? styles.activeItem : ''}`}
                     onClick={() => {
@@ -491,7 +475,7 @@ export default function ConnectionsPage() {
 
           {/* Status Filter Dropdown */}
           <div className={styles.dropdownContainer}>
-            <button 
+            <button
               className={styles.dropdownTriggerSecondary}
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
             >
@@ -500,7 +484,7 @@ export default function ConnectionsPage() {
             </button>
             {isStatusDropdownOpen && (
               <div className={styles.dropdownMenu}>
-                <button 
+                <button
                   className={`${styles.dropdownItem} ${selectedStatusFilter === 'all' ? styles.activeItem : ''}`}
                   onClick={() => {
                     setSelectedStatusFilter('all');
@@ -510,7 +494,7 @@ export default function ConnectionsPage() {
                   <span>All statuses</span>
                   {selectedStatusFilter === 'all' && <Check size={14} />}
                 </button>
-                <button 
+                <button
                   className={`${styles.dropdownItem} ${selectedStatusFilter === 'connected' ? styles.activeItem : ''}`}
                   onClick={() => {
                     setSelectedStatusFilter('connected');
@@ -520,7 +504,7 @@ export default function ConnectionsPage() {
                   <span>Connected</span>
                   {selectedStatusFilter === 'connected' && <Check size={14} />}
                 </button>
-                <button 
+                <button
                   className={`${styles.dropdownItem} ${selectedStatusFilter === 'disconnected' ? styles.activeItem : ''}`}
                   onClick={() => {
                     setSelectedStatusFilter('disconnected');
@@ -555,7 +539,7 @@ export default function ConnectionsPage() {
           <HelpCircle size={48} className={styles.emptyIcon} />
           <h2>No connections found</h2>
           <p>Link your social channels to schedule posts and monitor analytics.</p>
-          <button 
+          <button
             className={styles.newConnBtn}
             style={{ marginTop: '16px' }}
             onClick={() => setIsNewConnectionOpen(true)}
@@ -568,135 +552,75 @@ export default function ConnectionsPage() {
         <div className={styles.cardsGrid}>
           {filteredConnections.map((account) => {
             const platformConfig = ALL_PLATFORMS.find(p => p.id === account.platform.toLowerCase());
-            const displayDate = account.connectedAtUtc 
+            const displayDate = account.connectedAtUtc
               ? new Date(account.connectedAtUtc).toLocaleDateString()
               : 'Unknown';
 
             return (
               <div key={account.id} className={styles.card}>
-                <div className={styles.cardContent}>
-                  {/* Header Row */}
-                  <div className={styles.cardHeaderRow}>
-                    <div className={styles.cardHeaderLeft}>
-                      {/* Avatar container */}
-                      <div className={styles.avatarContainer}>
-                        {account.avatarUrl ? (
-                          <>
-                            <img
-                              src={account.avatarUrl}
-                              alt={`${account.displayName || account.platform} profile`}
-                              className={styles.avatarImg}
-                              referrerPolicy="no-referrer"
-                            />
-                            <div
-                              className={styles.avatarBadge}
-                              style={{
-                                backgroundColor: platformConfig?.color || '#ff4f00',
-                              }}
-                            >
-                              <div className={styles.avatarBadgeIcon}>
-                                <PlatformIcon platform={account.platform} size={10} />
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div
-                            className={styles.avatarFallback}
-                            style={{
-                              backgroundColor: platformConfig?.color || '#ff4f00',
-                            }}
-                          >
-                            <div className={styles.avatarFallbackIcon}>
-                              <PlatformIcon platform={account.platform} size={18} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Platform & Status */}
-                      <div className={styles.headerInfo}>
-                        <h3 className={styles.cardPlatformName}>
-                          {platformConfig?.label || account.platform}
-                        </h3>
-                        <span title="connected" className={styles.statusBadge}>
-                          connected
-                        </span>
+                {/* Info and Card Top */}
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardHeaderLeft}>
+                    <div
+                      className={styles.platformIconWrap}
+                      style={{
+                        backgroundColor: `${platformConfig?.color || '#ff4f00'}15`,
+                        color: platformConfig?.color || '#ff4f00',
+                        borderColor: `${platformConfig?.color || '#ff4f00'}30`
+                      }}
+                    >
+                      <PlatformIcon platform={account.platform} size={18} />
+                    </div>
+                    <div>
+                      <h3 className={styles.cardPlatformName}>{platformConfig?.label || account.platform}</h3>
+                      <div className={styles.statusBadge}>
+                        <span className={styles.statusDot} />
+                        <span>connected</span>
                       </div>
                     </div>
+                  </div>
+                  <button className={styles.infoBtn} title="Connection details">
+                    <Info size={14} />
+                  </button>
+                </div>
 
-                    {/* Info Button */}
-                    <button className={styles.infoBtn} title="View account health">
-                      <Info size={16} />
+                {/* Card Body */}
+                <div className={styles.cardBody}>
+                  <div className={styles.workspaceDisplay}>
+                    {account.displayName || account.externalAccountId}
+                  </div>
+                  <div className={styles.connectionMeta}>
+                    {account.displayName || account.externalAccountId} • {displayDate}
+                  </div>
+                  <div className={styles.handleBlock}>
+                    <span className={styles.handleDot} />
+                    <span className={styles.handleText}>{account.workspace.name}</span>
+                    <button
+                      className={styles.copyBtn}
+                      onClick={() => handleCopyId(account.workspace.name)}
+                      title="Copy workspace name"
+                    >
+                      <Copy size={12} />
                     </button>
                   </div>
+                </div>
 
-                  {/* Body Details (mt-auto style) */}
-                  <div className={styles.cardDetails}>
-                    <div className={styles.detailsRow}>
-                      <div className={styles.detailsLeft}>
-                        <div className={styles.displayNameText}>
-                          {account.displayName || account.externalAccountId}
-                        </div>
-                        <div className={styles.metaRow}>
-                          <span 
-                            className={styles.platformLabelText}
-                            style={{ color: platformConfig?.color || '#2563eb' }}
-                          >
-                            {platformConfig?.label || account.platform}
-                          </span>
-                          <span className={styles.metaSeparator}>·</span>
-                          <span className={styles.dateText}>{displayDate}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={() => handleCopyId(account.id)}
-                        title={`Copy ID: ${account.id}`}
-                      >
-                        <Copy size={12} />
-                      </button>
-                    </div>
-
-                    {/* Workspace Selector Badge */}
-                    <div className={styles.workspaceRow}>
-                      <button
-                        className={styles.workspaceBadge}
-                        title={`Go to profile: ${account.workspace.name}`}
-                      >
-                        <div
-                          className={styles.workspaceBadgeDot}
-                          style={{
-                            backgroundColor: getWorkspaceColor(account.workspace.id),
-                          }}
-                        />
-                        <span className={styles.workspaceBadgeText}>
-                          {account.workspace.name}
-                        </span>
-                      </button>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className={styles.actionsRow}>
-                      <button className={styles.managePagesBtn}>
-                        Manage Pages
-                      </button>
-                      <button
-                        className={styles.disconnectBtn}
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to disconnect ${account.displayName}?`)) {
-                            disconnectMutation.mutate({
-                              accountId: account.id,
-                              workspaceId: account.workspace.id,
-                            });
-                          }
-                        }}
-                        disabled={disconnectMutation.isPending}
-                      >
-                        Disconnect
-                      </button>
-                    </div>
-                  </div>
+                {/* Card Actions */}
+                <div className={styles.cardActions}>
+                  <button className={styles.managePagesBtn}>
+                    Manage Pages
+                  </button>
+                  <button
+                    className={styles.disconnectBtn}
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to disconnect ${account.displayName}?`)) {
+                        disconnectMutation.mutate({ accountId: account.id, workspaceId: account.workspace.id });
+                      }
+                    }}
+                    disabled={disconnectMutation.isPending}
+                  >
+                    Disconnect
+                  </button>
                 </div>
               </div>
             );
@@ -717,11 +641,11 @@ export default function ConnectionsPage() {
                 <X size={18} />
               </button>
             </div>
-            
+
             <form onSubmit={handleCreateWorkspace} className={styles.drawerForm}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Workspace Name</label>
-                <input 
+                <input
                   type="text"
                   className={styles.formInput}
                   placeholder="e.g., Personal, Business, Agency"
@@ -734,7 +658,7 @@ export default function ConnectionsPage() {
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Description</label>
-                <textarea 
+                <textarea
                   className={styles.formTextarea}
                   placeholder="Optional description"
                   value={newWorkspaceDescription}
@@ -763,15 +687,15 @@ export default function ConnectionsPage() {
               </div>
 
               <div className={styles.drawerFooter}>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className={styles.drawerSubmitBtn}
                   disabled={createWorkspaceMutation.isPending}
                 >
                   {createWorkspaceMutation.isPending ? 'Creating...' : 'Create Workspace'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.drawerCancelBtn}
                   onClick={() => setIsNewWorkspaceOpen(false)}
                 >
@@ -801,13 +725,13 @@ export default function ConnectionsPage() {
               {/* Workspace Selection */}
               <div className={styles.formGroup} style={{ position: 'relative' }}>
                 <label className={styles.formLabel}>Workspace</label>
-                <button 
+                <button
                   className={styles.drawerDropdownTrigger}
                   onClick={() => setIsConnWorkspaceDropdownOpen(!isConnWorkspaceDropdownOpen)}
                 >
                   <span>
-                    {selectedWorkspaceForConnection 
-                      ? workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name 
+                    {selectedWorkspaceForConnection
+                      ? workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name
                       : 'Select a workspace'}
                   </span>
                   <ChevronDown size={14} />
@@ -849,7 +773,7 @@ export default function ConnectionsPage() {
               {/* Platforms Grid Section */}
               <div className={styles.platformsSection}>
                 <h3 className={styles.platformsSectionTitle}>Platforms</h3>
-                
+
                 <div className={styles.platformsGridContainer}>
                   {/* Blur Overlay if no workspace is selected */}
                   {!selectedWorkspaceForConnection && (
@@ -869,7 +793,7 @@ export default function ConnectionsPage() {
                         onClick={() => handleConnectPlatform(p.id)}
                         disabled={!selectedWorkspaceForConnection}
                       >
-                        <div 
+                        <div
                           className={styles.platformBtnIconWrap}
                           style={{ color: p.color, backgroundColor: `${p.color}12` }}
                         >
