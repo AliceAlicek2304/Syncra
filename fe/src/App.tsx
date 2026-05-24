@@ -45,6 +45,9 @@ import VerifyEmailPage from './pages/VerifyEmailPage'
 import SocialAccountsSelect from './pages/Settings/SocialAccountsSelect'
 
 
+import ConnectionsPage from './pages/app/ConnectionsPage'
+
+
 function Homepage() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -125,8 +128,9 @@ function AnimatedRoutes() {
             </BillingProvider>
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+          <Route index element={<Navigate to="dashboard/connections" replace />} />
+          <Route path="dashboard" element={<Navigate to="dashboard/connections" replace />} />
+          <Route path="dashboard/connections" element={<PageWrapper><ConnectionsPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
           <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
           <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />

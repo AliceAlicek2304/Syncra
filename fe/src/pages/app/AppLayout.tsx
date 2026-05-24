@@ -1,7 +1,7 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -18,6 +18,7 @@ import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
+  { to: '/app/dashboard/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
   { to: '/app/inbox', icon: <Inbox size={18} />, label: 'Inbox' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
@@ -33,10 +34,13 @@ export default function AppLayout() {
   const { user, logout } = useAuth()
   const { success, error } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const { unreadCount } = useInboxBadge()
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
+
+  const isConnectionsPage = location.pathname.endsWith('/dashboard/connections')
 
   const handleLogout = () => {
     logout()
@@ -44,7 +48,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className={`${styles.layout} ${collapsed ? styles.collapsed : ''}`}>
+    <div className={`${styles.layout} ${collapsed ? styles.collapsed : ''} ${isConnectionsPage ? styles.lightThemeLayout : ''}`}>
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         {/* Logo + collapse */}
