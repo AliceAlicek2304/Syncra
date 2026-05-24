@@ -956,7 +956,12 @@ public sealed class ZernioClient : IZernioClient
         var request = new SelectFacebookPageRequest(
             profileId: profileId,
             pageId: pageId,
-            tempToken: tempToken
+            tempToken: tempToken,
+            userProfile: new SelectFacebookPageRequestUserProfile(
+                id: "dummy",
+                name: "dummy",
+                profilePicture: "https://dummy.com"
+            )
         );
         var response = await _connectApi.SelectFacebookPageAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
