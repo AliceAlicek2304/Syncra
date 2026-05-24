@@ -176,6 +176,8 @@ export default function SocialAccounts() {
     reason: '',
     dashboardUrl: '',
   });
+  // Track if we are about to redirect to OAuth provider
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { success: showSuccess, error: showError } = useToast();
 
@@ -235,12 +237,11 @@ export default function SocialAccounts() {
         `social-accounts/connect-url/${platform}`,
         {
           params: { redirectUrl: callbackUrl },
-          headers: {
-            'X-Workspace-Id': activeWorkspace.id
-          }
+          headers: { 'X-Workspace-Id': activeWorkspace.id },
         }
       );
       isRedirecting = true;
+      setIsRedirecting(true);
       window.location.href = response.data.connectUrl;
     } catch (err) {
       if (!handleBillingError(err)) {
@@ -252,6 +253,7 @@ export default function SocialAccounts() {
     } finally {
       if (!isRedirecting) {
         setConnectingPlatform(null);
+        setIsRedirecting(false);
       }
     }
   };
@@ -426,6 +428,12 @@ export default function SocialAccounts() {
         <div className={styles.loadingOverlay}>
           <Loader2 size={24} className={styles.spinner} />
           <span>Loading accounts...</span>
+        </div>
+      )}
+      {isRedirecting && (
+        <div className={styles.loadingOverlay}>
+          <Loader2 size={24} className={styles.spinner} />
+          <span>Redirecting to provider...</span>
         </div>
       )}
 
