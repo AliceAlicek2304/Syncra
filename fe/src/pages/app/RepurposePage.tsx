@@ -1,4 +1,4 @@
-import { Sparkles, Zap, Layers } from 'lucide-react'
+import { Sparkles, Zap, Layers, AlertTriangle, X } from 'lucide-react'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import styles from './RepurposePage.module.css'
 import InputSection from '../../components/repurpose/InputSection'
@@ -7,7 +7,7 @@ import ResultsGrid from '../../components/repurpose/ResultsGrid'
 import { useRepurpose } from '../../context/repurposeContextBase'
 
 export default function RepurposePage() {
-  const { results, isGenerating } = useRepurpose()
+  const { results, isGenerating, error, setError } = useRepurpose()
   const hasOutput = results.length > 0 || isGenerating
 
   return (
@@ -46,6 +46,17 @@ export default function RepurposePage() {
         <InputSection />
         <ConfigBar />
       </div>
+
+      {/* Error toast */}
+      {error && (
+        <div className={styles.errorToast}>
+          <AlertTriangle size={16} />
+          <span>{error}</span>
+          <button className={styles.errorDismiss} onClick={() => setError(null)}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {hasOutput ? (
         <ResultsGrid />
