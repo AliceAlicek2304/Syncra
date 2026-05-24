@@ -945,7 +945,14 @@ export default function ConnectionsPage() {
                     onClick={() => setAccountToDisconnect(account)}
                     disabled={disconnectMutation.isPending}
                   >
-                    Disconnect
+                    {disconnectMutation.isPending && disconnectMutation.variables?.accountId === account.id ? (
+                      <span className={styles.btnLoadingWrap}>
+                        <Loader2 size={13} className={styles.btnSpinner} />
+                        <span>Disconnecting...</span>
+                      </span>
+                    ) : (
+                      'Disconnect'
+                    )}
                   </button>
                 </div>
               </div>

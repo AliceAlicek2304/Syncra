@@ -1508,3 +1508,24 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.btnLoadingWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btnSpinner {
+  animation: spin 0.8s linear infinite;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.disconnectBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #f8f4f0;
+  color: #939084;
+  border-color: #e5dfd3;
+}
