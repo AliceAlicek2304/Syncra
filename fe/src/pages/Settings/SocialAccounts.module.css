@@ -13,23 +13,30 @@
 /* Card */
 .card {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
   padding: 16px;
   background: rgba(13, 17, 28, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
   background: rgba(13, 17, 28, 0.6);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 .cardConnected {
-  border-color: rgba(52, 211, 153, 0.2);
+  border-color: rgba(52, 211, 153, 0.15);
+  background: rgba(13, 17, 28, 0.45);
+}
+
+.cardConnected:hover {
+  border-color: rgba(52, 211, 153, 0.3);
 }
 
 /* Platform icon */
@@ -44,8 +51,15 @@
   justify-content: center;
 }
 
-/* Card meta */
-.cardMeta {
+/* Card Header */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.cardHeaderMeta {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -62,32 +76,91 @@
   text-overflow: ellipsis;
 }
 
-.statusConnected {
+.accountsCount {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+.btnAddAccount {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #34d399;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.btnAddAccount:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c084fc;
+}
+
+.btnAddAccount:focus-visible {
+  border-color: #c084fc;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4);
+}
+
+.btnAddAccount:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Accounts List */
+.accountsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+  width: 100%;
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.accountRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.accountMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.accountName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f4f6;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dot {
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 6px #34d399;
-}
-
-.statusDisconnected {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.35);
+.accountHandle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Avatar */
@@ -100,59 +173,85 @@
   object-fit: cover;
 }
 
-/* Buttons */
-.btnConnect {
+.avatarFallback {
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.3);
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 12px;
+  justify-content: center;
+  font-size: 13px;
   font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.btnConnect:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.5);
-  color: #a78bfa;
-}
-
-.btnConnect:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btnDisconnect {
-  flex-shrink: 0;
+.btnDisconnectIcon {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 8px;
-  color: rgba(239, 68, 68, 0.7);
-  font-size: 12px;
-  font-weight: 700;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  color: rgba(239, 68, 68, 0.6);
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  transition: all 0.2s;
 }
 
-.btnDisconnect:hover:not(:disabled) {
+.btnDisconnectIcon:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.5);
   color: #ef4444;
 }
 
-.btnDisconnect:disabled {
+.btnDisconnectIcon:focus-visible {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4);
+}
+
+.btnDisconnectIcon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Card Footer & Connect Button */
+.cardFooter {
+  width: 100%;
+}
+
+.btnConnectFull {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 8px;
+  color: #c084fc;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnConnectFull:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #d8b4fe;
+}
+
+.btnConnectFull:focus-visible {
+  border-color: #c084fc;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4);
+}
+
+.btnConnectFull:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

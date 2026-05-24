@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Wifi,
-  WifiOff,
   Loader2,
   AlertTriangle,
   ExternalLink,
   UserCircle2,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
@@ -287,8 +288,8 @@ export default function SocialAccounts() {
 
   // ─ Lookup helper ─────────────────────────────────────────────────────────
 
-  const getConnectedAccount = (platformKey: string) =>
-    accounts.find(
+  const getConnectedAccounts = (platformKey: string) =>
+    accounts.filter(
       (a) => a.platform.toLowerCase() === platformKey.toLowerCase() && a.isActive
     );
 
@@ -299,81 +300,117 @@ export default function SocialAccounts() {
       {/* Platform grid */}
       <div className={styles.grid}>
         {PLATFORMS.map((platform) => {
-          const connected = getConnectedAccount(platform.key);
+          const connectedAccounts = getConnectedAccounts(platform.key);
+          const hasConnected = connectedAccounts.length > 0;
           const isConnecting = connectingPlatform === platform.key;
-          const isDisconnecting = connected ? disconnecting === connected.id : false;
 
           return (
             <div
               key={platform.key}
-              className={`${styles.card} ${connected ? styles.cardConnected : ''}`}
+              className={`${styles.card} ${hasConnected ? styles.cardConnected : ''}`}
             >
-              {/* Platform icon */}
-              <div
-                className={styles.iconWrap}
-                style={{ background: `${platform.color}20`, borderColor: `${platform.color}30` }}
-              >
-                <PlatformIcon platformKey={platform.key} color={platform.color} />
-              </div>
+              {/* Platform Header */}
+              <div className={styles.cardHeader}>
+                <div
+                  className={styles.iconWrap}
+                  style={{ background: `${platform.color}20`, borderColor: `${platform.color}30` }}
+                >
+                  <PlatformIcon platformKey={platform.key} color={platform.color} />
+                </div>
 
-              {/* Platform info */}
-              <div className={styles.cardMeta}>
-                <span className={styles.platformName}>{platform.label}</span>
+                <div className={styles.cardHeaderMeta}>
+                  <span className={styles.platformName}>{platform.label}</span>
+                  <span className={styles.accountsCount}>
+                    {hasConnected 
+                      ? `${connectedAccounts.length} account${connectedAccounts.length > 1 ? 's' : ''}` 
+                      : 'Not connected'}
+                  </span>
+                </div>
 
-                {connected ? (
-                  <span className={styles.statusConnected}>
-                    <span className={styles.dot} />
-                    {connected.handle || connected.displayName}
-                  </span>
-                ) : (
-                  <span className={styles.statusDisconnected}>
-                    <WifiOff size={11} />
-                    Not connected
-                  </span>
+                {hasConnected && (
+                  <button
+                    className={styles.btnAddAccount}
+                    onClick={() => handleConnect(platform.key)}
+                    disabled={isConnecting || showLoading}
+                    title={`Connect another ${platform.label} account`}
+                    aria-label={`Connect another ${platform.label} account`}
+                  >
+                    {isConnecting ? (
+                      <Loader2 size={14} className={styles.spinner} />
+                    ) : (
+                      <Plus size={14} />
+                    )}
+                  </button>
                 )}
               </div>
 
-              {/* Avatar (if connected) */}
-              {connected?.avatarUrl && (
-                <img
-                  src={connected.avatarUrl}
-                  alt={connected.displayName}
-                  className={styles.avatar}
-                />
-              )}
-
-              {/* Action button */}
-              {connected ? (
-                <button
-                  className={styles.btnDisconnect}
-                  onClick={() => openDisconnectDialog(connected)}
-                  disabled={isDisconnecting}
-                  title={`Disconnect ${platform.label}`}
-                >
-                  {isDisconnecting ? (
-                    <Loader2 size={13} className={styles.spinner} />
-                  ) : (
-                    'Disconnect'
-                  )}
-                </button>
+              {/* Accounts list (if connected) */}
+              {hasConnected ? (
+                <div className={styles.accountsList} role="region" aria-label={`Connected ${platform.label} accounts`}>
+                  {connectedAccounts.map((account) => {
+                    const isDisconnecting = disconnecting === account.id;
+                    return (
+                      <div key={account.id} className={styles.accountRow}>
+                        {account.avatarUrl ? (
+                          <img
+                            src={account.avatarUrl}
+                            alt={account.displayName}
+                            className={styles.avatar}
+                          />
+                        ) : (
+                          <div className={styles.avatarFallback}>
+                            {account.displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className={styles.accountMeta}>
+                          <span className={styles.accountName} title={account.displayName}>
+                            {account.displayName}
+                          </span>
+                          {account.handle && (
+                            <span className={styles.accountHandle} title={account.handle}>
+                              {account.handle}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          className={styles.btnDisconnectIcon}
+                          onClick={() => openDisconnectDialog(account)}
+                          disabled={isDisconnecting}
+                          title={`Disconnect ${account.displayName} (${platform.label})`}
+                          aria-label={`Disconnect ${account.displayName} (${platform.label})`}
+                        >
+                          {isDisconnecting ? (
+                            <Loader2 size={13} className={styles.spinner} />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <button
-                  className={styles.btnConnect}
-                  onClick={() => handleConnect(platform.key)}
-                  disabled={isConnecting || showLoading}
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 size={13} className={styles.spinner} />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink size={13} />
-                      Connect {platform.label}
-                    </>
-                  )}
-                </button>
+                /* Action button at bottom if not connected */
+                <div className={styles.cardFooter}>
+                  <button
+                    className={styles.btnConnectFull}
+                    onClick={() => handleConnect(platform.key)}
+                    disabled={isConnecting || showLoading}
+                    aria-label={`Connect ${platform.label}`}
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 size={14} className={styles.spinner} />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink size={14} />
+                        Connect {platform.label}
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           );
