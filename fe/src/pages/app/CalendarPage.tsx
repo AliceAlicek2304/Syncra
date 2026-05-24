@@ -203,7 +203,7 @@ export default function CalendarPage() {
                         <div className={styles.postCardBody}>
                           <div className={styles.postCardThumbnail}>
                             {p.image ? <img src={p.image} alt={p.title} /> : <div className={styles.postCardThumbnailPlaceholder} style={{ background: p.color }}><ExtendedPlatformIcon platform={p.platform} size={18} /></div>}
-                            {(p.platform === 'YouTube' || p.platform === 'TikTok') && <div className={styles.postCardVideoOverlay}><Play size={18} className={styles.postCardVideoIcon} /></div>}
+                            {(p.platform.toLowerCase() === 'youtube' || p.platform.toLowerCase() === 'tiktok') && <div className={styles.postCardVideoOverlay}><Play size={18} className={styles.postCardVideoIcon} /></div>}
                           </div>
                           <div className={styles.postCardContent}>
                             <span className={styles.postCardTitle}>{p.title}</span>

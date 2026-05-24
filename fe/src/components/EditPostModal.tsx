@@ -5,12 +5,12 @@ import type { ScheduledPost } from '../context/calendarContextBase'
 import styles from './EditPostModal.module.css'
 
 const PLATFORM_OPTIONS = [
-  { id: 'TikTok', label: 'TikTok', color: '#8b5cf6' },
-  { id: 'Instagram', label: 'Instagram', color: '#ec4899' },
-  { id: 'Facebook', label: 'Facebook', color: '#3b82f6' },
-  { id: 'X', label: 'X / Twitter', color: '#f59e0b' },
-  { id: 'LinkedIn', label: 'LinkedIn', color: '#22d3ee' },
-  { id: 'YouTube', label: 'YouTube', color: '#ef4444' },
+  { id: 'tiktok', label: 'TikTok', color: '#8b5cf6' },
+  { id: 'instagram', label: 'Instagram', color: '#ec4899' },
+  { id: 'facebook', label: 'Facebook', color: '#3b82f6' },
+  { id: 'twitter', label: 'X / Twitter', color: '#f59e0b' },
+  { id: 'linkedin', label: 'LinkedIn', color: '#22d3ee' },
+  { id: 'youtube', label: 'YouTube', color: '#ef4444' },
 ]
 
 const STATUS_OPTIONS: { value: ScheduledPost['status']; label: string }[] = [
@@ -34,7 +34,7 @@ export default function EditPostModal({ post, isOpen, onClose, onSave, onDelete 
   const [form, setForm] = useState({
     title: '',
     caption: '',
-    platform: 'TikTok',
+    platform: 'tiktok',
     status: 'scheduled' as ScheduledPost['status'],
     time: '09:00',
     day: 1,

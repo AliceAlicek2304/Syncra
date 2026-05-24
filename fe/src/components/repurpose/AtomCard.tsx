@@ -1,25 +1,15 @@
-import { useState } from 'react'
-import type { ElementType } from 'react'
+import { useState, type ElementType } from 'react'
 import {
     Copy, Check, Calendar, RefreshCw, ChevronDown, ChevronUp,
-    Linkedin, Instagram, Mail, FileText, AlignLeft,
-    LayoutGrid, Lightbulb, Zap, Quote,
+    FileText, AlignLeft, LayoutGrid, Lightbulb, Zap, Quote,
 } from 'lucide-react'
 import type { RepurposeAtom, AtomType } from '../../data/mockAI'
+import { getPlatformById } from '../../data/platforms'
 import styles from './RepurposeComponents.module.css'
 
 interface Props {
     atom: RepurposeAtom
     index?: number
-}
-
-interface PlatformCfg { icon?: ElementType; xText?: string; color: string; bg: string; border: string }
-
-const PLATFORM_CFG: Record<string, PlatformCfg> = {
-    LinkedIn:   { icon: Linkedin,   color: '#60a5fa', bg: 'rgba(96,165,250,0.08)',   border: 'rgba(96,165,250,0.2)' },
-    X:          { xText: 'X',       color: '#e2e8f0', bg: 'rgba(226,232,240,0.05)',  border: 'rgba(226,232,240,0.12)' },
-    Instagram:  { icon: Instagram,  color: '#f472b6', bg: 'rgba(244,114,182,0.08)',  border: 'rgba(244,114,182,0.2)' },
-    Newsletter: { icon: Mail,       color: '#fbbf24', bg: 'rgba(251,191,36,0.08)',   border: 'rgba(251,191,36,0.2)' },
 }
 
 const TYPE_CFG: Record<AtomType, { icon: ElementType; label: string }> = {
@@ -35,10 +25,15 @@ export default function AtomCard({ atom, index = 0 }: Props) {
     const [copied, setCopied] = useState(false)
     const [expanded, setExpanded] = useState(false)
 
-    const platform = PLATFORM_CFG[atom.platform] ?? PLATFORM_CFG.LinkedIn
+    const platformDef = getPlatformById(atom.platform) ?? getPlatformById('linkedin')!
+    const platform = {
+        color: platformDef.color,
+        bg: platformDef.bg,
+        border: platformDef.border,
+        xText: platformDef.xText,
+    }
     const typeInfo = TYPE_CFG[atom.type]
     const TypeIcon = typeInfo.icon
-    const PlatformIcon = platform.icon
     const isLong = atom.content.length > 300
 
     const handleCopy = async (e: React.MouseEvent) => {
@@ -72,7 +67,7 @@ export default function AtomCard({ atom, index = 0 }: Props) {
                         className={styles.platformBadge}
                         style={{ color: platform.color, background: platform.bg, borderColor: platform.border }}
                     >
-                        {PlatformIcon ? <PlatformIcon size={11} /> : <span className={styles.xBadgeText}>{platform.xText}</span>}
+                        <span className={styles.xBadgeText}>{platform.xText}</span>
                         {atom.platform}
                     </span>
                     <span className={styles.typeBadge}>

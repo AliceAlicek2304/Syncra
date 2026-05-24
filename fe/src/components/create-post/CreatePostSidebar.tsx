@@ -70,7 +70,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
   const renderPreview = () => {
     const firstImage = state.media.find(m => m.type === 'image')
 
-    if (state.activeTab === 'TikTok') return (
+    if (state.activeTab === 'tiktok') return (
       <div className={styles.tiktokCard}>
         {firstImage
           ? <img src={firstImage.url} alt="" className={styles.tiktokBg} />
@@ -111,7 +111,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
       </div>
     )
 
-    if (state.activeTab === 'Instagram') return (
+    if (state.activeTab === 'instagram') return (
       <div className={styles.igCard}>
         <div className={styles.igHeader}>
           <div className={styles.igAvatar}>
@@ -138,7 +138,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
       </div>
     )
 
-    if (state.activeTab === 'Facebook') return (
+    if (state.activeTab === 'facebook') return (
       <div className={styles.fbCard}>
         <div className={styles.fbHeader}>
           <div className={styles.fbAvatar}>
@@ -310,7 +310,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                   </div>
 
                   <div className={styles.deviceContent}>
-                    {state.caption.trim() === '' && state.media.length === 0 && state.activeTab !== 'TikTok' ? (
+                    {state.caption.trim() === '' && state.media.length === 0 && state.activeTab !== 'tiktok' ? (
                       <div className={styles.previewEmpty}>
                         <div className={styles.previewEmptyIcon}>
                           <ImageIcon size={22} style={{ color: 'var(--text-muted)' }} />
@@ -320,7 +320,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                     ) : renderPreview()}
                   </div>
 
-                  {state.activeTab === 'TikTok' && (
+                  {state.activeTab === 'tiktok' && (
                     <div className={styles.tiktokBottomNav}>
                       {[
                         { icon: <Home size={17} />, label: 'Home', active: true },
