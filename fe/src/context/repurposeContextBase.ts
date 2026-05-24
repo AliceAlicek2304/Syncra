@@ -48,6 +48,7 @@ export interface RepurposeContextValue {
     setResults: Dispatch<SetStateAction<RepurposeAtom[]>>
     error: string | null
     setError: Dispatch<SetStateAction<string | null>>
+    generate: () => Promise<void>
 }
 
 export const RepurposeContext = createContext<RepurposeContextValue | null>(null)

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
-import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import type { RepurposePlatform } from '../../context/repurposeContextBase'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
@@ -8,7 +7,6 @@ import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
     id: RepurposePlatform
-    icon?: ElementType
     xText?: string
     color: string
     bg: string
@@ -58,7 +56,7 @@ const LENGTHS = [
 ]
 
 export default function ConfigBar() {
-    const { config, setConfig, isGenerating, setIsGenerating, setResults, setError } = useRepurpose()
+    const { config, setConfig, isGenerating, generate } = useRepurpose()
     const [contentLength, setContentLength] = useState('medium')
 
     const togglePlatform = (p: RepurposePlatform) => {
@@ -73,21 +71,7 @@ export default function ConfigBar() {
 
     const handleGenerate = async () => {
         if (!config.sourceText.trim()) return
-        setIsGenerating(true)
-        setError(null)
-        try {
-            const response = await mockGenerateRepurpose({
-                sourceText: config.sourceText,
-                platforms: config.targetPlatforms,
-                tone: config.tone,
-                extractAtoms: config.extractAtoms,
-            })
-            setResults(response.atoms)
-        } catch {
-            setError('An error occurred while generating content.')
-        } finally {
-            setIsGenerating(false)
-        }
+        await generate()
     }
 
     return (
@@ -105,7 +89,6 @@ export default function ConfigBar() {
                 <div className={styles.platformGrid}>
                     {PLATFORMS.map(p => {
                         const isActive = config.targetPlatforms.includes(p.id)
-                        const Icon = p.icon
                         return (
                             <button
                                 key={p.id}
@@ -117,7 +100,7 @@ export default function ConfigBar() {
                                 } as React.CSSProperties : {}}
                                 onClick={() => togglePlatform(p.id)}
                             >
-                                {Icon ? <Icon size={14} /> : <span className={styles.xIcon}>{p.xText}</span>}
+                                <span className={styles.xIcon}>{p.xText}</span>
                                 <span>{p.id}</span>
                                 {isActive && <span className={styles.platformCheck}>✓</span>}
                             </button>
