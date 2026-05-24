@@ -48,8 +48,10 @@ function useDashboardData(workspaceId?: string) {
     queryKey: ['dashboard-integrations', workspaceId],
     enabled: Boolean(workspaceId),
     queryFn: async () => {
-      const res = await api.get(`workspaces/${workspaceId}/integrations`)
-      return res.data as { id: string; providerId: string }[]
+      const res = await api.get('social-accounts', {
+        headers: { 'X-Workspace-Id': workspaceId },
+      })
+      return res.data as { id: string; platform: string }[]
     },
   })
 
@@ -131,8 +133,8 @@ export default function DashboardPage() {
     }
   })
 
-  const isLoading = summary.isLoading || recentPosts.isLoading || integrations.isLoading
-  const isError = summary.isError || recentPosts.isError || integrations.isError
+  const isLoading = summary.isLoading || recentPosts.isLoading
+  const isError = summary.isError || recentPosts.isError
 
   const statCards = summary.data
     ? [
