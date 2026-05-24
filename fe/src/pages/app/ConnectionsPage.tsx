@@ -592,12 +592,19 @@ export default function ConnectionsPage() {
                   <div className={styles.connectionMeta}>
                     {account.displayName || account.externalAccountId} • {displayDate}
                   </div>
-                  <div className={styles.handleBlock}>
+                  <div
+                    className={styles.handleBlock}
+                    onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
+                    title={`Filter by workspace: ${account.workspace.name}`}
+                  >
                     <span className={styles.handleDot} />
                     <span className={styles.handleText}>{account.workspace.name}</span>
                     <button
                       className={styles.copyBtn}
-                      onClick={() => handleCopyId(account.workspace.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyId(account.workspace.name);
+                      }}
                       title="Copy workspace name"
                     >
                       <Copy size={12} />
