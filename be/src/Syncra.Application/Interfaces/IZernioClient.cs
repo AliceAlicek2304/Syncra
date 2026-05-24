@@ -127,4 +127,16 @@ public interface IZernioClient
     Task<ZernioAccountHealthDto> GetAccountHealthAsync(
         string accountId,
         CancellationToken cancellationToken = default);
+
+    // ── Facebook Page methods ───────────────────────────────────
+
+    Task<ZernioFacebookPagesResponseDto> GetFacebookPagesAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateFacebookPageAsync(
+        string accountId,
+        string selectedPageId,
+        CancellationToken cancellationToken = default);
 }

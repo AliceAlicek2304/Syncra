@@ -628,6 +628,76 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    // ── Facebook Page methods ─────────────────────────────────────────────────
+
+    public async Task<ZernioFacebookPagesResponseDto> GetFacebookPagesAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _connectApi.GetFacebookPagesAsync(
+                accountId,
+                refresh,
+                cancellationToken);
+
+            var pages = response.Pages
+                .Select(p => new ZernioFacebookPageDto(
+                    p.Id,
+                    p.Name,
+                    p.Username,
+                    p.Category,
+                    p.FanCount))
+                .ToList();
+
+            return new ZernioFacebookPagesResponseDto(
+                pages,
+                response.SelectedPageId,
+                response.Cached);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing pages for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage Facebook pages.",
+                reason: "facebook_pages_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing Facebook pages for account {AccountId}", accountId);
+            throw new DomainException("zernio_facebook_pages_error", "Failed to list Facebook pages", ex);
+        }
+    }
+
+    public async Task UpdateFacebookPageAsync(
+        string accountId,
+        string selectedPageId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new UpdateFacebookPageRequest(selectedPageId);
+            await _connectApi.UpdateFacebookPageAsync(accountId, request, cancellationToken);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered switching page for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to switch Facebook pages.",
+                reason: "facebook_page_switch_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error switching Facebook page for account {AccountId}", accountId);
+            throw new DomainException("zernio_facebook_page_switch_error", "Failed to switch Facebook page", ex);
+        }
+    }
+
     // ── Inbox DM methods ────────────────────────────────────────────────────
 
     public async Task<ZernioInboxConversationsPageDto> ListInboxConversationsAsync(

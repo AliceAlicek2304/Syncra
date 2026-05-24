@@ -69,6 +69,17 @@ public class PostsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("scheduled-posts-count")]
+    public async Task<IActionResult> GetScheduledPostsCount(
+        Guid workspaceId,
+        [FromQuery] Guid socialAccountId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetScheduledPostsCountQuery(workspaceId, socialAccountId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{postId:guid}")]
     public async Task<IActionResult> GetPostById(
         Guid workspaceId,

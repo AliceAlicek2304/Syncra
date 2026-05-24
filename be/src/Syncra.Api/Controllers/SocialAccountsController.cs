@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Exceptions;
+using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Shared.Extensions;
 
@@ -17,20 +19,25 @@ namespace Syncra.Api.Controllers;
 [Route("api/v1/social-accounts")]
 public sealed class SocialAccountsController : ControllerBase
 {
+    private const string DisconnectGraceCacheKeyPrefix = "disconnect_grace:";
+
     private readonly AppDbContext _db;
     private readonly IZernioClient _zernioClient;
     private readonly IDistributedCache _cache;
+    private readonly IBackgroundJobClient _backgroundJobs;
     private readonly ILogger<SocialAccountsController> _logger;
 
     public SocialAccountsController(
         AppDbContext db,
         IZernioClient zernioClient,
         IDistributedCache cache,
+        IBackgroundJobClient backgroundJobs,
         ILogger<SocialAccountsController> logger)
     {
         _db = db;
         _zernioClient = zernioClient;
         _cache = cache;
+        _backgroundJobs = backgroundJobs;
         _logger = logger;
     }
 
@@ -218,6 +225,8 @@ public sealed class SocialAccountsController : ControllerBase
 
         if (existing is not null)
         {
+            await _cache.RemoveAsync($"{DisconnectGraceCacheKeyPrefix}{existing.Id}", cancellationToken);
+
             if (!existing.IsActive)
             {
                 existing.Reactivate();
@@ -266,7 +275,7 @@ public sealed class SocialAccountsController : ControllerBase
 
     /// <summary>
     /// Soft-deactivates the SocialAccount, calls Zernio to disconnect, and
-    /// unschedules any scheduled posts targeting this account's workspace.
+    /// cancels scheduled posts after a 1-hour grace period unless the account reconnects.
     /// </summary>
     [HttpDelete("{accountId:guid}")]
     public async Task<IActionResult> Delete(
@@ -315,30 +324,38 @@ public sealed class SocialAccountsController : ControllerBase
         // Soft-deactivate local record
         account.Deactivate();
 
-        // Unschedule any scheduled posts for this workspace (T-25-03-04 audit)
-        var scheduledPosts = await _db.Posts
-            .Where(p => p.WorkspaceId == workspaceId.Value && p.Status == PostStatus.Scheduled)
-            .ToListAsync(cancellationToken);
+        var scheduledCountForAccount = await _db.Posts
+            .AsNoTracking()
+            .Where(p =>
+                p.WorkspaceId == workspaceId.Value
+                && p.Status == PostStatus.Scheduled
+                && p.PlatformTargets.Any(t => t.ZernioAccountId == account.ExternalAccountId))
+            .CountAsync(cancellationToken);
 
-        var unscheduledCount = 0;
-        foreach (var post in scheduledPosts)
+        if (scheduledCountForAccount > 0)
         {
-            try
-            {
-                post.Unschedule();
-                unscheduledCount++;
-            }
-            catch (DomainException)
-            {
-                // Ignore posts that cannot be unscheduled (already changed status)
-            }
+            var graceToken = Guid.NewGuid().ToString("N");
+            await _cache.SetStringAsync(
+                $"{DisconnectGraceCacheKeyPrefix}{accountId}",
+                graceToken,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2)
+                },
+                cancellationToken);
+
+            _backgroundJobs.Schedule<CancelScheduledPostsForDisconnectedAccountJob>(
+                job => job.ExecuteAsync(accountId, graceToken, CancellationToken.None),
+                TimeSpan.FromHours(1));
         }
 
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "SocialAccount {AccountId} deactivated for workspace {WorkspaceId}. Unscheduled {Count} posts.",
-            accountId, workspaceId.Value, unscheduledCount);
+            "SocialAccount {AccountId} deactivated for workspace {WorkspaceId}. Scheduled posts count for account: {Count}.",
+            accountId,
+            workspaceId.Value,
+            scheduledCountForAccount);
 
         return NoContent();
     }
@@ -373,6 +390,82 @@ public sealed class SocialAccountsController : ControllerBase
             cancellationToken: cancellationToken);
 
         return Ok(health);
+    }
+
+    // ── GET /api/v1/social-accounts/{accountId}/facebook-page ──────
+
+    /// <summary>
+    /// Returns all Facebook pages the connected account has access to,
+    /// including the currently selected page.
+    /// </summary>
+    [HttpGet("{accountId:guid}/facebook-page")]
+    public async Task<IActionResult> GetFacebookPages(
+        Guid accountId,
+        [FromQuery] bool? refresh = null,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var pages = await _zernioClient.GetFacebookPagesAsync(
+            accountId: account.ExternalAccountId,
+            refresh: refresh,
+            cancellationToken: cancellationToken);
+
+        return Ok(pages);
+    }
+
+    // ── PUT /api/v1/social-accounts/{accountId}/facebook-page ──────
+
+    /// <summary>
+    /// Switches which Facebook Page is active for a connected account.
+    /// </summary>
+    [HttpPut("{accountId:guid}/facebook-page")]
+    public async Task<IActionResult> UpdateFacebookPage(
+        Guid accountId,
+        [FromBody] UpdateFacebookPageRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        await _zernioClient.UpdateFacebookPageAsync(
+            accountId: account.ExternalAccountId,
+            selectedPageId: request.SelectedPageId,
+            cancellationToken: cancellationToken);
+
+        _logger.LogInformation(
+            "Switched Facebook page for account {AccountId} to page {PageId}",
+            accountId, request.SelectedPageId);
+
+        return Ok(new { message = "Facebook page switched successfully." });
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
@@ -458,3 +551,6 @@ public sealed record SelectPageRequest(
     string TempToken,
     string SelectedId,
     string? SelectedName = null);
+
+public sealed record UpdateFacebookPageRequestDto(
+    string SelectedPageId);

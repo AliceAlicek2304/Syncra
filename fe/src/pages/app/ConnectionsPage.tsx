@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
 import { socialAccountsApi } from '../../api/socialAccounts';
+import { postsApi } from '../../api/posts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
 
@@ -380,12 +381,18 @@ function HealthModal({ account, workspaceId, onClose }: {
 
 
 // ── Disconnect Confirm Modal ─────────────────────────────────────────────────
-function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPending }: {
+function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPending, scheduledPostsCount, isCheckingScheduledPosts }: {
   account: SocialAccountDto & { workspace: { name: string } };
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
+  scheduledPostsCount?: number;
+  isCheckingScheduledPosts: boolean;
 }) {
+  const scheduledPostsText = typeof scheduledPostsCount === 'number' && scheduledPostsCount > 0
+    ? `You have ${scheduledPostsCount} scheduled ${scheduledPostsCount === 1 ? 'post' : 'posts'} for this account. Your posts will be preserved for 1 hour. Reconnect the same account within that time to keep them, otherwise they will be cancelled.`
+    : null;
+
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.disconnectModalCard} onClick={(e) => e.stopPropagation()}>
@@ -401,12 +408,17 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
           </div>
           <div className={styles.disconnectModalBody}>
             <p className={styles.disconnectText}>Are you sure you want to disconnect this account?</p>
+            {isCheckingScheduledPosts ? (
+              <p className={styles.disconnectScheduledCheck}>Checking scheduled posts…</p>
+            ) : scheduledPostsText ? (
+              <p className={styles.disconnectScheduledText}>{scheduledPostsText}</p>
+            ) : null}
           </div>
           <div className={styles.disconnectModalFooter}>
             <button className={styles.disconnectCancelBtn} onClick={onClose} disabled={isPending}>
               Cancel
             </button>
-            <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending}>
+            <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending || isCheckingScheduledPosts}>
               {isPending ? (
                 <span className={styles.btnLoadingWrap}>
                   <Loader2 size={13} className={styles.btnSpinner} />
@@ -566,6 +578,19 @@ export default function ConnectionsPage() {
       showError(msg);
       setAccountToDisconnect(null);
     }
+  });
+
+  const { data: scheduledPostsCountData, isLoading: isScheduledPostsCountLoading } = useQuery({
+    queryKey: ['scheduled-posts-count', accountToDisconnect?.workspace.id, accountToDisconnect?.id],
+    queryFn: async () => {
+      const account = accountToDisconnect!;
+      const result = await postsApi.getScheduledPostsCount(account.workspace.id, account.id);
+      return result.count;
+    },
+    enabled: !!accountToDisconnect,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Facebook pages query (only for Facebook accounts in manage pages drawer)
@@ -1253,6 +1278,8 @@ export default function ConnectionsPage() {
             });
           }}
           isPending={disconnectMutation.isPending}
+          scheduledPostsCount={scheduledPostsCountData}
+          isCheckingScheduledPosts={isScheduledPostsCountLoading}
         />
       )}
     </div>

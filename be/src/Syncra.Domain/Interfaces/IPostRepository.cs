@@ -17,6 +17,10 @@ public interface IPostRepository
         DateTime utcNow,
         int batchSize,
         CancellationToken cancellationToken = default);
+    Task<int> CountScheduledPostsForZernioAccountAsync(
+        Guid workspaceId,
+        string zernioAccountId,
+        CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<Post> Items, int TotalCount)> GetFilteredAsync(
         Guid workspaceId,
         PostStatus? status = null,

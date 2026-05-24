@@ -11,6 +11,20 @@ export interface SocialAccountDto {
   zernioProfileId: string;
 }
 
+export interface FacebookPageDto {
+  id: string;
+  name: string;
+  username: string | null;
+  category: string | null;
+  fanCount: number | null;
+}
+
+export interface FacebookPagesResponseDto {
+  pages: FacebookPageDto[];
+  selectedPageId: string | null;
+  cached: boolean;
+}
+
 export interface AccountHealthDto {
   accountId: string;
   platform: string;
@@ -36,6 +50,25 @@ export interface AccountHealthDto {
 }
 
 export const socialAccountsApi = {
+  getFacebookPages: async (workspaceId: string, accountId: string, refresh?: boolean): Promise<FacebookPagesResponseDto> => {
+    const params: Record<string, string> = {};
+    if (refresh) params.refresh = 'true';
+    const response = await api.get<FacebookPagesResponseDto>(
+      `social-accounts/${accountId}/facebook-page`,
+      {
+        headers: { 'X-Workspace-Id': workspaceId },
+        params
+      }
+    );
+    return response.data;
+  },
+  updateFacebookPage: async (workspaceId: string, accountId: string, selectedPageId: string): Promise<void> => {
+    await api.put(
+      `social-accounts/${accountId}/facebook-page`,
+      { selectedPageId },
+      { headers: { 'X-Workspace-Id': workspaceId } }
+    );
+  },
   getSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
     const response = await api.get<SocialAccountDto[]>('social-accounts', {
       headers: {

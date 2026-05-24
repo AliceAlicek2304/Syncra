@@ -136,3 +136,17 @@ public sealed record ZernioScopeDto(
     string Scope,
     bool Granted,
     bool Required);
+
+// ── Facebook Page DTOs ───────────────────────────────────────────
+
+public sealed record ZernioFacebookPageDto(
+    string Id,
+    string Name,
+    string? Username,
+    string? Category,
+    int? FanCount);
+
+public sealed record ZernioFacebookPagesResponseDto(
+    IReadOnlyList<ZernioFacebookPageDto> Pages,
+    string? SelectedPageId,
+    bool Cached);

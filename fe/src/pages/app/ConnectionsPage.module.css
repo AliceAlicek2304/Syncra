@@ -1410,7 +1410,7 @@
 
 /* ── Disconnect Confirm Modal ── */
 .disconnectModalCard {
-  background-color: #ffffff;
+  background-color: #fffefb;
   border: 1px solid #e5dfd3;
   border-radius: 12px;
   max-width: 440px;
@@ -1440,14 +1440,14 @@
 }
 
 .disconnectIcon {
-  color: #dc2626;
+  color: #ff4f00;
   flex-shrink: 0;
 }
 
 .disconnectModalTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #dc2626;
+  color: #201515;
   margin: 0;
   line-height: 1.2;
 }
@@ -1463,6 +1463,20 @@
   line-height: 1.5;
 }
 
+.disconnectScheduledCheck {
+  font-size: 13px;
+  color: #939084;
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
+.disconnectScheduledText {
+  font-size: 13px;
+  color: #605d52;
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
 .disconnectModalFooter {
   display: flex;
   justify-content: center;
@@ -1471,10 +1485,10 @@
 
 .disconnectCancelBtn {
   padding: 10px 24px;
-  background-color: #ffffff;
+  background-color: #fffefb;
   color: #605d52;
   border: 1px solid #e5dfd3;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1489,10 +1503,10 @@
 
 .disconnectConfirmBtn {
   padding: 10px 24px;
-  background-color: #dc2626;
+  background-color: #ff4f00;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1500,7 +1514,7 @@
 }
 
 .disconnectConfirmBtn:hover:not(:disabled) {
-  background-color: #b91c1c;
+  background-color: #e64500;
 }
 
 .disconnectCancelBtn:disabled {

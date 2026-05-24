@@ -70,6 +70,10 @@ export interface CreateZernioPostRequest {
   publishNow: boolean;
 }
 
+export interface ScheduledPostsCountResponse {
+  count: number;
+}
+
 export const postsApi = {
   createPost: async (workspaceId: string, data: CreatePostRequest): Promise<Post> => {
     const response = await api.post<Post>(`workspaces/${workspaceId}/posts`, data);
@@ -112,5 +116,16 @@ export const postsApi = {
 
   deleteZernioPost: async (workspaceId: string, postId: string): Promise<void> => {
     await api.delete(`workspaces/${workspaceId}/posts/zernio/${postId}`);
+  },
+
+  getScheduledPostsCount: async (
+    workspaceId: string,
+    socialAccountId: string
+  ): Promise<ScheduledPostsCountResponse> => {
+    const response = await api.get<ScheduledPostsCountResponse>(
+      `workspaces/${workspaceId}/posts/scheduled-posts-count`,
+      { params: { socialAccountId }, headers: { 'X-Workspace-Id': workspaceId } }
+    );
+    return response.data;
   },
 };

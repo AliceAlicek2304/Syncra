@@ -64,6 +64,20 @@ public class PostRepository : Repository<Post>, IPostRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<int> CountScheduledPostsForZernioAccountAsync(
+        Guid workspaceId,
+        string zernioAccountId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(p =>
+                p.WorkspaceId == workspaceId
+                && p.Status == PostStatus.Scheduled
+                && p.PlatformTargets.Any(t => t.ZernioAccountId == zernioAccountId))
+            .CountAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<Post> Items, int TotalCount)> GetFilteredAsync(
         Guid workspaceId,
         PostStatus? status = null,
