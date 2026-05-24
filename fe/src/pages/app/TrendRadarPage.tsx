@@ -1,23 +1,110 @@
-import { TrendingUp, Hash, Zap, Sparkles, Filter } from 'lucide-react'
+import { TrendingUp, Hash, Zap, Sparkles, Filter, Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { trendsApi } from '../../api/trends'
 import styles from './TrendRadarPage.module.css'
 
-const TRENDING_TOPICS = [
-  { id: 't1', topic: 'AI Workflow Automation', growth: '+142%', category: 'Tech', volume: '24.5K', sentiment: '🔥 Very High' },
-  { id: 't2', topic: 'Digital Nomad Minimalism', growth: '+86%', category: 'Lifestyle', volume: '12.1K', sentiment: '✨ High' },
-  { id: 't3', topic: 'Sustainable Creator Economy', growth: '+54%', category: 'Business', volume: '9.8K', sentiment: '📈 Rising' },
-  { id: 't4', topic: 'Prompt Engineering for Artists', growth: '+120%', category: 'Tech', volume: '18.2K', sentiment: '🔥 Very High' },
-  { id: 't5', topic: 'Slow Living content', growth: '+42%', category: 'Lifestyle', volume: '8.4K', sentiment: '📈 Rising' },
-]
-
-const POPULAR_HASHTAGS = [
-  { tag: '#aitools', growth: '+210%', color: '#8b5cf6' },
-  { tag: '#productivity', growth: '+85%', color: '#ec4899' },
-  { tag: '#contentcreator', growth: '+120%', color: '#22d3ee' },
-  { tag: '#solopreneur', growth: '+45%', color: '#f59e0b' },
-  { tag: '#futureofwork', growth: '+160%', color: '#10b981' },
-]
-
 export default function TrendRadarPage() {
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['trends', workspaceId],
+    queryFn: () => trendsApi.getTrends(workspaceId!),
+    enabled: Boolean(workspaceId),
+  })
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.headerIcon}>
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <h1 className={styles.title}>AI Trend Radar</h1>
+              <p className={styles.subtitle}>Khám phá xu hướng mới nhất được cá nhân hóa cho niche của bạn</p>
+            </div>
+          </div>
+        </div>
+        <div className={styles.body}>
+          <div className={`glass-card ${styles.trendsCard}`}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>🔥 Xu hướng đang bùng nổ</h2>
+            </div>
+            <div className={styles.loadingState}>
+              <Loader2 size={32} className={styles.spinner} />
+              <p>Đang tải xu hướng...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.headerIcon}>
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <h1 className={styles.title}>AI Trend Radar</h1>
+              <p className={styles.subtitle}>Khám phá xu hướng mới nhất được cá nhân hóa cho niche của bạn</p>
+            </div>
+          </div>
+        </div>
+        <div className={styles.body}>
+          <div className={`glass-card ${styles.trendsCard}`}>
+            <div className={styles.errorState}>
+              <AlertTriangle size={32} />
+              <h3>Không thể tải xu hướng</h3>
+              <p>{(error as { message?: string })?.message || 'Đã có lỗi xảy ra khi tải dữ liệu xu hướng.'}</p>
+              <button className={styles.retryBtn} onClick={() => refetch()}>
+                <RefreshCw size={14} /> Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Empty state
+  if (!data || (data.trendingTopics.length === 0 && data.popularHashtags.length === 0)) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.headerIcon}>
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <h1 className={styles.title}>AI Trend Radar</h1>
+              <p className={styles.subtitle}>Khám phá xu hướng mới nhất được cá nhân hóa cho niche của bạn</p>
+            </div>
+          </div>
+        </div>
+        <div className={styles.body}>
+          <div className={`glass-card ${styles.trendsCard}`}>
+            <div className={styles.emptyState}>
+              <Sparkles size={32} />
+              <h3>Chưa có dữ liệu xu hướng</h3>
+              <p>Kết nối tài khoản mạng xã hội để nhận xu hướng được cá nhân hóa.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { trendingTopics, popularHashtags, tip } = data
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -40,7 +127,7 @@ export default function TrendRadarPage() {
         <div className={`glass-card ${styles.trendsCard}`}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>🔥 Xu hướng đang bùng nổ</h2>
-            <span className={styles.cardBadge}>Cập nhật 5 phút trước</span>
+            <span className={styles.cardBadge}>Cập nhật từ Zernio</span>
           </div>
           
           <div className={styles.tableWrap}>
@@ -56,7 +143,7 @@ export default function TrendRadarPage() {
                 </tr>
               </thead>
               <tbody>
-                {TRENDING_TOPICS.map(t => (
+                {trendingTopics.map(t => (
                   <tr key={t.id}>
                     <td className={styles.topicName}>{t.topic}</td>
                     <td><span className={styles.growthTag}>{t.growth}</span></td>
@@ -81,7 +168,7 @@ export default function TrendRadarPage() {
           <div className={`glass-card ${styles.hashtagCard}`}>
             <h3 className={styles.sidebarTitle}><Hash size={18} /> Hashtag thịnh hành</h3>
             <div className={styles.hashtagList}>
-              {POPULAR_HASHTAGS.map(h => (
+              {popularHashtags.map(h => (
                 <div key={h.tag} className={styles.hashtagItem}>
                   <span className={styles.hashtagName} style={{ color: h.color }}>{h.tag}</span>
                   <span className={styles.hashtagGrowth}>{h.growth}</span>
@@ -94,10 +181,7 @@ export default function TrendRadarPage() {
           <div className={`glass-card ${styles.tipCard}`}>
             <div className={styles.tipIcon}><Sparkles size={20} /></div>
             <h3 className={styles.tipTitle}>Mẹo nội dung hôm nay</h3>
-            <p className={styles.tipText}>
-              Chủ đề <strong>"AI Workflow"</strong> đang có xu hướng tăng mạnh trên LinkedIn. 
-              Hãy thử tạo một bài chia sẻ quy trình làm việc của bạn để thu hút engagement cao.
-            </p>
+            <p className={styles.tipText}>{tip}</p>
           </div>
         </div>
       </div>
