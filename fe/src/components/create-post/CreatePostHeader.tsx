@@ -5,10 +5,10 @@ import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
 const CHIP_CLASS: Record<Platform, string> = {
-  TikTok: styles.chipTikTok,
-  Instagram: styles.chipIG,
-  Facebook: styles.chipFB,
-  X: styles.chipX,
+  tiktok: styles.chipTikTok,
+  instagram: styles.chipIG,
+  facebook: styles.chipFB,
+  twitter: styles.chipX,
 }
 
 type CreatePostHeaderProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>

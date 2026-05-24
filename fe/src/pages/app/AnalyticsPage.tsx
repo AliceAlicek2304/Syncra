@@ -3,6 +3,7 @@ import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check, RefreshCw, 
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
+import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAnalyticsSummary } from '../../hooks/useAnalyticsSummary'
 import styles from './AnalyticsPage.module.css'
@@ -17,11 +18,7 @@ const PRESET_LABELS: Record<7 | 30 | 90, string> = {
 
 const PLATFORM_OPTIONS = [
   { label: 'All Platforms', value: '' },
-  { label: 'Instagram', value: 'instagram' },
-  { label: 'Facebook', value: 'facebook' },
-  { label: 'LinkedIn', value: 'linkedin' },
-  { label: 'TikTok', value: 'tiktok' },
-  { label: 'Twitter', value: 'twitter' },
+  ...ZERNIO_PLATFORMS.map(p => ({ label: p.label, value: p.id })),
 ]
 
 /** Banner for billing gate (402 / analytics_addon_required 403) */

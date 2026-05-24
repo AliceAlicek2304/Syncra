@@ -23,14 +23,26 @@ export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 export const CURRENT_YEAR = new Date().getFullYear()
 export const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i)
 
+import { ZERNIO_PLATFORMS } from '../../data/platforms'
+
+// Platform-specific color overrides for calendar views.
+// Uses CSS variables for theme-aware coloring where available.
+const CALENDAR_PLATFORM_COLORS: Record<string, string> = {
+  tiktok:    'var(--purple-500)',
+  instagram: 'var(--pink-500)',
+  facebook:  '#3b82f6',
+  twitter:   '#f59e0b',
+  linkedin:  'var(--cyan-400)',
+  youtube:   '#ef4444',
+}
+
 export const PLATFORMS = [
   { id: 'all', label: 'All', color: 'var(--purple-500)' },
-  { id: 'TikTok', label: 'TikTok', color: 'var(--purple-500)' },
-  { id: 'Instagram', label: 'Instagram', color: 'var(--pink-500)' },
-  { id: 'Facebook', label: 'Facebook', color: '#3b82f6' },
-  { id: 'X', label: 'X', color: '#f59e0b' },
-  { id: 'LinkedIn', label: 'LinkedIn', color: 'var(--cyan-400)' },
-  { id: 'YouTube', label: 'YouTube', color: '#ef4444' },
+  ...ZERNIO_PLATFORMS.map(p => ({
+    id: p.id,
+    label: p.label,
+    color: CALENDAR_PLATFORM_COLORS[p.id] ?? p.color,
+  })),
 ]
 
 export function getPostKey(year: number, month: number, day: number) {

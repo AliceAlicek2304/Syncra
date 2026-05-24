@@ -76,13 +76,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   })
 
-  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['TikTok'])
-  const [activeTab, setActiveTab] = useState<Platform>('TikTok')
+  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['tiktok'])
+  const [activeTab, setActiveTab] = useState<Platform>('tiktok')
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
-    TikTok: '', Instagram: '', Facebook: '', X: ''
+    tiktok: '', instagram: '', facebook: '', twitter: ''
   })
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
-    TikTok: false, Instagram: false, Facebook: false, X: false
+    tiktok: false, instagram: false, facebook: false, twitter: false
   })
 
   const [showPreview, setShowPreview] = useState(true)
@@ -113,18 +113,18 @@ export function useCreatePostState(props: CreatePostModalProps) {
     if (didInitRef.current) return
 
     setTimeout(() => {
-      let nextCaptions = { TikTok: '', Instagram: '', Facebook: '', X: '' } as PlatformCaptionMap
-      let initPlatforms: Platform[] = ['TikTok']
+      let nextCaptions = { tiktok: '', instagram: '', facebook: '', twitter: '' } as PlatformCaptionMap
+      let initPlatforms: Platform[] = ['tiktok']
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
 
       if (editPost) {
         nextCaptions = {
-          TikTok: editPost.caption,
-          Instagram: editPost.caption,
-          Facebook: editPost.caption,
-          X: editPost.caption
+          tiktok: editPost.caption,
+          instagram: editPost.caption,
+          facebook: editPost.caption,
+          twitter: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
 
@@ -169,16 +169,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
       }
 
       setCaptionsByPlatform(nextCaptions)
-      setTouched({ TikTok: false, Instagram: false, Facebook: false, X: false })
+      setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
-      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['TikTok'])
-      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'TikTok')
+      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['tiktok'])
+      setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'tiktok')
 
       initialSnapshotRef.current = JSON.stringify({
-        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { TikTok: '', Instagram: '', Facebook: '', X: '' },
+        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', instagram: '', facebook: '', twitter: '' },
         media: mediaHook.media,
-        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['TikTok'],
+        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['tiktok'],
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
       })
@@ -192,10 +192,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const setActiveCaption = (next: string) => {
     if (socialAccounts.filter(a => a.isActive).length > 0) {
       setCaptionsByPlatform({
-        TikTok: next,
-        Instagram: next,
-        Facebook: next,
-        X: next
+        tiktok: next,
+        instagram: next,
+        facebook: next,
+        twitter: next
       })
     } else {
       setCaptionsByPlatform(prev => ({ ...prev, [activeTab]: next }))
@@ -224,8 +224,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(['TikTok'])
-    setActiveTab('TikTok')
+    setActivePlatforms(['tiktok'])
+    setActiveTab('tiktok')
     setShowUnsavedDialog(false)
     initialSnapshotRef.current = null
     didInitRef.current = false
@@ -267,10 +267,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     const platformColors: Record<string, string> = {
-      TikTok: '#ff0050',
-      Instagram: '#e1306c',
-      Facebook: '#4267B2',
-      X: '#1DA1F2'
+      tiktok: '#ff0050',
+      instagram: '#e1306c',
+      facebook: '#4267B2',
+      twitter: '#1DA1F2'
     }
 
     const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
@@ -382,10 +382,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     const platformColors: Record<string, string> = {
-      TikTok: '#ff0050',
-      Instagram: '#e1306c',
-      Facebook: '#4267B2',
-      X: '#1DA1F2'
+      tiktok: '#ff0050',
+      instagram: '#e1306c',
+      facebook: '#4267B2',
+      twitter: '#1DA1F2'
     }
 
     const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
@@ -498,7 +498,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const derivedActivePlatforms = useMemo(() => {
     if (socialAccounts.filter(a => a.isActive).length > 0) {
-      return ['TikTok'] as Platform[]
+      return ['tiktok'] as Platform[]
     }
     return activePlatforms
   }, [socialAccounts, activePlatforms])

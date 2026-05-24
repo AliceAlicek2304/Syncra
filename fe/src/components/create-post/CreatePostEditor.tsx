@@ -164,11 +164,11 @@ export function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
   )
 }
 
-const PLATFORM_BADGE_CLASS: Record<Platform, string> = {
-  TikTok: styles.badgeTikTok,
-  Instagram: styles.badgeIG,
-  Facebook: styles.badgeFB,
-  X: styles.badgeX,
+const PLATFORM_BADGE_CLASS: Partial<Record<Platform, string>> = {
+  tiktok: styles.badgeTikTok,
+  instagram: styles.badgeIG,
+  facebook: styles.badgeFB,
+  twitter: styles.badgeX,
 }
 
 export default function CreatePostEditor({ state, refs: { fileInputRef, replaceInputRef, textareaRef, emojiRef }, actions }: UseCreatePostStateReturn) {

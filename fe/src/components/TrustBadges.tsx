@@ -1,4 +1,5 @@
 import { Shield, Lock, RefreshCcw, Headphones, Award, CreditCard } from 'lucide-react'
+import { ZERNIO_PLATFORMS } from '../data/platforms'
 import styles from './TrustBadges.module.css'
 
 const BADGES = [
@@ -10,7 +11,10 @@ const BADGES = [
   { icon: <CreditCard size={20} />, label: 'No contracts' },
 ]
 
-const PLATFORMS = ['TikTok', 'Instagram', 'YouTube', 'LinkedIn', 'X (Twitter)', 'Facebook']
+/** Top social platforms used for the platform strip (subset of Zernio) */
+const PLATFORMS = ZERNIO_PLATFORMS
+  .filter(p => ['tiktok', 'instagram', 'youtube', 'linkedin', 'twitter', 'facebook'].includes(p.id))
+  .map(p => p.label)
 
 export default function TrustBadges() {
   return (

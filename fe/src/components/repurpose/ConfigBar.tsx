@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Sparkles, Loader2, Linkedin, Instagram, Mail } from 'lucide-react'
+import { Sparkles, Loader2 } from 'lucide-react'
 import type { ElementType } from 'react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import { mockGenerateRepurpose } from '../../data/mockAI'
-import type { RepurposePlatform } from '../../data/mockAI'
+import type { RepurposePlatform } from '../../context/repurposeContextBase'
+import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
@@ -15,12 +15,33 @@ interface PlatformDef {
     border: string
 }
 
-const PLATFORMS: PlatformDef[] = [
-    { id: 'LinkedIn', icon: Linkedin, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.35)' },
-    { id: 'X', xText: 'X', color: '#e2e8f0', bg: 'rgba(226,232,240,0.07)', border: 'rgba(226,232,240,0.25)' },
-    { id: 'Instagram', icon: Instagram, color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.35)' },
-    { id: 'Newsletter', icon: Mail, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.35)' },
-]
+const REPURPOSE_PLATFORM_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+    linkedin:  { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.35)' },
+    twitter:   { color: '#e2e8f0', bg: 'rgba(226,232,240,0.07)', border: 'rgba(226,232,240,0.25)' },
+    instagram: { color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.35)' },
+    tiktok:    { color: '#ff0050', bg: 'rgba(255,0,80,0.12)', border: 'rgba(255,0,80,0.35)' },
+    facebook:  { color: '#1877f2', bg: 'rgba(24,119,242,0.12)', border: 'rgba(24,119,242,0.35)' },
+    youtube:   { color: '#ff0000', bg: 'rgba(255,0,0,0.12)', border: 'rgba(255,0,0,0.35)' },
+    pinterest: { color: '#e60023', bg: 'rgba(230,0,35,0.12)', border: 'rgba(230,0,35,0.35)' },
+    bluesky:   { color: '#0085ff', bg: 'rgba(0,133,255,0.12)', border: 'rgba(0,133,255,0.35)' },
+    threads:   { color: '#e7e9ea', bg: 'rgba(231,233,234,0.07)', border: 'rgba(231,233,234,0.25)' },
+    googlebusiness: { color: '#4285f4', bg: 'rgba(66,133,244,0.12)', border: 'rgba(66,133,244,0.35)' },
+    telegram:  { color: '#0088cc', bg: 'rgba(0,136,204,0.12)', border: 'rgba(0,136,204,0.35)' },
+    snapchat:  { color: '#fffc00', bg: 'rgba(255,252,0,0.12)', border: 'rgba(255,252,0,0.35)' },
+    whatsapp:  { color: '#25D366', bg: 'rgba(37,211,102,0.12)', border: 'rgba(37,211,102,0.35)' },
+    reddit:    { color: '#ff4500', bg: 'rgba(255,69,0,0.12)', border: 'rgba(255,69,0,0.35)' },
+}
+
+const PLATFORMS: PlatformDef[] = ZERNIO_PLATFORMS.map(p => {
+    const colors = REPURPOSE_PLATFORM_COLORS[p.id] ?? { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.35)' }
+    return {
+        id: p.id as RepurposePlatform,
+        xText: p.id === 'twitter' ? 'X' : p.label.charAt(0),
+        color: colors.color,
+        bg: colors.bg,
+        border: colors.border,
+    }
+})
 
 const TONES = [
     { id: 'default', label: 'Adaptive' },

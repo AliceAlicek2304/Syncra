@@ -1,19 +1,16 @@
 import { useState } from 'react'
-import { Download, Sparkles, Linkedin, Instagram, Mail } from 'lucide-react'
-import type { ElementType } from 'react'
+import { Download, Sparkles } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import type { RepurposePlatform } from '../../data/mockAI'
+import type { RepurposePlatform } from '../../context/repurposeContextBase'
+import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import AtomCard from './AtomCard.tsx'
 import styles from './RepurposeComponents.module.css'
 
-interface PlatformMeta { icon?: ElementType; color: string }
+interface PlatformMeta { color: string }
 
 const PLATFORM_META: Record<string, PlatformMeta> = {
     All: { color: '#a78bfa' },
-    LinkedIn: { icon: Linkedin, color: '#60a5fa' },
-    X: { color: '#e2e8f0' },
-    Instagram: { icon: Instagram, color: '#f472b6' },
-    Newsletter: { icon: Mail, color: '#fbbf24' },
+    ...Object.fromEntries(ZERNIO_PLATFORMS.map(p => [p.id, { color: p.color }])),
 }
 
 function SkeletonCard() {
