@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Zernio API Integration
-status: completed
-last_updated: "2026-05-23T16:27:27.337Z"
-last_activity: 2026-05-23 -- Phase 28 marked complete
+status: executing
+last_updated: "2026-05-24T04:04:51.900Z"
+last_activity: 2026-05-24 -- Phase 29 execution started
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 17
   completed_plans: 17
-  percent: 100
+  percent: 83
 ---
 
 # Project State: Syncra.NET
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** Social media scheduling and management platform with robust API
-**Current focus:** Phase 28 — inbox
+**Current focus:** Phase 29 — backend-integration-for-frontend-only-pages-and-platform-lis
 
 ## Current Position
 
-Phase: 28 — COMPLETE
-Plan: 4 of 4
-Status: Phase 28 complete
-Last activity: 2026-05-23 -- Phase 28 marked complete
+Phase: 29 (backend-integration-for-frontend-only-pages-and-platform-lis) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 29
+Last activity: 2026-05-24 -- Phase 29 execution started
 
-Progress: [█████████░] 94%
+Progress: [████████░░] 83%
 
 ## Accumulated Context
 
@@ -45,6 +45,7 @@ Progress: [█████████░] 94%
 - Phase 23 completed: Production Serilog pipeline with sensitive data redaction
 - v1.6 Logging & Observability milestone shipped 2026-05-23
 - Phases 24-28 defined: v2.0 Zernio API Integration roadmap created
+- Phase 29 added: Backend integration for frontend-only pages and platform list cleanup
 
 ### v2.0 Roadmap Summary
 
@@ -55,6 +56,7 @@ Progress: [█████████░] 94%
 | 26 | Post Scheduling (create, schedule, lifecycle webhooks, retry, delete) | POST-01..05, HOOK-02, HOOK-04 |
 | 27 | Analytics (post metrics, daily stats, best-time) | ANLYT-01..03 |
 | 28 | Inbox (DMs, comments, reviews — unified across accounts) | INBX-01..05 |
+| 29 | Backend integration for frontend-only pages and platform list cleanup | TBD |
 
 ### Key Architectural Constraints (v2.0)
 
@@ -98,4 +100,4 @@ Items acknowledged and deferred at milestone close on 2026-05-23:
 | v1.4 Code Quality & Tech Debt | 14 | 8 | Shipped | 2026-05-14 |
 | v1.5 Google Auth & Account Linking | 15-22 | 24 | Shipped | 2026-05-18 |
 | v1.6 Logging & Observability | 23 | 3 | Shipped | 2026-05-20 |
-| v2.0 Zernio API Integration | 24-28 | TBD | In progress | — |
+| v2.0 Zernio API Integration | 24-29 | TBD | In progress | — |
