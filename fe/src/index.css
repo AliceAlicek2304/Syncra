@@ -43,7 +43,10 @@
   color-scheme: dark;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  zoom: 0.7;
+}
 
 body {
   background-color: var(--bg-dark);
