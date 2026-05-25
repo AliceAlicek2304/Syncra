@@ -11,10 +11,17 @@ public record PostDto(
     DateTime? PublishedAtUtc,
     Guid? IntegrationId,
     IReadOnlyCollection<Guid> MediaIds,
+    IReadOnlyList<PostMediaItemDto>? MediaItems,
     string? ZernioPostId,
     int ZernioTargetCount,
     IReadOnlyList<PostPlatformTargetDto> PlatformTargets
 );
+
+public record PostMediaItemDto(
+    string Url,
+    string Type,
+    string? Filename,
+    string? MimeType);
 
 public record PostPlatformTargetDto(
     Guid Id,

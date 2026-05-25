@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { 
-  FileText, Plus, Upload, Grid, List, Calendar, ChevronDown, ChevronUp, 
-  Search, X, HelpCircle, ArrowLeft, ArrowRight, User as UserIcon, AlertCircle, FileSpreadsheet
+  Plus, Upload, Grid, List, Calendar, ChevronDown, 
+  Search, X, HelpCircle, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
+  MoreVertical, Copy
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
@@ -146,8 +147,7 @@ export default function PostsOverviewPage() {
   const { activeWorkspace } = useWorkspace()
   const { user } = useAuth()
   const { openCreatePost } = useCreatePostModal()
-  const { success: showSuccess, error: showError } = useToast()
-  const queryClient = useQueryClient()
+  const { success: showSuccess } = useToast()
   
   const workspaceId = activeWorkspace?.id
 
@@ -188,87 +188,14 @@ export default function PostsOverviewPage() {
     queryFn: () => postsApi.getPosts(workspaceId!),
   })
 
-  // ─── Local State for Mock/CSV Posts ───
-  const [localPosts, setLocalPosts] = useState<Post[]>([])
+  // ─── CSV Import Posts ───
+  const [csvPosts, setCsvPosts] = useState<Post[]>([])
 
-  // Seed Mock Posts if localPosts is empty
-  useEffect(() => {
-    const mockPosts: Post[] = [
-      {
-        id: 'mock-1',
-        title: 'a',
-        content: 'Nội dung bài viết a trên Facebook',
-        status: 'scheduled',
-        scheduledAtUtc: '2026-05-27T05:00:00Z', // May 27, 2026, 12:00 PM GMT+7
-        platforms: ['facebook'],
-        createdAt: '2026-05-25T15:00:00Z',
-        updatedAt: '2026-05-25T15:00:00Z',
-        platformTargets: [
-          {
-            id: 'mock-t1',
-            platform: 'facebook',
-            status: 'Pending',
-            zernioAccountId: '6a1337'
-          }
-        ]
-      },
-      {
-        id: 'mock-2',
-        title: '1',
-        content: 'Bài đăng số 1 trên Facebook',
-        status: 'published',
-        scheduledAtUtc: '2026-05-24T15:50:00Z', // May 24, 2026, 03:50 PM UTC
-        platforms: ['facebook'],
-        createdAt: '2026-05-23T10:00:00Z',
-        updatedAt: '2026-05-24T15:50:00Z',
-        platformTargets: [
-          {
-            id: 'mock-t2',
-            platform: 'facebook',
-            status: 'Published',
-            zernioAccountId: '6a131e'
-          }
-        ]
-      },
-      {
-        id: 'mock-3',
-        title: '1',
-        content: 'Bài đăng số 1 trùng lặp',
-        status: 'published',
-        scheduledAtUtc: '2026-05-24T15:30:00Z', // May 24, 2026, 10:30 PM GMT+7
-        platforms: ['facebook'],
-        createdAt: '2026-05-23T09:00:00Z',
-        updatedAt: '2026-05-24T15:30:00Z',
-        platformTargets: [
-          {
-            id: 'mock-t3',
-            platform: 'facebook',
-            status: 'Published',
-            zernioAccountId: '6a131e'
-          }
-        ]
-      },
-      {
-        id: 'mock-4',
-        title: '123',
-        content: 'Bài đăng 123 hướng dẫn',
-        status: 'published',
-        scheduledAtUtc: '2026-05-24T15:08:00Z', // May 24, 2026, 03:08 PM UTC
-        platforms: ['facebook'],
-        createdAt: '2026-05-22T08:00:00Z',
-        updatedAt: '2026-05-24T15:08:00Z',
-        platformTargets: [
-          {
-            id: 'mock-t4',
-            platform: 'facebook',
-            status: 'Published',
-            zernioAccountId: '6a131e'
-          }
-        ]
-      }
-    ]
-    setLocalPosts(mockPosts)
-  }, [])
+  const copyToClipboard = (e: React.MouseEvent, text: string) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(text)
+    showSuccess("Copied post ID to clipboard!")
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -281,13 +208,13 @@ export default function PostsOverviewPage() {
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
 
-  // ─── Merge API & Local/Mock Posts ───
+  // ─── Merge API & CSV Imported Posts ───
   const allMergedPosts = React.useMemo(() => {
+    if (csvPosts.length === 0) return apiPosts
     const apiIds = new Set(apiPosts.map(p => p.id))
-    // Filter local posts to exclude any that might share IDs with API (just to be safe)
-    const filteredLocal = localPosts.filter(p => !apiIds.has(p.id))
-    return [...apiPosts, ...filteredLocal]
-  }, [apiPosts, localPosts])
+    const filteredCsv = csvPosts.filter(p => !apiIds.has(p.id))
+    return [...apiPosts, ...filteredCsv]
+  }, [apiPosts, csvPosts])
 
   // ─── Filter Logic ───
   const filteredPosts = React.useMemo(() => {
@@ -329,8 +256,7 @@ export default function PostsOverviewPage() {
       // 4. User Filter (Current user vs all)
       if (userFilter !== 'All users' && user) {
         // In a real database, posts have a userId or creatorName.
-        // For our mocks and mock flow, let's assume they are created by the current user
-        // or check display name contains creator name.
+        // Real posts from API have a userId; filter by user if needed.
       }
 
       // 5. Date Filter
@@ -500,7 +426,7 @@ export default function PostsOverviewPage() {
       }
     })
 
-    setLocalPosts(prev => [...importedPosts, ...prev])
+    setCsvPosts(prev => [...importedPosts, ...prev])
     showSuccess(`Successfully imported ${importedPosts.length} posts!`)
     setImportOpen(false)
     setCsvPreviewData([])
@@ -523,8 +449,6 @@ export default function PostsOverviewPage() {
 
   // ─── Calendar Generation ───
   const renderCalendar = () => {
-    const now = new Date()
-    const currentYear = now.getFullYear()
     const currentMonth = 4 // May (0-indexed represents May as 4)
     
     // First day of May 2026
@@ -643,7 +567,7 @@ export default function PostsOverviewPage() {
         <div className={styles.actionButtons}>
           <button 
             className={styles.createPostBtn}
-            onClick={() => openCreatePost({ source: 'overview' })}
+            onClick={() => openCreatePost({ source: 'direct' })}
           >
             <Plus size={16} />
             <span>Create post</span>
@@ -961,29 +885,53 @@ export default function PostsOverviewPage() {
                 const platform = post.platforms?.[0] || 'facebook'
                 return (
                   <div key={post.id} className={styles.postCard}>
-                    <div className={styles.postCardHeader}>
-                      <span className={styles.postCardTitle}>{post.title}</span>
-                      <PlatformIcon platform={platform} size={20} />
+                    {/* Hover check button */}
+                    <div className={styles.checkboxContainer}>
+                      <button type="button" role="checkbox" aria-checked="false" className={styles.cardCheckbox}></button>
                     </div>
-                    <div className={styles.postCardMeta}>
-                      <span className={styles.postCardDate}>{formatPostDate(post.scheduledAtUtc || post.createdAt)}</span>
-                      <div className={styles.creatorInfo}>
-                        <div className={styles.creatorAvatar}>
-                          {user?.avatarUrl ? (
-                            <img src={user.avatarUrl} alt="avatar" />
-                          ) : (
-                            (user?.displayName || 'H').charAt(0)
-                          )}
+
+                    <div className={styles.cardBody}>
+                      <div className={styles.cardInfo}>
+                        <p className={styles.cardTitle} title={post.content}>{post.content || post.title}</p>
+                        
+                        <div className={styles.platformBadgeWrapper}>
+                          <div className={styles.platformBadge}>
+                            <PlatformIcon platform={platform} size={16} />
+                            <span className={styles.platformBadgeDot}></span>
+                          </div>
                         </div>
-                        <div className={styles.creatorText}>
+
+                        <div className={styles.cardDate}>{formatPostDate(post.scheduledAtUtc || post.createdAt)}</div>
+                        
+                        <div className={styles.cardMeta}>
                           <span className={styles.creatorName}>{user?.displayName || 'Hiếu Tài'}</span>
-                          <span className={styles.creatorHandle}>@{user?.email?.split('@')[0] || 'nguyenhonghieutai7a9'}</span>
+                          <span className={styles.dotSeparator}>·</span>
+                          <span className={styles.creatorHandleWrapper}>
+                            <span className={styles.creatorHandleDot} style={{ backgroundColor: 'rgb(255, 237, 160)' }}></span>
+                            {user?.email?.split('@')[0] || 'nguyenhonghieutai7a9'}
+                          </span>
+                          <span className={styles.dotSeparator}>·</span>
+                          <button type="button" className={styles.copyIdBtn} onClick={(e) => copyToClipboard(e, post.id)}>
+                            {post.id.substring(0, 6)}...
+                            <Copy size={10} className={styles.copyIcon} />
+                          </button>
                         </div>
                       </div>
+
+                      {post.mediaItems?.[0] && (
+                        <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media">
+                          <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
+                        </button>
+                      )}
                     </div>
-                    <div className={styles.postCardFooter}>
-                      <StatusBadge status={post.status} />
-                      <button className={styles.optionsBtn} aria-label="More options">:</button>
+
+                    <div className={styles.cardFooter}>
+                      <div className={styles.statusBadgeWrapper}>
+                        <StatusBadge status={post.status} />
+                      </div>
+                      <button className={styles.moreOptionsBtn} aria-label="More options">
+                        <MoreVertical size={14} />
+                      </button>
                     </div>
                   </div>
                 )

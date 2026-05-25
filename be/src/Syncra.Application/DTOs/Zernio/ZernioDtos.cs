@@ -222,3 +222,43 @@ public sealed record ZernioMoveAccountRequestDto(string TargetProfileId);
 public sealed record ZernioMoveAccountResponseDto(
     string Message,
     string ProfileId);
+
+// ── Post Listing DTOs ────────────────────────────────────────────────
+
+public sealed record ZernioMediaItemDto(
+    string Id,
+    string Type,
+    string Url,
+    string? Filename,
+    int? Size,
+    string? MimeType);
+
+public sealed record ZernioPostPlatformTargetDto(
+    string Platform,
+    string AccountId,
+    string Status,
+    string? PlatformPostId,
+    string? PlatformPostUrl,
+    DateTime? PublishedAt,
+    string? ErrorMessage);
+
+public sealed record ZernioPostListItemDto(
+    string Id,
+    string? Title,
+    string Content,
+    string Status,
+    DateTime? ScheduledFor,
+    string Timezone,
+    IReadOnlyList<ZernioPostPlatformTargetDto> Platforms,
+    IReadOnlyList<string> Tags,
+    IReadOnlyList<ZernioMediaItemDto>? ZernioMediaItems,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? PublishedAt);
+
+public sealed record ZernioPostListResponseDto(
+    IReadOnlyList<ZernioPostListItemDto> Posts,
+    int Page,
+    int Limit,
+    int Total,
+    int Pages);

@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
   BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
-  FileText, ChevronDown, ChevronUp
+  FileText, ChevronDown, ChevronUp, Layers
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -127,7 +127,7 @@ export default function AppLayout() {
                   }
                 >
                   <span className={styles.subMenuIcon}>
-                    <span className={styles.subBullet}>—</span>
+                    <LayoutDashboard size={14} />
                   </span>
                   <span className={styles.navLabel}>Overview</span>
                 </NavLink>
@@ -138,7 +138,7 @@ export default function AppLayout() {
                   }
                 >
                   <span className={styles.subMenuIcon}>
-                    <span className={styles.subBullet}>—</span>
+                    <Layers size={14} />
                   </span>
                   <span className={styles.navLabel}>Queues</span>
                 </NavLink>

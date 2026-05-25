@@ -17,6 +17,11 @@ public static class PostMapper
             post.PublishedAtUtc,
             post.IntegrationId,
             post.Media.Select(m => m.Id).ToList(),
+            post.Media.Select(m => new PostMediaItemDto(
+                Url: m.FileUrl,
+                Type: m.MediaType,
+                Filename: m.FileName,
+                MimeType: m.MimeType)).ToList(),
             post.ZernioPostId,
             post.ZernioTargetCount,
             post.PlatformTargets?.Select(t => new PostPlatformTargetDto(

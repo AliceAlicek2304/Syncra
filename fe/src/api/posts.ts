@@ -21,6 +21,14 @@ export interface Post {
   zernioPostId?: string;
   zernioTargetCount?: number;
   platformTargets?: PostPlatformTargetDto[];
+  mediaItems?: PostMediaItem[];
+}
+
+export interface PostMediaItem {
+  url: string;
+  type: string;
+  filename?: string;
+  mimeType?: string;
 }
 
 export interface PostPlatformTargetDto {

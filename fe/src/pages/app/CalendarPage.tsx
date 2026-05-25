@@ -193,7 +193,7 @@ export default function CalendarPage() {
                   <div className={styles.postList}>
                     {selectedPosts.map(p => (
                       <div key={p.id} className={styles.postCard} onClick={() => handleOpenEditPost(p)}>
-                        <div className={styles.postCardHeader}>
+                        <div className={styles.content}>
                           <div className={styles.postCardStatus}>
                             <CheckCircle size={14} className={styles.postCardStatusIcon} />
                             <span className={`${styles.postCardStatusText} ${p.status === 'scheduled' ? styles.postCardStatusTextScheduled : ''}`}>{getStatusLabel(p.status)}</span>
@@ -206,7 +206,7 @@ export default function CalendarPage() {
                             {(p.platform.toLowerCase() === 'youtube' || p.platform.toLowerCase() === 'tiktok') && <div className={styles.postCardVideoOverlay}><Play size={18} className={styles.postCardVideoIcon} /></div>}
                           </div>
                           <div className={styles.postCardContent}>
-                            <span className={styles.postCardTitle}>{p.title}</span>
+                            <span className={styles.postCardTitle}>{p.content}</span>
                             {p.caption && <span className={styles.postCardCaption}>{p.caption}</span>}
                           </div>
                         </div>

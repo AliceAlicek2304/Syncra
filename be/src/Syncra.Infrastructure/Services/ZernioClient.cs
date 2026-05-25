@@ -517,6 +517,110 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioPostListResponseDto> ListPostsAsync(
+        string profileId,
+        int? page = null,
+        int? limit = null,
+        string? status = null,
+        string? platform = null,
+        string? search = null,
+        string? sortBy = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _postsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["page"] = page?.ToString(),
+                ["limit"] = limit?.ToString(),
+                ["status"] = status,
+                ["platform"] = platform,
+                ["profileId"] = profileId,
+                ["search"] = search,
+                ["sortBy"] = sortBy ?? "scheduled-desc",
+                ["accountId"] = accountId
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/posts?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var rawResponse = System.Text.Json.JsonSerializer.Deserialize<ZernioRawPostListResponse>(json, _jsonOptions);
+
+            if (rawResponse?.Posts is null)
+                return new ZernioPostListResponseDto([], 1, 0, 0, 1);
+
+            var posts = rawResponse.Posts.Select(p => new ZernioPostListItemDto(
+                Id: p._Id ?? string.Empty,
+                Title: p.Title ?? string.Empty,
+                Content: p.Content,
+                Status: p.Status ?? "draft",
+                ScheduledFor: p.ScheduledFor,
+                Timezone: p.Timezone,
+                Platforms: (p.Platforms ?? [])
+                    .Select(pl => new ZernioPostPlatformTargetDto(
+                        Platform: pl.Platform ?? string.Empty,
+                        AccountId: pl.AccountId?._Id ?? string.Empty,
+                        Status: pl.Status ?? "pending",
+                        PlatformPostId: pl.PlatformPostId,
+                        PlatformPostUrl: pl.PlatformPostUrl,
+                        PublishedAt: pl.PublishedAt,
+                        ErrorMessage: pl.ErrorMessage))
+                    .ToList(),
+                Tags: p.Tags ?? [],
+                ZernioMediaItems: (p.MediaItems ?? []).Select(m => new ZernioMediaItemDto(
+                    Id: m._Id ?? string.Empty,
+                    Type: m.Type ?? "image",
+                    Url: m.Url ?? string.Empty,
+                    Filename: m.Filename,
+                    Size: m.Size,
+                    MimeType: m.MimeType)).ToList(),
+                CreatedAt: p.CreatedAt ?? DateTime.MinValue,
+                UpdatedAt: p.UpdatedAt ?? DateTime.MinValue,
+                PublishedAt: null))
+                .ToList();
+
+            return new ZernioPostListResponseDto(
+                posts,
+                rawResponse.Pagination?.Page ?? 1,
+                rawResponse.Pagination?.Limit ?? 0,
+                rawResponse.Pagination?.Total ?? 0,
+                rawResponse.Pagination?.Pages ?? 1);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing posts for profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to list posts.",
+                reason: "post_list_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing posts for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_list_posts_error", "Failed to list posts from Zernio", ex);
+        }
+    }
+
+    private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    };
+
     // ── Analytics methods ────────────────────────────────────────────────────
 
     public async Task<ZernioBestTimeDto> GetBestTimeAsync(
@@ -1480,5 +1584,60 @@ public sealed class ZernioClient : IZernioClient
             response.Account.Platform.ToString(),
             response.Account.DisplayName,
             response.Account.ProfilePicture);
+    }
+
+    private sealed class ZernioRawPostListResponse
+    {
+        public List<ZernioRawPost>? Posts { get; set; }
+        public ZernioRawPagination? Pagination { get; set; }
+    }
+
+    private sealed class ZernioRawPost
+    {
+        public string? _Id { get; set; }
+        public string? Title { get; set; }
+        public string? Content { get; set; }
+        public string? Status { get; set; }
+        public DateTime? ScheduledFor { get; set; }
+        public string? Timezone { get; set; }
+        public List<ZernioRawPlatformTarget>? Platforms { get; set; }
+        public List<ZernioRawMediaItem>? MediaItems { get; set; }
+        public List<string>? Tags { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
+
+    private sealed class ZernioRawPlatformTarget
+    {
+        public string? Platform { get; set; }
+        public ZernioRawAccountId? AccountId { get; set; }
+        public string? Status { get; set; }
+        public string? PlatformPostId { get; set; }
+        public string? PlatformPostUrl { get; set; }
+        public DateTime? PublishedAt { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    private sealed class ZernioRawMediaItem
+    {
+        public string? _Id { get; set; }
+        public string? Type { get; set; }
+        public string? Url { get; set; }
+        public string? Filename { get; set; }
+        public int? Size { get; set; }
+        public string? MimeType { get; set; }
+    }
+
+    private sealed class ZernioRawAccountId
+    {
+        public string? _Id { get; set; }
+    }
+
+    private sealed class ZernioRawPagination
+    {
+        public int Page { get; set; }
+        public int Limit { get; set; }
+        public int Total { get; set; }
+        public int Pages { get; set; }
     }
 }

@@ -1013,7 +1013,7 @@
 }
 
 /* Header: Status + Time (space-between) */
-.postCardHeader {
+.content {
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -472,9 +472,17 @@
   transform: translateX(2px);
 }
 
+.lightThemeLayout .subNavItem {
+  color: #605d52;
+}
+
 .lightThemeLayout .subNavItem:hover {
   background: rgba(0, 0, 0, 0.02);
   color: #201515;
+}
+
+.lightThemeLayout .subMenuIcon {
+  color: #939084;
 }
 
 .subNavItemActive {

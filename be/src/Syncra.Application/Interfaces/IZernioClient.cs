@@ -69,6 +69,17 @@ public interface IZernioClient
         string zernioPostId,
         CancellationToken cancellationToken = default);
 
+    Task<ZernioPostListResponseDto> ListPostsAsync(
+        string profileId,
+        int? page = null,
+        int? limit = null,
+        string? status = null,
+        string? platform = null,
+        string? search = null,
+        string? sortBy = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
     // ── Inbox DM methods ────────────────────────────────────────
 
     Task<ZernioInboxConversationsPageDto> ListInboxConversationsAsync(
