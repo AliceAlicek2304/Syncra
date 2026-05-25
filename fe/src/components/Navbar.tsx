@@ -3,7 +3,6 @@ import { Menu, X, Plug, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-re
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
-import WorkspaceSelector from './WorkspaceSelector'
 import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
 
@@ -80,7 +79,6 @@ export default function Navbar() {
 
         {/* CTA / Avatar */}
         <div className={styles.cta}>
-          {user && <WorkspaceSelector />}
           {user ? (
             <div className={styles.avatarWrapper} ref={dropdownRef}>
               <button

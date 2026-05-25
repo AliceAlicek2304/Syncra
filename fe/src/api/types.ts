@@ -35,6 +35,9 @@ export interface Workspace {
   name: string;
   slug: string;
   role: string;
+  zernioProfileId?: string;
+  color?: string;
+  description?: string;
 }
 
 export interface WorkspaceResponse {

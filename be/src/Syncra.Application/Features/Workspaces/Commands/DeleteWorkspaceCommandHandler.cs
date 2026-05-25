@@ -1,18 +1,17 @@
 using MediatR;
-using Syncra.Application.DTOs;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Workspaces.Commands;
 
-public sealed class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceCommand, WorkspaceDto>
+public sealed class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceCommand>
 {
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateWorkspaceCommandHandler(
+    public DeleteWorkspaceCommandHandler(
         IWorkspaceRepository workspaceRepository,
         IZernioProfileRepository zernioProfileRepository,
         IZernioClient zernioClient,
@@ -24,7 +23,7 @@ public sealed class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorksp
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<WorkspaceDto> Handle(UpdateWorkspaceCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteWorkspaceCommand request, CancellationToken cancellationToken)
     {
         var workspace = await _workspaceRepository.GetByIdAsync(request.WorkspaceId);
         if (workspace == null)
@@ -34,32 +33,19 @@ public sealed class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorksp
 
         if (workspace.OwnerUserId != request.UserId)
         {
-            throw new UnauthorizedAccessException("Only the owner can update the workspace settings.");
+            throw new UnauthorizedAccessException("Only the owner can delete the workspace.");
         }
 
-        workspace.Rename(request.Name);
-        workspace.UpdateAppearance(request.Color, request.Description);
-
         var zernioProfile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+
         if (zernioProfile is not null)
         {
-            await _zernioClient.UpdateProfileAsync(
+            await _zernioClient.DeleteProfileAsync(
                 zernioProfile.ZernioProfileId,
-                request.Name,
                 cancellationToken);
         }
 
-        await _workspaceRepository.UpdateAsync(workspace);
+        await _workspaceRepository.DeleteAsync(request.WorkspaceId);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return new WorkspaceDto(
-            workspace.Id,
-            workspace.Name.Value,
-            workspace.Slug.Value,
-            workspace.OwnerUserId,
-            workspace.CreatedAtUtc,
-            ZernioProfileId: zernioProfile?.ZernioProfileId,
-            Color: workspace.Color,
-            Description: workspace.Description);
     }
 }

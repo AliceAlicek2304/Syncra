@@ -26,6 +26,23 @@ public interface IZernioClient
         string name,
         CancellationToken cancellationToken = default);
 
+    Task<ZernioProfileDto> GetProfileAsync(
+        string profileId,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioProfileDto> UpdateProfileAsync(
+        string profileId,
+        string name,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteProfileAsync(
+        string profileId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ZernioProfileDto>> ListProfilesAsync(
+        bool? includeOverLimit = null,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ZernioSelectOptionDto>> ListSelectOptionsAsync(
         string profileId,
         string platform,
@@ -138,5 +155,37 @@ public interface IZernioClient
     Task UpdateFacebookPageAsync(
         string accountId,
         string selectedPageId,
+        CancellationToken cancellationToken = default);
+
+    // ── Follower Stats methods ────────────────────────────────
+
+    Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
+        string accountIds,
+        string profileId,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? granularity = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Bulk Account Health methods ───────────────────────────
+
+    Task<ZernioBulkHealthResponseDto> GetAllAccountsHealthAsync(
+        string profileId,
+        string? platform = null,
+        string? status = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Account Update methods ────────────────────────────────
+
+    Task<ZernioUpdateAccountResponseDto> UpdateAccountAsync(
+        string accountId,
+        ZernioUpdateAccountRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    // ── Move Account methods ──────────────────────────────────
+
+    Task<ZernioMoveAccountResponseDto> MoveAccountToProfileAsync(
+        string accountId,
+        string targetProfileId,
         CancellationToken cancellationToken = default);
 }

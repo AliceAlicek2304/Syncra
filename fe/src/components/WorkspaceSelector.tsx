@@ -1,7 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Plus, Check, Layout } from 'lucide-react';
+import { ChevronDown, Plus, Check } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import styles from './WorkspaceSelector.module.css';
+
+function ColorDot({ color }: { color?: string }) {
+  return (
+    <div
+      className={styles.colorDot}
+      style={{ background: color || 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}
+    />
+  );
+}
 
 export default function WorkspaceSelector() {
   const { workspaces, activeWorkspace, setActiveWorkspace, isLoading } = useWorkspace();
@@ -30,9 +39,7 @@ export default function WorkspaceSelector() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select workspace"
       >
-        <div className={styles.activeIcon}>
-          <Layout size={14} />
-        </div>
+        <ColorDot color={activeWorkspace?.color} />
         <span className={styles.activeName}>
           {activeWorkspace?.name || 'Select Workspace'}
         </span>
@@ -55,6 +62,7 @@ export default function WorkspaceSelector() {
                   setIsOpen(false);
                 }}
               >
+                <ColorDot color={workspace.color} />
                 <span className={styles.workspaceName}>{workspace.name}</span>
                 {activeWorkspace?.id === workspace.id && (
                   <Check size={14} className={styles.checkIcon} />

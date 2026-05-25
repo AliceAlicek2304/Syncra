@@ -1,10 +1,24 @@
 # External Integrations
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## APIs & External Services
 
-**Social Media Publishing:**
+**Zernio Unified API Integration:**
+- **Social Account Connections & Messaging** — Unified social account management, publishing, inbox, and analytics for 14+ platforms
+  - SDK/Client: `Zernio` NuGet package wrapped in custom `ZernioClient` (`be/src/Syncra.Infrastructure/Services/ZernioClient.cs`) implementing `IZernioClient` (`be/src/Syncra.Application/Interfaces/IZernioClient.cs`)
+  - Config: `appsettings.json` → `Zernio:ApiKey` mapped to `ZernioOptions` (`be/src/Syncra.Application/Options/ZernioOptions.cs`)
+  - Profile Management: Operations to provision, update, get, or delete Zernio profiles (`ProvisionProfileAsync`, `GetProfileAsync`, etc.)
+  - Connection Flow: Retrieves OAuth redirect URLs (`GetConnectUrlAsync`) and supports interactive sub-selection for platforms like Facebook, LinkedIn, Pinterest, Google Business, and Snapchat via select options (`ListSelectOptionsAsync`, `SelectOptionAsync`).
+  - Posting Engine: Unified post creation, deletion, and retry (`CreatePostAsync`, `DeletePostAsync`, `RetryPostAsync`)
+  - Unified Inbox: Unified DMs, comments, and reviews (`ListInboxConversationsAsync`, `SendInboxMessageAsync`, `ListInboxCommentsAsync`, `ReplyToInboxCommentAsync`, `ListInboxReviewsAsync`, `ReplyToInboxReviewAsync`)
+  - Social Analytics: Daily metrics, post performance, and best time suggestions (`GetDailyMetricsAsync`, `GetPostAnalyticsAsync`, `GetBestTimeAsync`)
+  - Error Mapping:
+    - `ZernioBillingRequiredException` (402/403 billing gate for limits or restricted features like analytics add-on)
+    - `ZernioAnalyticsScopeException` (412 scope authorization errors)
+    - `DomainException` (404 not found, 400 bad request, or other network failures)
+
+**Legacy/Direct Social Media Publishing (Disabled/Co-existing):**
 - **X (Twitter)** — OAuth flow + content publishing
   - SDK/Client: Custom `XOAuthProvider` (`be/src/Syncra.Infrastructure/Social/Providers/XOAuthProvider.cs`)
   - Publish adapter: `XPublishAdapter` (`be/src/Syncra.Infrastructure/Publishing/Adapters/XPublishAdapter.cs`)
@@ -27,7 +41,7 @@
   - Analytics adapter: `FacebookInsightsAdapter` (`be/src/Syncra.Infrastructure/Publishing/Adapters/Facebook/FacebookInsightsAdapter.cs`)
   - Config: `appsettings.json` → `OAuth:Facebook`
 
-**All OAuth providers share these characteristics:**
+**All direct OAuth providers share these characteristics:**
   - Currently configured as disabled (`IsEnabled: false`) with empty ClientId/ClientSecret in config
   - All use retry policy: 3 retries with exponential backoff via Polly
   - All use timeout policy: 10s (except Facebook video uploads which use 60s)
@@ -130,14 +144,15 @@
   - `Postgres:ConnectionString` or individual host/port/db/user/password fields
   - `Redis:ConnectionString` or individual host/port fields
   - `Stripe:SecretKey` / `Stripe:PublishableKey` / `Stripe:WebhookSecret`
+  - `Zernio:ApiKey` — Zernio connection API key
   - `Sentry:Dsn` (optional, currently empty)
-  - `OAuth:*:ClientId` / `OAuth:*:ClientSecret` (currently empty, providers disabled)
+  - `OAuth:*:ClientId` / `OAuth:*:ClientSecret` (currently empty, legacy providers disabled)
 
 - **Frontend** Vite env vars:
   - `VITE_API_BASE_URL` — API base URL (dev default: proxied through Vite to `http://localhost:5260`)
 
 **Secrets location:**
-- `be/src/Syncra.Api/appsettings.json` — Contains Stripe test keys, JWT secret, Postgres credentials (DEV ONLY — should be externalized for production)
+- `be/src/Syncra.Api/appsettings.json` — Contains Stripe test keys, JWT secret, Postgres credentials, and placeholder Zernio ApiKey (DEV ONLY — should be externalized for production)
 - `be/src/Syncra.Api/appsettings.Development.json` — Development overrides (Stripe webhook secret differs from base)
 - Docker Compose defines Postgres password inline (`1234567890`)
 - No `.env` files detected, no Azure Key Vault / HashiCorp Vault / GitHub Secrets reference
@@ -152,15 +167,15 @@
 - Idempotency support via `IdempotencyFilter` and `IdempotencyRecord` DB table
 
 **OAuth Callbacks:**
-- `GET /api/v1/integrations/{providerId}/callback` — Social platform OAuth callbacks (`IntegrationsController.cs`)
+- `GET /api/v1/integrations/{providerId}/callback` — Legacy social platform OAuth callbacks (`IntegrationsController.cs`)
   - Accepts `code`, `state`, `redirectUri` query params
   - State includes `workspaceId` for workspace association
   - Returns integration metadata (external user ID, username, channel/page info)
 
 **Outgoing:**
-- OAuth redirect flows to X, TikTok, YouTube, Facebook
+- OAuth redirect flows to X, TikTok, YouTube, Facebook, and Zernio Connect URLs
 - Stripe Checkout / Customer Portal redirects from frontend
 
 ---
 
-*Integration audit: 2026-05-14*
+*Integration audit: 2026-05-25*

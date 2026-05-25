@@ -1,6 +1,6 @@
 # Technology Stack
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## Languages
 
@@ -63,6 +63,7 @@
 ## Key Dependencies
 
 **Critical:**
+- **Zernio 0.0.281** — Unified social media API integration client (`be/src/Syncra.Infrastructure/Services/ZernioClient.cs`)
 - **Entity Framework Core 8.0** — ORM / database access (`be/src/Syncra.Infrastructure/Persistence/AppDbContext.cs`)
 - **Npgsql.EntityFrameworkCore.PostgreSQL 8.0** — PostgreSQL provider for EF Core
 - **StackExchange.Redis** / **Microsoft.Extensions.Caching.StackExchangeRedis 8.0** — Redis caching layer
@@ -112,4 +113,4 @@
 
 ---
 
-*Stack analysis: 2026-05-14*
+*Stack analysis: 2026-05-25*

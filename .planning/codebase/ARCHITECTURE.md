@@ -1,7 +1,7 @@
-<!-- refreshed: 2026-05-14 -->
+<!-- refreshed: 2026-05-25 -->
 # Architecture
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## System Overview
 
@@ -43,7 +43,7 @@
 | Syncra.Api | HTTP layer, controllers, middleware, SignalR hubs, Swagger | `be/src/Syncra.Api/` |
 | Syncra.Application | CQRS handlers, service interfaces, DTOs, pipeline behaviors, options | `be/src/Syncra.Application/` |
 | Syncra.Domain | Domain entities, value objects, enums, repository interfaces, domain exceptions | `be/src/Syncra.Domain/` |
-| Syncra.Infrastructure | EF Core DbContext, repositories, social providers, Hangfire jobs, Redis, Stripe, file storage | `be/src/Syncra.Infrastructure/` |
+| Syncra.Infrastructure | EF Core DbContext, repositories, social providers, Hangfire jobs, Redis, Stripe, file storage, Zernio service | `be/src/Syncra.Infrastructure/` |
 | Syncra.Shared | Constants, extension methods, helpers | `be/src/Syncra.Shared/` |
 | fe/src | React SPA: pages, components, contexts, API client, hooks | `fe/src/` |
 
@@ -55,7 +55,8 @@
 - **5-project .NET solution** with strict dependency direction: Api → Application → Domain ← Infrastructure (Dependency Inversion)
 - **CQRS via MediatR**: Commands (mutations) and Queries (reads) are separate record types with dedicated handlers
 - **Repository + Unit of Work** over EF Core for data access
-- **Strategy pattern** for social platform providers (`ISocialProvider`) and payment providers (`IPaymentProvider`)
+- **Strategy pattern** for legacy/direct social platform providers (`ISocialProvider`) and payment providers (`IPaymentProvider`)
+- **Zernio Client Abstraction** for unified multi-platform social connections, posting, inbox, and analytics
 - **Middleware pipeline** for cross-cutting concerns (correlation IDs, tenant resolution, global error handling)
 - **Background job scheduling** via Hangfire for token refresh and post publishing
 - **Real-time notifications** via SignalR
@@ -110,7 +111,7 @@
 
 1. Publish endpoint invoked → `PostsController` → MediatR command → `PublishService` (`be/src/Syncra.Application/Services/PublishService.cs`)
 2. `IPublishAdapterRegistry` resolves the correct adapter for the target platform
-3. Adapter delegates to `ISocialProvider` implementation (e.g., `FacebookProvider`, `XOAuthProvider`, `YouTubeProvider`, `TikTokOAuthProvider` in `be/src/Syncra.Infrastructure/Social/Providers/`)
+3. Adapter delegates to `ISocialProvider` implementation (or `IZernioClient` for unified posting backend)
 4. Publish result persisted back via `Post` domain entity state machine (`Post.cs` methods: `MarkPublishSuccess`, `MarkPublishFailure`)
 5. Real-time notification dispatched via SignalR `NotificationHub` (`be/src/Syncra.Api/Hubs/NotificationHub.cs`)
 
@@ -146,6 +147,11 @@
 - Purpose: Separates read and write operations; each is a record + handler pair
 - Files: `be/src/Syncra.Application/Features/{Feature}/Queries/*`, `be/src/Syncra.Application/Features/{Feature}/Commands/*`
 - Pattern: Record implements `IRequest<TResponse>`, handler implements `IRequestHandler<TOperation, TResult>`
+
+**Zernio Client Abstraction:**
+- Purpose: Interface-based abstraction layer over the raw Zernio SDK client APIs, transforming SDK models into clean application DTOs and managing error translations
+- Files: `be/src/Syncra.Application/Interfaces/IZernioClient.cs` (interface), `be/src/Syncra.Infrastructure/Services/ZernioClient.cs` (implementation)
+- Pattern: Adapter/Facade layer wraps Zernio API endpoints (`ConnectApi`, `AccountsApi`, `ProfilesApi`, `PostsApi`, `AnalyticsApi`, `MessagesApi`, `CommentsApi`, `ReviewsApi`) and catches billing-related or scope-related API exceptions.
 
 **Social Provider Strategy:**
 - Purpose: Pluggable social platform integration via `ISocialProvider` interface
@@ -223,4 +229,4 @@
 
 ---
 
-*Architecture analysis: 2026-05-14*
+*Architecture analysis: 2026-05-25*

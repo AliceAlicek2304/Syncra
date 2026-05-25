@@ -1,0 +1,43 @@
+.page {
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 36px;
+  color: #201515;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  color: #605d52;
+  margin: 0;
+}
+
+.card {
+  background-color: #f8f4f0;
+  border-radius: 12px;
+  padding: 48px;
+  text-align: center;
+  border: 1px solid #e5dfd3;
+}
+
+.placeholderText {
+  color: #939084;
+  font-size: 16px;
+}

@@ -16,9 +16,11 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  const workspaceId = localStorage.getItem('syncra_workspace_id');
-  if (workspaceId) {
-    config.headers['X-Workspace-Id'] = workspaceId;
+  if (!config.headers['X-Workspace-Id']) {
+    const workspaceId = localStorage.getItem('syncra_workspace_id');
+    if (workspaceId) {
+      config.headers['X-Workspace-Id'] = workspaceId;
+    }
   }
 
   return config;

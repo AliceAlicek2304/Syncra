@@ -206,6 +206,76 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioProfileDto> GetProfileAsync(
+        string profileId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _profilesApi.GetProfileAsync(profileId, cancellationToken);
+            return new ZernioProfileDto(response.Profile.Id, response.Profile.Name);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            _logger.LogWarning(ex, "Zernio profile {ProfileId} not found", profileId);
+            throw new DomainException("zernio_profile_not_found", $"Zernio profile {profileId} not found.", ex);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error getting profile {ProfileId}", profileId);
+            throw new DomainException("zernio_get_profile_error", "Failed to get Zernio profile", ex);
+        }
+    }
+
+    public async Task<ZernioProfileDto> UpdateProfileAsync(
+        string profileId,
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new UpdateProfileRequest(name: name);
+            var response = await _profilesApi.UpdateProfileAsync(profileId, request, cancellationToken);
+            return new ZernioProfileDto(response.Profile.Id, response.Profile.Name);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            _logger.LogWarning(ex, "Zernio profile {ProfileId} not found for update", profileId);
+            throw new DomainException("zernio_profile_not_found", $"Zernio profile {profileId} not found.", ex);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error updating profile {ProfileId}", profileId);
+            throw new DomainException("zernio_update_profile_error", "Failed to update Zernio profile", ex);
+        }
+    }
+
+    public async Task DeleteProfileAsync(
+        string profileId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _profilesApi.DeleteProfileAsync(profileId, cancellationToken);
+            _logger.LogInformation("Deleted Zernio profile {ProfileId}", profileId);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            _logger.LogWarning(ex, "Zernio profile {ProfileId} already deleted or not found", profileId);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 400)
+        {
+            _logger.LogWarning(ex, "Zernio profile {ProfileId} has connected accounts — cannot delete", profileId);
+            throw new DomainException("zernio_profile_has_accounts",
+                "Cannot delete profile with connected social accounts. Disconnect them first.", ex);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error deleting profile {ProfileId}", profileId);
+            throw new DomainException("zernio_delete_profile_error", "Failed to delete Zernio profile", ex);
+        }
+    }
+
     public async Task<ZernioProfileDto> ProvisionProfileAsync(
         string workspaceId,
         string name,
@@ -236,6 +306,36 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error provisioning profile for workspace {WorkspaceId}", workspaceId);
             throw new DomainException("zernio_provision_error", "Failed to provision Zernio profile", ex);
+        }
+    }
+
+    public async Task<IReadOnlyList<ZernioProfileDto>> ListProfilesAsync(
+        bool? includeOverLimit = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _profilesApi.ListProfilesAsync(
+                includeOverLimit,
+                cancellationToken);
+
+            return response.Profiles
+                .Select(p => new ZernioProfileDto(p.Id, p.Name))
+                .ToList();
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing profiles");
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to list profiles.",
+                reason: "profile_list_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { includeOverLimit });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing profiles");
+            throw new DomainException("zernio_list_profiles_error", "Failed to list Zernio profiles", ex);
         }
     }
 
@@ -1034,6 +1134,213 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error replying to review {ReviewId}", reviewId);
             throw new DomainException("zernio_inbox_reply_error", "Failed to reply to review via Zernio", ex);
+        }
+    }
+
+    // ── Follower Stats methods ──────────────────────────────────────────────
+
+    public async Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
+        string accountIds,
+        string profileId,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? granularity = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _accountsApi.GetFollowerStatsAsync(
+                accountIds,
+                profileId,
+                fromDate.HasValue ? DateOnly.FromDateTime(fromDate.Value) : null,
+                toDate.HasValue ? DateOnly.FromDateTime(toDate.Value) : null,
+                granularity,
+                cancellationToken);
+
+            var accounts = (response.Accounts ?? [])
+                .Select(a => new ZernioFollowerStatsAccountDto(
+                    a.Id,
+                    a.Platform.ToString(),
+                    a.Username,
+                    a.DisplayName,
+                    a.ProfilePicture,
+                    (long)a.CurrentFollowers,
+                    a.LastUpdated,
+                    a.Growth,
+                    a.GrowthPercentage,
+                    (int)a.DataPoints))
+                .ToList();
+
+            var stats = response.Stats?
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => (IReadOnlyList<ZernioFollowerStatsDataPointDto>)kvp.Value
+                        .Select(d => new ZernioFollowerStatsDataPointDto(d.Date, d.Followers))
+                        .ToList());
+
+            return new ZernioFollowerStatsResponseDto(
+                accounts,
+                stats,
+                response.DateRange?.From,
+                response.DateRange?.To,
+                response.Granularity);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for follower stats, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access follower stats.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching follower stats for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_follower_stats_error", "Failed to fetch follower stats from Zernio", ex);
+        }
+    }
+
+    // ── Bulk Account Health methods ─────────────────────────────────────────
+
+    public async Task<ZernioBulkHealthResponseDto> GetAllAccountsHealthAsync(
+        string profileId,
+        string? platform = null,
+        string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _accountsApi.GetAllAccountsHealthAsync(
+                profileId,
+                platform,
+                status,
+                cancellationToken);
+
+            var summary = new ZernioBulkHealthSummaryDto(
+                response.Summary.Total,
+                response.Summary.Healthy,
+                response.Summary.Warning,
+                response.Summary.Error,
+                response.Summary.NeedsReconnect);
+
+            var accounts = (response.Accounts ?? [])
+                .Select(a => new ZernioBulkHealthItemDto(
+                    a.AccountId,
+                    a.Platform,
+                    a.Username,
+                    a.DisplayName,
+                    a.Status?.ToString(),
+                    a.CanPost,
+                    a.CanFetchAnalytics,
+                    a.TokenValid,
+                    a.TokenExpiresAt,
+                    a.NeedsReconnect,
+                    a.Issues ?? []))
+                .ToList();
+
+            return new ZernioBulkHealthResponseDto(summary, accounts);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for bulk health, profile {ProfileId}", profileId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to check account health.",
+                reason: "health_check_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { profileId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching bulk health for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_bulk_health_error", "Failed to fetch bulk account health from Zernio", ex);
+        }
+    }
+
+    // ── Account Update methods ──────────────────────────────────────────────
+
+    public async Task<ZernioUpdateAccountResponseDto> UpdateAccountAsync(
+        string accountId,
+        ZernioUpdateAccountRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new UpdateAccountRequest
+            {
+                Username = request.Username,
+                DisplayName = request.DisplayName,
+                XCapabilities = request.EnableAnalytics.HasValue || request.EnableInbox.HasValue
+                    ? new UpdateAccountRequestXCapabilities
+                    {
+                        Analytics = request.EnableAnalytics ?? false,
+                        Inbox = request.EnableInbox ?? false
+                    }
+                    : null
+            };
+
+            var response = await _accountsApi.UpdateAccountAsync(accountId, sdkRequest, cancellationToken);
+
+            return new ZernioUpdateAccountResponseDto(
+                response.Message,
+                response.Username,
+                response.DisplayName);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered updating account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to update account settings.",
+                reason: "account_update_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            _logger.LogWarning(ex, "Zernio account {AccountId} not found for update", accountId);
+            throw new DomainException("zernio_account_not_found", $"Zernio account {accountId} not found.", ex);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error updating account {AccountId}", accountId);
+            throw new DomainException("zernio_update_account_error", "Failed to update Zernio account", ex);
+        }
+    }
+
+    // ── Move Account methods ────────────────────────────────────────────────
+
+    public async Task<ZernioMoveAccountResponseDto> MoveAccountToProfileAsync(
+        string accountId,
+        string targetProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new MoveAccountToProfileRequest(profileId: targetProfileId);
+            var response = await _accountsApi.MoveAccountToProfileAsync(accountId, sdkRequest, cancellationToken);
+
+            return new ZernioMoveAccountResponseDto(
+                response.Message,
+                response.ProfileId);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered moving account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to move accounts between profiles.",
+                reason: "account_move_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            _logger.LogWarning(ex, "Zernio account {AccountId} or target profile not found for move", accountId);
+            throw new DomainException("zernio_account_not_found", $"Zernio account or target profile not found.", ex);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error moving account {AccountId}", accountId);
+            throw new DomainException("zernio_move_account_error", "Failed to move Zernio account", ex);
         }
     }
 

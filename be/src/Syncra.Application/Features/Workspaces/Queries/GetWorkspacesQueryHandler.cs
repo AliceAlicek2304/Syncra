@@ -7,15 +7,33 @@ namespace Syncra.Application.Features.Workspaces.Queries;
 public sealed class GetWorkspacesQueryHandler : IRequestHandler<GetWorkspacesQuery, IReadOnlyList<WorkspaceDto>>
 {
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly IZernioProfileRepository _zernioProfileRepository;
 
-    public GetWorkspacesQueryHandler(IWorkspaceRepository workspaceRepository)
+    public GetWorkspacesQueryHandler(
+        IWorkspaceRepository workspaceRepository,
+        IZernioProfileRepository zernioProfileRepository)
     {
         _workspaceRepository = workspaceRepository;
+        _zernioProfileRepository = zernioProfileRepository;
     }
 
     public async Task<IReadOnlyList<WorkspaceDto>> Handle(GetWorkspacesQuery request, CancellationToken cancellationToken)
     {
         var workspaces = await _workspaceRepository.GetByUserIdAsync(request.UserId);
-        return workspaces.Select(w => new WorkspaceDto(w.Id, w.Name.Value, w.Slug.Value, w.OwnerUserId, w.CreatedAtUtc)).ToList();
+        var workspaceList = workspaces.ToList();
+
+        var workspaceIds = workspaceList.Select(w => w.Id).ToList();
+        var profiles = await _zernioProfileRepository.GetByWorkspaceIdsAsync(workspaceIds);
+        var profileLookup = profiles.ToDictionary(p => p.WorkspaceId, p => p.ZernioProfileId);
+
+        return workspaceList.Select(w => new WorkspaceDto(
+            w.Id,
+            w.Name.Value,
+            w.Slug.Value,
+            w.OwnerUserId,
+            w.CreatedAtUtc,
+            ZernioProfileId: profileLookup.GetValueOrDefault(w.Id),
+            Color: w.Color,
+            Description: w.Description)).ToList();
     }
 }

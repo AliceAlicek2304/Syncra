@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## Test Framework — Frontend
 
@@ -469,4 +469,4 @@ const { useReducedMotion } = vi.mocked(await import('framer-motion'));
 
 ---
 
-*Testing analysis: 2026-05-14*
+*Testing analysis: 2026-05-25*

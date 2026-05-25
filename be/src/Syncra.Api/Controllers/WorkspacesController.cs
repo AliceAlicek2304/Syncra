@@ -21,10 +21,6 @@ public class WorkspacesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// POST /api/v1/workspaces
-    /// Creates a new workspace and assigns the creator as its Owner.
-    /// </summary>
     [HttpPost]
     [ServiceFilter(typeof(IdempotencyFilter))]
     public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceDto dto, CancellationToken cancellationToken)
@@ -32,7 +28,7 @@ public class WorkspacesController : ControllerBase
         var userId = User.GetUserId();
         if (userId == null) return Unauthorized();
 
-        var command = new CreateWorkspaceCommand(userId.Value, dto.Name);
+        var command = new CreateWorkspaceCommand(userId.Value, dto.Name, dto.Color, dto.Description);
         var result = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetWorkspaces), new { }, result);
     }
@@ -54,10 +50,21 @@ public class WorkspacesController : ControllerBase
         var userId = User.GetUserId();
         if (userId == null) return Unauthorized();
 
-        var command = new UpdateWorkspaceCommand(id, userId.Value, request.Name);
+        var command = new UpdateWorkspaceCommand(id, userId.Value, request.Name, request.Description, request.Color);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteWorkspace(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var command = new DeleteWorkspaceCommand(id, userId.Value);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
 }
 
-public record UpdateWorkspaceRequest(string Name);
+public record UpdateWorkspaceRequest(string Name, string? Description = null, string? Color = null);

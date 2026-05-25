@@ -150,3 +150,75 @@ public sealed record ZernioFacebookPagesResponseDto(
     IReadOnlyList<ZernioFacebookPageDto> Pages,
     string? SelectedPageId,
     bool Cached);
+
+// ── Follower Stats DTOs ───────────────────────────────────────────
+
+public sealed record ZernioFollowerStatsAccountDto(
+    string Id,
+    string Platform,
+    string Username,
+    string DisplayName,
+    string? ProfilePicture,
+    long CurrentFollowers,
+    DateTime LastUpdated,
+    decimal Growth,
+    decimal GrowthPercentage,
+    int DataPoints);
+
+public sealed record ZernioFollowerStatsResponseDto(
+    IReadOnlyList<ZernioFollowerStatsAccountDto> Accounts,
+    IReadOnlyDictionary<string, IReadOnlyList<ZernioFollowerStatsDataPointDto>>? Stats,
+    DateTime? FromDate,
+    DateTime? ToDate,
+    string? Granularity);
+
+public sealed record ZernioFollowerStatsDataPointDto(
+    DateOnly Date,
+    decimal Followers);
+
+// ── Bulk Account Health DTOs ────────────────────────────────────────
+
+public sealed record ZernioBulkHealthSummaryDto(
+    int Total,
+    int Healthy,
+    int Warning,
+    int Error,
+    int NeedsReconnect);
+
+public sealed record ZernioBulkHealthItemDto(
+    string AccountId,
+    string Platform,
+    string Username,
+    string DisplayName,
+    string? Status,
+    bool CanPost,
+    bool CanFetchAnalytics,
+    bool TokenValid,
+    DateTime? TokenExpiresAt,
+    bool NeedsReconnect,
+    IReadOnlyList<string> Issues);
+
+public sealed record ZernioBulkHealthResponseDto(
+    ZernioBulkHealthSummaryDto Summary,
+    IReadOnlyList<ZernioBulkHealthItemDto> Accounts);
+
+// ── Account Update DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioUpdateAccountRequestDto(
+    string? Username,
+    string? DisplayName,
+    bool? EnableAnalytics,
+    bool? EnableInbox);
+
+public sealed record ZernioUpdateAccountResponseDto(
+    string Message,
+    string? Username,
+    string? DisplayName);
+
+// ── Move Account DTOs ────────────────────────────────────────────────
+
+public sealed record ZernioMoveAccountRequestDto(string TargetProfileId);
+
+public sealed record ZernioMoveAccountResponseDto(
+    string Message,
+    string ProfileId);

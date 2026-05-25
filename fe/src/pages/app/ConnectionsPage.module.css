@@ -247,6 +247,76 @@
   margin: 6px 4px;
 }
 
+.workspaceItem {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.workspaceItem:hover {
+  background-color: #f8f4f0;
+}
+
+.workspaceItemBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px 0 0 8px;
+  color: #605d52;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s;
+  min-width: 0;
+}
+
+.workspaceItemBtn:hover {
+  color: #201515;
+}
+
+.workspaceItemActions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding-right: 6px;
+  flex-shrink: 0;
+}
+
+.workspaceActionBtn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #c5c0b1;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.workspaceActionBtn:hover {
+  background-color: #e5dfd3;
+  color: #201515;
+}
+
+.workspaceActionBtnDanger:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.workspaceActionCheck {
+  flex-shrink: 0;
+  color: #ff4f00;
+}
+
 .dropdownAddBtn {
   display: flex;
   align-items: center;
@@ -764,7 +834,7 @@
 }
 
 .drawerSubmitBtn {
-  flex: 1;
+  flex: 0.6;
   padding: 12px;
   background-color: #ff4f00;
   color: #fffefb;
@@ -831,7 +901,7 @@
 .platformsSection {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
 }
 
@@ -881,10 +951,8 @@
 .platformsList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-height: 520px;
-  overflow-y: auto;
-  padding: 2px;
+  gap: 0;
+  padding: 0;
   transition: filter 0.2s;
 }
 
@@ -896,7 +964,7 @@
 .platformGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .platformGroupTitle {
@@ -904,35 +972,47 @@
   font-weight: 700;
   letter-spacing: 0.8px;
   color: #939084;
+  padding: 14px 4px 6px;
+  text-transform: uppercase;
 }
 
 .platformGroupItems {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .platformListItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background-color: #fffefb;
-  border: 1px solid #e5dfd3;
-  border-radius: 12px;
+  padding: 9px 4px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #f0ece5;
+  border-radius: 0;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: background-color 0.12s;
+  width: 100%;
+}
+
+.platformListItem:last-child {
+  border-bottom: none;
 }
 
 .platformListItem:hover:not(:disabled) {
-  border-color: rgba(255, 79, 0, 0.4);
-  box-shadow: 0 8px 18px rgba(32, 21, 21, 0.06);
-  transform: translateY(-1px);
+  background-color: #f8f4f0;
+  border-radius: 8px;
+  border-bottom-color: transparent;
+}
+
+.platformListItem:hover:not(:disabled) + .platformListItem {
+  border-top-color: transparent;
 }
 
 .platformListItem:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .platformListLeft {
@@ -943,19 +1023,18 @@
 }
 
 .platformListIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.02);
   flex-shrink: 0;
 }
 
 .platformListLabel {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
   color: #201515;
   white-space: nowrap;
   overflow: hidden;
@@ -965,20 +1044,20 @@
 .platformListRight {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .platformListAction {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8f4f0;
-  border: 1px solid #e5dfd3;
-  color: #605d52;
+  background-color: transparent;
+  border: none;
+  color: #c5c0b1;
 }
 
 .platformListChevron {
@@ -986,8 +1065,7 @@
 }
 
 .platformListItem:hover:not(:disabled) .platformListAction {
-  border-color: rgba(255, 79, 0, 0.25);
-  color: #201515;
+  color: #605d52;
 }
 
 .platformListItem:hover:not(:disabled) .platformListChevron {
@@ -995,9 +1073,14 @@
 }
 
 .platformListSoon {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 500;
   color: #939084;
+  font-style: italic;
+}
+
+.platformGroup:first-child .platformGroupTitle {
+  padding-top: 4px;
 }
 
 .platformsGrid {
@@ -1665,4 +1748,16 @@
   background-color: #f8f4f0;
   color: #939084;
   border-color: #e5dfd3;
+}
+
+.pageLoadingWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #605d52;
+  font-weight: 500;
 }

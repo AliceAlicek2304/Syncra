@@ -11,6 +11,8 @@ public sealed class Workspace : EntityBase
 
     // Primitive properties
     public Guid OwnerUserId { get; private set; }
+    public string? Color { get; private set; }
+    public string? Description { get; private set; }
     public string? BillingProvider { get; private set; }
     public string? BillingCustomerId { get; private set; }
     public string? StripeCustomerId { get; private set; }
@@ -28,7 +30,7 @@ public sealed class Workspace : EntityBase
     private Workspace() { }
 
     // Factory method
-    public static Workspace Create(Guid ownerUserId, string name, string slug)
+    public static Workspace Create(Guid ownerUserId, string name, string slug, string? color = null, string? description = null)
     {
         var now = DateTime.UtcNow;
 
@@ -37,6 +39,8 @@ public sealed class Workspace : EntityBase
             OwnerUserId = ownerUserId,
             Name = WorkspaceName.Create(name),
             Slug = WorkspaceSlug.Create(slug),
+            Color = color,
+            Description = description,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
@@ -50,6 +54,13 @@ public sealed class Workspace : EntityBase
     public void Rename(string newName)
     {
         Name = WorkspaceName.Create(newName);
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void UpdateAppearance(string? color, string? description)
+    {
+        Color = color;
+        Description = description;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

@@ -46,6 +46,8 @@ import SocialAccountsSelect from './pages/Settings/SocialAccountsSelect'
 
 
 import ConnectionsPage from './pages/app/ConnectionsPage'
+import PostsOverviewPage from './pages/app/PostsOverviewPage'
+import PostsQueuesPage from './pages/app/PostsQueuesPage'
 
 
 function Homepage() {
@@ -131,6 +133,9 @@ function AnimatedRoutes() {
           <Route index element={<Navigate to="connections" replace />} />
           <Route path="dashboard" element={<Navigate to="/app/connections" replace />} />
           <Route path="connections" element={<PageWrapper><ConnectionsPage /></PageWrapper>} />
+          <Route path="posts-all" element={<PageWrapper><PostsOverviewPage /></PageWrapper>} />
+          <Route path="posts/overview" element={<Navigate to="/app/posts-all" replace />} />
+          <Route path="posts/queues" element={<PageWrapper><PostsQueuesPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
           <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
           <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />

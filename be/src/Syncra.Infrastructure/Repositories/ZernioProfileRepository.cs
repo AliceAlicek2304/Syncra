@@ -15,4 +15,11 @@ public class ZernioProfileRepository : Repository<ZernioProfile>, IZernioProfile
     {
         return _dbSet.FirstOrDefaultAsync(profile => profile.WorkspaceId == workspaceId);
     }
+
+    public async Task<IReadOnlyList<ZernioProfile>> GetByWorkspaceIdsAsync(IReadOnlyCollection<Guid> workspaceIds)
+    {
+        return await _dbSet
+            .Where(p => workspaceIds.Contains(p.WorkspaceId))
+            .ToListAsync();
+    }
 }

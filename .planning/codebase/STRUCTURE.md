@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## Directory Layout
 
@@ -60,11 +60,11 @@ Syncra/
 - Contains: Features/, Services/, Interfaces/, DTOs/, Options/, Payments/, Common/
 - Key files:
   - `DependencyInjection.cs` — Registers MediatR + FluentValidation + app services
-  - `Features/{Analytics,Auth,Groups,Ideas,Integrations,Media,Posts,Subscriptions,Users,Workspaces}/` — Feature folders each with Commands/ and Queries/ subfolders
+  - `Features/{Analytics,Auth,Groups,Ideas,Integrations,Media,Posts,Subscriptions,Users,Workspaces}/` — Feature folders each with Commands/ and Queries/ subfolders (e.g., `DeleteWorkspaceCommand.cs`)
   - `Services/` — PublishService, IntegrationTokenRefreshService, IntegrationAnalyticsService, WorkspaceAnalyticsService, AnalyticsExportService
-  - `Interfaces/` — 15 service interfaces (ITokenService, IStorageService, IPublishService, IPaymentProvider, etc.)
-  - `DTOs/` — 20 DTO subfolders/files
-  - `Options/` — 10 options classes (PostgresOptions, JwtOptions, RedisOptions, StripeOptions, SentryOptions, etc.)
+  - `Interfaces/` — 15 service interfaces (ITokenService, IStorageService, IPublishService, IPaymentProvider, IZernioClient, etc.)
+  - `DTOs/` — 20 DTO subfolders/files including Inbox and Zernio DTOs
+  - `Options/` — 11 options classes (PostgresOptions, JwtOptions, RedisOptions, StripeOptions, SentryOptions, ZernioOptions, etc.)
   - `Payments/` — Webhook dispatcher + handlers (StripeProduct, StripePrice, StripeSubscription)
   - `Common/Behaviors/` — MediatR pipeline behaviors: LoggingBehavior, ValidationBehavior, PerformanceBehavior
 
@@ -78,8 +78,8 @@ Syncra/
   - `Entities/` — User, Workspace, WorkspaceMember, Integration, Idea, Media, Group, Plan, Subscription, etc.
   - `ValueObjects/` — PostTitle, PostContent, ScheduledTime, Email, WorkspaceName, WorkspaceSlug, PublishResultMetadata
   - `Enums/` — PostStatus, PlanType, SubscriptionStatus, WorkspaceMemberRole, etc.
-  - `Interfaces/` — 12 repository interfaces + ISocialProvider, IPublishAdapter, IAnalyticsAdapter, etc.
-  - `Exceptions/` — DomainException, ValidationException, RefreshTokenException
+  - `Interfaces/` — Repository interfaces + ISocialProvider, IPublishAdapter, IAnalyticsAdapter, IZernioProfileRepository, etc.
+  - `Exceptions/` — DomainException, ValidationException, RefreshTokenException, ZernioBillingRequiredException, ZernioAnalyticsScopeException
   - `Models/Social/` — PublishRequest, PublishResult, AuthResult, ProviderError, AnalyticsData
   - `Models/Analytics/` — AnalyticsPostData, PostExportData
 
@@ -87,17 +87,17 @@ Syncra/
 - Purpose: Data access, external service integrations, background jobs
 - Contains: Persistence/, Repositories/, Social/, Services/, Jobs/, Storage/, Publishing/
 - Key files:
-  - `DependencyInjection.cs` — Registers DbContext (Npgsql), repositories, Redis, social integrations, payment providers, jobs
+  - `DependencyInjection.cs` — Registers DbContext (Npgsql), repositories, Redis, social integrations, payment providers, Zernio clients, jobs
   - `Persistence/AppDbContext.cs` — EF Core DbContext with 17 DbSets
   - `Persistence/Configurations/` — 14 EF entity configurations (Fluent API)
   - `Persistence/Interceptors/AuditInterceptor.cs` — EF SaveChanges interceptor
   - `Persistence/Seed/PlanSeedData.cs` — Seed data
-  - `Repositories/` — 12 concrete repos extending Repository<T>, plus UnitOfWork
+  - `Repositories/` —Concrete repos extending Repository<T> (including ZernioProfileRepository), plus UnitOfWork
   - `Social/Providers/` — FacebookProvider, XOAuthProvider, TikTokOAuthProvider, YouTubeProvider
   - `Social/ProviderRegistry.cs` — Resolves ISocialProvider by string ID
   - `Social/PublishAdapterRegistry.cs` — Publishing adapter resolution
   - `Social/AnalyticsAdapterRegistry.cs` — Analytics adapter resolution
-  - `Services/` — TokenService, StripeService, StripePaymentProvider, PaymentProviderResolver, RedisDistributedLockService, AnalyticsCacheService
+  - `Services/` — TokenService, StripeService, StripePaymentProvider, PaymentProviderResolver, RedisDistributedLockService, AnalyticsCacheService, ZernioClient
   - `Jobs/` — IntegrationTokenRefreshJob + Scheduler, DuePostPublishJob + Scheduler
   - `Storage/LocalMediaStorage.cs` — Local filesystem media storage
   - `Publishing/Adapters/` — Publishing adapters
@@ -174,7 +174,7 @@ Syncra/
 - `fe/index.html`: SPA HTML shell served by Vite
 
 **Configuration:**
-- `be/src/Syncra.Api/appsettings.json`: Backend configuration (connection strings, JWT, Stripe, Sentry, etc.)
+- `be/src/Syncra.Api/appsettings.json`: Backend configuration (connection strings, JWT, Stripe, Sentry, Zernio, etc.)
 - `be/src/Syncra.Api/appsettings.Development.json`: Dev overrides
 - `fe/vite.config.ts`: Vite bundler config
 - `fe/tsconfig.json`, `fe/tsconfig.app.json`, `fe/tsconfig.node.json`: TypeScript configuration
@@ -266,4 +266,4 @@ Syncra/
 
 ---
 
-*Structure analysis: 2026-05-14*
+*Structure analysis: 2026-05-25*

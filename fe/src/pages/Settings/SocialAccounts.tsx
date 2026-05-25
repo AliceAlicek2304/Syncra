@@ -223,7 +223,7 @@ export default function SocialAccounts() {
     setConnectingPlatform(platform);
     let isRedirecting = false;
     try {
-      const callbackUrl = `${window.location.origin}/Syncra/social-accounts/select`;
+      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select`;
       const response = await api.get<{ connectUrl: string }>(
         `social-accounts/connect-url/${platform}`,
         {

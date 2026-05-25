@@ -474,41 +474,44 @@ public sealed class SocialAccountsController : ControllerBase
         Guid workspaceId,
         CancellationToken cancellationToken)
     {
-        var existing = await _db.ZernioProfiles
+        var profile = await _db.ZernioProfiles
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId && p.IsActive, cancellationToken);
 
-        if (existing is not null)
+        if (profile is not null)
         {
-            return existing;
+            return profile;
         }
 
-        // Fetch workspace name for profile display name
+        _logger.LogWarning(
+            "No Zernio profile found for workspace {WorkspaceId}. This should not happen after workspace-profile sync migration. Falling back to provisioning.",
+            workspaceId);
+
+        // Fallback: fetch workspace name and provision
         var workspace = await _db.Workspaces
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == workspaceId, cancellationToken);
 
-        var profileName = workspace?.Name ?? workspaceId.ToString("N");
+        var profileName = workspace?.Name.Value ?? workspaceId.ToString("N");
 
-        // Provision via Zernio API
         var provisioned = await _zernioClient.ProvisionProfileAsync(
             workspaceId: workspaceId.ToString(),
             name: profileName,
             cancellationToken: cancellationToken);
 
-        var profile = ZernioProfile.Create(
+        var newProfile = ZernioProfile.Create(
             workspaceId: workspaceId,
             zernioProfileId: provisioned.Id,
             displayName: provisioned.Name,
             platform: "zernio");
 
-        _db.ZernioProfiles.Add(profile);
+        _db.ZernioProfiles.Add(newProfile);
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Provisioned Zernio profile {ProfileId} for workspace {WorkspaceId}",
+            "Fallback: Provisioned Zernio profile {ProfileId} for workspace {WorkspaceId}",
             provisioned.Id, workspaceId);
 
-        return profile;
+        return newProfile;
     }
 
     private async Task<Guid?> VerifyAndConsumeStateTokenAsync(

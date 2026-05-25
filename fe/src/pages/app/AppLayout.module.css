@@ -417,3 +417,88 @@
   background: #f8f4f0;
   color: #201515;
 }
+
+/* Sub-navigation Menu styling */
+.subMenuContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.subMenuBar {
+  cursor: pointer;
+}
+
+.subChevron {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+.subMenuActiveHeader {
+  color: var(--purple-400) !important;
+}
+
+.lightThemeLayout .subMenuActiveHeader {
+  color: #ff4f00 !important;
+}
+
+.subItems {
+  display: flex;
+  flex-direction: column;
+  padding-left: 28px;
+  gap: 2px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.subNavItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.subNavItem:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.lightThemeLayout .subNavItem:hover {
+  background: rgba(0, 0, 0, 0.02);
+  color: #201515;
+}
+
+.subNavItemActive {
+  background: rgba(139, 92, 246, 0.06);
+  color: var(--purple-400);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.lightThemeLayout .subNavItemActive {
+  background: rgba(255, 79, 0, 0.06);
+  color: #ff4f00;
+  border: 1px solid rgba(255, 79, 0, 0.12);
+}
+
+.subMenuIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  color: var(--text-muted);
+}
+
+.subBullet {
+  font-size: 10px;
+  opacity: 0.5;
+}
+

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck, Trash2, Link2, ChevronRight
+  Plus, ChevronDown, Check, X, Info, Copy, Loader2, HelpCircle, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
@@ -192,55 +192,7 @@ function PlatformIcon({ platform, size = 20 }: { platform: string; size?: number
   }
 }
 
-/*
-interface PlatformPermissions {
-  requiredPosting: string[];
-  requiredAnalytics: string[];
-  optional: string[];
-}
 
-function _getPlatformPermissions(platform: string): PlatformPermissions {
-  const p = platform.toLowerCase();
-  switch (p) {
-    case 'facebook':
-      return {
-        requiredPosting: ['pages_manage_posts', 'pages_read_engagement'],
-        requiredAnalytics: ['pages_read_engagement', 'read_insights'],
-        optional: ['pages_show_list', 'pages_manage_engagement', 'pages_read_user_content', 'business_management', 'pages_messaging', 'pages_manage_metadata']
-      };
-    case 'instagram':
-      return {
-        requiredPosting: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
-        requiredAnalytics: ['instagram_basic', 'instagram_manage_insights'],
-        optional: ['pages_read_engagement', 'business_management']
-      };
-    case 'youtube':
-      return {
-        requiredPosting: ['youtube.upload', 'youtube.readonly'],
-        requiredAnalytics: ['yt-analytics.readonly', 'yt-analytics-monetization.readonly'],
-        optional: ['youtube', 'youtube.force-ssl']
-      };
-    case 'tiktok':
-      return {
-        requiredPosting: ['video.publish', 'video.upload'],
-        requiredAnalytics: ['user.info.stats', 'video.list'],
-        optional: ['user.info.basic', 'video.search']
-      };
-    case 'linkedin':
-      return {
-        requiredPosting: ['w_member_social'],
-        requiredAnalytics: ['r_organization_social', 'r_liteprofile'],
-        optional: ['w_organization_social']
-      };
-    default:
-      return {
-        requiredPosting: ['post.write', 'offline_access'],
-        requiredAnalytics: ['analytics.read'],
-        optional: ['user.read']
-      };
-  }
-}
-*/
 
 // ── Account Health Modal ─────────────────────────────────────────────────────
 
@@ -474,6 +426,51 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
   );
 }
 
+function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending }: {
+  workspace: { id: string; name: string };
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.disconnectModalCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.disconnectModalContent}>
+          <div className={styles.disconnectModalHeader}>
+            <div className={styles.disconnectHeaderLeft}>
+              <Trash2 size={20} className={styles.disconnectIcon} />
+              <h2 className={styles.disconnectModalTitle}>Delete workspace</h2>
+            </div>
+            <button className={styles.modalCloseBtn} onClick={onClose} disabled={isPending}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className={styles.disconnectModalBody}>
+            <p className={styles.disconnectText}>
+              Are you sure you want to delete <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
+            </p>
+          </div>
+          <div className={styles.disconnectModalFooter}>
+            <button className={styles.disconnectCancelBtn} onClick={onClose} disabled={isPending}>
+              Cancel
+            </button>
+            <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending}>
+              {isPending ? (
+                <span className={styles.btnLoadingWrap}>
+                  <Loader2 size={13} className={styles.btnSpinner} />
+                  <span>Deleting...</span>
+                </span>
+              ) : (
+                'Delete'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function ConnectionsPage() {
   const queryClient = useQueryClient();
@@ -483,6 +480,9 @@ export default function ConnectionsPage() {
   const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
   const [selectedManagePagesAccount, setSelectedManagePagesAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
   const [accountToDisconnect, setAccountToDisconnect] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
+  const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
+  const [disconnectPreCheckLoad, setDisconnectPreCheckLoad] = useState<string | null>(null);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<typeof workspaces[0] | null>(null);
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -492,6 +492,19 @@ export default function ConnectionsPage() {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState('');
   const [newWorkspaceColor, setNewWorkspaceColor] = useState('#fda4af'); // Rose color as default indicator
+
+  // Edit Workspace state
+  const [editingWorkspace, setEditingWorkspace] = useState<typeof workspaces[0] | null>(null);
+  const [editWorkspaceName, setEditWorkspaceName] = useState('');
+  const [editWorkspaceDescription, setEditWorkspaceDescription] = useState('');
+  const [editWorkspaceColor, setEditWorkspaceColor] = useState('');
+
+  const closeWorkspaceDrawer = () => {
+    setIsNewWorkspaceOpen(false);
+    setNewWorkspaceName('');
+    setNewWorkspaceDescription('');
+    setNewWorkspaceColor('#fda4af');
+  };
 
   // New Connection selection states
   const [selectedWorkspaceForConnection, setSelectedWorkspaceForConnection] = useState<string>('');
@@ -571,15 +584,14 @@ export default function ConnectionsPage() {
 
   // Create Workspace Mutation
   const createWorkspaceMutation = useMutation({
-    mutationFn: async (data: { name: string; slug: string }) => {
+    mutationFn: async (data: { name: string; color?: string; description?: string }) => {
       return workspacesApi.createWorkspace(data);
     },
     onSuccess: (newWorkspace) => {
       showSuccess(`Workspace "${newWorkspace.name}" created successfully`);
       void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      setIsNewWorkspaceOpen(false);
-      setNewWorkspaceName('');
-      setNewWorkspaceDescription('');
+      setSelectedWorkspaceFilter(newWorkspace.id);
+      closeWorkspaceDrawer();
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to create workspace';
@@ -593,14 +605,51 @@ export default function ConnectionsPage() {
       showError('Please enter a workspace name');
       return;
     }
-    const slug = newWorkspaceName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
 
-    createWorkspaceMutation.mutate({ name: newWorkspaceName, slug });
+    const color = newWorkspaceColor === '#fda4af' ? undefined : newWorkspaceColor;
+
+    createWorkspaceMutation.mutate({
+      name: newWorkspaceName,
+      color,
+      description: newWorkspaceDescription.trim() || undefined,
+    });
   };
+
+  // Update Workspace Mutation
+  const updateWorkspaceMutation = useMutation({
+    mutationFn: async ({ id, name, description, color }: { id: string; name: string; description?: string; color?: string }) => {
+      return workspacesApi.updateWorkspace(id, { name, description, color });
+    },
+    onSuccess: () => {
+      showSuccess('Workspace updated successfully');
+      setEditingWorkspace(null);
+      setEditWorkspaceName('');
+      setEditWorkspaceDescription('');
+      setEditWorkspaceColor('');
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to update workspace';
+      showError(msg);
+    }
+  });
+
+  // Delete Workspace Mutation
+  const deleteWorkspaceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return workspacesApi.deleteWorkspace(id);
+    },
+    onSuccess: () => {
+      showSuccess('Workspace deleted');
+      setWorkspaceToDelete(null);
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to delete workspace';
+      showError(msg);
+    }
+  });
 
   // Disconnect Connection Mutation
   const disconnectMutation = useMutation({
@@ -624,18 +673,8 @@ export default function ConnectionsPage() {
     }
   });
 
-  const { data: scheduledPostsCountData, isLoading: isScheduledPostsCountLoading } = useQuery({
-    queryKey: ['scheduled-posts-count', accountToDisconnect?.workspace.id, accountToDisconnect?.id],
-    queryFn: async () => {
-      const account = accountToDisconnect!;
-      const result = await postsApi.getScheduledPostsCount(account.workspace.id, account.id);
-      return result.count;
-    },
-    enabled: !!accountToDisconnect,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
-  });
+  const [scheduledPostsCount, setScheduledPostsCount] = useState<number | undefined>(undefined);
+  const [isCheckingScheduledPosts, setIsCheckingScheduledPosts] = useState(false);
 
   // Facebook pages query (only for Facebook accounts in manage pages drawer)
   const fbAccountId = selectedManagePagesAccount?.platform?.toLowerCase() === 'facebook'
@@ -667,30 +706,75 @@ export default function ConnectionsPage() {
     }
   });
 
+  const handleDisconnectInit = async (account: SocialAccountDto & { workspace: typeof workspaces[0] }) => {
+    setDisconnectPreCheckLoad(account.id);
+    setIsCheckingScheduledPosts(true);
+    try {
+      const result = await postsApi.getScheduledPostsCount(account.workspace.id, account.id);
+      setScheduledPostsCount(result.count);
+    } catch {
+      setScheduledPostsCount(undefined);
+    } finally {
+      setIsCheckingScheduledPosts(false);
+      setDisconnectPreCheckLoad(null);
+      setAccountToDisconnect(account);
+    }
+  };
+
+  const handleEditWorkspace = (ws: typeof workspaces[0]) => {
+    setEditingWorkspace(ws);
+    setEditWorkspaceName(ws.name);
+    setEditWorkspaceDescription(ws.description ?? '');
+    setEditWorkspaceColor(ws.color ?? '#fda4af');
+  };
+
+  const handleDeleteWorkspace = (ws: typeof workspaces[0]) => {
+    if (workspaces.length <= 1) return;
+    setWorkspaceToDelete(ws);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWorkspace) return;
+    if (!editWorkspaceName.trim()) {
+      showError('Workspace name is required');
+      return;
+    }
+    updateWorkspaceMutation.mutate({
+      id: editingWorkspace.id,
+      name: editWorkspaceName.trim(),
+      description: editWorkspaceDescription.trim() || undefined,
+      color: editWorkspaceColor || undefined,
+    });
+  };
+
   // Handle platform connection
-  const handleConnectPlatform = async (platformId: string) => {
+  const handleConnectPlatform = async (platformId: string, overrideWorkspaceId?: string) => {
     const config = ALL_PLATFORMS.find(p => p.id === platformId);
     if (!config?.isSupported) {
       showError(`${config?.label || platformId} integration is coming soon! Under development.`);
       return;
     }
-    if (!selectedWorkspaceForConnection) {
+    
+    const wsId = overrideWorkspaceId || selectedWorkspaceForConnection;
+    if (!wsId) {
       showError("Please select a workspace first.");
       return;
     }
+    setConnectingPlatform(platformId);
     try {
-      const callbackUrl = `${window.location.origin}/Syncra/social-accounts/select`;
+      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select`;
       const response = await api.get<{ connectUrl: string }>(
         `social-accounts/connect-url/${platformId}`,
         {
           params: { redirectUrl: callbackUrl },
-          headers: { 'X-Workspace-Id': selectedWorkspaceForConnection },
+          headers: { 'X-Workspace-Id': wsId },
         }
       );
-      // Close modal and redirect
       setIsNewConnectionOpen(false);
       window.location.href = response.data.connectUrl;
     } catch (err: any) {
+      setConnectingPlatform(null);
       const msg = err?.response?.data?.message || `Failed to connect ${platformId}`;
       showError(msg);
     }
@@ -698,9 +782,183 @@ export default function ConnectionsPage() {
 
   // Filter connections
   const filteredConnections = connections.filter(conn => {
+    const matchesWorkspace = selectedWorkspaceFilter === 'all' || conn.workspace.id === selectedWorkspaceFilter;
     const matchesPlatform = selectedPlatformFilter === 'all' || conn.platform.toLowerCase() === selectedPlatformFilter.toLowerCase();
     const matchesStatus = selectedStatusFilter === 'all' || (selectedStatusFilter === 'connected' ? conn.isActive : !conn.isActive);
-    return matchesPlatform && matchesStatus;
+    return matchesWorkspace && matchesPlatform && matchesStatus;
+  });
+
+  const renderedCards = ALL_PLATFORMS.flatMap((platform) => {
+    if (selectedPlatformFilter !== 'all' && selectedPlatformFilter !== platform.id) return [];
+
+    const platformConnections = filteredConnections.filter(c => c.platform.toLowerCase() === platform.id);
+
+    if (platformConnections.length === 0) {
+      if (selectedStatusFilter === 'connected') return [];
+      if (selectedWorkspaceFilter === 'all') return [];
+
+      return [(
+        <div key={`empty-${platform.id}`} className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderLeft}>
+              <div className={styles.cardAvatarWrap}>
+                <div
+                  className={styles.platformIconWrap}
+                  style={{
+                    backgroundColor: `${platform.color}15`,
+                    color: platform.color,
+                    borderColor: `${platform.color}30`
+                  }}
+                >
+                  <PlatformIcon platform={platform.id} size={18} />
+                </div>
+              </div>
+              <div>
+                <h3 className={styles.cardPlatformName}>{platform.label}</h3>
+                <div className={styles.statusBadge} style={{ backgroundColor: platform.isSupported ? '#f8f4f0' : '#fffbe8', color: platform.isSupported ? '#939084' : '#b45309' }}>
+                  <span className={styles.statusDot} style={{ backgroundColor: platform.isSupported ? '#939084' : '#eab308' }} />
+                  <span>{platform.isSupported ? 'Not connected' : 'Coming soon'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.cardBody} style={{ flex: 1 }}>
+          </div>
+
+          <div className={styles.cardActions} style={{ gridTemplateColumns: '1fr' }}>
+            <button
+              className={styles.disconnectBtn}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              disabled={connectingPlatform === platform.id}
+              onClick={() => {
+                if (selectedWorkspaceFilter !== 'all') {
+                  handleConnectPlatform(platform.id, selectedWorkspaceFilter);
+                } else {
+                  setIsNewConnectionOpen(true);
+                }
+              }}
+            >
+              {connectingPlatform === platform.id ? (
+                <span className={styles.btnLoadingWrap}>
+                  <Loader2 size={13} className={styles.btnSpinner} />
+                  <span>Connecting...</span>
+                </span>
+              ) : (
+                <><Plus size={14} /> Connect</>
+              )}
+            </button>
+          </div>
+        </div>
+      )];
+    }
+
+    return platformConnections.map((account) => {
+      const displayDate = account.connectedAtUtc
+        ? new Date(account.connectedAtUtc).toLocaleDateString()
+        : 'Unknown';
+
+      return (
+        <div key={account.id} className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderLeft}>
+              <div className={styles.cardAvatarWrap}>
+                {account.avatarUrl ? (
+                  <>
+                    <img
+                      src={account.avatarUrl}
+                      alt=""
+                      className={styles.cardAvatar}
+                    />
+                    <div
+                      className={styles.cardPlatformBadge}
+                      style={{ color: platform.color }}
+                    >
+                      <PlatformIcon platform={account.platform} size={17} />
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className={styles.platformIconWrap}
+                    style={{
+                      backgroundColor: `${platform.color}15`,
+                      color: platform.color,
+                      borderColor: `${platform.color}30`
+                    }}
+                  >
+                    <PlatformIcon platform={account.platform} size={18} />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className={styles.cardPlatformName}>{platform.label}</h3>
+                <div className={styles.statusBadge}>
+                  <span className={styles.statusDot} />
+                  <span>connected</span>
+                </div>
+              </div>
+            </div>
+            <button
+              className={styles.infoBtn}
+              title="Connection details"
+              onClick={() => setSelectedHealthAccount(account)}
+            >
+              <Info size={16} />
+            </button>
+          </div>
+
+          <div className={styles.cardBody}>
+            <div className={styles.workspaceDisplay}>
+              {account.displayName || account.externalAccountId}
+            </div>
+            <div className={styles.connectionMeta}>
+              {account.displayName || account.externalAccountId} • {displayDate}
+            </div>
+            <div
+              className={styles.handleBlock}
+              onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
+              title={`Filter by workspace: ${account.workspace.name}`}
+            >
+              <span className={styles.handleDot} />
+              <span className={styles.handleText}>{account.workspace.name}</span>
+              <button
+                className={styles.copyBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyId(account.workspace.name);
+                }}
+                title="Copy workspace name"
+              >
+                <Copy size={12} />
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.cardActions}>
+            <button
+              className={styles.managePagesBtn}
+              onClick={() => setSelectedManagePagesAccount(account)}
+            >
+              Manage Pages
+            </button>
+            <button
+              className={styles.disconnectBtn}
+              onClick={() => handleDisconnectInit(account)}
+              disabled={disconnectMutation.isPending || disconnectPreCheckLoad === account.id}
+            >
+              {disconnectPreCheckLoad === account.id ? (
+                <span className={styles.btnLoadingWrap}>
+                  <Loader2 size={13} className={styles.btnSpinner} />
+                  <span>Disconnecting...</span>
+                </span>
+              ) : (
+                'Disconnect'
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    });
   });
 
   const hasActiveFilters = selectedWorkspaceFilter !== 'all' || selectedPlatformFilter !== 'all' || selectedStatusFilter !== 'all';
@@ -757,7 +1015,12 @@ export default function ConnectionsPage() {
               className={styles.dropdownTrigger}
               onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
             >
-              <span>{getWorkspaceName(selectedWorkspaceFilter)}</span>
+              <span className={styles.workspaceOptRow}>
+                {selectedWorkspaceFilter !== 'all' ? (
+                  <span className={styles.workspaceDot} style={{ backgroundColor: workspaces.find(w => w.id === selectedWorkspaceFilter)?.color || '#fdba74' }} />
+                ) : null}
+                <span>{getWorkspaceName(selectedWorkspaceFilter)}</span>
+              </span>
               <ChevronDown size={14} />
             </button>
             {isWorkspaceDropdownOpen && (
@@ -773,21 +1036,40 @@ export default function ConnectionsPage() {
                   {selectedWorkspaceFilter === 'all' && <Check size={14} />}
                 </button>
                 {workspaces.map(ws => (
-                  <button
-                    key={ws.id}
-                    className={`${styles.dropdownItem} ${selectedWorkspaceFilter === ws.id ? styles.activeItem : ''}`}
-                    onClick={() => {
-                      setSelectedWorkspaceFilter(ws.id);
-                      setIsWorkspaceDropdownOpen(false);
-                    }}
-                  >
-                    <div className={styles.workspaceOptRow}>
-                      <span className={styles.workspaceDot} />
-                      <span className={styles.workspaceOptName}>{ws.name}</span>
-                      {ws.role === 'owner' && <span className={styles.defaultBadge}>default</span>}
+                  <div key={ws.id} className={styles.workspaceItem}>
+                    <button
+                      className={`${styles.workspaceItemBtn} ${selectedWorkspaceFilter === ws.id ? styles.activeItem : ''}`}
+                      onClick={() => {
+                        setSelectedWorkspaceFilter(ws.id);
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                    >
+                        <div className={styles.workspaceOptRow}>
+                        <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
+                        <span className={styles.workspaceOptName}>{ws.name}</span>
+                        {ws.role === 'owner' && <span className={styles.defaultBadge}>default</span>}
+                      </div>
+                    </button>
+                    <div className={styles.workspaceItemActions}>
+                      {selectedWorkspaceFilter === ws.id && <Check size={14} className={styles.workspaceActionCheck} />}
+                      <button
+                        className={styles.workspaceActionBtn}
+                        onClick={(e) => { e.stopPropagation(); handleEditWorkspace(ws); }}
+                        title="Edit workspace"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      {workspaces.length > 1 && (
+                        <button
+                          className={`${styles.workspaceActionBtn} ${styles.workspaceActionBtnDanger}`}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(ws); }}
+                          title="Delete workspace"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
-                    {selectedWorkspaceFilter === ws.id && <Check size={14} />}
-                  </button>
+                  </div>
                 ))}
                 <div className={styles.dropdownDivider} />
                 <button
@@ -910,145 +1192,35 @@ export default function ConnectionsPage() {
           <Loader2 className={styles.spinner} size={32} />
           <p>Loading connections...</p>
         </div>
-      ) : filteredConnections.length === 0 ? (
+      ) : renderedCards.length === 0 ? (
         <div className={styles.emptyState}>
           <HelpCircle size={48} className={styles.emptyIcon} />
-          <h2>No connections found</h2>
-          <p>Link your social channels to schedule posts and monitor analytics.</p>
+          <h2>No connections match your filters</h2>
+          <p>Try adjusting your filters to see more results.</p>
           <button
             className={styles.newConnBtn}
             style={{ marginTop: '16px' }}
-            onClick={() => setIsNewConnectionOpen(true)}
+            onClick={resetFilters}
           >
-            <Plus size={16} />
-            <span>Connect platform</span>
+            <span>Reset filters</span>
           </button>
         </div>
       ) : (
         <div className={styles.cardsGrid}>
-          {filteredConnections.map((account) => {
-            const platformConfig = ALL_PLATFORMS.find(p => p.id === account.platform.toLowerCase());
-            const displayDate = account.connectedAtUtc
-              ? new Date(account.connectedAtUtc).toLocaleDateString()
-              : 'Unknown';
-
-            return (
-              <div key={account.id} className={styles.card}>
-                {/* Info and Card Top */}
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardHeaderLeft}>
-                    <div className={styles.cardAvatarWrap}>
-                      {account.avatarUrl ? (
-                        <>
-                          <img
-                            src={account.avatarUrl}
-                            alt=""
-                            className={styles.cardAvatar}
-                          />
-                          <div
-                            className={styles.cardPlatformBadge}
-                            style={{ color: platformConfig?.color || '#ff4f00' }}
-                          >
-                            <PlatformIcon platform={account.platform} size={17} />
-                          </div>
-                        </>
-                      ) : (
-                        <div
-                          className={styles.platformIconWrap}
-                          style={{
-                            backgroundColor: `${platformConfig?.color || '#ff4f00'}15`,
-                            color: platformConfig?.color || '#ff4f00',
-                            borderColor: `${platformConfig?.color || '#ff4f00'}30`
-                          }}
-                        >
-                          <PlatformIcon platform={account.platform} size={18} />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className={styles.cardPlatformName}>{platformConfig?.label || account.platform}</h3>
-                      <div className={styles.statusBadge}>
-                        <span className={styles.statusDot} />
-                        <span>connected</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    className={styles.infoBtn}
-                    title="Connection details"
-                    onClick={() => setSelectedHealthAccount(account)}
-                  >
-                    <Info size={16} />
-                  </button>
-                </div>
-
-                {/* Card Body */}
-                <div className={styles.cardBody}>
-                  <div className={styles.workspaceDisplay}>
-                    {account.displayName || account.externalAccountId}
-                  </div>
-                  <div className={styles.connectionMeta}>
-                    {account.displayName || account.externalAccountId} • {displayDate}
-                  </div>
-                  <div
-                    className={styles.handleBlock}
-                    onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
-                    title={`Filter by workspace: ${account.workspace.name}`}
-                  >
-                    <span className={styles.handleDot} />
-                    <span className={styles.handleText}>{account.workspace.name}</span>
-                    <button
-                      className={styles.copyBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyId(account.workspace.name);
-                      }}
-                      title="Copy workspace name"
-                    >
-                      <Copy size={12} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card Actions */}
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.managePagesBtn}
-                    onClick={() => setSelectedManagePagesAccount(account)}
-                  >
-                    Manage Pages
-                  </button>
-                  <button
-                    className={styles.disconnectBtn}
-                    onClick={() => setAccountToDisconnect(account)}
-                    disabled={disconnectMutation.isPending}
-                  >
-                    {disconnectMutation.isPending && disconnectMutation.variables?.accountId === account.id ? (
-                      <span className={styles.btnLoadingWrap}>
-                        <Loader2 size={13} className={styles.btnSpinner} />
-                        <span>Disconnecting...</span>
-                      </span>
-                    ) : (
-                      'Disconnect'
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {renderedCards}
         </div>
       )}
 
       {/* DRAWER 1: Create New Workspace Drawer */}
       {isNewWorkspaceOpen && (
-        <div className={styles.drawerBackdrop}>
-          <div className={styles.drawerCard}>
+        <div className={styles.drawerBackdrop} onClick={() => closeWorkspaceDrawer()}>
+          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>Create new workspace</h2>
                 <p className={styles.drawerSubtitle}>Add a new workspace to organize your social accounts.</p>
               </div>
-              <button className={styles.drawerCloseBtn} onClick={() => setIsNewWorkspaceOpen(false)}>
+              <button className={styles.drawerCloseBtn} onClick={() => closeWorkspaceDrawer()}>
                 <X size={18} />
               </button>
             </div>
@@ -1108,7 +1280,90 @@ export default function ConnectionsPage() {
                 <button
                   type="button"
                   className={styles.drawerCancelBtn}
-                  onClick={() => setIsNewWorkspaceOpen(false)}
+                  onClick={() => closeWorkspaceDrawer()}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER 1.5: Edit Workspace Drawer */}
+      {editingWorkspace && (
+        <div className={styles.drawerBackdrop} onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}>
+          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.drawerHeader}>
+              <div>
+                <h2 className={styles.drawerTitle}>Edit workspace</h2>
+                <p className={styles.drawerSubtitle}>Update the name, description, or color of your workspace.</p>
+              </div>
+              <button
+                className={styles.drawerCloseBtn}
+                onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className={styles.drawerForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Workspace Name</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g., Personal, Business, Agency"
+                  value={editWorkspaceName}
+                  onChange={(e) => setEditWorkspaceName(e.target.value)}
+                  maxLength={50}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Description</label>
+                <textarea
+                  className={styles.formTextarea}
+                  placeholder="Optional description"
+                  value={editWorkspaceDescription}
+                  onChange={(e) => setEditWorkspaceDescription(e.target.value)}
+                  rows={3}
+                  maxLength={200}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Color</label>
+                <div className={styles.colorPickerContainer}>
+                  <div className={styles.colorBox} style={{ backgroundColor: editWorkspaceColor || '#fda4af' }} />
+                  <div className={styles.colorPalette}>
+                    {['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`${styles.colorPaletteBtn} ${editWorkspaceColor === color ? styles.colorPaletteBtnActive : ''}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setEditWorkspaceColor(color)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.drawerFooter}>
+                <button
+                  type="submit"
+                  className={styles.drawerSubmitBtn}
+                  disabled={updateWorkspaceMutation.isPending}
+                >
+                  {updateWorkspaceMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.drawerCancelBtn}
+                  onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}
                 >
                   Cancel
                 </button>
@@ -1120,8 +1375,8 @@ export default function ConnectionsPage() {
 
       {/* DRAWER 2: New Connection Drawer */}
       {isNewConnectionOpen && (
-        <div className={styles.drawerBackdrop}>
-          <div className={styles.drawerCard}>
+        <div className={styles.drawerBackdrop} onClick={() => setIsNewConnectionOpen(false)}>
+          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>New Connection</h2>
@@ -1140,10 +1395,15 @@ export default function ConnectionsPage() {
                   className={styles.drawerDropdownTrigger}
                   onClick={() => setIsConnWorkspaceDropdownOpen(!isConnWorkspaceDropdownOpen)}
                 >
-                  <span>
-                    {selectedWorkspaceForConnection
-                      ? workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name
-                      : 'Select a workspace'}
+                  <span className={styles.workspaceOptRow}>
+                    {selectedWorkspaceForConnection ? (
+                      <span className={styles.workspaceDot} style={{ backgroundColor: workspaces.find(w => w.id === selectedWorkspaceForConnection)?.color || '#fdba74' }} />
+                    ) : null}
+                    <span>
+                      {selectedWorkspaceForConnection
+                        ? workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name
+                        : 'Select a workspace'}
+                    </span>
                   </span>
                   <ChevronDown size={14} />
                 </button>
@@ -1160,7 +1420,7 @@ export default function ConnectionsPage() {
                         }}
                       >
                         <div className={styles.workspaceOptRow}>
-                          <span className={styles.workspaceDot} />
+                          <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
                           <span>{ws.name}</span>
                         </div>
                         {selectedWorkspaceForConnection === ws.id && <Check size={14} />}
@@ -1208,7 +1468,7 @@ export default function ConnectionsPage() {
                                 type="button"
                                 className={styles.platformListItem}
                                 onClick={() => handleConnectPlatform(platform.id)}
-                                disabled={isDisabled}
+                                disabled={isDisabled || connectingPlatform === platform.id}
                               >
                                 <div className={styles.platformListLeft}>
                                   <div
@@ -1220,7 +1480,9 @@ export default function ConnectionsPage() {
                                   <span className={styles.platformListLabel}>{platform.label}</span>
                                 </div>
                                 <div className={styles.platformListRight}>
-                                  {!platform.isSupported ? (
+                                  {connectingPlatform === platform.id ? (
+                                    <Loader2 size={14} className={styles.btnSpinner} />
+                                  ) : !platform.isSupported ? (
                                     <span className={styles.platformListSoon}>Coming soon</span>
                                   ) : (
                                     <>
@@ -1293,31 +1555,40 @@ export default function ConnectionsPage() {
                             });
                           }}
                         >
-                          <div className={styles.pageAvatarWrap}>
-                            {selectedManagePagesAccount.avatarUrl ? (
-                          <img
-                            src={selectedManagePagesAccount.avatarUrl}
-                            alt={page.name}
-                            className={styles.pageAvatar}
-                          />
-                            ) : (
-                              <div
-                                className={styles.pagePlatformFallback}
-                                style={{
-                                  color: ALL_PLATFORMS.find(p => p.id === 'facebook')?.color || '#1877f2'
-                                }}
-                              >
-                                <PlatformIcon platform="facebook" size={18} />
-                              </div>
-                            )}
-                          </div>
-                          <div className={styles.pageInfo}>
-                            <div className={styles.pageNameRow}>
-                              <span className={styles.pageName}>{page.name}</span>
-                              {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                          {switchFbPageMutation.isPending && switchFbPageMutation.variables?.selectedPageId === page.id ? (
+                            <div className={styles.pageLoadingWrap}>
+                              <Loader2 size={18} className={styles.btnSpinner} />
+                              <span>Switching...</span>
                             </div>
-                            <p className={styles.pageCategory}>{page.category || 'Facebook Page'}</p>
-                          </div>
+                          ) : (
+                            <>
+                              <div className={styles.pageAvatarWrap}>
+                                {selectedManagePagesAccount.avatarUrl ? (
+                              <img
+                                src={selectedManagePagesAccount.avatarUrl}
+                                alt={page.name}
+                                className={styles.pageAvatar}
+                              />
+                                ) : (
+                                  <div
+                                    className={styles.pagePlatformFallback}
+                                    style={{
+                                      color: ALL_PLATFORMS.find(p => p.id === 'facebook')?.color || '#1877f2'
+                                    }}
+                                  >
+                                    <PlatformIcon platform="facebook" size={18} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className={styles.pageInfo}>
+                                <div className={styles.pageNameRow}>
+                                  <span className={styles.pageName}>{page.name}</span>
+                                  {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                                </div>
+                                <p className={styles.pageCategory}>{page.category || 'Facebook Page'}</p>
+                              </div>
+                            </>
+                          )}
                         </button>
                       );
                     })
@@ -1345,8 +1616,20 @@ export default function ConnectionsPage() {
             });
           }}
           isPending={disconnectMutation.isPending}
-          scheduledPostsCount={scheduledPostsCountData}
-          isCheckingScheduledPosts={isScheduledPostsCountLoading}
+          scheduledPostsCount={scheduledPostsCount}
+          isCheckingScheduledPosts={isCheckingScheduledPosts}
+        />
+      )}
+
+      {/* Delete Workspace Confirm Modal */}
+      {workspaceToDelete && (
+        <DeleteWorkspaceConfirmModal
+          workspace={workspaceToDelete}
+          onClose={() => setWorkspaceToDelete(null)}
+          onConfirm={() => {
+            deleteWorkspaceMutation.mutate(workspaceToDelete.id);
+          }}
+          isPending={deleteWorkspaceMutation.isPending}
         />
       )}
     </div>

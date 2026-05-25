@@ -5,5 +5,7 @@ namespace Syncra.Application.Features.Workspaces.Commands;
 
 public record CreateWorkspaceCommand(
     Guid UserId,
-    string Name
+    string Name,
+    string? Color = null,
+    string? Description = null
 ) : IRequest<WorkspaceDto>;

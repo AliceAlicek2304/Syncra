@@ -169,7 +169,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
             slug = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
         }
 
-        var workspace = Workspace.Create(user.Id, $"{emailPrefix}'s Workspace", slug);
+        var workspace = Workspace.Create(user.Id, "Default", slug);
         workspace.AddMember(user.Id, "owner");
 
         await _workspaceRepository.AddAsync(workspace);

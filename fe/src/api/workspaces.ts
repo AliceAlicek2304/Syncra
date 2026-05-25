@@ -7,7 +7,7 @@ export const workspacesApi = {
     return response.data;
   },
 
-  createWorkspace: async (data: { name: string; slug: string }): Promise<Workspace> => {
+  createWorkspace: async (data: { name: string; color?: string; description?: string }): Promise<Workspace> => {
     const response = await api.post<Workspace>('workspaces', data);
     return response.data;
   },
@@ -17,8 +17,12 @@ export const workspacesApi = {
     return response.data;
   },
 
-  updateWorkspace: async (id: string, data: { name: string }): Promise<Workspace> => {
+  updateWorkspace: async (id: string, data: { name: string; color?: string; description?: string }): Promise<Workspace> => {
     const response = await api.put<Workspace>(`workspaces/${id}`, data);
     return response.data;
+  },
+
+  deleteWorkspace: async (id: string): Promise<void> => {
+    await api.delete(`workspaces/${id}`);
   },
 };

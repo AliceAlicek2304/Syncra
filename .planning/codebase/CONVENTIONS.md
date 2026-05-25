@@ -1,6 +1,6 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-25
 
 ## Naming Patterns
 
@@ -153,4 +153,4 @@ npm run lint -- --fix # Auto-fix
 
 ---
 
-*Convention analysis: 2026-05-14*
+*Convention analysis: 2026-05-25*

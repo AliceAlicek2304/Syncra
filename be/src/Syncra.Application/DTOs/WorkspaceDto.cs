@@ -5,5 +5,8 @@ public record WorkspaceDto(
     string Name,
     string Slug,
     Guid OwnerUserId,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? ZernioProfileId = null,
+    string? Color = null,
+    string? Description = null
 );
