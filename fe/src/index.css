@@ -1,7 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -12,45 +14,44 @@
   --bg-card: rgba(13, 17, 28, 0.4);
   --border-glass: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(139, 92, 246, 0.2);
-  
+
   --purple-300: #c4b5fd;
   --purple-400: #a78bfa;
   --purple-500: #8b5cf6;
   --purple-600: #7c3aed;
   --purple-900: #4c1d95;
-  
+
   --pink-400: #f472b6;
   --pink-500: #ec4899;
   --cyan-400: #22d3ee;
   --cyan-500: #06b6d4;
-  
+
   --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
-  
+
   --gradient-hero: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #22d3ee 100%);
   --gradient-brand: linear-gradient(135deg, #8b5cf6, #d946ef);
-  --gradient-border: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-  
+  --gradient-border: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-xl: 32px;
-  
+
   --font-main: 'Inter', system-ui, sans-serif;
   --font-title: 'Outfit', 'Inter', sans-serif;
-  
+
   font-family: var(--font-main);
   color-scheme: dark;
 }
 
 html {
   scroll-behavior: smooth;
-  zoom: 0.7;
 }
 
 body {
   background-color: var(--bg-dark);
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
     radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 40%);
   background-attachment: fixed;
@@ -61,16 +62,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { 
-  background: rgba(255, 255, 255, 0.1); 
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   border: 2px solid var(--bg-dark);
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-a { text-decoration: none; color: inherit; }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
 
 :focus-visible {
   outline: 2px solid var(--purple-500);
@@ -132,7 +145,7 @@ input:focus-visible {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
   pointer-events: none;
 }
 
@@ -168,7 +181,7 @@ input:focus-visible {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: 0.5s;
 }
 
@@ -272,6 +285,7 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -286,17 +300,20 @@ input:focus-visible {
    Skeleton Loader — Phase 11
    ============================================= */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(139, 92, 246, 0.08)  50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 25%,
+      rgba(139, 92, 246, 0.08) 50%,
+      rgba(255, 255, 255, 0.03) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s linear infinite;
   border: 1px solid var(--border-glass);

@@ -365,13 +365,14 @@
 /* ─── Grid View Layout ─── */
 .gridContainer {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 402px);
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 16px;
   margin-top: 12px;
 }
 
 .postCard {
-  width: 402px;
+  width: 100%;
+  max-width: 402px;
   height: 165px;
   box-sizing: border-box;
   background-color: #ffffff; /* bg-card shadow-sm */
