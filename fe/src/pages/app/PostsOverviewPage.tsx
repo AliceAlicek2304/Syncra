@@ -8,8 +8,10 @@ import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import { useToast } from '../../context/ToastContext'
-import { postsApi, Post } from '../../api/posts'
-import { socialAccountsApi, SocialAccountDto } from '../../api/socialAccounts'
+import { postsApi } from '../../api/posts'
+import type { Post } from '../../api/posts'
+import { socialAccountsApi } from '../../api/socialAccounts'
+import type { SocialAccountDto } from '../../api/socialAccounts'
 import styles from './PostsOverviewPage.module.css'
 
 // ─── Platform Icon Definitions ───
