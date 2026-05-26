@@ -105,7 +105,7 @@ export function useCalendarPosts({ workspaceId, year, month }: UseCalendarPostsA
       if (!workspaceId) throw new Error('Missing workspace id');
       const post = query.data?.find((p) => p.id === postId);
       if (post && post.zernioPostId) {
-        await postsApi.deleteZernioPost(workspaceId, postId);
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId);
       } else {
         await postsApi.deletePost(workspaceId, postId);
       }

@@ -23,22 +23,30 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
 
     public async Task<bool> Handle(DeleteZernioPostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.PostId);
+        var post = await _postRepository.GetByZernioPostIdAsync(request.ZernioPostId);
 
-        if (post == null || post.WorkspaceId != request.WorkspaceId)
-            return false;
-
-        if (post.Status is PostStatus.Scheduled or PostStatus.Draft or PostStatus.Publishing)
+        if (post != null)
         {
-            if (!string.IsNullOrEmpty(post.ZernioPostId))
+            if (post.WorkspaceId != request.WorkspaceId)
+                return false;
+
+            if (post.Status is PostStatus.Scheduled or PostStatus.Draft or PostStatus.Publishing)
             {
-                await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                if (!string.IsNullOrEmpty(post.ZernioPostId))
+                {
+                    await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                }
             }
+
+            post.MarkAsDeleted();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-
-        post.MarkAsDeleted();
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        else
+        {
+            // If the post does not exist in our database, it is a dynamic post.
+            // We call the Zernio client directly to delete it from Zernio.
+            await _zernioClient.DeletePostAsync(request.ZernioPostId, cancellationToken);
+        }
 
         return true;
     }

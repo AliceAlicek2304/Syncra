@@ -81,9 +81,10 @@ describe('postsApi', () => {
 
   it('deleteZernioPost calls DELETE on correct endpoint', async () => {
     mockedApi.delete.mockResolvedValue({ data: undefined })
-    await postsApi.deleteZernioPost(workspaceId, postId)
+    const zernioPostId = 'zernio-123'
+    await postsApi.deleteZernioPost(workspaceId, zernioPostId)
     expect(mockedApi.delete).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts/zernio/${postId}`
+      `workspaces/${workspaceId}/posts/zernio/${zernioPostId}`
     )
   })
 })

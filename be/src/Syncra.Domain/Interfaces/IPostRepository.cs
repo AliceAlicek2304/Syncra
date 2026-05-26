@@ -46,4 +46,5 @@ public interface IPostRepository
     /// Use for read-by-id queries that need platform target details.
     /// </summary>
     Task<Post?> GetByIdWithPlatformTargetsAsync(Guid id);
+    Task<Post?> GetByZernioPostIdAsync(string zernioPostId);
 }

@@ -130,6 +130,14 @@ public class PostRepository : Repository<Post>, IPostRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
+    public async Task<Post?> GetByZernioPostIdAsync(string zernioPostId)
+    {
+        return await _dbSet
+            .Include(p => p.Media)
+            .Include(p => p.Integration)
+            .FirstOrDefaultAsync(p => p.ZernioPostId == zernioPostId);
+    }
+
     public async Task<IEnumerable<Syncra.Domain.Models.Analytics.AnalyticsPostData>> GetAnalyticsDataAsync(
         Guid workspaceId,
         DateTime? sinceUtc = null,

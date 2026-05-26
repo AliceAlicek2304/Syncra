@@ -58,10 +58,10 @@ public sealed class ZernioPostsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{postId:guid}")]
-    public async Task<IActionResult> DeleteZernioPost(Guid workspaceId, Guid postId, CancellationToken ct)
+    [HttpDelete("{zernioPostId}")]
+    public async Task<IActionResult> DeleteZernioPost(Guid workspaceId, string zernioPostId, CancellationToken ct)
     {
-        var result = await _mediator.Send(new DeleteZernioPostCommand(workspaceId, postId), ct);
+        var result = await _mediator.Send(new DeleteZernioPostCommand(workspaceId, zernioPostId), ct);
         if (!result)
             return NotFound();
             

@@ -56,7 +56,7 @@ public class DeleteZernioPostCommandTests : IDisposable
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        var cmd = new DeleteZernioPostCommand(_workspaceId, post.Id);
+        var cmd = new DeleteZernioPostCommand(_workspaceId, post.ZernioPostId!);
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -80,7 +80,7 @@ public class DeleteZernioPostCommandTests : IDisposable
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        var cmd = new DeleteZernioPostCommand(_workspaceId, post.Id);
+        var cmd = new DeleteZernioPostCommand(_workspaceId, post.ZernioPostId!);
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -103,7 +103,7 @@ public class DeleteZernioPostCommandTests : IDisposable
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        var cmd = new DeleteZernioPostCommand(_workspaceId, post.Id);
+        var cmd = new DeleteZernioPostCommand(_workspaceId, post.ZernioPostId!);
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -130,7 +130,7 @@ public class DeleteZernioPostCommandTests : IDisposable
             .Setup(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("API Error"));
 
-        var cmd = new DeleteZernioPostCommand(_workspaceId, post.Id);
+        var cmd = new DeleteZernioPostCommand(_workspaceId, post.ZernioPostId!);
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _handler.Handle(cmd, CancellationToken.None));
@@ -150,7 +150,7 @@ public class DeleteZernioPostCommandTests : IDisposable
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        var cmd = new DeleteZernioPostCommand(_workspaceId, post.Id);
+        var cmd = new DeleteZernioPostCommand(_workspaceId, post.ZernioPostId!);
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -160,5 +160,20 @@ public class DeleteZernioPostCommandTests : IDisposable
 
         var unchangedPost = await _db.Posts.FirstAsync(p => p.Id == post.Id);
         Assert.False(unchangedPost.IsDeleted);
+    }
+
+    [Fact]
+    public async Task DeleteHandler_PostNotInLocalDb_CallsZernioDeleteAndReturnsTrue()
+    {
+        // Arrange
+        var zernioPostId = "z_123";
+        var cmd = new DeleteZernioPostCommand(_workspaceId, zernioPostId);
+
+        // Act
+        var result = await _handler.Handle(cmd, CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
     }
 }

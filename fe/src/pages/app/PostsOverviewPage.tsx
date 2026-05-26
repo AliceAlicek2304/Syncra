@@ -337,7 +337,7 @@ export default function PostsOverviewPage() {
           apiIds.map(id => {
             const post = allMergedPosts.find(p => p.id === id)
             if (post && post.zernioPostId) {
-              return postsApi.deleteZernioPost(workspaceId, id)
+              return postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
             }
             return postsApi.deletePost(workspaceId, id)
           })
