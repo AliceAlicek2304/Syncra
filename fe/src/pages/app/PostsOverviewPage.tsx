@@ -333,7 +333,15 @@ export default function PostsOverviewPage() {
       const csvIds = selectedPostIds.filter(id => id.startsWith('csv-'))
       
       if (apiIds.length > 0 && workspaceId) {
-        await Promise.all(apiIds.map(id => postsApi.deletePost(workspaceId, id)))
+        await Promise.all(
+          apiIds.map(id => {
+            const post = allMergedPosts.find(p => p.id === id)
+            if (post && post.zernioPostId) {
+              return postsApi.deleteZernioPost(workspaceId, id)
+            }
+            return postsApi.deletePost(workspaceId, id)
+          })
+        )
       }
       
       if (csvIds.length > 0) {

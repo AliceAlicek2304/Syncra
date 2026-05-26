@@ -78,4 +78,12 @@ describe('postsApi', () => {
       `workspaces/${workspaceId}/posts/${postId}`
     )
   })
+
+  it('deleteZernioPost calls DELETE on correct endpoint', async () => {
+    mockedApi.delete.mockResolvedValue({ data: undefined })
+    await postsApi.deleteZernioPost(workspaceId, postId)
+    expect(mockedApi.delete).toHaveBeenCalledWith(
+      `workspaces/${workspaceId}/posts/zernio/${postId}`
+    )
+  })
 })

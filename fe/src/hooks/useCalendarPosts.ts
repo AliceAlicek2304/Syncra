@@ -103,7 +103,12 @@ export function useCalendarPosts({ workspaceId, year, month }: UseCalendarPostsA
   const removeMutation = useMutation({
     mutationFn: async (postId: string) => {
       if (!workspaceId) throw new Error('Missing workspace id');
-      await postsApi.deletePost(workspaceId, postId);
+      const post = query.data?.find((p) => p.id === postId);
+      if (post && post.zernioPostId) {
+        await postsApi.deleteZernioPost(workspaceId, postId);
+      } else {
+        await postsApi.deletePost(workspaceId, postId);
+      }
       return postId;
     },
     onMutate: async (postId) => {
