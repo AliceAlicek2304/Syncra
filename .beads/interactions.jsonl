@@ -14,3 +14,4 @@
 {"id":"int-a10c9965","kind":"field_change","created_at":"2026-05-25T15:09:22.8312241Z","actor":"Syncra Dev","issue_id":"Syncra-vvl","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
 {"id":"int-ec6a6af9","kind":"field_change","created_at":"2026-05-26T14:37:50.0727243Z","actor":"Syncra Dev","issue_id":"Syncra-xnx","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
 {"id":"int-8f4251fe","kind":"field_change","created_at":"2026-05-26T14:51:14.7379432Z","actor":"Syncra Dev","issue_id":"Syncra-0io","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
+{"id":"int-e6c771b7","kind":"field_change","created_at":"2026-05-26T15:21:38.5012418Z","actor":"Syncra Dev","issue_id":"Syncra-dvx","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}

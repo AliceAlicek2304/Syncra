@@ -1,11 +1,10 @@
-import { ImageIcon, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCreatePostState } from './useCreatePostState'
 import CreatePostHeader from './CreatePostHeader'
 import CreatePostEditor, { ImageEditorPanel } from './CreatePostEditor'
-import { PlatformTabs, ScheduleRow, RightPanel } from './CreatePostSidebar'
+import { RightPanel } from './CreatePostSidebar'
 import CreatePostFooter from './CreatePostFooter'
-import { AccountSelectionSection } from './AccountSelectionSection'
 import type { CreatePostModalProps } from './types'
 import styles from '../CreatePostModal.module.css'
 
@@ -165,37 +164,15 @@ export default function CreatePostModal(props: CreatePostModalProps) {
 
             <CreatePostHeader state={state} refs={hookData.refs} actions={actions} />
 
-            {state.socialAccounts && state.socialAccounts.length > 0 && (
-              <AccountSelectionSection
-                accounts={state.socialAccounts}
-                selectedAccountIds={state.selectedSocialAccountIds}
-                onChange={actions.setSelectedSocialAccountIds}
-              />
-            )}
-
             <div className={styles.body}>
               <div className={styles.composer}>
-                {!state.hasPlatforms ? (
-                  <div className={styles.composerEmpty}>
-                    <div className={styles.previewEmptyIcon}>
-                      <ImageIcon size={28} style={{ color: 'var(--text-muted)' }} />
-                    </div>
-                    <span className={styles.previewEmptyText}>
-                      Select a channel above to start creating your post
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    {state.activePlatforms.length > 1 && <PlatformTabs state={state} refs={hookData.refs} actions={actions} />}
-                    <CreatePostEditor state={state} refs={hookData.refs} actions={actions} />
-                    <ScheduleRow state={state} refs={hookData.refs} actions={actions} />
-                    <CreatePostFooter state={state} refs={hookData.refs} actions={actions} />
-                  </>
-                )}
+                <CreatePostEditor state={state} refs={hookData.refs} actions={actions} />
               </div>
 
               <RightPanel state={state} refs={hookData.refs} actions={actions} />
             </div>
+
+            <CreatePostFooter state={state} refs={hookData.refs} actions={actions} />
           </motion.div>
         </motion.div>
       )}

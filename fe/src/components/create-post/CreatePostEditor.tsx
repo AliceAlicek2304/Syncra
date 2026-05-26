@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react'
-import { Smile, Hash, Settings2, X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
-import { COMMON_EMOJIS, HASH_TAGS, CROP_PRESETS, type Platform } from './types'
-import { PlatformIcon } from './platformIcons'
+import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
+import { CROP_PRESETS } from './types'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
@@ -164,44 +163,27 @@ export function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
   )
 }
 
-const PLATFORM_BADGE_CLASS: Partial<Record<Platform, string>> = {
-  tiktok: styles.badgeTikTok,
-  instagram: styles.badgeIG,
-  facebook: styles.badgeFB,
-  twitter: styles.badgeX,
-}
 
-export default function CreatePostEditor({ state, refs: { fileInputRef, replaceInputRef, textareaRef, emojiRef }, actions }: UseCreatePostStateReturn) {
+export default function CreatePostEditor({ state, refs: { fileInputRef, replaceInputRef, textareaRef }, actions }: UseCreatePostStateReturn) {
   return (
-    <>
-      <div className={styles.postArea}>
-        {/* Author row */}
-        <div className={styles.authorRow}>
-          <div className={styles.avatarWrap}>
-            <div className={styles.avatarBubble}>
-              {state.user?.avatarUrl ? (
-                <img src={state.user.avatarUrl} alt={state.user.displayName || 'User'} />
-              ) : (
-                (state.user?.displayName || state.user?.firstName || 'U').charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className={`${styles.platformBadge} ${PLATFORM_BADGE_CLASS[state.activeTab]}`}>
-              <PlatformIcon platform={state.activeTab} size={12} />
-            </div>
+    <div className={styles.postArea}>
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>content</label>
+        <div className={styles.textareaContainer}>
+          <textarea
+            ref={textareaRef}
+            className={styles.textarea}
+            placeholder="what's on your mind.."
+            value={state.caption}
+            onChange={e => actions.setActiveCaption(e.target.value)}
+          />
+          <div className={styles.charCount}>
+            {state.caption.length} chars
           </div>
-          <span className={styles.authorName}>{state.user?.displayName || state.user?.firstName || 'You'}</span>
         </div>
+      </div>
 
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
-          className={styles.textarea}
-          placeholder="What would you like to share?"
-          value={state.caption}
-          onChange={e => actions.setActiveCaption(e.target.value)}
-        />
-
-        {/* Media upload */}
+      <div className={styles.mediaSection}>
         {state.media.length === 0 ? (
           <div
             className={`${styles.mediaZone} ${state.dragOver ? styles.mediaZoneDragOver : ''}`}
@@ -210,11 +192,7 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
             onDragLeave={() => actions.setDragOver(false)}
             onDrop={actions.onDrop}
           >
-            <div className={styles.mediaZoneIcon}>📁</div>
-            <div className={styles.mediaZoneText}>
-              Drag & drop or <span>select media</span>
-            </div>
-            <div className={styles.mediaZoneHint}>PNG, JPG, GIF, MP4 supported</div>
+            <span className={styles.addMediaText}>+ Add media</span>
           </div>
         ) : (
           <div className={styles.mediaPreviewRow}>
@@ -236,25 +214,26 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
                   <button
                     type="button"
                     className={styles.thumbBtn}
-                    title={m.type === 'image' ? 'Chỉnh sửa' : 'Thay thế'}
+                    title={m.type === 'image' ? 'Edit' : 'Replace'}
                     onClick={() => m.type === 'image' ? actions.setEditingId(m.id) : actions.handleReplaceVideo(m.id)}
                   >✏️</button>
                   <button
                     type="button"
                     className={`${styles.thumbBtn} ${styles.thumbBtnDelete}`}
-                    title="Xóa"
+                    title="Delete"
                     onClick={() => actions.removeMedia(m.id)}
-                  ><X size={11} /></button>
+                  >
+                    <X size={11} />
+                  </button>
                 </div>
                 {state.media[0]?.id === m.id && <span className={styles.thumbCoverBadge}>Cover</span>}
               </div>
             ))}
             <div
-              className={styles.mediaZone}
-              style={{ width: 72, height: 72, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
+              className={styles.mediaZoneSmall}
               onClick={() => fileInputRef.current?.click()}
             >
-              <span className={styles.mediaZoneText}><span>+ Add</span></span>
+              <span className={styles.mediaZoneText}>+ Add</span>
             </div>
           </div>
         )}
@@ -275,39 +254,6 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
           onChange={actions.handleReplaceFile}
         />
       </div>
-
-      {/* Toolbar*/}
-      <div className={styles.toolbar} style={{ position: 'relative' }}>
-        <div ref={emojiRef} style={{ position: 'relative' }}>
-          <button className={styles.toolbarBtn} onClick={() => actions.setShowEmoji(!state.showEmoji)} title="Emoji">
-            <Smile size={18} />
-          </button>
-          {state.showEmoji && (
-            <div className={styles.emojiPopover}>
-              {COMMON_EMOJIS.map(e => (
-                <button key={e} className={styles.emojiBtn} onClick={() => { actions.insertAtCursor(e); actions.setShowEmoji(false) }}>
-                  {e}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button className={styles.toolbarBtn} title="Hashtags"
-          onClick={() => actions.insertAtCursor(' ' + HASH_TAGS[Math.floor(Math.random() * HASH_TAGS.length)])}>
-          <Hash size={18} />
-        </button>
-
-        <button className={styles.toolbarBtn} title="Settings"><Settings2 size={18} /></button>
-
-        <div className={styles.toolbarSpacer} />
-        <span className={`${styles.charCount} ${state.overLimit ? styles.charCountOver
-          : state.caption.length > state.charLimit * 0.85 ? styles.charCountWarn
-            : ''
-          }`}>
-          {state.charLimit - state.caption.length}
-        </span>
-      </div>
-    </>
+    </div>
   )
 }

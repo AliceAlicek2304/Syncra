@@ -91,6 +91,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [createAnother, setCreateAnother] = useState(false)
   const [scheduleMode, setScheduleMode] = useState(false)
   const [scheduleTime, setScheduleTime] = useState('')
+  const [publishingTab, setPublishingTab] = useState<'schedule' | 'now' | 'queue' | 'draft'>('schedule')
 
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [showPublishConfirmDialog, setShowPublishConfirmDialog] = useState(false)
@@ -175,6 +176,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
+      setPublishingTab(editPost?.status === 'draft' ? 'draft' : initSchMode ? 'schedule' : 'now')
       setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['tiktok'])
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'tiktok')
 
@@ -520,6 +522,28 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [derivedActivePlatforms, activeTab])
 
+  const reuseLastPost = useCallback(async () => {
+    if (!workspaceId) return
+    try {
+      const posts = await postsApi.getPosts(workspaceId, { status: 'published', pageSize: 10 })
+      const lastPost = posts.find(p => p.content)
+      if (lastPost) {
+        const text = lastPost.content || ''
+        setActiveCaption(text)
+        const firstImage = lastPost.mediaItems?.find(m => m.type === 'image' || m.mimeType?.startsWith('image/'))?.url
+        if (firstImage) {
+          mediaHook.setMedia([{ id: shortId(), url: firstImage, type: 'image', name: 'image' }])
+        }
+        onToast?.({ message: 'Reused content from your last post!', type: 'success' })
+      } else {
+        onToast?.({ message: 'No published posts found to reuse.', type: 'success' })
+      }
+    } catch (err) {
+      console.error(err)
+      onToast?.({ message: 'Failed to retrieve last post.', type: 'error' })
+    }
+  }, [workspaceId, mediaHook, onToast])
+
   return {
     state: {
       activePlatforms: derivedActivePlatforms, activeTab, captionsByPlatform, touched,
@@ -539,6 +563,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       aiIsGenerating: aiHook.aiIsGenerating,
       socialAccounts,
       selectedSocialAccountIds,
+      publishingTab,
     },
     refs,
     actions: {
@@ -546,6 +571,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setShowPreview, setShowEmoji,
       setCreateAnother, setScheduleMode, setScheduleTime, setShowUnsavedDialog,
       setShowPublishConfirmDialog,
+      setPublishingTab,
       setActiveCaption, reset, handleAttemptClose, handleDraft,
       handleSchedule, confirmSchedule, togglePlatform,
       handleFiles: mediaHook.handleFiles, onDrop: mediaHook.onDrop,
@@ -566,6 +592,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       isRetryingZernio: retryZernioPost.isPending,
       isDeletingZernio: deleteZernioPost.isPending,
       setSelectedSocialAccountIds,
+      reuseLastPost,
     }
   }
 }

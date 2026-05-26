@@ -4,26 +4,38 @@ import styles from '../CreatePostModal.module.css'
 type CreatePostFooterProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
 export default function CreatePostFooter({ state, actions }: CreatePostFooterProps) {
-  // Add zernio actions to actions type if they don't exist yet but we know they are there.
-  const a = actions as any
   const isZernioPost = !!state.editPost?.zernioPostId
   const canRetry = state.editPost?.status === 'failed' || state.editPost?.status === 'partial'
+  const a = actions as any
+
+  const getPrimaryButtonLabel = () => {
+    if (state.publishingTab === 'draft') return 'save draft'
+    if (state.publishingTab === 'now') return 'publish now'
+    if (state.publishingTab === 'queue') return 'add to queue'
+    return 'schedule post'
+  }
+
+  const handlePrimaryAction = () => {
+    if (state.publishingTab === 'draft') {
+      actions.handleDraft()
+    } else {
+      actions.handleSchedule()
+    }
+  }
+
+  const isSubmitDisabled = 
+    state.caption.trim() === '' || 
+    state.overLimit || 
+    (state.socialAccounts && 
+     state.socialAccounts.filter((acc: any) => acc.isActive).length > 0 && 
+     state.selectedSocialAccountIds.length === 0)
 
   return (
     <div className={styles.footer}>
-      <label className={styles.createAnotherLabel}>
-        <input 
-          type="checkbox" 
-          checked={state.createAnother} 
-          onChange={e => actions.setCreateAnother(e.target.checked)} 
-        />
-        Create Another
-      </label>
-      <div className={styles.footerSpacer} />
-
+      {/* Retrying failed posts / Deleting if applicable */}
       {isZernioPost && canRetry && (
         <button 
-          className="btn-secondary" 
+          className={styles.retryBtn} 
           onClick={a.retryZernioPost}
           disabled={a.isRetryingZernio}
         >
@@ -33,31 +45,32 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
 
       {isZernioPost && (
         <button 
-          className="btn-secondary" 
+          className={styles.deletePostBtn} 
           onClick={a.deleteZernioPost}
-          style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
           disabled={a.isDeletingZernio}
         >
           {a.isDeletingZernio ? 'Deleting...' : 'Delete Post'}
         </button>
       )}
 
-      {!isZernioPost && (!state.socialAccounts || state.socialAccounts.filter((a: any) => a.isActive).length === 0) && (
-        <button className={styles.draftBtn} onClick={() => actions.handleDraft()}>Save Draft</button>
-      )}
-      {!isZernioPost && (
-        <button 
-          className={styles.scheduleBtn} 
-          onClick={actions.handleSchedule} 
-          disabled={state.caption.trim() === '' || state.overLimit || (state.socialAccounts && state.socialAccounts.filter((a: any) => a.isActive).length > 0 && state.selectedSocialAccountIds.length === 0)}
-        >
-          {state.socialAccounts && state.socialAccounts.filter((a: any) => a.isActive).length > 0 && state.selectedSocialAccountIds.length >= 1
-            ? (state.scheduleMode 
-                ? `Schedule to ${state.selectedSocialAccountIds.length} account${state.selectedSocialAccountIds.length > 1 ? 's' : ''}`
-                : `Publish to ${state.selectedSocialAccountIds.length} account${state.selectedSocialAccountIds.length > 1 ? 's' : ''}`)
-            : (state.scheduleMode ? 'Schedule Post' : 'Publish Now')}
-        </button>
-      )}
+      <div className={styles.footerSpacer} />
+
+      <button 
+        type="button" 
+        className={styles.cancelBtn} 
+        onClick={actions.handleAttemptClose}
+      >
+        cancel
+      </button>
+
+      <button 
+        type="button" 
+        className={styles.submitBtn} 
+        onClick={handlePrimaryAction} 
+        disabled={isSubmitDisabled}
+      >
+        {getPrimaryButtonLabel()}
+      </button>
     </div>
   )
 }

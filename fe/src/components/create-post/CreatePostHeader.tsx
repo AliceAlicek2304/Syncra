@@ -1,65 +1,42 @@
-import { X, Sparkles, Eye } from 'lucide-react'
-import { PLATFORMS, type Platform } from './types'
-import { PlatformIcon } from './platformIcons'
+import { X } from 'lucide-react'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
-
-const CHIP_CLASS: Record<Platform, string> = {
-  tiktok: styles.chipTikTok,
-  instagram: styles.chipIG,
-  facebook: styles.chipFB,
-  twitter: styles.chipX,
-}
 
 type CreatePostHeaderProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
 export default function CreatePostHeader({ state, actions }: CreatePostHeaderProps) {
   return (
     <div className={styles.header}>
-      <span className={styles.headerTitle}>
-        {state.isEditMode ? 'Edit Post' : 'Create Post'}
-      </span>
-
-      {(!state.socialAccounts || state.socialAccounts.filter(a => a.isActive).length === 0) && (
-        <div className={styles.platformChips}>
-          {PLATFORMS.map(p => (
-            <button
-              key={p.id}
-              className={`${styles.chip} ${CHIP_CLASS[p.id]} ${state.activePlatforms.includes(p.id) ? styles.chipActive : ''}`}
-              onClick={() => actions.togglePlatform(p.id)}
-            >
-              <span><PlatformIcon platform={p.id} size={14} /></span>
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className={styles.headerLeft}>
+        <h2 className={styles.headerTitle}>
+          {state.isEditMode ? 'Edit Post' : 'Create Post'}
+        </h2>
+        <p className={styles.headerSubtitle}>
+          {state.isEditMode ? 'edit & update content' : 'create & publish content'}
+        </p>
+      </div>
 
       <div className={styles.headerSpacer} />
 
-      <button
-        className={`${styles.headerBtn} ${state.showAI ? styles.headerBtnActive : ''}`}
-        onClick={() => {
-          actions.setShowAI(true)
-          actions.setShowPreview(false)
-        }}
-      >
-        <Sparkles size={14} /> AI Assistant
-      </button>
-
-      <button
-        className={`${styles.headerBtn} ${state.showPreview ? styles.headerBtnActive : ''}`}
-        onClick={() => {
-          actions.setShowPreview(true)
-          actions.setShowAI(false)
-        }}
-      >
-        <Eye size={14} /> Preview
-      </button>
-
-      <button className={styles.closeBtn} onClick={actions.handleAttemptClose}>
-        <X size={16} />
-      </button>
+      <div className={styles.headerRight}>
+        {!state.isEditMode && (
+          <button 
+            type="button" 
+            className={styles.reuseBtn} 
+            onClick={actions.reuseLastPost}
+          >
+            Reuse
+          </button>
+        )}
+        <button 
+          type="button" 
+          className={styles.closeBtn} 
+          onClick={actions.handleAttemptClose}
+          aria-label="Close dialog"
+        >
+          <X size={18} />
+        </button>
+      </div>
     </div>
   )
 }
