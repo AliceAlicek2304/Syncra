@@ -16,6 +16,7 @@ export interface Post {
   platformContents?: PlatformContent[];
   mediaAssetIds?: string[];  // D-08: reference by assetId
   groupId?: string;
+  createdBy?: string;        // userId of the creator
   createdAt: string;
   updatedAt: string;
   zernioPostId?: string;

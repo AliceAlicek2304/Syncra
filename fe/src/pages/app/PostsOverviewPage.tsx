@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
-  Search, X, HelpCircle, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
+  X, HelpCircle, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
   MoreVertical, Copy
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -144,18 +144,19 @@ const StatusBadge = ({ status }: { status: Post['status'] }) => {
 }
 
 export default function PostsOverviewPage() {
-  const { activeWorkspace } = useWorkspace()
+  const { workspaces, activeWorkspace } = useWorkspace()
   const { user } = useAuth()
   const { openCreatePost } = useCreatePostModal()
   const { success: showSuccess } = useToast()
   
-  const workspaceId = activeWorkspace?.id
-
   // ─── Filter & View States ───
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
   const [platformFilter, setPlatformFilter] = useState<string>('All platforms')
-  const [profileFilter, setProfileFilter] = useState<string>('All profiles')
-  const [profileSearch, setProfileSearch] = useState<string>('')
+  const [workspaceFilter, setWorkspaceFilter] = useState<string>('All workspaces')
+  const selectedWorkspace = workspaceFilter !== 'All workspaces'
+    ? workspaces.find(w => w.name === workspaceFilter)
+    : undefined
+  const workspaceId = selectedWorkspace?.id || activeWorkspace?.id
   const [userFilter, setUserFilter] = useState<string>('All users')
   const [dateFilter, setDateFilter] = useState<string>('All dates')
   const [customStartDate, setCustomStartDate] = useState<string>('')
@@ -233,30 +234,9 @@ export default function PostsOverviewPage() {
         if (!hasPlatform) return false
       }
 
-      // 3. Profile Filter
-      if (profileFilter !== 'All profiles') {
-        const targets = post.platformTargets || []
-        const hasMatchingProfile = targets.some(
-          t => t.zernioAccountId === profileFilter || t.id === profileFilter
-        )
-        // If no explicit targets matches, fallback to handle matching
-        if (!hasMatchingProfile) {
-          const profileObj = socialAccounts.find(sa => sa.id === profileFilter || sa.displayName === profileFilter)
-          if (profileObj) {
-            const hasPlatformMatch = (post.platforms || []).some(
-              p => p.toLowerCase() === profileObj.platform.toLowerCase()
-            )
-            if (!hasPlatformMatch) return false
-          } else {
-            return false
-          }
-        }
-      }
-
-      // 4. User Filter (Current user vs all)
+      // 3. User Filter (Current user vs all)
       if (userFilter !== 'All users' && user) {
-        // In a real database, posts have a userId or creatorName.
-        // Real posts from API have a userId; filter by user if needed.
+        if (post.createdBy && post.createdBy !== user.userId) return false
       }
 
       // 5. Date Filter
@@ -293,7 +273,7 @@ export default function PostsOverviewPage() {
 
       return true
     })
-  }, [allMergedPosts, statusFilter, platformFilter, profileFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user])
+  }, [allMergedPosts, statusFilter, platformFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user])
 
   // ─── Sorting Logic ───
   const sortedPosts = React.useMemo(() => {
@@ -344,12 +324,6 @@ export default function PostsOverviewPage() {
   const toggleDropdown = (dropdownName: string) => {
     setActiveDropdown(prev => prev === dropdownName ? null : dropdownName)
   }
-
-  // ─── Profile Options filtering ───
-  const filteredSocialAccounts = socialAccounts.filter(sa => 
-    sa.displayName.toLowerCase().includes(profileSearch.toLowerCase()) ||
-    sa.platform.toLowerCase().includes(profileSearch.toLowerCase())
-  )
 
   // ─── CSV Parser Implementation ───
   const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -652,62 +626,32 @@ export default function PostsOverviewPage() {
             )}
           </div>
 
-          {/* Profile Filter */}
+          {/* Workspace Filter */}
           <div className={styles.dropdownWrapper}>
             <button 
               className={styles.filterDropdownBtn}
-              onClick={() => toggleDropdown('profile')}
+              onClick={() => toggleDropdown('workspace')}
             >
-              <span>{profileFilter === 'All profiles' ? 'All profiles' : (socialAccounts.find(sa => sa.id === profileFilter)?.displayName || profileFilter)}</span>
+              <span>{workspaceFilter}</span>
               <ChevronDown size={14} />
             </button>
-            {activeDropdown === 'profile' && (
-              <div className={`${styles.dropdownMenu} ${styles.profileMenu}`}>
-                <div className={styles.profileSearchContainer}>
-                  <Search size={14} className={styles.searchIcon} />
-                  <input 
-                    type="text" 
-                    placeholder="Filter..." 
-                    value={profileSearch}
-                    onChange={(e) => setProfileSearch(e.target.value)}
-                    className={styles.profileSearchInput}
-                  />
-                </div>
+            {activeDropdown === 'workspace' && (
+              <div className={styles.dropdownMenu}>
                 <button 
-                  className={`${styles.dropdownItem} ${profileFilter === 'All profiles' ? styles.activeDropdownItem : ''}`}
-                  onClick={() => { setProfileFilter('All profiles'); setActiveDropdown(null); setCurrentPage(1); }}
+                  className={`${styles.dropdownItem} ${workspaceFilter === 'All workspaces' ? styles.activeDropdownItem : ''}`}
+                  onClick={() => { setWorkspaceFilter('All workspaces'); setActiveDropdown(null); }}
                 >
-                  All profiles
+                  All workspaces
                 </button>
-                {filteredSocialAccounts.map(sa => (
+                {workspaces.map(w => (
                   <button 
-                    key={sa.id}
-                    className={`${styles.dropdownItem} ${styles.profileItem} ${profileFilter === sa.id ? styles.activeDropdownItem : ''}`}
-                    onClick={() => { setProfileFilter(sa.id); setActiveDropdown(null); setCurrentPage(1); }}
+                    key={w.id}
+                    className={`${styles.dropdownItem} ${workspaceFilter === w.name ? styles.activeDropdownItem : ''}`}
+                    onClick={() => { setWorkspaceFilter(w.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
-                    <span className={styles.profileBullet}>o</span>
-                    <span>{sa.displayName}</span>
+                    {w.name}
                   </button>
                 ))}
-                {/* Seed default values if none exist in active profiles */}
-                {filteredSocialAccounts.length === 0 && (
-                  <>
-                    <button 
-                      className={`${styles.dropdownItem} ${styles.profileItem} ${profileFilter === 'nguyenhonghieutai7a9' ? styles.activeDropdownItem : ''}`}
-                      onClick={() => { setProfileFilter('nguyenhonghieutai7a9'); setActiveDropdown(null); setCurrentPage(1); }}
-                    >
-                      <span className={styles.profileBullet}>o</span>
-                      <span>nguyenhonghieutai7a9</span>
-                    </button>
-                    <button 
-                      className={`${styles.dropdownItem} ${styles.profileItem} ${profileFilter === 'jjj' ? styles.activeDropdownItem : ''}`}
-                      onClick={() => { setProfileFilter('jjj'); setActiveDropdown(null); setCurrentPage(1); }}
-                    >
-                      <span className={styles.profileBullet}>o</span>
-                      <span>jjj</span>
-                    </button>
-                  </>
-                )}
               </div>
             )}
           </div>
@@ -723,7 +667,7 @@ export default function PostsOverviewPage() {
             </button>
             {activeDropdown === 'user' && (
               <div className={styles.dropdownMenu}>
-                {['All users', user?.displayName || 'Hiếu Tài'].map(opt => (
+                {['All users', user?.displayName || 'You'].map(opt => (
                   <button 
                     key={opt}
                     className={`${styles.dropdownItem} ${userFilter === opt ? styles.activeDropdownItem : ''}`}
@@ -904,7 +848,7 @@ export default function PostsOverviewPage() {
                         <div className={styles.cardDate}>{formatPostDate(post.scheduledAtUtc || post.createdAt)}</div>
                         
                         <div className={styles.cardMeta}>
-                          <span className={styles.creatorName}>{user?.displayName || 'Hiếu Tài'}</span>
+                          <span className={styles.creatorName}>{user?.displayName || 'You'}</span>
                           <span className={styles.dotSeparator}>·</span>
                           <span className={styles.creatorHandleWrapper}>
                             <span className={styles.creatorHandleDot} style={{ backgroundColor: 'rgb(255, 237, 160)' }}></span>

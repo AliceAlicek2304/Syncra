@@ -45,6 +45,43 @@
   color-scheme: dark;
 }
 
+/* ─── App Design Tokens ─── */
+:root {
+  /* Colors */
+  --clr-primary: #ff4f00;
+  --clr-on-primary: #fffefb;
+  --clr-ink: #201515;
+  --clr-ink-soft: #2f2a26;
+  --clr-ink-mid: #36342e;
+  --clr-body: #605d52;
+  --clr-body-mid: #939084;
+  --clr-mute: #c5c0b1;
+  --clr-canvas: #fffefb;
+  --clr-canvas-soft: #f8f4f0;
+
+  /* Typography */
+  --font-display: 'Degular Display', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+  --spacing-4xl: 64px;
+
+  /* Border */
+  --clr-border: #e5dfd3;
+  --clr-primary-hover: #e04500;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-pill: 9999px;
+}
+
 html {
   scroll-behavior: smooth;
 }
