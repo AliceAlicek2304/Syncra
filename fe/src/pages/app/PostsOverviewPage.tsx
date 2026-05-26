@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
   X, HelpCircle, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
-  MoreVertical, Copy
+  MoreVertical, Copy, Check, Trash2
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
@@ -148,6 +148,9 @@ export default function PostsOverviewPage() {
   const { user } = useAuth()
   const { openCreatePost } = useCreatePostModal()
   const { success: showSuccess } = useToast()
+  
+  const queryClient = useQueryClient()
+  const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
   
   // ─── Filter & View States ───
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
@@ -304,6 +307,49 @@ export default function PostsOverviewPage() {
       return 0
     })
   }, [filteredPosts, sortField])
+
+  // ─── Selection & Deletion ───
+  const togglePostSelection = (postId: string) => {
+    setSelectedPostIds(prev => 
+      prev.includes(postId) 
+        ? prev.filter(id => id !== postId) 
+        : [...prev, postId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    setSelectedPostIds(filteredPosts.map(p => p.id))
+  }
+
+  const handleClearSelection = () => {
+    setSelectedPostIds([])
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedPostIds.length === 0) return
+    
+    try {
+      const apiIds = selectedPostIds.filter(id => !id.startsWith('csv-'))
+      const csvIds = selectedPostIds.filter(id => id.startsWith('csv-'))
+      
+      if (apiIds.length > 0 && workspaceId) {
+        await Promise.all(apiIds.map(id => postsApi.deletePost(workspaceId, id)))
+      }
+      
+      if (csvIds.length > 0) {
+        setCsvPosts(prev => prev.filter(p => !csvIds.includes(p.id)))
+      }
+      
+      showSuccess(`Successfully deleted ${selectedPostIds.length} post(s)`)
+      setSelectedPostIds([])
+      
+      if (workspaceId) {
+        queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   // ─── Pagination ───
   const paginatedPosts = React.useMemo(() => {
@@ -702,12 +748,14 @@ export default function PostsOverviewPage() {
                 ))}
                 {dateFilter === 'Custom range' && (
                   <div className={styles.customDateInputs}>
+                    <label className={styles.dateLabel}>From:</label>
                     <input 
                       type="date" 
                       value={customStartDate} 
                       onChange={(e) => setCustomStartDate(e.target.value)}
                       className={styles.datePickerInput}
                     />
+                    <label className={styles.dateLabel}>To:</label>
                     <input 
                       type="date" 
                       value={customEndDate} 
@@ -822,16 +870,63 @@ export default function PostsOverviewPage() {
         </div>
       ) : (
         <>
+          {/* Bulk Selection Bar */}
+          {selectedPostIds.length > 0 && (
+            <div className={styles.selectionBar}>
+              <div className={styles.selectionBarLeft}>
+                <span className={styles.selectedCount}>
+                  {selectedPostIds.length} selected
+                </span>
+              </div>
+              <div className={styles.selectionBarRight}>
+                <button 
+                  type="button" 
+                  className={styles.selectionBarLink} 
+                  onClick={handleSelectAll}
+                >
+                  Select all
+                </button>
+                <button 
+                  type="button" 
+                  className={styles.selectionBarLink} 
+                  onClick={handleClearSelection}
+                >
+                  Clear
+                </button>
+                <button 
+                  type="button" 
+                  className={styles.deleteSelectedBtn} 
+                  onClick={handleDeleteSelected}
+                >
+                  <Trash2 size={16} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* GRID VIEW */}
           {viewMode === 'grid' && (
             <div className={styles.gridContainer}>
               {paginatedPosts.map(post => {
                 const platform = post.platforms?.[0] || 'facebook'
+                const isChecked = selectedPostIds.includes(post.id)
                 return (
-                  <div key={post.id} className={styles.postCard}>
+                  <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`}>
                     {/* Hover check button */}
-                    <div className={styles.checkboxContainer}>
-                      <button type="button" role="checkbox" aria-checked="false" className={styles.cardCheckbox}></button>
+                    <div className={`${styles.checkboxContainer} ${isChecked || selectedPostIds.length > 0 ? styles.checkboxContainerActive : ''}`}>
+                      <button 
+                        type="button" 
+                        role="checkbox" 
+                        aria-checked={isChecked} 
+                        className={`${styles.cardCheckbox} ${isChecked ? styles.cardCheckboxChecked : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePostSelection(post.id);
+                        }}
+                      >
+                        {isChecked && <Check size={10} strokeWidth={3} />}
+                      </button>
                     </div>
 
                     <div className={styles.cardBody}>
@@ -889,7 +984,27 @@ export default function PostsOverviewPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}><input type="checkbox" className={styles.checkbox} /></th>
+                    <th style={{ width: '40px' }}>
+                      <input 
+                        type="checkbox" 
+                        className={styles.checkbox} 
+                        checked={paginatedPosts.length > 0 && paginatedPosts.every(p => selectedPostIds.includes(p.id))}
+                        onChange={() => {
+                          const allPageSelected = paginatedPosts.every(p => selectedPostIds.includes(p.id));
+                          if (allPageSelected) {
+                            setSelectedPostIds(prev => prev.filter(id => !paginatedPosts.some(p => p.id === id)));
+                          } else {
+                            setSelectedPostIds(prev => {
+                              const next = [...prev];
+                              paginatedPosts.forEach(p => {
+                                if (!next.includes(p.id)) next.push(p.id);
+                              });
+                              return next;
+                            });
+                          }
+                        }}
+                      />
+                    </th>
                     <th>Content</th>
                     <th>Platforms</th>
                     <th>Date</th>
@@ -900,9 +1015,17 @@ export default function PostsOverviewPage() {
                 <tbody>
                   {paginatedPosts.map(post => {
                     const platform = post.platforms?.[0] || 'facebook'
+                    const isChecked = selectedPostIds.includes(post.id)
                     return (
-                      <tr key={post.id}>
-                        <td><input type="checkbox" className={styles.checkbox} /></td>
+                      <tr key={post.id} className={isChecked ? styles.selectedRow : ''}>
+                        <td>
+                          <input 
+                            type="checkbox" 
+                            className={styles.checkbox} 
+                            checked={isChecked}
+                            onChange={() => togglePostSelection(post.id)}
+                          />
+                        </td>
                         <td className={styles.tableNameCell}>
                           <div className={styles.tableTitle}>{post.title}</div>
                         </td>

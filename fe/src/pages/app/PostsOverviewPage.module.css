@@ -240,14 +240,30 @@
   margin-top: 6px;
 }
 
-.datePickerInput {
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--clr-border);
+.dateLabel {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--clr-ink);
+}
+
+.datePickerInput {
+  width: 100%;
+  padding: 5px 10px;
+  background-color: var(--clr-canvas);
+  color: var(--clr-ink);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 12px;
   outline: none;
+  cursor: pointer;
+  color-scheme: light;
+}
+
+.datePickerInput:focus {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 2px rgba(255, 79, 0, 0.15);
 }
 
 .applyDateBtn {
@@ -1330,4 +1346,94 @@
 .modalConfirmBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ─── Bulk Selection Bar & Multi-Select ─── */
+.selectionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px 0 rgba(32, 21, 21, 0.05);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.selectionBarLeft {
+  display: flex;
+  align-items: center;
+}
+
+.selectedCount {
+  font-family: var(--font-body);
+  font-size: 14.4px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.selectionBarRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.selectionBarLink {
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--clr-body-mid);
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.15s ease-in-out;
+}
+
+.selectionBarLink:hover {
+  color: var(--clr-ink);
+}
+
+.deleteSelectedBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteSelectedBtn:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.checkboxContainerActive {
+  opacity: 1 !important;
+}
+
+.cardCheckboxChecked {
+  background-color: var(--clr-ink) !important;
+  border-color: var(--clr-ink) !important;
+  color: var(--clr-canvas) !important;
+}
+
+.postCardChecked {
+  border-color: var(--clr-ink) !important;
+  box-shadow: 0 4px 6px -1px rgba(32, 21, 21, 0.15), 0 2px 4px -1px rgba(32, 21, 21, 0.1) !important;
+}
+
+.selectedRow td {
+  background-color: rgba(255, 79, 0, 0.04) !important;
 }
