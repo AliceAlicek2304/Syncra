@@ -679,3 +679,577 @@
 .deletePostBtn:hover {
   background: rgba(239, 68, 68, 0.05);
 }
+
+/* ── Workspace dropdown custom toggle & popover ── */
+.workspaceDropdownToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 10px 0;
+  color: var(--clr-ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workspaceDropdownLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 12px;
+}
+
+.dropdownIcon {
+  color: var(--clr-body-mid);
+  flex-shrink: 0;
+}
+
+.workspaceDropdownPopover {
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(32, 21, 21, 0.12);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.dropdownSearchContainer {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  gap: 8px;
+}
+
+.searchIcon {
+  color: var(--clr-body-mid);
+}
+
+.dropdownSearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--clr-ink);
+}
+
+.dropdownActionsRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--clr-canvas-soft);
+  border-bottom: 1px solid var(--clr-border);
+  font-size: 11px;
+}
+
+.dropdownActionLink {
+  border: none;
+  background: transparent;
+  color: var(--clr-primary);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dropdownActionLink:hover {
+  text-decoration: underline;
+}
+
+.dividerDot {
+  margin: 0 6px;
+  color: var(--clr-mute);
+}
+
+.selectionCount {
+  margin-left: auto;
+  color: var(--clr-body-mid);
+  font-weight: 600;
+}
+
+.workspaceCheckboxList {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.workspaceCheckboxLabel {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  cursor: pointer;
+  gap: 10px;
+  transition: background 0.15s ease;
+}
+
+.workspaceCheckboxLabel:hover {
+  background: var(--clr-canvas-soft);
+}
+
+.workspaceCheckboxInput {
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.workspaceMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workspaceName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.workspaceId {
+  font-size: 10px;
+  color: var(--clr-body-mid);
+}
+
+.dropdownEmptyText {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--clr-body-mid);
+  font-style: italic;
+}
+
+.dropdownSelectedBar {
+  padding: 8px 12px;
+  border-top: 1px solid var(--clr-border);
+  font-size: 11px;
+  color: var(--clr-body-mid);
+  background: var(--clr-canvas-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Platform Grouping UI ── */
+.platformsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.saveAsGroupLink {
+  background: none;
+  border: none;
+  color: var(--clr-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.saveAsGroupLink:hover {
+  text-decoration: underline;
+}
+
+.saveAsGroupLink:disabled {
+  color: var(--clr-mute);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.createGroupRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-body-mid);
+  text-transform: lowercase;
+}
+
+.groupNameInput {
+  flex: 1;
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+}
+
+.groupNameInput:focus {
+  border-color: var(--clr-primary);
+}
+
+.groupActionBtn {
+  background: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.groupActionBtn:hover {
+  background: var(--clr-border);
+}
+
+.groupTagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.groupTag {
+  display: flex;
+  align-items: center;
+  background: #e0f2fe; /* Light blue */
+  border: 1px solid #bae6fd;
+  border-radius: 16px;
+  padding: 2px 8px;
+  gap: 4px;
+}
+
+.groupTagSelectBtn {
+  border: none;
+  background: transparent;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.groupTagDeleteBtn {
+  border: none;
+  background: transparent;
+  color: #0369a1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.groupTagDeleteBtn:hover {
+  opacity: 1;
+}
+
+/* ── Platform warning states ── */
+.platformSelectCardError {
+  border-color: #f87171 !important;
+  background: #fef2f2 !important;
+}
+
+.platformSelectCardError:hover {
+  background: #fee2e2 !important;
+}
+
+.warningBadge {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Time overrides ── */
+.scheduleTimeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overridesSection {
+  border-top: 1px solid var(--clr-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overridesHeader {
+  font-size: 11px;
+  color: var(--clr-body-mid);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.overridesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overrideRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overrideAccountInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.overridePlatformLogo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.overrideDisplayName {
+  font-size: 12px;
+  color: var(--clr-ink);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overrideDatetimeInput {
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--clr-canvas);
+  color: var(--clr-ink);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  width: 170px;
+}
+
+.overrideDatetimeInput:focus {
+  border-color: var(--clr-primary);
+}
+
+.publishingNoticeCallout {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--clr-primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ── TikTok photo warning notice callout ── */
+.tiktokPhotoCallout {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #faf5ff; /* Light purple */
+  border: 1px solid #ebd5ff;
+  border-radius: 8px;
+  color: #6b21a8;
+  margin-bottom: 8px;
+}
+
+.tiktokPhotoCalloutIcon {
+  margin-top: 1px;
+  color: #a855f7;
+  flex-shrink: 0;
+}
+
+.tiktokPhotoCalloutText {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* ── Dynamic Platform Customization Panels (Composer) ── */
+.platformSpecificPanels {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.platformSection {
+  border-top: 1px solid var(--clr-border);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.platformSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.platformSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.platformLogoSquare {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.platformSectionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.facebookTabs {
+  display: flex;
+  background: var(--clr-canvas-soft);
+  padding: 2px;
+  border-radius: 6px;
+  gap: 2px;
+}
+
+.fbTabBtn {
+  border: none;
+  background: transparent;
+  color: var(--clr-body-mid);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fbTabBtn:hover:not(:disabled) {
+  color: var(--clr-ink);
+}
+
+.fbTabBtnActive {
+  background: var(--clr-canvas);
+  color: var(--clr-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.fbTabBtnDisabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.platformInputsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inputHeaderLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.counterText {
+  font-size: 10px;
+  color: var(--clr-body-mid);
+}
+
+.overrideTextarea {
+  width: 100%;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--clr-ink);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 48px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  line-height: 1.4;
+}
+
+.overrideTextarea:focus {
+  border-color: var(--clr-primary);
+}
+
+/* TikTok inbox draft card */
+.tiktokDraftCard {
+  border: 1px solid var(--clr-border);
+  background: var(--clr-canvas-soft);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tiktokDraftLabel {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.tiktokDraftCheckbox {
+  margin-top: 4px;
+}
+
+.tiktokDraftMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tiktokDraftTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tiktokDraftTitleText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.tiktokDraftDesc {
+  font-size: 11px;
+  color: var(--clr-body-mid);
+  line-height: 1.4;
+  margin: 0;
+}

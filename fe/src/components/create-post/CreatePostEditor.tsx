@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check } from 'lucide-react'
-import { CROP_PRESETS } from './types'
+import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check, Info } from 'lucide-react'
+import { ExtendedPlatformIcon } from './platformIcons'
+import { CROP_PRESETS, PLATFORMS } from './types'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import styles from '../CreatePostModal.module.css'
 
@@ -163,26 +164,45 @@ export function ImageEditorPanel({ src, onSave, onCancel }: EditorPanelProps) {
   )
 }
 
-
 export default function CreatePostEditor({ state, refs: { fileInputRef, replaceInputRef, textareaRef }, actions }: UseCreatePostStateReturn) {
+  const hasImages = state.media.some(m => m.type === 'image')
+  const isTiktokSelected = state.activePlatforms.includes('tiktok')
+  const showTiktokPhotoWarning = isTiktokSelected && hasImages
+
+  // Helper to determine if Story/Reel options are valid for Facebook
+  const hasMedia = state.media.length > 0
+  const isSingleVideo = state.media.length === 1 && state.media[0].type === 'video'
+
   return (
     <div className={styles.postArea}>
+      {/* Master Content Editor */}
       <div className={styles.inputGroup}>
         <label className={styles.fieldLabel}>content</label>
         <div className={styles.textareaContainer}>
           <textarea
             ref={textareaRef}
             className={styles.textarea}
-            placeholder="what's on your mind.."
-            value={state.caption}
-            onChange={e => actions.setActiveCaption(e.target.value)}
+            placeholder="what's on your mind..."
+            value={state.mainContent}
+            onChange={e => actions.setMainContent(e.target.value)}
           />
           <div className={styles.charCount}>
-            {state.caption.length} chars
+            {state.mainContent.length} chars
           </div>
         </div>
       </div>
 
+      {/* TikTok photo posts warning callout */}
+      {showTiktokPhotoWarning && (
+        <div className={styles.tiktokPhotoCallout}>
+          <Info size={16} className={styles.tiktokPhotoCalloutIcon} />
+          <div className={styles.tiktokPhotoCalloutText}>
+            TikTok photo posts: Content is limited to 90 chars for the title. Use the “tiktok photo description” field below for longer text (up to 4000 chars).
+          </div>
+        </div>
+      )}
+
+      {/* Media Uploader / Preview */}
       <div className={styles.mediaSection}>
         {state.media.length === 0 ? (
           <div
@@ -254,6 +274,196 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
           onChange={actions.handleReplaceFile}
         />
       </div>
+
+      {/* Dynamic Platform-specific Panels */}
+      {state.activePlatforms.length > 0 && (
+        <div className={styles.platformSpecificPanels}>
+          {state.activePlatforms.map(platform => {
+            const platformConfig = PLATFORMS.find(p => p.id === platform)
+
+            if (platform === 'facebook') {
+              return (
+                <div key={platform} className={styles.platformSection}>
+                  <div className={styles.platformSectionHeader}>
+                    <div className={styles.platformSectionTitle}>
+                      <div className={`${styles.platformLogoSquare} ${styles.platformLogo_facebook}`}>
+                        <ExtendedPlatformIcon platform="facebook" size={14} />
+                      </div>
+                      <span className={styles.platformSectionLabel}>Facebook</span>
+                    </div>
+
+                    <div className={styles.facebookTabs}>
+                      <button
+                        type="button"
+                        className={`${styles.fbTabBtn} ${state.facebookTab === 'feed' ? styles.fbTabBtnActive : ''}`}
+                        onClick={() => actions.setFacebookTab('feed')}
+                      >
+                        Feed
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!hasMedia}
+                        title={!hasMedia ? 'Upload media first' : undefined}
+                        className={`${styles.fbTabBtn} ${state.facebookTab === 'story' ? styles.fbTabBtnActive : ''} ${!hasMedia ? styles.fbTabBtnDisabled : ''}`}
+                        onClick={() => actions.setFacebookTab('story')}
+                      >
+                        Story
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!isSingleVideo}
+                        title={!isSingleVideo ? 'Upload a single video' : undefined}
+                        className={`${styles.fbTabBtn} ${state.facebookTab === 'reel' ? styles.fbTabBtnActive : ''} ${!isSingleVideo ? styles.fbTabBtnDisabled : ''}`}
+                        onClick={() => actions.setFacebookTab('reel')}
+                      >
+                        Reel
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.platformInputsGrid}>
+                    <div className={styles.inputGroup}>
+                      <div className={styles.inputHeaderLabelRow}>
+                        <label className={styles.fieldSubLabel}>first comment</label>
+                        <span className={styles.counterText}>{state.facebookFirstComment.length}/8000</span>
+                      </div>
+                      <textarea
+                        rows={1}
+                        maxLength={8000}
+                        placeholder="Drop any extra context or a CTA here."
+                        value={state.facebookFirstComment}
+                        onChange={e => actions.setFacebookFirstComment(e.target.value)}
+                        className={styles.overrideTextarea}
+                      />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                      <div className={styles.inputHeaderLabelRow}>
+                        <label className={styles.fieldSubLabel}>custom caption</label>
+                        <span className={styles.counterText}>{state.facebookCustomCaption.length}/63206</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        maxLength={63206}
+                        placeholder="Leave blank to use main content..."
+                        value={state.facebookCustomCaption}
+                        onChange={e => actions.setFacebookCustomCaption(e.target.value)}
+                        className={styles.overrideTextarea}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            if (platform === 'tiktok') {
+              const charLimit = hasImages ? 4000 : 2200
+              const currentVal = hasImages ? state.tiktokPhotoDescription : state.tiktokCustomCaption
+              const inputLabel = hasImages ? 'tiktok photo description' : 'custom caption'
+
+              return (
+                <div key={platform} className={styles.platformSection}>
+                  <div className={styles.platformSectionHeader}>
+                    <div className={styles.platformSectionTitle}>
+                      <div className={`${styles.platformLogoSquare} ${styles.platformLogo_tiktok}`}>
+                        <ExtendedPlatformIcon platform="tiktok" size={14} />
+                      </div>
+                      <span className={styles.platformSectionLabel}>TikTok</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.platformInputsGrid}>
+                    {/* Save to Inbox checkcard */}
+                    <div className={styles.tiktokDraftCard}>
+                      <label className={styles.tiktokDraftLabel}>
+                        <input
+                          type="checkbox"
+                          checked={state.tiktokDraft}
+                          onChange={e => actions.setTiktokDraft(e.target.checked)}
+                          className={styles.tiktokDraftCheckbox}
+                        />
+                        <div className={styles.tiktokDraftMeta}>
+                          <div className={styles.tiktokDraftTitleRow}>
+                            🎬 <span className={styles.tiktokDraftTitleText}>Save to TikTok inbox as draft</span>
+                          </div>
+                          <p className={styles.tiktokDraftDesc}>
+                            Uploads to the creator's TikTok inbox instead of publishing. They finish the caption, add music, and post from TikTok.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Content Input */}
+                    <div className={styles.inputGroup}>
+                      <div className={styles.inputHeaderLabelRow}>
+                        <label className={styles.fieldSubLabel}>{inputLabel}</label>
+                        <span className={styles.counterText}>{currentVal.length}/{charLimit}</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        maxLength={charLimit}
+                        placeholder="Leave blank to use main content..."
+                        value={currentVal}
+                        onChange={e => {
+                          const val = e.target.value
+                          if (hasImages) {
+                            actions.setTiktokPhotoDescription(val)
+                          } else {
+                            actions.setTiktokCustomCaption(val)
+                          }
+                        }}
+                        className={styles.overrideTextarea}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Generic fallback for any other platform (Twitter, LinkedIn, YouTube, Pinterest, etc.)
+            if (platformConfig) {
+              const currentVal = state.captionsByPlatform[platform] || ''
+              return (
+                <div key={platform} className={styles.platformSection}>
+                  <div className={styles.platformSectionHeader}>
+                    <div className={styles.platformSectionTitle}>
+                      <div className={`${styles.platformLogoSquare} ${styles[`platformLogo_${platform}`]}`}>
+                        <ExtendedPlatformIcon platform={platform} size={14} />
+                      </div>
+                      <span className={styles.platformSectionLabel}>{platformConfig.label}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.platformInputsGrid}>
+                    <div className={styles.inputGroup}>
+                      <div className={styles.inputHeaderLabelRow}>
+                        <label className={styles.fieldSubLabel}>custom caption</label>
+                        <span className={styles.counterText}>{currentVal.length}/{platformConfig.maxChars}</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        maxLength={platformConfig.maxChars}
+                        placeholder="Leave blank to use main content..."
+                        value={currentVal}
+                        onChange={e => {
+                          const val = e.target.value
+                          actions.setCaptionsByPlatform(prev => ({
+                            ...prev,
+                            [platform]: val
+                          }))
+                        }}
+                        className={styles.overrideTextarea}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            return null
+          })}
+        </div>
+      )}
     </div>
   )
 }
