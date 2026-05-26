@@ -182,7 +182,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   })
 
-  const [activePlatforms, setActivePlatforms] = useState<Platform[]>(['tiktok'])
+  const [activePlatforms, setActivePlatforms] = useState<Platform[]>([])
   const [activeTab, setActiveTab] = useState<Platform>('tiktok')
   
   // Custom Platform settings & Overrides
@@ -234,7 +234,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setTimeout(() => {
       let nextContent = ''
       let nextCaptions = { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' } as PlatformCaptionMap
-      let initPlatforms: Platform[] = ['tiktok']
+      let initPlatforms: Platform[] = []
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
@@ -300,14 +300,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
       setPublishingTab(editPost?.status === 'draft' ? 'draft' : initSchMode ? 'schedule' : 'now')
-      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : ['tiktok'])
+      setActivePlatforms(initPlatforms.length > 0 ? initPlatforms : [])
       setActiveTab(initPlatforms.length > 0 ? initPlatforms[0] : 'tiktok')
 
       initialSnapshotRef.current = JSON.stringify({
         mainContent: nextContent,
         captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' },
         media: mediaHook.media,
-        activePlatforms: initPlatforms.length > 0 ? initPlatforms : ['tiktok'],
+        activePlatforms: initPlatforms.length > 0 ? initPlatforms : [],
         scheduleMode: initSchMode,
         scheduleTime: initSchTime
       })
@@ -363,7 +363,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowEmoji(false)
     setScheduleMode(false)
     setScheduleTime('')
-    setActivePlatforms(['tiktok'])
+    setActivePlatforms([])
     setActiveTab('tiktok')
     setShowUnsavedDialog(false)
     setMainContent('')
