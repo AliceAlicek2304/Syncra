@@ -76,11 +76,23 @@
   /* Border */
   --clr-border: #e5dfd3;
   --clr-primary-hover: #e04500;
+  --clr-ring: #93c5fd;
 
   /* Border Radius */
   --radius-sm: 6px;
+  --radius-md: 12px;
   --radius-pill: 9999px;
 }
+
+/* ─── Global Utility Classes ─── */
+.text-foreground { color: var(--clr-ink); }
+.text-muted-foreground { color: var(--clr-body-mid); }
+.border-border { border-color: var(--clr-border); }
+.hover\:border-ring:hover { border-color: var(--clr-ring); }
+.bg-background { background: var(--clr-canvas); }
+.bg-muted { background: var(--clr-canvas-soft); }
+.bg-card { background: var(--clr-canvas-soft); }
+.hover\:bg-muted:hover { background: var(--clr-canvas-soft); }
 
 html {
   scroll-behavior: smooth;
