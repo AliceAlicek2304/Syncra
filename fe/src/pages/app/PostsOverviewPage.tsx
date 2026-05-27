@@ -152,6 +152,7 @@ export default function PostsOverviewPage() {
   
   const queryClient = useQueryClient()
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
+  const [selectedPostDetails, setSelectedPostDetails] = useState<Post | null>(null)
   
   // ─── Filter & View States ───
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
@@ -572,6 +573,8 @@ export default function PostsOverviewPage() {
                       key={p.id} 
                       className={`${styles.calendarPostBadge} ${p.status === 'published' ? styles.calPublished : styles.calScheduled}`}
                       title={p.content || p.title}
+                      onClick={(e) => { e.stopPropagation(); setSelectedPostDetails(p); }}
+                      style={{ cursor: 'pointer' }}
                     >
                       <span className={styles.calPostTitle}>{p.title}</span>
                     </div>
@@ -919,7 +922,7 @@ export default function PostsOverviewPage() {
                 const platform = post.platforms?.[0] || 'facebook'
                 const isChecked = selectedPostIds.includes(post.id)
                 return (
-                  <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`}>
+                  <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`} onClick={() => setSelectedPostDetails(post)} style={{ cursor: 'pointer' }}>
                     {/* Hover check button */}
                     <div className={`${styles.checkboxContainer} ${isChecked || selectedPostIds.length > 0 ? styles.checkboxContainerActive : ''}`}>
                       <button 
@@ -965,7 +968,7 @@ export default function PostsOverviewPage() {
                       </div>
 
                       {post.mediaItems?.[0] && (
-                        <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media">
+                        <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media" onClick={(e) => { e.stopPropagation(); setSelectedPostDetails(post); }}>
                           <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
                         </button>
                       )}
@@ -975,7 +978,7 @@ export default function PostsOverviewPage() {
                       <div className={styles.statusBadgeWrapper}>
                         <StatusBadge status={post.status} />
                       </div>
-                      <button className={styles.moreOptionsBtn} aria-label="More options">
+                      <button className={styles.moreOptionsBtn} aria-label="More options" onClick={(e) => e.stopPropagation()}>
                         <MoreVertical size={14} />
                       </button>
                     </div>
@@ -1024,8 +1027,8 @@ export default function PostsOverviewPage() {
                     const platform = post.platforms?.[0] || 'facebook'
                     const isChecked = selectedPostIds.includes(post.id)
                     return (
-                      <tr key={post.id} className={isChecked ? styles.selectedRow : ''}>
-                        <td>
+                      <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => setSelectedPostDetails(post)} style={{ cursor: 'pointer' }}>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
                             className={styles.checkbox} 
@@ -1163,6 +1166,140 @@ export default function PostsOverviewPage() {
                 className={styles.modalConfirmBtn}
               >
                 Import Posts
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedPostDetails && (
+        <div className={styles.editorBackdrop} style={{ zIndex: 10000 }} onClick={() => setSelectedPostDetails(null)}>
+          <div 
+            className={styles.editorModal} 
+            style={{ 
+              maxWidth: 550, 
+              padding: '24px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '20px', 
+              background: 'var(--clr-canvas)', 
+              borderRadius: '12px', 
+              border: '1px solid var(--clr-border)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-ink)', fontFamily: 'var(--font-body)', margin: 0 }}>
+                Post Details
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setSelectedPostDetails(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--clr-body-mid)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
+              
+              {/* Platforms & Status row */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Platform:
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--clr-canvas-soft)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--clr-border)' }}>
+                  <PlatformIcon platform={selectedPostDetails.platforms?.[0] || 'facebook'} size={14} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-ink)' }}>
+                    {(selectedPostDetails.platforms?.[0] || 'facebook').toUpperCase()}
+                  </span>
+                </span>
+                
+                <span style={{ marginLeft: 'auto' }}>
+                  <StatusBadge status={selectedPostDetails.status} />
+                </span>
+              </div>
+
+              {/* Caption Card */}
+              <div style={{ background: 'var(--clr-canvas-soft)', border: '1px solid var(--clr-border)', borderRadius: '8px', padding: '14px', boxSizing: 'border-box' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase', marginBottom: '6px' }}>
+                  caption
+                </div>
+                <p style={{ fontSize: 14, color: 'var(--clr-ink)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-body)' }}>
+                  {selectedPostDetails.content || selectedPostDetails.title || 'No caption text'}
+                </p>
+              </div>
+
+              {/* Media Thumbnails if any */}
+              {selectedPostDetails.mediaItems && selectedPostDetails.mediaItems.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                    media
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
+                    {selectedPostDetails.mediaItems.map((item, idx) => (
+                      <div key={idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--clr-border)', background: 'var(--clr-canvas-soft)' }}>
+                        <img 
+                          src={item.url} 
+                          alt={item.filename || 'media'} 
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', borderTop: '1px solid var(--clr-border)', paddingTop: '14px', marginTop: '4px' }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                    schedule date
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
+                    {formatPostDate(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                    author
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
+                    {user?.displayName || 'You'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                    post id
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--clr-body-mid)', marginTop: '2px', fontFamily: 'monospace' }}>
+                    {selectedPostDetails.id}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                    workspace
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
+                    {activeWorkspace?.name || 'Default Workspace'}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Buttons */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid var(--clr-border)', paddingTop: '16px', marginTop: '4px' }}>
+              <button
+                type="button"
+                className={styles.pageBtn}
+                style={{ fontSize: 13, padding: '8px 16px', margin: 0 }}
+                onClick={() => setSelectedPostDetails(null)}
+              >
+                Close
               </button>
             </div>
           </div>
