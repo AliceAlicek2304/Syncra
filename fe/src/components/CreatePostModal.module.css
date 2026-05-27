@@ -515,12 +515,164 @@
   font-style: italic;
 }
 
+/* ── Platform Grid (Shadcn-style) ── */
+.platformGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .platformGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .platformGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.platformButtonCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--clr-border);
+  transition: all 0.2s ease;
+  text-align: left;
+  position: relative;
+  background: var(--clr-canvas);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--clr-ink);
+}
+
+.platformCardAvatar {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.platformAvatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--clr-border);
+}
+
+.platformAvatarFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--clr-border);
+  color: #fff;
+}
+
+.platformAvatarBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.platformCardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.platformCardName {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--clr-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platformCardUsername {
+  font-size: 12px;
+  color: var(--clr-body-mid);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platformFallbackIcon {
+  transform: scale(0.75);
+  line-height: 0;
+}
+
+.platformBadgeIcon {
+  transform: scale(0.45);
+  line-height: 0;
+}
+
+.platformButtonCard:hover {
+  border-color: var(--clr-ring);
+}
+
+.platformButtonCardActive {
+  border-color: #3b82f6;
+}
+
+.platformButtonCardError {
+  border-color: #f87171;
+  background: #fef2f2;
+}
+
+.platformButtonCardError:hover {
+  background: #fee2e2;
+}
+
+.checkedBadge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--clr-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.errorBadge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 /* Publishing Tabs */
 .publishingTabs {
   display: flex;
-  background: #e5dfd3;
+  background: var(--clr-border);
   padding: 3px;
-  border-radius: 20px;
+  border-radius: 12px;
   gap: 2px;
 }
 
@@ -528,11 +680,11 @@
   flex: 1;
   border: none;
   background: transparent;
-  color: var(--clr-body);
+  color: var(--clr-body-mid);
   font-weight: 700;
-  font-size: 12px;
-  padding: 6px 8px;
-  border-radius: 16px;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   text-transform: capitalize;
@@ -546,6 +698,18 @@
   background: var(--clr-canvas);
   color: var(--clr-ink);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.draftNoticeCallout {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--clr-body-mid);
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .scheduleInputsRow {
@@ -563,14 +727,17 @@
 .datetimeInput,
 .timezoneSelect {
   border: 1px solid var(--clr-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
   background: var(--clr-canvas);
   color: var(--clr-ink);
   font-family: inherit;
   font-size: 13px;
   outline: none;
   cursor: pointer;
+  height: 34px;
+  line-height: 1.4;
+  box-sizing: border-box;
 }
 
 .datetimeInput:focus,
