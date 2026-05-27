@@ -111,7 +111,10 @@ public class CreateZernioPostCommandTests : IDisposable
             "Test post content for Zernio",
             new List<Guid> { account1.Id, account2.Id },
             ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            PublishNow: false);
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -152,7 +155,10 @@ public class CreateZernioPostCommandTests : IDisposable
             "Content for immediate publish",
             new List<Guid> { account1.Id },
             ScheduledAtUtc: null,
-            PublishNow: true);
+            PublishNow: true,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -176,7 +182,10 @@ public class CreateZernioPostCommandTests : IDisposable
             "Content",
             new List<Guid> { accountFromOtherWorkspace.Id },
             ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            PublishNow: false);
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
@@ -198,7 +207,10 @@ public class CreateZernioPostCommandTests : IDisposable
             "Content",
             new List<Guid> { inactiveAccount.Id },
             ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            PublishNow: false);
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
@@ -218,12 +230,52 @@ public class CreateZernioPostCommandTests : IDisposable
             "Content",
             new List<Guid>(),
             ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
-            PublishNow: false);
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             _handler.Handle(command, CancellationToken.None));
 
         Assert.Equal("invalid_account", exception.Code);
+    }
+
+    [Fact]
+    public async Task Handler_DraftNoSocialAccounts_Succeeds()
+    {
+        // Arrange
+        var profile = ZernioProfile.Create(
+            _workspaceId,
+            "zernio_profile_1",
+            "Test Profile",
+            "all");
+        _db.ZernioProfiles.Add(profile);
+        await _db.SaveChangesAsync();
+
+        _zernioClientMock
+            .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ZernioCreatePostResult("zernio_post_draft", "draft", 0));
+
+        var command = new CreateZernioPostCommand(
+            _workspaceId,
+            _userId,
+            "Draft Title",
+            "Draft Content",
+            null,
+            ScheduledAtUtc: null,
+            PublishNow: false,
+            IsDraft: true,
+            MediaItems: null,
+            PlatformContents: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("zernio_post_draft", result.ZernioPostId);
+        Assert.Equal(0, result.ZernioTargetCount);
     }
 }

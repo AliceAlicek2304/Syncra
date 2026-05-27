@@ -21,10 +21,12 @@ public sealed class ZernioClient : IZernioClient
     private readonly MessagesApi _messagesApi;
     private readonly CommentsApi _commentsApi;
     private readonly ReviewsApi _reviewsApi;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ZernioClient> _logger;
 
     public ZernioClient(
         IOptions<ZernioOptions> options,
+        IHttpClientFactory httpClientFactory,
         ILogger<ZernioClient> logger)
     {
         var config = new Configuration
@@ -40,6 +42,7 @@ public sealed class ZernioClient : IZernioClient
         _messagesApi = new MessagesApi(config);
         _commentsApi = new CommentsApi(config);
         _reviewsApi = new ReviewsApi(config);
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -96,7 +99,8 @@ public sealed class ZernioClient : IZernioClient
                     a.Id,
                     a.Platform.ToString(),
                     a.DisplayName,
-                    a.IsActive))
+                    a.IsActive,
+                    a.ProfilePicture))
                 .ToList();
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
@@ -389,7 +393,7 @@ public sealed class ZernioClient : IZernioClient
 
             return normalizedPlatform switch
             {
-                "facebook" => await SelectFacebookPageAsync(profileId, tempToken, selectedId, cancellationToken),
+                "facebook" => await SelectFacebookPageAsync(profileId, tempToken, selectedId, selectedName, cancellationToken),
                 "linkedin" => await SelectLinkedInOrganizationAsync(profileId, tempToken, selectedId, cancellationToken),
                 "googlebusiness" => await SelectGoogleBusinessLocationAsync(profileId, tempToken, selectedId, cancellationToken),
                 "pinterest" => await SelectPinterestBoardAsync(profileId, tempToken, selectedId, selectedName, cancellationToken),
@@ -429,21 +433,37 @@ public sealed class ZernioClient : IZernioClient
         {
             var sdkRequest = new CreatePostRequest
             {
+                Title = request.Title,
                 Content = request.Content,
                 PublishNow = request.PublishNow,
+                IsDraft = request.IsDraft ?? false,
                 Platforms = request.Platforms
-                    .Select(p => new CreatePostRequestPlatformsInner
+                    .Select(p => 
                     {
-                        Platform = p.Platform,
-                        AccountId = p.ZernioAccountId
+                        var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
+                        return new CreatePostRequestPlatformsInner
+                        {
+                            Platform = p.Platform,
+                            AccountId = p.ZernioAccountId,
+                            CustomContent = platformContent?.Caption,
+                            PlatformSpecificData = null
+                        };
                     })
-                    .ToList()
+                    .ToList(),
+                MediaItems = request.MediaItems?.Select(m => new MediaItem(
+                    url: m.Url,
+                    type: Enum.TryParse<MediaItem.TypeEnum>(m.Type, true, out var parsedType) ? parsedType : default,
+                    filename: m.Filename,
+                    mimeType: m.MimeType
+                )).ToList()
             };
 
             if (!request.PublishNow && request.ScheduledForUtc.HasValue)
             {
                 sdkRequest.ScheduledFor = request.ScheduledForUtc.Value;
             }
+
+            _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(sdkRequest));
 
             var response = await _postsApi.CreatePostAsync(sdkRequest, null, cancellationToken);
             var createdPost = response.Post;
@@ -464,8 +484,11 @@ public sealed class ZernioClient : IZernioClient
         }
         catch (ApiException ex)
         {
-            _logger.LogError(ex, "Zernio API error creating post");
-            throw new DomainException("zernio_create_post_error", "Failed to create Zernio post", ex);
+            var errorContent = ex.GetType().GetProperty("Response")?.GetValue(ex) as string ?? 
+                               ex.GetType().GetProperty("Content")?.GetValue(ex) as string ?? 
+                               ex.Message;
+            _logger.LogError(ex, "Zernio API error creating post. ErrorCode: {ErrorCode}, Content: {Content}", ex.ErrorCode, errorContent);
+            throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {errorContent}", ex);
         }
     }
 
@@ -518,7 +541,6 @@ public sealed class ZernioClient : IZernioClient
     }
 
     public async Task<ZernioPostListResponseDto> ListPostsAsync(
-        string profileId,
         int? page = null,
         int? limit = null,
         string? status = null,
@@ -526,6 +548,8 @@ public sealed class ZernioClient : IZernioClient
         string? search = null,
         string? sortBy = null,
         string? accountId = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -538,10 +562,11 @@ public sealed class ZernioClient : IZernioClient
                 ["limit"] = limit?.ToString(),
                 ["status"] = status,
                 ["platform"] = platform,
-                ["profileId"] = profileId,
                 ["search"] = search,
                 ["sortBy"] = sortBy ?? "scheduled-desc",
-                ["accountId"] = accountId
+                ["accountId"] = accountId,
+                ["dateFrom"] = dateFrom?.ToString("o"),
+                ["dateTo"] = dateTo?.ToString("o")
             };
 
             var query = string.Join("&",
@@ -551,7 +576,8 @@ public sealed class ZernioClient : IZernioClient
             var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/posts?{query}");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
 
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
             var httpResponse = await httpClient.SendAsync(request, cancellationToken);
 
             httpResponse.EnsureSuccessStatusCode();
@@ -601,16 +627,15 @@ public sealed class ZernioClient : IZernioClient
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
         {
-            _logger.LogWarning(ex, "Zernio billing gate triggered listing posts for profile {ProfileId}", profileId);
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing posts");
             throw new ZernioBillingRequiredException(
                 "A paid Zernio plan is required to list posts.",
                 reason: "post_list_restricted",
-                dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { profileId });
+                dashboardUrl: "https://zernio.com/dashboard/billing");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Zernio API error listing posts for profile {ProfileId}", profileId);
+            _logger.LogError(ex, "Zernio API error listing posts");
             throw new DomainException("zernio_list_posts_error", "Failed to list posts from Zernio", ex);
         }
     }
@@ -1498,16 +1523,16 @@ public sealed class ZernioClient : IZernioClient
     // ── Private platform-specific select helpers ─────────────────────────────
 
     private async Task<ZernioSelectResultDto> SelectFacebookPageAsync(
-        string profileId, string tempToken, string pageId, CancellationToken cancellationToken)
+        string profileId, string tempToken, string pageId, string? pageName, CancellationToken cancellationToken)
     {
         var request = new SelectFacebookPageRequest(
             profileId: profileId,
             pageId: pageId,
             tempToken: tempToken,
             userProfile: new SelectFacebookPageRequestUserProfile(
-                id: "dummy",
-                name: "dummy",
-                profilePicture: "https://dummy.com"
+                id: pageId,
+                name: pageName ?? pageId,
+                profilePicture: ""
             )
         );
         var response = await _connectApi.SelectFacebookPageAsync(request, cancellationToken);
