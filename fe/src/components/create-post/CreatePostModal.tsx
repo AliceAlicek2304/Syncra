@@ -42,24 +42,24 @@ export default function CreatePostModal(props: CreatePostModalProps) {
             {/* Unsaved Changes Dialog */}
             {state.showUnsavedDialog && (
               <div className={styles.editorBackdrop} style={{ zIndex: 10000 }}>
-                <div className={`glass-card ${styles.editorModal}`} style={{ maxWidth: 360, padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className={styles.editorModal} style={{ maxWidth: 360, padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--clr-canvas)', borderRadius: '12px', border: '1px solid var(--clr-border)' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>Unsaved Changes</h3>
-                    <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-ink)', marginBottom: 8, fontFamily: 'var(--font-body)' }}>Unsaved Changes</h3>
+                    <p style={{ fontSize: 14, color: 'var(--clr-body)', lineHeight: 1.5, fontFamily: 'var(--font-body)' }}>
                       You have unsaved changes. Do you want to save this draft before closing?
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                     <button
-                      className="btn-secondary"
-                      style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
+                      className={styles.cancelBtn}
+                      style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => actions.setShowUnsavedDialog(false)}
                     >
                       Cancel
                     </button>
                     <button
-                      className="btn-secondary"
-                      style={{ fontSize: 13, padding: '8px 16px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', flex: 1 }}
+                      className={styles.cancelBtn}
+                      style={{ fontSize: 13, padding: '8px 16px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', flex: 1, borderRadius: '8px', textTransform: 'none', background: 'transparent' }}
                       onClick={() => {
                         actions.setShowUnsavedDialog(false)
                         localStorage.removeItem('syncra_draft')
@@ -72,8 +72,8 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       transition={{ duration: 0.1 }}
-                      className="btn-primary"
-                      style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
+                      className={styles.submitBtn}
+                      style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => {
                         if (actions.handleDraft()) {
                           actions.setShowUnsavedDialog(false)
@@ -92,12 +92,12 @@ export default function CreatePostModal(props: CreatePostModalProps) {
             {/* Publish/Schedule Confirmation Dialog */}
             {state.showPublishConfirmDialog && (
               <div className={styles.editorBackdrop} style={{ zIndex: 10000 }}>
-                <div className={`glass-card ${styles.editorModal}`} style={{ maxWidth: 400, padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className={styles.editorModal} style={{ maxWidth: 400, padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--clr-canvas)', borderRadius: '12px', border: '1px solid var(--clr-border)' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-ink)', marginBottom: 8, fontFamily: 'var(--font-body)' }}>
                       {state.scheduleMode ? 'Schedule Post' : 'Publish Post'}
                     </h3>
-                    <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 14, color: 'var(--clr-body)', lineHeight: 1.5, fontFamily: 'var(--font-body)' }}>
                       {state.scheduleMode
                         ? `Your post will be scheduled for ${state.scheduleTime ? new Date(state.scheduleTime).toLocaleDateString() : 'today'}. Are you sure?`
                         : 'Your post will be published immediately. Are you sure?'
@@ -106,8 +106,8 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                   </div>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                     <button
-                      className="btn-secondary"
-                      style={{ fontSize: 13, padding: '8px 16px', flex: 1 }}
+                      className={styles.cancelBtn}
+                      style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => actions.setShowPublishConfirmDialog(false)}
                     >
                       Cancel
@@ -115,8 +115,8 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       transition={{ duration: 0.1 }}
-                      className="btn-primary"
-                      style={{ fontSize: 13, padding: '8px 16px', flex: 1, background: state.scheduleMode ? 'var(--gradient-brand)' : '#22c55e' }}
+                      className={styles.submitBtn}
+                      style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => actions.confirmSchedule()}
                     >
                       {state.scheduleMode ? 'Schedule' : 'Publish'}

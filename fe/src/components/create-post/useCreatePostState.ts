@@ -423,9 +423,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
+    const platformsToSave = derivedActivePlatforms.length > 0 ? derivedActivePlatforms : activePlatforms
 
     if (isEditMode && editPost) {
-      const platform = activePlatforms[0] || editPost.platform
+      const platform = platformsToSave[0] || editPost.platform
       const cap = getResolvedContentForPlatform(platform)
       const hashtags = cap.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
 
@@ -444,7 +445,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       })
       onToast?.({ message: 'Draft updated successfully.', type: 'success' })
     } else {
-      activePlatforms.forEach(platform => {
+      platformsToSave.forEach(platform => {
         const platformCaption = getResolvedContentForPlatform(platform)
         const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
 
