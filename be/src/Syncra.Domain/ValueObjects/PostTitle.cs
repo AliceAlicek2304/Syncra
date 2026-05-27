@@ -14,7 +14,7 @@ public sealed class PostTitle : IEquatable<PostTitle>
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ValidationException("InvalidPostTitle", "Post title cannot be empty.");
+            return Empty;
         }
 
         var trimmed = value.Trim();

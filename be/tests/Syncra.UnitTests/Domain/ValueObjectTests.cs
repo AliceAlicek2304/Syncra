@@ -23,9 +23,11 @@ public class ValueObjectTests
     }
 
     [Fact]
-    public void PostTitle_Create_ShouldThrow_WhenEmpty()
+    public void PostTitle_Create_ShouldReturnEmpty_WhenEmpty()
     {
-        Assert.Throws<ValidationException>(() => PostTitle.Create(""));
+        var title = PostTitle.Create("");
+        Assert.Equal(string.Empty, title.Value);
+        Assert.True(title.IsEmpty);
     }
 
     [Fact]

@@ -16,20 +16,16 @@ public sealed class CreateZernioPostCommandValidator : AbstractValidator<CreateZ
             .WithMessage("User ID is required.");
 
         RuleFor(x => x.Title)
-            .NotEmpty()
-            .WithMessage("Title is required.")
             .MaximumLength(PostTitle.MaxLength)
+            .When(x => !string.IsNullOrEmpty(x.Title))
             .WithMessage($"Title must not exceed {PostTitle.MaxLength} characters.");
-
-        RuleFor(x => x.Content)
-            .NotEmpty()
-            .WithMessage("Content is required.");
 
         RuleFor(x => x.SocialAccountIds)
             .NotNull()
             .WithMessage("Social account IDs are required.")
             .Must(ids => ids.Count > 0)
-            .WithMessage("At least one social account is required.");
+            .When(x => x.PublishNow || x.ScheduledAtUtc.HasValue)
+            .WithMessage("At least one social account is required for scheduled or immediate publishing.");
 
         RuleFor(x => x.ScheduledAtUtc)
             .Must(BeFutureWhenSpecified)

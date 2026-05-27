@@ -20,7 +20,8 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
     refetchInterval: 30_000,
     queryFn: async (): Promise<NotificationItem[]> => {
       if (!workspaceId) return []
-      return notificationsApi.listNotifications(workspaceId, { take: 50 })
+      const result = await notificationsApi.listNotifications(workspaceId, { pageSize: 50 })
+      return result.items
     },
   })
 

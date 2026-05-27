@@ -32,19 +32,27 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
 
     public async Task<PostDto> Handle(CreateZernioPostCommand request, CancellationToken cancellationToken)
     {
-        if (request.SocialAccountIds.Count == 0)
+        var socialAccountIds = request.SocialAccountIds ?? Array.Empty<Guid>();
+        if (socialAccountIds.Count == 0)
         {
-            throw new DomainException("invalid_account", "At least one social account is required.");
+            if (request.PublishNow || request.ScheduledAtUtc.HasValue)
+            {
+                throw new DomainException("invalid_account", "At least one social account is required for scheduled or immediate publishing.");
+            }
         }
 
-        var socialAccounts = await _socialAccountRepository.GetByIdsAsync(request.SocialAccountIds);
-        var activeAccounts = socialAccounts
-            .Where(a => a.WorkspaceId == request.WorkspaceId && a.IsActive)
-            .ToList();
-
-        if (activeAccounts.Count != request.SocialAccountIds.Count)
+        var activeAccounts = new List<SocialAccount>();
+        if (socialAccountIds.Count > 0)
         {
-            throw new DomainException("invalid_account", "One or more accounts are not connected to this workspace.");
+            var socialAccounts = await _socialAccountRepository.GetByIdsAsync(socialAccountIds);
+            activeAccounts = socialAccounts
+                .Where(a => a.WorkspaceId == request.WorkspaceId && a.IsActive)
+                .ToList();
+
+            if (activeAccounts.Count != socialAccountIds.Count)
+            {
+                throw new DomainException("invalid_account", "One or more accounts are not connected to this workspace.");
+            }
         }
 
         var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
@@ -59,10 +67,14 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             .ToList();
 
         var zernioRequest = new ZernioCreatePostRequest(
-            request.Content,
+            request.Title,
+            request.Content ?? string.Empty,
             platforms,
             request.ScheduledAtUtc,
-            request.PublishNow);
+            request.PublishNow,
+            request.IsDraft,
+            request.MediaItems,
+            request.PlatformContents);
 
         // Send to Zernio API
         var zernioResult = await _zernioClient.CreatePostAsync(zernioRequest, cancellationToken);
@@ -71,12 +83,12 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         var post = Post.Create(
             request.WorkspaceId,
             request.UserId,
-            request.Title,
-            request.Content,
+            request.Title ?? string.Empty,
+            request.Content ?? string.Empty,
             request.ScheduledAtUtc,
             integrationId: null);
 
-        post.AssignZernioPost(zernioResult.ZernioPostId, request.SocialAccountIds.Count);
+        post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
 
         // If publishing immediately, transition to Publishing status
         if (request.PublishNow)

@@ -6,7 +6,6 @@ import { useWorkspace } from '../../context/WorkspaceContext'
 import { useToast } from '../../context/ToastContext'
 import { mediaApi } from '../../api/media'
 import type { MediaAsset } from '../../api/media'
-import { useR2Upload } from '../../hooks/useR2Upload'
 import Skeleton from '../../components/Skeleton'
 import { WidgetErrorFallback } from '../../components/WidgetErrorFallback'
 import styles from './MediaLibraryPage.module.css'
@@ -28,13 +27,13 @@ interface MediaCardProps {
 }
 
 function MediaCard({ asset, onDelete, uploadProgress }: MediaCardProps) {
-  const isImage = asset.contentType.startsWith('image/')
+  const isImage = asset.mimeType.startsWith('image/')
   const isUploading = uploadProgress !== undefined && uploadProgress < 100
 
   return (
     <div className={`glass-card ${styles.mediaCard}`}>
       {isImage ? (
-        <img src={asset.publicUrl} alt={asset.filename} className={styles.cardImage} />
+        <img src={asset.fileUrl} alt={asset.fileName} className={styles.cardImage} />
       ) : (
         <div className={styles.cardDocIcon}>
           <FileText size={36} />
@@ -53,7 +52,7 @@ function MediaCard({ asset, onDelete, uploadProgress }: MediaCardProps) {
 
       {/* Hover overlay */}
       <div className={styles.cardOverlay}>
-        <p className={styles.cardFilename}>{asset.filename}</p>
+        <p className={styles.cardFilename}>{asset.fileName}</p>
         <p className={styles.cardSize}>
           {(asset.sizeBytes / 1024).toFixed(0)} KB
         </p>
@@ -74,8 +73,9 @@ export default function MediaLibraryPage() {
   const { activeWorkspace } = useWorkspace()
   const workspaceId = activeWorkspace?.id ?? ''
   const queryClient = useQueryClient()
-  const { error: toastError } = useToast()
-  const { upload: uploadToR2, progress: uploadProgress } = useR2Upload()
+  const { error: toastError, success: toastSuccess } = useToast()
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<MediaType>('all')
@@ -101,17 +101,32 @@ export default function MediaLibraryPage() {
   const handleUpload = useCallback(async (files: FileList | null) => {
     if (!files || !workspaceId) return
     const fileArray = Array.from(files)
+    setIsUploading(true)
+    
+    // Initialize progress for each file to 0
+    const initialProgress: Record<string, number> = {}
+    fileArray.forEach(file => {
+      initialProgress[file.name] = 0
+    })
+    setUploadProgress(initialProgress)
+
     await Promise.allSettled(
       fileArray.map(async (file) => {
         try {
-          await uploadToR2(file, workspaceId, `${Date.now()}-${file.name}`)
-          queryClient.invalidateQueries({ queryKey: ['media', workspaceId] })
+          await mediaApi.uploadMedia(workspaceId, file, (percent) => {
+            setUploadProgress(prev => ({ ...prev, [file.name]: percent }))
+          })
         } catch {
-          toastError('Upload failed. Check your connection and try again.')
+          toastError(`Upload failed for ${file.name}. Check your connection and try again.`)
         }
       })
     )
-  }, [workspaceId, uploadToR2, queryClient, toastError])
+    
+    setIsUploading(false)
+    setUploadProgress({})
+    toastSuccess('Upload completed.')
+    queryClient.invalidateQueries({ queryKey: ['media', workspaceId] })
+  }, [workspaceId, queryClient, toastError, toastSuccess])
 
   const assetList = Array.isArray(assets) ? assets : []
   const isEmpty = !isLoading && assetList.length === 0
@@ -161,9 +176,10 @@ export default function MediaLibraryPage() {
           <button
             className="btn-primary"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
           >
             <Upload size={15} />
-            Upload Files
+            {isUploading ? 'Uploading...' : 'Upload Files'}
           </button>
           <input
             ref={fileInputRef}

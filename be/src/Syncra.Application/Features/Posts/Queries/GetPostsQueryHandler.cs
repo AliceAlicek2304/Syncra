@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using MediatR;
+using Syncra.Application.DTOs;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
@@ -8,7 +9,7 @@ using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Posts.Queries;
 
-public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, IReadOnlyList<PostDto>>
+public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, PaginatedResult<PostDto>>
 {
     private readonly IZernioClient _zernioClient;
     private readonly IZernioProfileRepository _zernioProfileRepository;
@@ -21,24 +22,32 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, IReadO
         _zernioProfileRepository = zernioProfileRepository;
     }
 
-    public async Task<IReadOnlyList<PostDto>> Handle(GetPostsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<PostDto>> Handle(GetPostsQuery request, CancellationToken cancellationToken)
     {
         var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
         if (profile is null)
-            return Array.Empty<PostDto>();
+            return new PaginatedResult<PostDto>([], 1, request.PageSize, 0, 0);
 
         var page = request.Page > 0 ? request.Page : 1;
         var pageSize = request.PageSize > 0 && request.PageSize <= 100 ? request.PageSize : 20;
 
         var result = await _zernioClient.ListPostsAsync(
-            profile.ZernioProfileId,
             page: page,
             limit: pageSize,
             status: request.Status?.ToLowerInvariant(),
             sortBy: "scheduled-desc",
+            dateFrom: request.ScheduledFromUtc,
+            dateTo: request.ScheduledToUtc,
             cancellationToken: cancellationToken);
 
-        return result.Posts.Select(MapToDto).ToList();
+        var items = result.Posts.Select(MapToDto).ToList();
+
+        return new PaginatedResult<PostDto>(
+            Items: items,
+            Page: result.Page,
+            PageSize: result.Limit,
+            TotalItems: result.Total,
+            TotalPages: result.Pages);
     }
 
     private static PostDto MapToDto(ZernioPostListItemDto zp)

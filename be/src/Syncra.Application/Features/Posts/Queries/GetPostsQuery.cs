@@ -1,4 +1,5 @@
 using MediatR;
+using Syncra.Application.DTOs;
 using Syncra.Application.DTOs.Posts;
 
 namespace Syncra.Application.Features.Posts.Queries;
@@ -10,4 +11,4 @@ public record GetPostsQuery(
     DateTime? ScheduledToUtc = null,
     int Page = 1,
     int PageSize = 20
-) : IRequest<IReadOnlyList<PostDto>>;
+) : IRequest<PaginatedResult<PostDto>>;

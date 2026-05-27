@@ -1,4 +1,5 @@
 import api from '../lib/axios';
+import type { PagedResult } from './types';
 
 export interface PlatformContent {
   platform: string;
@@ -72,11 +73,14 @@ export interface UpdatePostRequest {
 }
 
 export interface CreateZernioPostRequest {
-  title: string;
-  content: string;
-  socialAccountIds: string[];
+  title?: string;
+  content?: string;
+  socialAccountIds?: string[];
   scheduledAtUtc?: string;
   publishNow: boolean;
+  isDraft?: boolean;
+  mediaItems?: PostMediaItem[];
+  platformContents?: PlatformContent[];
 }
 
 export interface ScheduledPostsCountResponse {
@@ -89,8 +93,8 @@ export const postsApi = {
     return response.data;
   },
 
-  getPosts: async (workspaceId: string, params?: GetPostsParams): Promise<Post[]> => {
-    const response = await api.get<Post[]>(`workspaces/${workspaceId}/posts`, { params });
+  getPosts: async (workspaceId: string, params?: GetPostsParams): Promise<PagedResult<Post>> => {
+    const response = await api.get<PagedResult<Post>>(`workspaces/${workspaceId}/posts`, { params });
     return response.data;
   },
 

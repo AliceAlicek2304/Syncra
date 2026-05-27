@@ -9,7 +9,9 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
     <div className={styles.header}>
       <div className={styles.headerLeft}>
         <h2 className={styles.headerTitle}>
-          {state.isEditMode ? 'Edit Post' : 'Create Post'}
+          {state.isEditMode 
+            ? (state.editPost?.status === 'scheduled' ? 'Edit Scheduled Post' : state.editPost?.status === 'draft' ? 'Edit Draft' : 'Edit Post') 
+            : 'Create Post'}
         </h2>
         <p className={styles.headerSubtitle}>
           {state.isEditMode ? 'edit & update content' : 'create & publish content'}

@@ -31,7 +31,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
     { id: 'trends', label: 'Trend Radar', icon: <TrendingUp size={18} />, action: () => navigate('/app/trends'), category: 'Navigation' },
     { id: 'calendar', label: 'Content Calendar', icon: <CalendarDays size={18} />, action: () => navigate('/app/calendar'), category: 'Navigation' },
     { id: 'analytics', label: 'Analytics Insights', icon: <BarChart3 size={18} />, action: () => navigate('/app/analytics'), category: 'Navigation' },
-    { id: 'settings', label: 'Settings', icon: <Settings size={18} />, action: () => navigate('/app/settings'), category: 'Navigation' },
+    { id: 'settings', label: 'Connections', icon: <Plug size={18} />, action: () => navigate('/app/connections'), category: 'Navigation' },
     { id: 'new-post', label: 'Create New Post', icon: <PlusSquare size={18} />, action: () => onNewPost(), category: 'Actions', shortcut: 'N' },
   ]
 

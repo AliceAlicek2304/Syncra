@@ -1,4 +1,5 @@
 import api from '../lib/axios';
+import type { PagedResult } from './types';
 
 export interface NotificationItem {
   id: string;
@@ -14,15 +15,16 @@ export interface NotificationItem {
 
 export interface NotificationListParams {
   unreadOnly?: boolean;
-  take?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export const notificationsApi = {
   listNotifications: async (
     workspaceId: string,
     params?: NotificationListParams
-  ): Promise<NotificationItem[]> => {
-    const response = await api.get<NotificationItem[]>(`workspaces/${workspaceId}/notifications`, {
+  ): Promise<PagedResult<NotificationItem>> => {
+    const response = await api.get<PagedResult<NotificationItem>>(`workspaces/${workspaceId}/notifications`, {
       params,
     });
 

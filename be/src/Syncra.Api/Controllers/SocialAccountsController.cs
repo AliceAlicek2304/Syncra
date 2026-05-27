@@ -44,10 +44,14 @@ public sealed class SocialAccountsController : ControllerBase
     // ── GET /api/v1/social-accounts ──────────────────────────────────────────
 
     /// <summary>
-    /// Returns all active social accounts for the current workspace.
+    /// Returns active social accounts for the current workspace, paged.
+    /// Syncs profilePicture from Zernio on each call so avatars stay current for all platforms.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetSocialAccounts(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSocialAccounts(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
         if (workspaceId is null)
@@ -55,9 +59,65 @@ public sealed class SocialAccountsController : ControllerBase
             return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
         }
 
-        var accounts = await _db.SocialAccounts
+        var safePage = Math.Max(1, page);
+        var safePageSize = Math.Clamp(pageSize, 1, 200);
+
+        // Sync profilePicture from Zernio so avatars are always up-to-date
+        var zernioProfile = await _db.ZernioProfiles
             .AsNoTracking()
-            .Where(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive)
+            .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+
+        if (zernioProfile is not null)
+        {
+            try
+            {
+                var zernioAccounts = await _zernioClient.ListAccountsAsync(
+                    zernioProfile.ZernioProfileId,
+                    cancellationToken);
+
+                var pictureMap = zernioAccounts
+                    .Where(a => !string.IsNullOrEmpty(a.ProfilePicture))
+                    .ToDictionary(a => a.Id, a => a.ProfilePicture!);
+
+                if (pictureMap.Count > 0)
+                {
+                    var accountsToUpdate = await _db.SocialAccounts
+                        .Where(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive)
+                        .ToListAsync(cancellationToken);
+
+                    var anyUpdated = false;
+                    foreach (var acc in accountsToUpdate)
+                    {
+                        if (pictureMap.TryGetValue(acc.ExternalAccountId, out var pic) && acc.AvatarUrl != pic)
+                        {
+                            acc.Update(acc.DisplayName, pic);
+                            anyUpdated = true;
+                        }
+                    }
+
+                    if (anyUpdated)
+                        await _db.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to sync profilePicture from Zernio for workspace {WorkspaceId} — returning local data",
+                    workspaceId.Value);
+            }
+        }
+
+        var baseQuery = _db.SocialAccounts
+            .AsNoTracking()
+            .Where(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive);
+
+        var totalItems = await baseQuery.CountAsync(cancellationToken);
+        var totalPages = safePageSize > 0 ? (int)Math.Ceiling((double)totalItems / safePageSize) : 0;
+
+        var items = await baseQuery
+            .OrderBy(sa => sa.ConnectedAtUtc)
+            .Skip((safePage - 1) * safePageSize)
+            .Take(safePageSize)
             .Select(sa => new
             {
                 sa.Id,
@@ -71,7 +131,17 @@ public sealed class SocialAccountsController : ControllerBase
             })
             .ToListAsync(cancellationToken);
 
-        return Ok(accounts);
+        return Ok(new
+        {
+            items,
+            pagination = new
+            {
+                page = safePage,
+                pageSize = safePageSize,
+                totalItems,
+                totalPages,
+            }
+        });
     }
 
     // ── GET /api/v1/social-accounts/connect-url/{platform} ──────────────────

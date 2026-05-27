@@ -6,7 +6,8 @@ public sealed record ZernioAccountDto(
     string Id,
     string Platform,
     string DisplayName,
-    bool IsConnected);
+    bool IsConnected,
+    string? ProfilePicture = null);
 
 public sealed record ZernioProfileDto(
     string Id,
@@ -28,10 +29,14 @@ public sealed record ZernioCreatePostPlatformTarget(
     string ZernioAccountId);
 
 public sealed record ZernioCreatePostRequest(
+    string? Title,
     string Content,
     IReadOnlyList<ZernioCreatePostPlatformTarget> Platforms,
     DateTime? ScheduledForUtc,
-    bool PublishNow);
+    bool PublishNow,
+    bool? IsDraft,
+    IReadOnlyList<Syncra.Application.DTOs.Posts.PostMediaItemDto>? MediaItems,
+    IReadOnlyList<Syncra.Application.DTOs.Posts.PlatformContentDto>? PlatformContents);
 
 public sealed record ZernioCreatePostResult(
     string ZernioPostId,

@@ -3,9 +3,17 @@ using System.ComponentModel.DataAnnotations;
 namespace Syncra.Application.DTOs.Posts;
 
 public record CreateZernioPostDto(
-    [Required, MaxLength(200)] string Title,
-    [Required] string Content,
-    [Required, MinLength(1)] IReadOnlyList<Guid> SocialAccountIds,
+    [MaxLength(200)] string? Title,
+    string? Content,
+    IReadOnlyList<Guid>? SocialAccountIds,
     DateTime? ScheduledAtUtc,
-    bool PublishNow
+    bool PublishNow,
+    bool? IsDraft,
+    IReadOnlyList<PostMediaItemDto>? MediaItems,
+    IReadOnlyList<PlatformContentDto>? PlatformContents
+);
+
+public record PlatformContentDto(
+    string Platform,
+    string Caption
 );

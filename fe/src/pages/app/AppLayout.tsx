@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
+  BarChart3, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
   FileText, ChevronDown, ChevronUp, Layers
 } from 'lucide-react'
 import { useState } from 'react'
@@ -169,17 +169,8 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Bottom: settings + user */}
+        {/* Bottom: user */}
         <div className={styles.sidebarBottom}>
-          <NavLink
-            to="/app/settings"
-            className={({ isActive }) =>
-              `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-            }
-          >
-            <span className={styles.navIcon}><Settings size={18} /></span>
-            {!collapsed && <span className={styles.navLabel}>Settings</span>}
-          </NavLink>
 
           <div className={styles.userRow}>
             <div className={styles.avatar}>

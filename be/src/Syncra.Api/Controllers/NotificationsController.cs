@@ -22,24 +22,30 @@ public class NotificationsController : ControllerBase
     public async Task<IActionResult> GetNotifications(
         Guid workspaceId,
         [FromQuery] bool unreadOnly = false,
-        [FromQuery] int take = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var userId = User.GetUserId();
-        var safeTake = Math.Clamp(take, 1, 100);
+        var safePage = Math.Max(1, page);
+        var safePageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = _db.Notifications
+        var baseQuery = _db.Notifications
             .AsNoTracking()
             .Where(n => n.WorkspaceId == workspaceId && (!n.UserId.HasValue || n.UserId == userId));
 
         if (unreadOnly)
         {
-            query = query.Where(n => n.ReadAtUtc == null);
+            baseQuery = baseQuery.Where(n => n.ReadAtUtc == null);
         }
 
-        var items = await query
+        var totalItems = await baseQuery.CountAsync(cancellationToken);
+        var totalPages = safePageSize > 0 ? (int)Math.Ceiling((double)totalItems / safePageSize) : 0;
+
+        var items = await baseQuery
             .OrderByDescending(n => n.CreatedAtUtc)
-            .Take(safeTake)
+            .Skip((safePage - 1) * safePageSize)
+            .Take(safePageSize)
             .Select(n => new
             {
                 n.Id,
@@ -54,7 +60,17 @@ public class NotificationsController : ControllerBase
             })
             .ToListAsync(cancellationToken);
 
-        return Ok(items);
+        return Ok(new
+        {
+            items,
+            pagination = new
+            {
+                page = safePage,
+                pageSize = safePageSize,
+                totalItems,
+                totalPages,
+            }
+        });
     }
 
     [HttpPost("{notificationId:guid}/read")]

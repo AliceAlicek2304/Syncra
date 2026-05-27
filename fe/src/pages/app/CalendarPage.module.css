@@ -1135,15 +1135,6 @@
   gap: 6px;
 }
 
-.postCardPlatformIcon {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
 
 .postItem {
   display: flex;

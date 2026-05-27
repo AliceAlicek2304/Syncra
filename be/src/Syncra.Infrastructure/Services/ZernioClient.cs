@@ -463,6 +463,28 @@ public sealed class ZernioClient : IZernioClient
                 sdkRequest.ScheduledFor = request.ScheduledForUtc.Value;
             }
 
+            if (request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
+            {
+                sdkRequest.TiktokSettings = new TikTokPlatformData
+                {
+                    Draft = request.IsDraft ?? false,
+                    PrivacyLevel = "PUBLIC_TO_EVERYONE",
+                    AllowComment = true,
+                    AllowDuet = true,
+                    AllowStitch = true,
+                    ContentPreviewConfirmed = true,
+                    ExpressConsentGiven = true
+                };
+            }
+
+            if (request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
+            {
+                sdkRequest.FacebookSettings = new FacebookPlatformData
+                {
+                    Draft = request.IsDraft ?? false
+                };
+            }
+
             _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(sdkRequest));
 
             var response = await _postsApi.CreatePostAsync(sdkRequest, null, cancellationToken);
@@ -648,27 +670,14 @@ public sealed class ZernioClient : IZernioClient
 
     private static CreatePostRequestPlatformsInnerPlatformSpecificData? MapPlatformSpecificData(string platform)
     {
-        if (string.IsNullOrWhiteSpace(platform))
-            return null;
-
-        return platform.Trim().ToLowerInvariant() switch
-        {
-            "bluesky" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new BlueskyPlatformData()),
-            "facebook" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new FacebookPlatformData()),
-            "google" or "googlebusiness" or "google_business" or "gmb" or "googlemybusiness" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new GoogleBusinessPlatformData()),
-            "instagram" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new InstagramPlatformData()),
-            "linkedin" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new LinkedInPlatformData()),
-            "pinterest" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new PinterestPlatformData()),
-            "reddit" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new RedditPlatformData()),
-            "snapchat" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new SnapchatPlatformData()),
-            "telegram" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TelegramPlatformData()),
-            "threads" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new ThreadsPlatformData()),
-            "tiktok" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TikTokPlatformData()),
-            "twitter" or "x" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TwitterPlatformData()),
-            "youtube" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new YouTubePlatformData()),
-            "discord" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new DiscordPlatformData(channelId: "")),
-            _ => null
-        };
+        // NOTE: Syncra currently does not support passing custom platform-specific settings overrides.
+        // Returning empty instances like 'new FacebookPlatformData()' serializes to '{}' (an empty object),
+        // which triggers a 'oneOf' schema collision in Zernio's validator (because '{}' matches all optional
+        // platform schemas simultaneously, violating 'oneOf').
+        // Additionally, TikTok settings must be passed in 'tiktokSettings' at the root-level of the request,
+        // and MUST NOT be passed under 'platformSpecificData'.
+        // Therefore, we return null to completely ignore/omit 'platformSpecificData' from the payload.
+        return null;
     }
 
     // ── Analytics methods ────────────────────────────────────────────────────

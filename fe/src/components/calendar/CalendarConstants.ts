@@ -5,6 +5,7 @@ export interface CalPost {
   id: string
   title: string
   platform: string
+  platforms?: string[]
   status: PostStatus
   time: string
   color: string

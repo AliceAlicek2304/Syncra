@@ -120,14 +120,7 @@
   font-size: 8px;
 }
 
-.badge_facebook { background: #1877F2; }
-.badge_instagram { background: #E1306C; }
-.badge_tiktok { background: #000000; }
-.badge_twitter { background: #1f1f1f; }
-.badge_linkedin { background: #0A66C2; }
-.badge_youtube { background: #FF0000; }
-.badge_pinterest { background: #BD081C; }
-.badge_default { background: var(--text-muted); }
+
 
 .accountInfo {
   display: flex;

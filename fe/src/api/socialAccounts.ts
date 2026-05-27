@@ -1,4 +1,5 @@
 import api from '../lib/axios';
+import type { PagedResult } from './types';
 
 export interface SocialAccountDto {
   id: string;
@@ -69,16 +70,20 @@ export const socialAccountsApi = {
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
   },
-  getSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
-    const response = await api.get<SocialAccountDto[]>('social-accounts', {
-      headers: {
-        'X-Workspace-Id': workspaceId
-      }
+  getSocialAccounts: async (
+    workspaceId: string,
+    params?: { page?: number; pageSize?: number },
+  ): Promise<PagedResult<SocialAccountDto>> => {
+    const response = await api.get<PagedResult<SocialAccountDto>>('social-accounts', {
+      headers: { 'X-Workspace-Id': workspaceId },
+      params,
     });
     return response.data;
   },
+  /** Backward-compat helper: returns only the items array (all on page 1 with large pageSize). */
   listSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
-    return socialAccountsApi.getSocialAccounts(workspaceId);
+    const result = await socialAccountsApi.getSocialAccounts(workspaceId, { pageSize: 200 });
+    return result.items;
   },
   getAccountHealth: async (workspaceId: string, accountId: string): Promise<AccountHealthDto> => {
     const response = await api.get<AccountHealthDto>(`social-accounts/${accountId}/health`, {

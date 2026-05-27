@@ -318,18 +318,14 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       className={styles.platformAvatarFallback}
                       style={{ backgroundColor: brandColor }}
                     >
-                      <div className={styles.platformFallbackIcon}>
-                        <ExtendedPlatformIcon platform={account.platform} size={20} />
-                      </div>
+                      <ExtendedPlatformIcon platform={account.platform} size={20} />
                     </div>
                   )}
                   <div
                     className={styles.platformAvatarBadge}
                     style={{ backgroundColor: brandColor }}
                   >
-                    <div className={styles.platformBadgeIcon}>
                       <ExtendedPlatformIcon platform={account.platform} size={24} />
-                    </div>
                   </div>
                 </div>
 
@@ -443,9 +439,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                     return (
                       <div key={id} className={styles.overrideRow}>
                         <div className={styles.overrideAccountInfo}>
-                          <span className={styles.overridePlatformLogo}>
                             <ExtendedPlatformIcon platform={acc.platform} size={13} />
-                          </span>
                           <span className={styles.overrideDisplayName}>
                             @{acc.displayName}
                           </span>

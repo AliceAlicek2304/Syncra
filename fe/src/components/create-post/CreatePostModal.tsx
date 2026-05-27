@@ -74,11 +74,10 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                       transition={{ duration: 0.1 }}
                       className={styles.submitBtn}
                       style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
-                      onClick={() => {
-                        if (actions.handleDraft()) {
+                      onClick={async () => {
+                        const success = await actions.handleDraft()
+                        if (success) {
                           actions.setShowUnsavedDialog(false)
-                          actions.reset()
-                          props.onClose()
                         }
                       }}
                     >

@@ -41,7 +41,10 @@ function useDashboardData(workspaceId?: string) {
   const recentPosts = useQuery({
     queryKey: ['dashboard-recent-posts', workspaceId],
     enabled: Boolean(workspaceId),
-      queryFn: () => postsApi.getPosts(workspaceId!, { pageSize: 4 }),
+      queryFn: async () => {
+        const result = await postsApi.getPosts(workspaceId!, { pageSize: 4 })
+        return result.items
+      },
   })
 
   const integrations = useQuery({
@@ -51,7 +54,10 @@ function useDashboardData(workspaceId?: string) {
       const res = await api.get('social-accounts', {
         headers: { 'X-Workspace-Id': workspaceId },
       })
-      return res.data as { id: string; platform: string }[]
+      const data = res.data as { items?: { id: string; platform: string }[]; id?: string; platform?: string }[] | { items: { id: string; platform: string }[] }
+      // Handle both paged and legacy shape
+      if (data && !Array.isArray(data) && 'items' in data) return data.items
+      return (data as { id: string; platform: string }[])
     },
   })
 

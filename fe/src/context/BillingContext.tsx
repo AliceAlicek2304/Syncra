@@ -64,8 +64,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     try {
       const origin = window.location.origin;
       const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-      const successUrl = new URL(`${base}/app/settings?billing=success`, origin).toString();
-      const cancelUrl = new URL(`${base}/app/settings?billing=cancel`, origin).toString();
+      const successUrl = new URL(`${base}/app/connections?billing=success`, origin).toString();
+      const cancelUrl = new URL(`${base}/app/connections?billing=cancel`, origin).toString();
 
       const request: CreateCheckoutSessionByPlanRequest = {
         planCode,
@@ -103,7 +103,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     try {
       const origin = window.location.origin;
       const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-      const returnUrl = new URL(`${base}/app/settings?billing=portal_return`, origin).toString();
+      const returnUrl = new URL(`${base}/app/connections?billing=portal_return`, origin).toString();
 
       const request: CreatePortalSessionRequest = {
         returnUrl

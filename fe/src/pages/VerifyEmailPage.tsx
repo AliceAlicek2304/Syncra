@@ -74,10 +74,10 @@ export default function VerifyEmailPage() {
           </div>
           <div className={styles.actions}>
             <button
-              onClick={() => navigate('/app/settings', { replace: true })}
+              onClick={() => navigate('/app/connections', { replace: true })}
               className={styles.primaryBtn}
             >
-              Go to Settings
+              Go to Connections
             </button>
             <button
               onClick={() => navigate('/login', { replace: true })}

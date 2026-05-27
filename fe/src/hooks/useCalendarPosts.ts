@@ -7,6 +7,7 @@ interface UseCalendarPostsArgs {
   workspaceId?: string;
   year: number;
   month: number;
+  status?: string;
 }
 
 export interface CalendarPostItem extends Post {
@@ -32,7 +33,7 @@ const toCalendarItem = (post: Post): CalendarPostItem => {
   };
 };
 
-export function useCalendarPosts({ workspaceId, year, month }: UseCalendarPostsArgs) {
+export function useCalendarPosts({ workspaceId, year, month, status }: UseCalendarPostsArgs) {
   const queryClient = useQueryClient();
 
   const range = useMemo(() => {
@@ -47,7 +48,7 @@ export function useCalendarPosts({ workspaceId, year, month }: UseCalendarPostsA
     };
   }, [year, month]);
 
-  const queryKey = ['calendar-posts', workspaceId, year, month] as const;
+  const queryKey = ['calendar-posts', workspaceId, year, month, status] as const;
 
   const query = useQuery({
     queryKey,
@@ -55,14 +56,15 @@ export function useCalendarPosts({ workspaceId, year, month }: UseCalendarPostsA
     queryFn: async () => {
       if (!workspaceId) return [] as CalendarPostItem[];
 
-      const posts = await postsApi.getPosts(workspaceId, {
+      const result = await postsApi.getPosts(workspaceId, {
         scheduledFromUtc: range.scheduledFromUtc,
         scheduledToUtc: range.scheduledToUtc,
         page: 1,
         pageSize: 200,
+        ...(status ? { status } : {}),
       });
 
-      return posts
+      return result.items
         .filter((post) => Boolean(post.scheduledAtUtc))
         .map(toCalendarItem);
     },

@@ -1023,9 +1023,9 @@
 }
 
 .platformListIcon {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1125,7 +1125,7 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 50%;
+  border-radius: 8px;
   margin-bottom: 8px;
   border: 1px solid rgba(0, 0, 0, 0.02);
 }

@@ -287,36 +287,17 @@ public class CreateZernioPostCommandTests : IDisposable
 
         Assert.NotNull(method);
 
-        var testCases = new Dictionary<string, Type>
+        var platforms = new[]
         {
-            { "bluesky", typeof(Zernio.Model.BlueskyPlatformData) },
-            { "facebook", typeof(Zernio.Model.FacebookPlatformData) },
-            { "google", typeof(Zernio.Model.GoogleBusinessPlatformData) },
-            { "googlebusiness", typeof(Zernio.Model.GoogleBusinessPlatformData) },
-            { "instagram", typeof(Zernio.Model.InstagramPlatformData) },
-            { "linkedin", typeof(Zernio.Model.LinkedInPlatformData) },
-            { "pinterest", typeof(Zernio.Model.PinterestPlatformData) },
-            { "reddit", typeof(Zernio.Model.RedditPlatformData) },
-            { "snapchat", typeof(Zernio.Model.SnapchatPlatformData) },
-            { "telegram", typeof(Zernio.Model.TelegramPlatformData) },
-            { "threads", typeof(Zernio.Model.ThreadsPlatformData) },
-            { "tiktok", typeof(Zernio.Model.TikTokPlatformData) },
-            { "twitter", typeof(Zernio.Model.TwitterPlatformData) },
-            { "x", typeof(Zernio.Model.TwitterPlatformData) },
-            { "youtube", typeof(Zernio.Model.YouTubePlatformData) },
-            { "discord", typeof(Zernio.Model.DiscordPlatformData) }
+            "bluesky", "facebook", "google", "googlebusiness", "instagram", "linkedin",
+            "pinterest", "reddit", "snapchat", "telegram", "threads", "tiktok",
+            "twitter", "x", "youtube", "discord", "", "   ", "invalid_platform"
         };
 
-        foreach (var (platform, expectedType) in testCases)
+        foreach (var platform in platforms)
         {
-            var result = (Zernio.Model.CreatePostRequestPlatformsInnerPlatformSpecificData?)method.Invoke(null, new object[] { platform });
-            Assert.NotNull(result);
-            Assert.Equal(expectedType, result.ActualInstance.GetType());
+            var result = method.Invoke(null, new object[] { platform });
+            Assert.Null(result); // Should be null to avoid empty object serialization and schema collision
         }
-
-        // Test null/empty/invalid
-        Assert.Null(method.Invoke(null, new object[] { "" }));
-        Assert.Null(method.Invoke(null, new object[] { "   " }));
-        Assert.Null(method.Invoke(null, new object[] { "invalid_platform" }));
     }
 }

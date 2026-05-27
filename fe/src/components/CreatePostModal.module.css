@@ -614,15 +614,6 @@
   white-space: nowrap;
 }
 
-.platformFallbackIcon {
-  transform: scale(0.75);
-  line-height: 0;
-}
-
-.platformBadgeIcon {
-  transform: scale(0.45);
-  line-height: 0;
-}
 
 .platformButtonCard:hover {
   border-color: var(--clr-ring);
@@ -821,12 +812,7 @@
 }
 
 /* Extra Zernio platform logo support */
-.platformLogo_facebook { color: #1877f2; }
-.platformLogo_instagram { color: #e4405f; }
-.platformLogo_twitter { color: #000000; }
-.platformLogo_tiktok { color: #000000; }
-.platformLogo_linkedin { color: #0a66c2; }
-.platformLogo_youtube { color: #ff0000; }
+
 
 .retryBtn, .deletePostBtn {
   padding: 8px 16px;
@@ -1207,17 +1193,6 @@
   min-width: 0;
 }
 
-.overridePlatformLogo {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: var(--clr-canvas);
-  border: 1px solid var(--clr-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
 
 .overrideDisplayName {
   font-size: 12px;
@@ -1311,16 +1286,6 @@
   gap: 8px;
 }
 
-.platformLogoSquare {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  background: #f3f4f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
 
 .platformSectionLabel {
   font-size: 14px;

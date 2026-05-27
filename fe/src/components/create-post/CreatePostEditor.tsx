@@ -286,9 +286,7 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
                 <div key={platform} className={styles.platformSection}>
                   <div className={styles.platformSectionHeader}>
                     <div className={styles.platformSectionTitle}>
-                      <div className={`${styles.platformLogoSquare} ${styles.platformLogo_facebook}`}>
                         <ExtendedPlatformIcon platform="facebook" size={14} />
-                      </div>
                       <span className={styles.platformSectionLabel}>Facebook</span>
                     </div>
 
@@ -365,9 +363,7 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
                 <div key={platform} className={styles.platformSection}>
                   <div className={styles.platformSectionHeader}>
                     <div className={styles.platformSectionTitle}>
-                      <div className={`${styles.platformLogoSquare} ${styles.platformLogo_tiktok}`}>
                         <ExtendedPlatformIcon platform="tiktok" size={14} />
-                      </div>
                       <span className={styles.platformSectionLabel}>TikTok</span>
                     </div>
                   </div>
@@ -427,9 +423,7 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
                 <div key={platform} className={styles.platformSection}>
                   <div className={styles.platformSectionHeader}>
                     <div className={styles.platformSectionTitle}>
-                      <div className={`${styles.platformLogoSquare} ${styles[`platformLogo_${platform}`]}`}>
                         <ExtendedPlatformIcon platform={platform} size={14} />
-                      </div>
                       <span className={styles.platformSectionLabel}>{platformConfig.label}</span>
                     </div>
                   </div>

@@ -37,7 +37,10 @@ public sealed class ZernioPostsController : ControllerBase
             dto.Content,
             dto.SocialAccountIds,
             dto.ScheduledAtUtc,
-            dto.PublishNow);
+            dto.PublishNow,
+            dto.IsDraft,
+            dto.MediaItems,
+            dto.PlatformContents);
 
         var result = await _mediator.Send(command, cancellationToken);
 

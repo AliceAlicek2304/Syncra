@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.Extensions.Options;
 using Syncra.Application.Interfaces;
+using Syncra.Application.Options;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 
@@ -10,15 +12,18 @@ public class DeleteMediaCommandHandler : IRequestHandler<DeleteMediaCommand>
     private readonly IMediaRepository _mediaRepository;
     private readonly IStorageService _storageService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly WasabiOptions _wasabiOptions;
 
     public DeleteMediaCommandHandler(
         IMediaRepository mediaRepository,
         IStorageService storageService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOptions<WasabiOptions> wasabiOptions)
     {
         _mediaRepository = mediaRepository;
         _storageService = storageService;
         _unitOfWork = unitOfWork;
+        _wasabiOptions = wasabiOptions.Value;
     }
 
     public async Task Handle(DeleteMediaCommand request, CancellationToken cancellationToken)
@@ -31,10 +36,23 @@ public class DeleteMediaCommandHandler : IRequestHandler<DeleteMediaCommand>
         if (media.PostId.HasValue)
             throw new DomainException("invalid_operation", "Cannot delete media that is attached to a post.");
 
-        var storageKey = Path.GetFileName(media.FileUrl);
+        // Extract the S3 object key by stripping the ServiceUrl/BucketName prefix.
+        // Falls back to the last URL segment for backward-compat with legacy local URLs.
+        var storageKey = ExtractStorageKey(media.FileUrl);
         await _storageService.DeleteAsync(storageKey);
 
         await _mediaRepository.DeleteAsync(media.Id);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
+
+    private string ExtractStorageKey(string fileUrl)
+    {
+        var prefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
+        if (!string.IsNullOrEmpty(_wasabiOptions.BucketName) && fileUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return fileUrl[prefix.Length..];
+
+        // Fallback: use the last path segment (legacy local storage behaviour)
+        return Path.GetFileName(fileUrl);
+    }
 }
+

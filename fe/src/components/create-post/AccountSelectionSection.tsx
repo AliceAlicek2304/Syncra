@@ -29,10 +29,10 @@ export function AccountSelectionSection({
     return (
       <div className={styles.emptyState}>
         <p className={styles.emptyText}>
-          No social accounts connected. Connect accounts in Settings to schedule to multiple platforms.
+          No social accounts connected. Connect accounts in Connections to schedule to multiple platforms.
         </p>
-        <Link to="/app/settings/social-accounts" className={styles.settingsLink}>
-          Go to Social Accounts
+        <Link to="/app/connections" className={styles.settingsLink}>
+          Go to Connections
         </Link>
       </div>
     )
@@ -98,7 +98,7 @@ export function AccountSelectionSection({
                         ) : (
                           <div className={styles.avatarFallback}>{initials}</div>
                         )}
-                        <div className={`${styles.platformBadge} ${styles[`badge_${account.platform}`] || styles.badge_default}`}>
+                        <div className={styles.platformBadge}>
                           <ExtendedPlatformIcon platform={account.platform} size={8} />
                         </div>
                       </div>

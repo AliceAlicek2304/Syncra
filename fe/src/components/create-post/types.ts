@@ -9,9 +9,10 @@ export type Tone = 'default' | 'professional' | 'casual'
 
 export interface MediaFile {
   id: string
-  url: string
+  url: string       // blob: URL for local preview, or public https: URL after upload
   type: 'image' | 'video'
   name: string
+  file?: File       // original File object; present when not yet uploaded to storage
 }
 
 export type PlatformCaptionMap = Record<Platform, string>

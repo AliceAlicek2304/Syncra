@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+  // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface PageItem {
   id: string;
@@ -16,6 +16,9 @@ interface PageItem {
 }
 
 type LoadState = 'loading' | 'loaded' | 'error';
+
+// Platforms that connect directly without page/board selection step
+const DIRECT_CONNECT_PLATFORMS = ['tiktok'];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -32,19 +35,57 @@ export default function SocialAccountsSelect() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Extract query params
-  const tempToken = searchParams.get('tempToken') ?? '';
+  // Extract query params — accept both Zernio headless names and direct-connect names
+  const platform = searchParams.get('platform') ?? searchParams.get('connected') ?? '';
+  const tempToken = searchParams.get('tempToken') ?? searchParams.get('connect_token') ?? '';
   const state = searchParams.get('state') ?? '';
-  const platform = searchParams.get('platform') ?? '';
+  const accountId = searchParams.get('accountId') ?? '';
+  const username = searchParams.get('username') ?? '';
 
-  // ─ Fetch available pages / sub-accounts ────────────────────────────────
+  const isDirectConnect = DIRECT_CONNECT_PLATFORMS.includes(platform) && !!accountId;
+
+  // ─ Handle direct connect or fetch pages ──────────────────────────────
 
   useEffect(() => {
     if (hasInitialized.current) return;
     if (workspaceLoading || !activeWorkspace) return;
     hasInitialized.current = true;
 
-    if (!platform || !tempToken || !state) {
+    if (!platform || !state) {
+      setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+      setLoadState('error');
+      return;
+    }
+
+    // Direct-connect platforms (e.g. TikTok): skip select page UI, save & redirect
+    if (isDirectConnect) {
+      const completeDirectConnect = async () => {
+        try {
+          await api.post('social-accounts/direct-connect', {
+            state,
+            connectToken: tempToken,
+            platform,
+            accountId,
+            displayName: username,
+          }, {
+            headers: { 'X-Workspace-Id': activeWorkspace.id }
+          });
+          showSuccess(`${platform} account connected successfully`);
+          navigate('/app/connections', { replace: true });
+        } catch (err) {
+          const msg =
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            'Failed to complete connection. Please try again.';
+          setErrorMessage(msg);
+          setLoadState('error');
+        }
+      };
+      completeDirectConnect();
+      return;
+    }
+
+    // Page-select platforms (Facebook, LinkedIn, etc.)
+    if (!tempToken) {
       setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
       setLoadState('error');
       return;
@@ -74,7 +115,7 @@ export default function SocialAccountsSelect() {
     };
 
     fetchPages();
-  }, [platform, tempToken, state, activeWorkspace, workspaceLoading]);
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess]);
 
   // ─ Submit selection ─────────────────────────────────────────────────────
 
@@ -93,7 +134,7 @@ export default function SocialAccountsSelect() {
         }
       });
       showSuccess(`${platform} account connected successfully`);
-      navigate('/app/settings', { replace: true });
+      navigate('/app/connections', { replace: true });
     } catch (err) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -136,9 +177,9 @@ export default function SocialAccountsSelect() {
             <p>{errorMessage}</p>
             <button
               className={styles.btnPrimary}
-              onClick={() => navigate('/app/settings', { replace: true })}
+              onClick={() => navigate('/app/connections', { replace: true })}
             >
-              Back to Settings
+              Back to Connections
             </button>
           </div>
         </div>
@@ -222,7 +263,7 @@ export default function SocialAccountsSelect() {
         <div className={styles.actionBarInner}>
           <button
             className={styles.btnGhost}
-            onClick={() => navigate('/app/settings', { replace: true })}
+            onClick={() => navigate('/app/connections', { replace: true })}
             disabled={isSubmitting}
           >
             Cancel

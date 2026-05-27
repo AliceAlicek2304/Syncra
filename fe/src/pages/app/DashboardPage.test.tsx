@@ -49,7 +49,7 @@ function createWrapper() {
   )
 }
 
-const mockSummaryData = { totalReach: 50000, engagementRate: 4.5, totalPosts: 12 }
+const mockSummaryData = { totalReach: 50000, engagementRate: 4.5, totalPosts: 12, followerGrowth: 0, weeklyReach: [] }
 
 describe('DashboardPage', () => {
   beforeEach(() => {
@@ -72,9 +72,9 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    analyticsApi.getWorkspaceSummary.mockResolvedValue(mockSummaryData)
-    postsApi.getPosts.mockResolvedValue([])
-    axios.default.get.mockResolvedValue({ data: [] })
+    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
+    vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 
@@ -92,12 +92,15 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    analyticsApi.getWorkspaceSummary.mockResolvedValue(mockSummaryData)
-    axios.default.get.mockResolvedValue({ data: [] })
-    postsApi.getPosts.mockResolvedValue([
-      { id: 'p1', title: 'Post 1', status: 'published', platforms: ['Instagram'], createdAt: '2026-05-10T12:00:00Z', updatedAt: '2026-05-10T12:00:00Z' },
-      { id: 'p2', title: 'Post 2', status: 'draft', platforms: ['TikTok'], createdAt: '2026-05-11T10:00:00Z', updatedAt: '2026-05-11T10:00:00Z' },
-    ])
+    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
+    vi.mocked(postsApi.getPosts).mockResolvedValue({
+      items: [
+        { id: 'p1', title: 'Post 1', status: 'published', platforms: ['Instagram'], createdAt: '2026-05-10T12:00:00Z', updatedAt: '2026-05-10T12:00:00Z' },
+        { id: 'p2', title: 'Post 2', status: 'draft', platforms: ['TikTok'], createdAt: '2026-05-11T10:00:00Z', updatedAt: '2026-05-11T10:00:00Z' },
+      ],
+      pagination: { page: 1, pageSize: 10, totalItems: 2, totalPages: 1 }
+    })
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 
@@ -112,9 +115,9 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    analyticsApi.getWorkspaceSummary.mockRejectedValue(new Error('API Error'))
-    postsApi.getPosts.mockResolvedValue([])
-    axios.default.get.mockResolvedValue({ data: [] })
+    vi.mocked(analyticsApi.getWorkspaceSummary).mockRejectedValue(new Error('API Error'))
+    vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
+    vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 
@@ -128,9 +131,9 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    analyticsApi.getWorkspaceSummary.mockResolvedValue(mockSummaryData)
-    postsApi.getPosts.mockRejectedValue(new Error('Posts Error'))
-    axios.default.get.mockResolvedValue({ data: [] })
+    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(postsApi.getPosts).mockRejectedValue(new Error('Posts Error'))
+    vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 
@@ -144,9 +147,9 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    analyticsApi.getWorkspaceSummary.mockResolvedValue(mockSummaryData)
-    postsApi.getPosts.mockResolvedValue([])
-    axios.default.get.mockResolvedValue({ data: [] })
+    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
+    vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 

@@ -57,7 +57,8 @@ export default function CalendarPage() {
       else if (status === 'scheduled') color = '#a78bfa';
       mapped[key] = [...(mapped[key] ?? []), {
         id: post.id, title: post.title || 'Untitled post', platform: post.platforms?.[0] ?? 'Post',
-        status, time: post.localTime, color, caption: post.content ?? '', hashtags: [],
+        platforms: post.platforms, status, time: post.localTime, color, caption: post.content ?? '',
+        hashtags: [], image: post.mediaItems?.[0]?.url,
       }]
     })
     return mapped
@@ -105,7 +106,7 @@ export default function CalendarPage() {
   const handleOpenEditPost = (post: CalPost) => {
     const match = calendarPosts.find((p) => p.id === post.id)
     if (!match) return
-    openEditPost({ id: match.id, year: match.localYear, month: match.localMonth, day: match.localDay, title: post.title, platform: post.platform, status: post.status, time: post.time, color: post.color, caption: post.caption, hashtags: post.hashtags, image: post.image, zernioPostId: match.zernioPostId, platformTargets: match.platformTargets } as ScheduledPost)
+    openEditPost({ id: match.id, year: match.localYear, month: match.localMonth, day: match.localDay, title: post.title, platform: post.platform, status: post.status, time: post.time, color: post.color, caption: post.caption, hashtags: post.hashtags, image: post.image, zernioPostId: match.zernioPostId, platformTargets: match.platformTargets, mediaItems: match.mediaItems } as ScheduledPost)
   }
 
   const selectedPosts = useMemo(() => {
@@ -202,7 +203,7 @@ export default function CalendarPage() {
                         </div>
                         <div className={styles.postCardBody}>
                           <div className={styles.postCardThumbnail}>
-                            {p.image ? <img src={p.image} alt={p.title} /> : <div className={styles.postCardThumbnailPlaceholder} style={{ background: p.color }}><ExtendedPlatformIcon platform={p.platform} size={18} /></div>}
+                            {p.image ? <img src={p.image} alt={p.title} /> :                           <div className={styles.postCardThumbnailPlaceholder}><ExtendedPlatformIcon platform={p.platform} size={18} /></div>}
                             {(p.platform.toLowerCase() === 'youtube' || p.platform.toLowerCase() === 'tiktok') && <div className={styles.postCardVideoOverlay}><Play size={18} className={styles.postCardVideoIcon} /></div>}
                           </div>
                           <div className={styles.postCardContent}>
@@ -211,7 +212,9 @@ export default function CalendarPage() {
                           </div>
                         </div>
                         <div className={styles.postCardFooter}>
-                          <div className={styles.postCardPlatformIcon} style={{ background: p.color }} title={p.platform}><ExtendedPlatformIcon platform={p.platform} size={10} /></div>
+                          {(p.platforms || [p.platform]).map(plat => (
+                            <ExtendedPlatformIcon key={plat} platform={plat} size={10} />
+                          ))}
                         </div>
                       </div>
                     ))}

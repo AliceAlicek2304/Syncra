@@ -9,6 +9,9 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
   const a = actions as any
 
   const getPrimaryButtonLabel = () => {
+    if (state.isEditMode) {
+      return state.publishingTab === 'draft' ? 'Save Changes' : 'Update Schedule'
+    }
     if (state.publishingTab === 'draft') return 'save draft'
     if (state.publishingTab === 'now') return 'publish now'
     if (state.publishingTab === 'queue') return 'add to queue'
@@ -26,7 +29,8 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
   const isSubmitDisabled = 
     state.caption.trim() === '' || 
     state.overLimit || 
-    (state.socialAccounts && 
+    (state.publishingTab !== 'draft' &&
+     state.socialAccounts && 
      state.socialAccounts.filter((acc: any) => acc.isActive).length > 0 && 
      state.selectedSocialAccountIds.length === 0)
 

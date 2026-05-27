@@ -8,6 +8,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { shortId } from '../../utils/shortId'
 import { postsApi } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
+import { mediaApi } from '../../api/media'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
 export function getUtcString(localStr: string, timezone: string): string | undefined {
@@ -61,11 +62,35 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const isEditMode = !!editPost
 
+  const { workspaces, activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
   const mediaHook = useCreatePostMedia()
   const aiHook = useCreatePostAI()
   const queryClient = useQueryClient()
-  const { workspaces, activeWorkspace } = useWorkspace()
-  const workspaceId = activeWorkspace?.id
+
+  /**
+   * Upload any media items that still have a local blob/data URL.
+   * Returns a copy of the media array where every item has a public URL.
+   * Throws if any upload fails.
+   */
+  const uploadPendingMedia = useCallback(async (wsId: string) => {
+    const resolved = await Promise.all(
+      mediaHook.media.map(async (m) => {
+        // Already a public URL — nothing to do
+        if (!m.file && !m.url.startsWith('blob:') && !m.url.startsWith('data:')) {
+          return m
+        }
+        // Upload and get back the public S3 URL
+        if (!m.file) {
+          throw new Error(`Media item "${m.name}" has a local URL but no File object — cannot upload.`)
+        }
+        const asset = await mediaApi.uploadMedia(wsId, m.file)
+        return { ...m, url: asset.publicUrl, file: undefined }
+      })
+    )
+    return resolved
+  }, [mediaHook.media])
 
   // Multi-workspace selection state
   const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([])
@@ -431,13 +456,33 @@ export function useCreatePostState(props: CreatePostModalProps) {
         const wsId = activeWorkspace.id
         const content = mainContent
         const title = content.slice(0, 50) || 'Untitled Draft'
-        
+
+        // Upload any local media to Wasabi first, then use public URLs
+        const resolvedMedia = await uploadPendingMedia(wsId)
+
+        const mediaItems = resolvedMedia.map(m => ({
+          url: m.url,
+          type: m.type,
+          filename: m.name
+        }))
+
+        const platformContents = selectedSocialAccountIds.map(id => {
+          const account = socialAccounts.find(a => a.id === id)
+          return {
+            platform: account?.platform || 'unknown',
+            caption: getResolvedContentForPlatform((account?.platform || 'tiktok') as Platform)
+          }
+        })
+
         await postsApi.createZernioPost(wsId, {
           title,
           content,
           socialAccountIds: selectedSocialAccountIds,
           scheduledAtUtc: undefined,
-          publishNow: false
+          publishNow: false,
+          isDraft: true,
+          mediaItems,
+          platformContents
         })
 
         onToast?.({ message: 'Draft saved successfully on Zernio!', type: 'success' })
@@ -589,19 +634,29 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       try {
         const promises: Promise<any>[] = []
+
+        // Upload all pending local media ONCE, then reuse the resolved URLs
+        const resolvedMedia = await uploadPendingMedia(activeWorkspace.id)
         
         Object.entries(accountsByWorkspace).forEach(([wsId, accountIds]) => {
           if (accountIds.length === 0) {
             // Draft post with no channels selected
             const content = mainContent
             const title = content.slice(0, 50) || 'Untitled Draft'
+            const mediaItems = resolvedMedia.map(m => ({
+              url: m.url,
+              type: m.type,
+              filename: m.name
+            }))
             promises.push(
               postsApi.createZernioPost(wsId, {
                 title,
                 content,
                 socialAccountIds: [],
                 scheduledAtUtc: undefined,
-                publishNow: false
+                publishNow: false,
+                isDraft: true,
+                mediaItems
               })
             )
           } else {
@@ -633,15 +688,33 @@ export function useCreatePostState(props: CreatePostModalProps) {
             })
             
             // Make create post requests
+            const mediaItems = resolvedMedia.map(m => ({
+              url: m.url,
+              type: m.type,
+              filename: m.name
+            }))
+
             Object.values(groupsByKey).forEach(({ ids, scheduledAtUtc, content }) => {
               const title = content.slice(0, 50) || 'Untitled Post'
+              
+              const platformContents = ids.map(id => {
+                const account = socialAccounts.find(a => a.id === id)
+                return {
+                  platform: account?.platform || 'unknown',
+                  caption: getResolvedContentForPlatform((account?.platform || 'tiktok') as Platform)
+                }
+              })
+
               promises.push(
                 postsApi.createZernioPost(wsId, {
                   title,
                   content,
                   socialAccountIds: ids,
                   scheduledAtUtc,
-                  publishNow: isDraft ? false : (scheduledAtUtc === undefined || publishNow)
+                  publishNow: isDraft ? false : (scheduledAtUtc === undefined || publishNow),
+                  isDraft,
+                  mediaItems,
+                  platformContents
                 })
               )
             })

@@ -69,3 +69,17 @@ export interface ResetPasswordRequest {
 export interface ForgotPasswordResponse {
   message: string;
 }
+
+// ── Pagination ──────────────────────────────────────────────────────────────
+
+export interface Pagination {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  pagination: Pagination;
+}

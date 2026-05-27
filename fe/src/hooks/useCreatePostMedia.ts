@@ -42,22 +42,17 @@ export function useCreatePostMedia(): UseCreatePostMediaReturn {
     if (!files) return
     Array.from(files).forEach(file => {
       const type = file.type.startsWith('video') ? 'video' : 'image'
+      const localUrl = URL.createObjectURL(file)
 
-      if (type === 'image') {
-        const reader = new FileReader()
-        reader.onload = () => {
-          setMedia(prev => [...prev, {
-            id: shortId(),
-            url: reader.result as string,
-            type,
-            name: file.name
-          }])
-        }
-        reader.readAsDataURL(file)
-      } else {
-        const url = URL.createObjectURL(file)
-        setMedia(prev => [...prev, { id: shortId(), url, type, name: file.name }])
-      }
+      // Add local preview with the original File object attached.
+      // The actual upload to cloud storage happens at save time.
+      setMedia(prev => [...prev, {
+        id: shortId(),
+        url: localUrl,
+        type,
+        name: file.name,
+        file,
+      }])
     })
   }, [])
 
@@ -107,7 +102,7 @@ export function useCreatePostMedia(): UseCreatePostMediaReturn {
     setMedia(prev => prev.map(m => {
       if (m.id !== targetId) return m
       URL.revokeObjectURL(m.url)
-      return { ...m, url: newUrl, type: newType, name: file.name }
+      return { ...m, url: newUrl, type: newType, name: file.name, file }
     }))
     e.target.value = ''
     replaceTargetIdRef.current = null
@@ -119,7 +114,9 @@ export function useCreatePostMedia(): UseCreatePostMediaReturn {
     setMedia(prev => prev.map(m => {
       if (m.id !== editingId) return m
       URL.revokeObjectURL(m.url)
-      return { ...m, url: newUrl, name: m.name.replace(/\.[^.]+$/, '') + '_edited.jpg' }
+      // Store the edited blob as a new File so it can be uploaded at save time
+      const editedFile = new File([blob], m.name.replace(/\.[^.]+$/, '') + '_edited.jpg', { type: 'image/jpeg' })
+      return { ...m, url: newUrl, name: editedFile.name, file: editedFile }
     }))
     setEditingId(null)
   }

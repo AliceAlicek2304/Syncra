@@ -91,8 +91,13 @@ public static class DependencyInjection
         services.AddScoped<IDistributedLockService, RedisDistributedLockService>();
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
-        services.AddScoped<IStorageService, LocalMediaStorage>();
+
+        // Wasabi S3-compatible media storage.
+        // WasabiStorageService wraps AmazonS3Client which is thread-safe — registered as singleton.
         services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
+        services.Configure<WasabiOptions>(configuration.GetSection(WasabiOptions.SectionName));
+        services.AddSingleton<IStorageService, WasabiStorageService>();
+
         services.Configure<PaymentOptions>(configuration.GetSection(PaymentOptions.SectionName));
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
         services.Configure<AnalyticsOptions>(configuration.GetSection(AnalyticsOptions.SectionName));
