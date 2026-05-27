@@ -278,4 +278,45 @@ public class CreateZernioPostCommandTests : IDisposable
         Assert.Equal("zernio_post_draft", result.ZernioPostId);
         Assert.Equal(0, result.ZernioTargetCount);
     }
+
+    [Fact]
+    public void TestPlatformSpecificDataSerialization()
+    {
+        var method = typeof(Syncra.Infrastructure.Services.ZernioClient)
+            .GetMethod("MapPlatformSpecificData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        Assert.NotNull(method);
+
+        var testCases = new Dictionary<string, Type>
+        {
+            { "bluesky", typeof(Zernio.Model.BlueskyPlatformData) },
+            { "facebook", typeof(Zernio.Model.FacebookPlatformData) },
+            { "google", typeof(Zernio.Model.GoogleBusinessPlatformData) },
+            { "googlebusiness", typeof(Zernio.Model.GoogleBusinessPlatformData) },
+            { "instagram", typeof(Zernio.Model.InstagramPlatformData) },
+            { "linkedin", typeof(Zernio.Model.LinkedInPlatformData) },
+            { "pinterest", typeof(Zernio.Model.PinterestPlatformData) },
+            { "reddit", typeof(Zernio.Model.RedditPlatformData) },
+            { "snapchat", typeof(Zernio.Model.SnapchatPlatformData) },
+            { "telegram", typeof(Zernio.Model.TelegramPlatformData) },
+            { "threads", typeof(Zernio.Model.ThreadsPlatformData) },
+            { "tiktok", typeof(Zernio.Model.TikTokPlatformData) },
+            { "twitter", typeof(Zernio.Model.TwitterPlatformData) },
+            { "x", typeof(Zernio.Model.TwitterPlatformData) },
+            { "youtube", typeof(Zernio.Model.YouTubePlatformData) },
+            { "discord", typeof(Zernio.Model.DiscordPlatformData) }
+        };
+
+        foreach (var (platform, expectedType) in testCases)
+        {
+            var result = (Zernio.Model.CreatePostRequestPlatformsInnerPlatformSpecificData?)method.Invoke(null, new object[] { platform });
+            Assert.NotNull(result);
+            Assert.Equal(expectedType, result.ActualInstance.GetType());
+        }
+
+        // Test null/empty/invalid
+        Assert.Null(method.Invoke(null, new object[] { "" }));
+        Assert.Null(method.Invoke(null, new object[] { "   " }));
+        Assert.Null(method.Invoke(null, new object[] { "invalid_platform" }));
+    }
 }

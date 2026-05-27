@@ -446,7 +446,7 @@ public sealed class ZernioClient : IZernioClient
                             Platform = p.Platform,
                             AccountId = p.ZernioAccountId,
                             CustomContent = platformContent?.Caption,
-                            PlatformSpecificData = null
+                            PlatformSpecificData = MapPlatformSpecificData(p.Platform)
                         };
                     })
                     .ToList(),
@@ -645,6 +645,31 @@ public sealed class ZernioClient : IZernioClient
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
     };
+
+    private static CreatePostRequestPlatformsInnerPlatformSpecificData? MapPlatformSpecificData(string platform)
+    {
+        if (string.IsNullOrWhiteSpace(platform))
+            return null;
+
+        return platform.Trim().ToLowerInvariant() switch
+        {
+            "bluesky" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new BlueskyPlatformData()),
+            "facebook" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new FacebookPlatformData()),
+            "google" or "googlebusiness" or "google_business" or "gmb" or "googlemybusiness" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new GoogleBusinessPlatformData()),
+            "instagram" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new InstagramPlatformData()),
+            "linkedin" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new LinkedInPlatformData()),
+            "pinterest" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new PinterestPlatformData()),
+            "reddit" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new RedditPlatformData()),
+            "snapchat" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new SnapchatPlatformData()),
+            "telegram" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TelegramPlatformData()),
+            "threads" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new ThreadsPlatformData()),
+            "tiktok" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TikTokPlatformData()),
+            "twitter" or "x" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new TwitterPlatformData()),
+            "youtube" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new YouTubePlatformData()),
+            "discord" => new CreatePostRequestPlatformsInnerPlatformSpecificData(new DiscordPlatformData(channelId: "")),
+            _ => null
+        };
+    }
 
     // ── Analytics methods ────────────────────────────────────────────────────
 
