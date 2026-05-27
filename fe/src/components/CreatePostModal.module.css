@@ -864,16 +864,39 @@
 }
 
 .workspaceDropdownLabel {
-  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 12px;
+  padding-right: 8px;
 }
 
 .dropdownIcon {
   color: var(--clr-body-mid);
   flex-shrink: 0;
+  margin-left: auto;
+}
+
+.profileYellowDotsRow {
+  display: flex;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.profileYellowDotsRow .profileYellowDot {
+  margin-right: 0;
+}
+
+.workspaceCountBadge {
+  background-color: #2563eb;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .workspaceDropdownPopover {

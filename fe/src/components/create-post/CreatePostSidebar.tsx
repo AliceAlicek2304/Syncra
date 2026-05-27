@@ -97,10 +97,35 @@ export function RightPanel({ state, actions }: SidebarProps) {
             className={styles.workspaceDropdownToggle}
             onClick={() => setWorkspaceDropdownOpen(!workspaceDropdownOpen)}
           >
-            <span className={styles.profileYellowDot} />
-            <span className={styles.workspaceDropdownLabel}>
-              {selectedWorkspaceNames || 'Select workspaces...'}
-            </span>
+            {workspaceCount === 1 ? (
+              <>
+                <span className={styles.profileYellowDot} />
+                <span className={styles.workspaceDropdownLabel}>
+                  {selectedWorkspaceNames}
+                </span>
+              </>
+            ) : workspaceCount > 1 ? (
+              <>
+                <div className={styles.profileYellowDotsRow}>
+                  {Array.from({ length: workspaceCount }).map((_, i) => (
+                    <span key={i} className={styles.profileYellowDot} />
+                  ))}
+                </div>
+                <span className={styles.workspaceDropdownLabel}>
+                  {workspaceCount} workspaces selected
+                </span>
+                <span className={styles.workspaceCountBadge}>
+                  {workspaceCount}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className={styles.profileYellowDot} style={{ opacity: 0.5 }} />
+                <span className={styles.workspaceDropdownLabel} style={{ opacity: 0.5 }}>
+                  Select workspaces...
+                </span>
+              </>
+            )}
             <ChevronDown size={16} className={styles.dropdownIcon} />
           </button>
 
