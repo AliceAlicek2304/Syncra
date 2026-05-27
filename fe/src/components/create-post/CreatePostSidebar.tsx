@@ -390,7 +390,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
             </div>
 
             {/* Overrides section */}
-            {state.selectedSocialAccountIds.length > 0 && (
+            {state.selectedSocialAccountIds.length > 1 && (
               <div className={styles.overridesSection}>
                 <div className={styles.overridesHeader}>
                   Override schedule time for specific platforms (leave empty to use main time above):
