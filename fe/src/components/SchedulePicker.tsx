@@ -19,9 +19,10 @@ interface SchedulePickerProps {
   onChange: (val: string) => void
   onClear?: () => void
   align?: 'start' | 'end'
+  onlyDate?: boolean
 }
 
-export default function SchedulePicker({ value, onChange, onClear, align = 'start' }: SchedulePickerProps) {
+export default function SchedulePicker({ value, onChange, onClear, align = 'start', onlyDate = false }: SchedulePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -38,10 +39,19 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
       return { date: tomorrow, hour: 9, minute: 0, isPM: false }
     }
     const [d, t] = val.split('T')
-    if (!d || !t) return { date: new Date(), hour: 9, minute: 0, isPM: false }
+    if (!d) return { date: new Date(), hour: 9, minute: 0, isPM: false }
     const [y, m, day] = d.split('-').map(Number)
-    const [hr, min] = t.split(':').map(Number)
     
+    if (!t) {
+      return {
+        date: new Date(y, m - 1, day),
+        hour: 9,
+        minute: 0,
+        isPM: false
+      }
+    }
+
+    const [hr, min] = t.split(':').map(Number)
     const isPM = hr >= 12
     const displayHour = hr % 12 === 0 ? 12 : hr % 12
     return {
@@ -75,7 +85,7 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
 
   // Scroll time columns into view when popover opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !onlyDate) {
       const timer = setTimeout(() => {
         hourListRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
         minuteListRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
@@ -83,7 +93,7 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
       }, 80)
       return () => clearTimeout(timer)
     }
-  }, [isOpen, hour, minute, isPM])
+  }, [isOpen, hour, minute, isPM, onlyDate])
 
   // Position alignment
   useEffect(() => {
@@ -125,6 +135,11 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
     const month = String(newDate.getMonth() + 1).padStart(2, '0')
     const day = String(newDate.getDate()).padStart(2, '0')
     
+    if (onlyDate) {
+      onChange(`${year}-${month}-${day}`)
+      return
+    }
+
     let militaryHour = newHour
     if (pm && newHour < 12) militaryHour += 12
     if (!pm && newHour === 12) militaryHour = 0
@@ -152,8 +167,10 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
 
   // Format trigger display value
   const displayValue = value
-    ? format(selectedDate, 'MM/dd/yyyy') + ` ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`
-    : 'Select date & time'
+    ? onlyDate
+      ? format(selectedDate, 'MM/dd/yyyy')
+      : format(selectedDate, 'MM/dd/yyyy') + ` ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`
+    : onlyDate ? 'Select date' : 'Select date & time'
 
   // Generate calendar days
   const monthStart = startOfMonth(currentMonth)
@@ -177,7 +194,15 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
       </button>
 
       {isOpen && (
-        <div className={styles.popover} ref={popoverRef} style={popoverStyle}>
+        <div 
+          className={styles.popover} 
+          ref={popoverRef} 
+          style={{
+            ...popoverStyle,
+            width: onlyDate ? '280px' : '460px',
+            maxWidth: onlyDate ? '280px' : '460px'
+          }}
+        >
           <div className={styles.popoverBody}>
             {/* Left side: Calendar */}
             <div className={styles.calendarSection}>
@@ -258,67 +283,71 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
               </div>
             </div>
 
-            {/* Vertical Line Separator */}
-            <div className={styles.divider} />
+            {!onlyDate && (
+              <>
+                {/* Vertical Line Separator */}
+                <div className={styles.divider} />
 
-            {/* Right side: Time columns */}
-            <div className={styles.timeSection}>
-              {/* Hours Column */}
-              <div className={styles.timeColumn} ref={hourListRef}>
-                {hoursArray.map(h => {
-                  const active = hour === h
-                  return (
+                {/* Right side: Time columns */}
+                <div className={styles.timeSection}>
+                  {/* Hours Column */}
+                  <div className={styles.timeColumn} ref={hourListRef}>
+                    {hoursArray.map(h => {
+                      const active = hour === h
+                      return (
+                        <button
+                          key={h}
+                          type="button"
+                          data-selected={active}
+                          className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
+                          onClick={() => handleHourSelect(h)}
+                        >
+                          {String(h).padStart(2, '0')}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Minutes Column */}
+                  <div className={styles.timeColumn} ref={minuteListRef}>
+                    {minutesArray.map(m => {
+                      const active = minute === m
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          data-selected={active}
+                          className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
+                          onClick={() => handleMinuteSelect(m)}
+                        >
+                          {String(m).padStart(2, '0')}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* AM/PM Column */}
+                  <div className={styles.timeColumn} ref={amPmListRef}>
                     <button
-                      key={h}
                       type="button"
-                      data-selected={active}
-                      className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
-                      onClick={() => handleHourSelect(h)}
+                      data-selected={!isPM}
+                      className={`${styles.timeItem} ${!isPM ? styles.timeItemActive : ''}`}
+                      onClick={() => handleAmPmSelect(false)}
                     >
-                      {String(h).padStart(2, '0')}
+                      AM
                     </button>
-                  )
-                })}
-              </div>
-
-              {/* Minutes Column */}
-              <div className={styles.timeColumn} ref={minuteListRef}>
-                {minutesArray.map(m => {
-                  const active = minute === m
-                  return (
                     <button
-                      key={m}
                       type="button"
-                      data-selected={active}
-                      className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
-                      onClick={() => handleMinuteSelect(m)}
+                      data-selected={isPM}
+                      className={`${styles.timeItem} ${isPM ? styles.timeItemActive : ''}`}
+                      onClick={() => handleAmPmSelect(true)}
                     >
-                      {String(m).padStart(2, '0')}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* AM/PM Column */}
-              <div className={styles.timeColumn} ref={amPmListRef}>
-                <button
-                  type="button"
-                  data-selected={!isPM}
-                  className={`${styles.timeItem} ${!isPM ? styles.timeItemActive : ''}`}
-                  onClick={() => handleAmPmSelect(false)}
-                >
-                  AM
+                      PM
                 </button>
-                <button
-                  type="button"
-                  data-selected={isPM}
-                  className={`${styles.timeItem} ${isPM ? styles.timeItemActive : ''}`}
-                  onClick={() => handleAmPmSelect(true)}
-                >
-                  PM
-                </button>
-              </div>
-            </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

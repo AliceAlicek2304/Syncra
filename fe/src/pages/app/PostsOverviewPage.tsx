@@ -14,6 +14,7 @@ import type { Post } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
 import type { SocialAccountDto } from '../../api/socialAccounts'
 import styles from './PostsOverviewPage.module.css'
+import SchedulePicker from '../../components/SchedulePicker'
 
 // ─── Platform Icon Definitions ───
 const PlatformIcon = ({ platform, size = 18 }: { platform: string; size?: number }) => {
@@ -757,18 +758,16 @@ export default function PostsOverviewPage() {
                 {dateFilter === 'Custom range' && (
                   <div className={styles.customDateInputs}>
                     <label className={styles.dateLabel}>From:</label>
-                    <input 
-                      type="date" 
-                      value={customStartDate} 
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className={styles.datePickerInput}
+                    <SchedulePicker
+                      value={customStartDate}
+                      onChange={(val) => setCustomStartDate(val)}
+                      onlyDate={true}
                     />
                     <label className={styles.dateLabel}>To:</label>
-                    <input 
-                      type="date" 
-                      value={customEndDate} 
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className={styles.datePickerInput}
+                    <SchedulePicker
+                      value={customEndDate}
+                      onChange={(val) => setCustomEndDate(val)}
+                      onlyDate={true}
                     />
                     <button 
                       onClick={() => setActiveDropdown(null)} 
