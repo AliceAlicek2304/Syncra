@@ -11,15 +11,18 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
     private readonly IPostRepository _postRepository;
     private readonly IMediaRepository _mediaRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly Syncra.Application.Interfaces.IZernioClient _zernioClient;
 
     public UpdatePostCommandHandler(
         IPostRepository postRepository,
         IMediaRepository mediaRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        Syncra.Application.Interfaces.IZernioClient zernioClient)
     {
         _postRepository = postRepository;
         _mediaRepository = mediaRepository;
         _unitOfWork = unitOfWork;
+        _zernioClient = zernioClient;
     }
 
     public async Task<PostDto?> Handle(UpdatePostCommand request, CancellationToken cancellationToken)
@@ -66,6 +69,15 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
 
         await _postRepository.UpdateAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(post.ZernioPostId))
+        {
+            var updateRequest = new Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto(
+                Content: post.Content.Value,
+                ScheduledForUtc: post.ScheduledAt.IsNone ? null : post.ScheduledAt.UtcValue
+            );
+            await _zernioClient.UpdatePostAsync(post.ZernioPostId, updateRequest, cancellationToken);
+        }
 
         return PostMapper.ToDto(post);
     }

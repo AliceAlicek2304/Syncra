@@ -61,6 +61,11 @@ public interface IZernioClient
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default);
 
+    Task UpdatePostAsync(
+        string zernioPostId,
+        Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto request,
+        CancellationToken cancellationToken = default);
+
     Task RetryPostAsync(
         string zernioPostId,
         CancellationToken cancellationToken = default);

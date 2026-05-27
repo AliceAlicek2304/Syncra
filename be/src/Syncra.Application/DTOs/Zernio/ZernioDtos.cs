@@ -43,6 +43,10 @@ public sealed record ZernioCreatePostResult(
     string Status,
     int TargetCount);
 
+public sealed record ZernioUpdatePostRequestDto(
+    string Content,
+    DateTime? ScheduledForUtc);
+
 // ── Analytics DTOs ─────────────────────────────────────────────
 
 public sealed record ZernioDailyMetricsDto(

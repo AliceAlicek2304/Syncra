@@ -276,26 +276,46 @@ export default function PostsOverviewPage() {
       const apiIds = selectedPostIds.filter(id => !id.startsWith('csv-'))
       const csvIds = selectedPostIds.filter(id => id.startsWith('csv-'))
       
+      let successCount = 0
+      let failCount = 0
+      const failedIds: string[] = []
+      
       if (apiIds.length > 0 && workspaceId) {
-        await Promise.all(
-          apiIds.map(id => {
+        const results = await Promise.allSettled(
+          apiIds.map(async (id) => {
             const post = allMergedPosts.find(p => p.id === id)
             if (post && post.zernioPostId) {
-              return postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+              await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+            } else {
+              await postsApi.deletePost(workspaceId, id)
             }
-            return postsApi.deletePost(workspaceId, id)
+            return id
           })
         )
+        
+        results.forEach((result, idx) => {
+          if (result.status === 'fulfilled') {
+            successCount++
+          } else {
+            failCount++
+            failedIds.push(apiIds[idx])
+          }
+        })
       }
       
       if (csvIds.length > 0) {
         setCsvPosts(prev => prev.filter(p => !csvIds.includes(p.id)))
+        successCount += csvIds.length
       }
       
-      showSuccess(`Successfully deleted ${selectedPostIds.length} post(s)`)
-      setSelectedPostIds([])
+      if (successCount > 0) {
+        showSuccess(`Successfully deleted ${successCount} post(s)`)
+      }
       
-      if (workspaceId) {
+      // Keep only the failed posts selected
+      setSelectedPostIds(failedIds)
+      
+      if (successCount > 0 && workspaceId) {
         queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
       }
     } catch (err) {

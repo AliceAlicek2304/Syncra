@@ -431,86 +431,140 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var sdkRequest = new CreatePostRequest
+            var platforms = request.Platforms.Select(p =>
             {
-                Title = request.Title,
-                Content = request.Content,
-                PublishNow = request.PublishNow,
-                IsDraft = request.IsDraft ?? false,
-                Platforms = request.Platforms
-                    .Select(p => 
-                    {
-                        var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
-                        return new CreatePostRequestPlatformsInner
-                        {
-                            Platform = p.Platform,
-                            AccountId = p.ZernioAccountId,
-                            CustomContent = platformContent?.Caption,
-                            PlatformSpecificData = MapPlatformSpecificData(p.Platform)
-                        };
-                    })
-                    .ToList(),
-                MediaItems = request.MediaItems?.Select(m => new MediaItem(
-                    url: m.Url,
-                    type: Enum.TryParse<MediaItem.TypeEnum>(m.Type, true, out var parsedType) ? parsedType : default,
-                    filename: m.Filename,
-                    mimeType: m.MimeType
-                )).ToList()
+                var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
+                return new ZernioCreatePostPlatformInnerDto(
+                    p.Platform,
+                    p.ZernioAccountId,
+                    platformContent?.Caption,
+                    MapPlatformSpecificData(p.Platform, request)
+                );
+            }).ToList();
+
+            var mediaItems = request.MediaItems?.Select(m => new ZernioMediaItemRequestDto(
+                m.Url,
+                m.Type,
+                m.Filename,
+                m.MimeType
+            )).ToList();
+
+            TikTokSettingsDto? tiktokSettings = null;
+            if (request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
+            {
+                tiktokSettings = new TikTokSettingsDto(
+                    Draft: request.IsDraft ?? false,
+                    PrivacyLevel: "PUBLIC_TO_EVERYONE",
+                    AllowComment: true,
+                    AllowDuet: true,
+                    AllowStitch: true,
+                    ContentPreviewConfirmed: true,
+                    ExpressConsentGiven: true
+                );
+            }
+
+            var apiRequest = new ZernioCreatePostApiRequest(
+                request.Content,
+                platforms,
+                request.Title,
+                request.PublishNow ? null : request.ScheduledForUtc,
+                request.PublishNow,
+                request.IsDraft ?? false,
+                mediaItems,
+                tiktokSettings
+            );
+
+            _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions));
+
+            var config = _postsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts")
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
+            };
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                _logger.LogError("Zernio API error creating post. Status: {StatusCode}, Content: {Content}", httpResponse.StatusCode, json);
+                
+                if (httpResponse.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+                {
+                    throw new ZernioBillingRequiredException(
+                        "A paid Zernio plan is required to create posts.",
+                        reason: "post_limit_reached",
+                        dashboardUrl: "https://zernio.com/dashboard/billing",
+                        details: new { platforms = request.Platforms.Count });
+                }
+                
+                throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {json}");
+            }
+            
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            var postElement = document.RootElement.GetProperty("post");
+            var postId = postElement.TryGetProperty("_id", out var idEl) ? idEl.GetString() ?? string.Empty : string.Empty;
+            var status = postElement.TryGetProperty("status", out var statusEl) ? statusEl.GetString() ?? "scheduled" : "scheduled";
+
+            return new ZernioCreatePostResult(
+                postId,
+                status,
+                request.Platforms.Count);
+        }
+        catch (ZernioBillingRequiredException)
+        {
+            throw;
+        }
+        catch (DomainException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error creating post: {Message}", ex.Message);
+            throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {ex.Message}", ex);
+        }
+    }
+
+    public async Task UpdatePostAsync(
+        string zernioPostId,
+        Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.UpdatePostRequest
+            {
+                Content = request.Content
             };
 
-            if (!request.PublishNow && request.ScheduledForUtc.HasValue)
+            if (request.ScheduledForUtc.HasValue)
             {
                 sdkRequest.ScheduledFor = request.ScheduledForUtc.Value;
             }
 
-            if (request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
-            {
-                sdkRequest.TiktokSettings = new TikTokPlatformData
-                {
-                    Draft = request.IsDraft ?? false,
-                    PrivacyLevel = "PUBLIC_TO_EVERYONE",
-                    AllowComment = true,
-                    AllowDuet = true,
-                    AllowStitch = true,
-                    ContentPreviewConfirmed = true,
-                    ExpressConsentGiven = true
-                };
-            }
-
-            if (request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
-            {
-                sdkRequest.FacebookSettings = new FacebookPlatformData
-                {
-                    Draft = request.IsDraft ?? false
-                };
-            }
-
-            _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(sdkRequest));
-
-            var response = await _postsApi.CreatePostAsync(sdkRequest, null, cancellationToken);
-            var createdPost = response.Post;
-
-            return new ZernioCreatePostResult(
-                createdPost.Id,
-                createdPost.Status?.ToString() ?? "scheduled",
-                request.Platforms.Count);
+            await _postsApi.UpdatePostAsync(zernioPostId, sdkRequest, cancellationToken: cancellationToken);
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
         {
-            _logger.LogWarning(ex, "Zernio billing gate triggered for post creation");
+            _logger.LogWarning(ex, "Zernio billing gate triggered for post update {PostId}", zernioPostId);
             throw new ZernioBillingRequiredException(
-                "A paid Zernio plan is required to create posts.",
-                reason: "post_limit_reached",
+                "A paid Zernio plan is required to update posts.",
+                reason: "post_management_restricted",
                 dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { platforms = request.Platforms.Count });
+                details: new { zernioPostId });
         }
         catch (ApiException ex)
         {
             var errorContent = ex.GetType().GetProperty("Response")?.GetValue(ex) as string ?? 
                                ex.GetType().GetProperty("Content")?.GetValue(ex) as string ?? 
                                ex.Message;
-            _logger.LogError(ex, "Zernio API error creating post. ErrorCode: {ErrorCode}, Content: {Content}", ex.ErrorCode, errorContent);
-            throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {errorContent}", ex);
+            _logger.LogError(ex, "Zernio API error updating post {PostId}. ErrorCode: {ErrorCode}, Content: {Content}", zernioPostId, ex.ErrorCode, errorContent);
+            throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post. Error: {errorContent}", ex);
         }
     }
 
@@ -668,16 +722,29 @@ public sealed class ZernioClient : IZernioClient
         PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
     };
 
-    private static CreatePostRequestPlatformsInnerPlatformSpecificData? MapPlatformSpecificData(string platform)
+    private static object? MapPlatformSpecificData(string platform, ZernioCreatePostRequest request)
     {
-        // NOTE: Syncra currently does not support passing custom platform-specific settings overrides.
-        // Returning empty instances like 'new FacebookPlatformData()' serializes to '{}' (an empty object),
-        // which triggers a 'oneOf' schema collision in Zernio's validator (because '{}' matches all optional
-        // platform schemas simultaneously, violating 'oneOf').
-        // Additionally, TikTok settings must be passed in 'tiktokSettings' at the root-level of the request,
-        // and MUST NOT be passed under 'platformSpecificData'.
-        // Therefore, we return null to completely ignore/omit 'platformSpecificData' from the payload.
-        return null;
+        var normalizedPlatform = platform.ToLowerInvariant();
+
+        return normalizedPlatform switch
+        {
+            "pinterest" => new PinterestPlatformDataDto(Title: request.Title ?? "", BoardId: ""),
+
+            "youtube" => new YouTubePlatformDataDto(Title: request.Title ?? ""),
+
+            "reddit" => new RedditPlatformDataDto(Subreddit: "", Title: request.Title ?? ""),
+
+            "facebook" => new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
+
+            "instagram" => new InstagramPlatformDataDto(),
+
+            "linkedin" => new LinkedInPlatformDataDto(),
+
+            // TikTok settings must be at root level
+            "tiktok" => null,
+
+            _ => null
+        };
     }
 
     // ── Analytics methods ────────────────────────────────────────────────────
