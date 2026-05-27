@@ -174,7 +174,9 @@ export default function PostsOverviewPage() {
       // 2. Platform Filter
       if (platformFilter !== 'All platforms') {
         const filterLower = platformFilter.toLowerCase()
-        const platforms = post.platforms || []
+        const platforms = post.platforms?.length 
+          ? post.platforms 
+          : (post.platformTargets?.map(t => t.platform) || [])
         const hasPlatform = platforms.some(p => p.toLowerCase().includes(filterLower))
         if (!hasPlatform) return false
       }
@@ -842,7 +844,12 @@ export default function PostsOverviewPage() {
           {viewMode === 'grid' && (
             <div className={styles.gridContainer}>
               {paginatedPosts.map(post => {
-                const platform = post.platforms?.[0] || 'facebook'
+                const platforms = Array.from(new Set(
+                  post.platforms?.length 
+                    ? post.platforms 
+                    : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                ))
+                const displayPlatforms = platforms.length > 0 ? platforms : ['facebook']
                 const isChecked = selectedPostIds.includes(post.id)
                 return (
                   <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
@@ -867,7 +874,7 @@ export default function PostsOverviewPage() {
                         <p className={styles.cardTitle} title={post.content}>{post.content || post.title}</p>
                         
                         <div className={styles.platformBadgeWrapper} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          {(post.platforms && post.platforms.length > 0 ? post.platforms : [platform]).map((plat, idx) => (
+                          {displayPlatforms.map((plat, idx) => (
                             <div key={idx} className={styles.platformBadge}>
                               <PlatformIcon platform={plat} size={16} />
                               <span className={styles.platformBadgeDot}></span>
@@ -949,7 +956,12 @@ export default function PostsOverviewPage() {
                 </thead>
                 <tbody>
                   {paginatedPosts.map(post => {
-                    const platform = post.platforms?.[0] || 'facebook'
+                    const platforms = Array.from(new Set(
+                      post.platforms?.length 
+                        ? post.platforms 
+                        : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                    ))
+                    const displayPlatforms = platforms.length > 0 ? platforms : ['facebook']
                     const isChecked = selectedPostIds.includes(post.id)
                     return (
                       <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
@@ -966,7 +978,7 @@ export default function PostsOverviewPage() {
                         </td>
                         <td>
                           <div className={styles.tablePlatforms} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {(post.platforms && post.platforms.length > 0 ? post.platforms : [platform]).map((plat, idx) => (
+                            {displayPlatforms.map((plat, idx) => (
                               <PlatformIcon key={idx} platform={plat} size={16} />
                             ))}
                           </div>
