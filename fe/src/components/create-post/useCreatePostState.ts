@@ -10,10 +10,10 @@ import { postsApi } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 
-export function getUtcString(localStr: string, timezone: string): string {
-  if (!localStr) return ''
+export function getUtcString(localStr: string, timezone: string): string | undefined {
+  if (!localStr) return undefined
   const [datePart, timePart] = localStr.split('T')
-  if (!datePart || !timePart) return ''
+  if (!datePart || !timePart) return undefined
   const [year, month, day] = datePart.split('-').map(Number)
   const [hours, minutes] = timePart.split(':').map(Number)
   
@@ -506,6 +506,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
         }
       })
 
+      let resolvedScheduleTime = scheduleTime
+      if (scheduleMode && !resolvedScheduleTime) {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const year = tomorrow.getFullYear()
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+        const day = String(tomorrow.getDate()).padStart(2, '0')
+        resolvedScheduleTime = `${year}-${month}-${day}T09:00`
+      }
+
       const publishNow = !scheduleMode
 
       try {
@@ -521,7 +531,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
             
             const overrideTime = platformTimeOverrides[accountId]
             const scheduledAtUtc = scheduleMode
-              ? (overrideTime ? getUtcString(overrideTime, timezone) : (scheduleTime ? getUtcString(scheduleTime, timezone) : undefined))
+              ? (overrideTime ? getUtcString(overrideTime, timezone) : (resolvedScheduleTime ? getUtcString(resolvedScheduleTime, timezone) : undefined))
               : undefined
 
             const content = getResolvedContentForPlatform(account.platform as Platform)
