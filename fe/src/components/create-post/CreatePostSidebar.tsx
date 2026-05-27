@@ -99,7 +99,10 @@ export function RightPanel({ state, actions }: SidebarProps) {
           >
             {workspaceCount === 1 ? (
               <>
-                <span className={styles.profileYellowDot} />
+                <span 
+                  className={styles.profileYellowDot} 
+                  style={{ background: workspaces.find(w => w.id === state.selectedWorkspaceIds[0])?.color || '#f59e0b' }}
+                />
                 <span className={styles.workspaceDropdownLabel}>
                   {selectedWorkspaceNames}
                 </span>
@@ -107,9 +110,16 @@ export function RightPanel({ state, actions }: SidebarProps) {
             ) : workspaceCount > 1 ? (
               <>
                 <div className={styles.profileYellowDotsRow}>
-                  {Array.from({ length: workspaceCount }).map((_, i) => (
-                    <span key={i} className={styles.profileYellowDot} />
-                  ))}
+                  {state.selectedWorkspaceIds.map(id => {
+                    const ws = workspaces.find(w => w.id === id)
+                    return (
+                      <span 
+                        key={id} 
+                        className={styles.profileYellowDot} 
+                        style={{ background: ws?.color || '#f59e0b' }}
+                      />
+                    )
+                  })}
                 </div>
                 <span className={styles.workspaceDropdownLabel}>
                   {workspaceCount} workspaces selected
@@ -174,6 +184,10 @@ export function RightPanel({ state, actions }: SidebarProps) {
                         checked={isChecked}
                         onChange={() => toggleWorkspace(ws.id)}
                         className={styles.workspaceCheckboxInput}
+                      />
+                      <span 
+                        className={styles.profileYellowDot} 
+                        style={{ background: ws.color || '#f59e0b', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
                       />
                       <div className={styles.workspaceMeta}>
                         <div className={styles.workspaceName}>{ws.name}</div>
