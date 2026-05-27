@@ -1,11 +1,25 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, AlertCircle, X, ChevronDown } from 'lucide-react'
+import { Search, X, ChevronDown, Check } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { getPlatformValidationError } from './useCreatePostState'
 import type { Platform } from './types'
+import SchedulePicker from '../SchedulePicker'
 import styles from '../CreatePostModal.module.css'
+
+const getPlatformBrandColor = (platform: string): string => {
+  switch (platform) {
+    case 'facebook': return '#1877F2'
+    case 'tiktok': return '#000000'
+    case 'instagram': return '#E4405F'
+    case 'twitter': return '#000000'
+    case 'linkedin': return '#0A66C2'
+    case 'youtube': return '#FF0000'
+    case 'pinterest': return '#E60023'
+    default: return '#6b7280'
+  }
+}
 
 type SidebarProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
@@ -233,44 +247,72 @@ export function RightPanel({ state, actions }: SidebarProps) {
           </div>
         )}
 
-        <div className={styles.platformCardsGrid}>
+        <div className={styles.platformGrid}>
           {activeAccounts.map(account => {
             const isChecked = state.selectedSocialAccountIds.includes(account.id)
             const validationError = getPlatformValidationError(account.platform as Platform, state.media)
             const hasError = isChecked && !!validationError
+            const brandColor = getPlatformBrandColor(account.platform)
 
             return (
-              <div
+              <button
                 key={account.id}
+                type="button"
                 title={validationError || undefined}
-                className={`${styles.platformSelectCard} ${isChecked ? styles.platformSelectCardActive : ''} ${hasError ? styles.platformSelectCardError : ''}`}
+                className={`${styles.platformButtonCard} ${isChecked ? styles.platformButtonCardActive : ''} ${hasError ? styles.platformButtonCardError : ''}`}
                 onClick={() => actions.setSelectedSocialAccountIds(
                   isChecked
                     ? state.selectedSocialAccountIds.filter(id => id !== account.id)
                     : [...state.selectedSocialAccountIds, account.id]
                 )}
               >
-                <div className={`${styles.platformCardLogo} ${styles[`platformLogo_${account.platform}`]}`}>
-                  <ExtendedPlatformIcon platform={account.platform} size={16} />
-                </div>
-                <div className={styles.platformCardMeta}>
-                  <span className={styles.platformCardName}>
-                    {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
-                  </span>
-                  <span className={styles.platformCardHandle}>
-                    @{account.displayName}
-                  </span>
-                </div>
-                <div className={styles.platformCardCheckbox}>
-                  {hasError ? (
-                    <div className={styles.warningBadge} title={validationError!}>
-                      <AlertCircle size={14} className={styles.warningBadgeIcon} />
-                    </div>
+                <div className={styles.platformCardAvatar}>
+                  {account.avatarUrl ? (
+                    <img
+                      src={account.avatarUrl}
+                      alt={`${account.displayName} profile`}
+                      className={styles.platformAvatarImg}
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
-                    <span className={`${styles.customCheckbox} ${isChecked ? styles.customCheckboxChecked : ''}`} />
+                    <div
+                      className={styles.platformAvatarFallback}
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      <div className={styles.platformFallbackIcon}>
+                        <ExtendedPlatformIcon platform={account.platform} size={20} />
+                      </div>
+                    </div>
                   )}
+                  <div
+                    className={styles.platformAvatarBadge}
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    <div className={styles.platformBadgeIcon}>
+                      <ExtendedPlatformIcon platform={account.platform} size={24} />
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                <div className={styles.platformCardBody}>
+                  <div className={styles.platformCardName}>
+                    {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
+                  </div>
+                  <div className={styles.platformCardUsername}>
+                    @{account.displayName}
+                  </div>
+                </div>
+
+                {hasError ? (
+                  <div className={styles.errorBadge} title={validationError!}>
+                    !
+                  </div>
+                ) : isChecked ? (
+                  <div className={styles.checkedBadge}>
+                    <Check size={10} strokeWidth={3} />
+                  </div>
+                ) : null}
+              </button>
             )
           })}
           {activeAccounts.length === 0 && (
@@ -316,15 +358,19 @@ export function RightPanel({ state, actions }: SidebarProps) {
 
         {/* main schedule input details */}
         {(state.publishingTab === 'schedule' || state.publishingTab === 'draft') && (
-          <div className={styles.scheduleTimeSection}>
+          <>
+            {state.publishingTab === 'draft' && (
+              <div className={styles.draftNoticeCallout}>
+                Post will be saved as a draft and can be scheduled or published later
+              </div>
+            )}
+            <div className={styles.scheduleTimeSection}>
             <div className={styles.scheduleInputsRow}>
               <div className={styles.scheduleField}>
                 <label className={styles.fieldSubLabel}>date & time</label>
-                <input 
-                  type="datetime-local" 
-                  className={styles.datetimeInput}
+                <SchedulePicker
                   value={state.scheduleTime}
-                  onChange={e => actions.setScheduleTime(e.target.value)}
+                  onChange={actions.setScheduleTime}
                 />
               </div>
               <div className={styles.scheduleField}>
@@ -365,17 +411,15 @@ export function RightPanel({ state, actions }: SidebarProps) {
                             @{acc.displayName}
                           </span>
                         </div>
-                        <input
-                          type="datetime-local"
-                          className={styles.overrideDatetimeInput}
+                        <SchedulePicker
                           value={val}
-                          onChange={e => {
-                            const val = e.target.value
+                          onChange={v => {
                             actions.setPlatformTimeOverrides(prev => ({
                               ...prev,
-                              [id]: val
+                              [id]: v
                             }))
                           }}
+                          align="end"
                         />
                       </div>
                     )
@@ -384,6 +428,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
               </div>
             )}
           </div>
+          </>
         )}
 
         {state.publishingTab === 'now' && (

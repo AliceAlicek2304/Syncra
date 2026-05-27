@@ -9,11 +9,14 @@ interface SchedulePickerProps {
   value: string
   onChange: (val: string) => void
   onClear?: () => void
+  align?: 'start' | 'end'
 }
 
-export default function SchedulePicker({ value, onChange, onClear }: SchedulePickerProps) {
+export default function SchedulePicker({ value, onChange, onClear, align = 'start' }: SchedulePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
 
   const parseValue = (val: string) => {
     if (!val) {
@@ -47,6 +50,40 @@ export default function SchedulePicker({ value, onChange, onClear }: SchedulePic
     if (isOpen) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      const rect = popoverRef.current.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const padding = 16
+      
+      const parentRect = popoverRef.current.parentElement?.getBoundingClientRect()
+      if (!parentRect) return
+
+      let style: React.CSSProperties = {}
+
+      if (align === 'end') {
+        const projectedLeft = parentRect.right - rect.width
+        if (projectedLeft < padding) {
+          const shift = padding - projectedLeft
+          style.right = -shift
+        } else {
+          style.right = 0
+        }
+      } else {
+        const projectedRight = parentRect.left + rect.width
+        if (projectedRight > viewportWidth - padding) {
+          const shift = projectedRight - (viewportWidth - padding)
+          style.left = -shift
+        } else {
+          style.left = 0
+        }
+      }
+      setPopoverStyle(style)
+    } else {
+      setPopoverStyle({})
+    }
+  }, [isOpen, align])
 
   const handleUpdate = (d: Date | undefined, h: number, m: number) => {
     if (!d) return
@@ -99,7 +136,7 @@ export default function SchedulePicker({ value, onChange, onClear }: SchedulePic
       </button>
 
       {isOpen && (
-        <div className={styles.popover}>
+        <div className={styles.popover} ref={popoverRef} style={popoverStyle}>
           <DayPicker
             mode="single"
             selected={selectedDate}
