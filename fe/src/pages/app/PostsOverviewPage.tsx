@@ -1177,66 +1177,63 @@ export default function PostsOverviewPage() {
           <div 
             className={styles.editorModal} 
             style={{ 
-              maxWidth: 550, 
-              padding: '24px', 
+              width: '100%',
+              maxWidth: 640, 
+              padding: '32px', 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '20px', 
+              gap: '24px', 
               background: 'var(--clr-canvas)', 
               borderRadius: '12px', 
               border: '1px solid var(--clr-border)',
-              position: 'relative'
+              position: 'relative',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-ink)', fontFamily: 'var(--font-body)', margin: 0 }}>
-                Post Details
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ fontSize: 24, fontWeight: 600, color: 'var(--clr-ink)', fontFamily: 'var(--font-body)', margin: '0 0 6px 0' }}>
+                  Post Details
+                </h3>
+                <span style={{ fontSize: 14, color: 'var(--clr-body-mid)', fontFamily: 'var(--font-body)' }}>
+                  {selectedPostDetails.status === 'published' ? 'Published' : 'Scheduled'} on{' '}
+                  {(() => {
+                    const d = new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt);
+                    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + ' at ' + 
+                           d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                  })()}
+                </span>
+              </div>
               <button 
                 type="button"
                 onClick={() => setSelectedPostDetails(null)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--clr-body-mid)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
             {/* Content Body */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: '4px' }}>
               
-              {/* Platforms & Status row */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Platform:
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--clr-canvas-soft)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--clr-border)' }}>
-                  <PlatformIcon platform={selectedPostDetails.platforms?.[0] || 'facebook'} size={14} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-ink)' }}>
-                    {(selectedPostDetails.platforms?.[0] || 'facebook').toUpperCase()}
-                  </span>
-                </span>
-                
-                <span style={{ marginLeft: 'auto' }}>
-                  <StatusBadge status={selectedPostDetails.status} />
-                </span>
-              </div>
-
-              {/* Caption Card */}
-              <div style={{ background: 'var(--clr-canvas-soft)', border: '1px solid var(--clr-border)', borderRadius: '8px', padding: '14px', boxSizing: 'border-box' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase', marginBottom: '6px' }}>
-                  caption
+              {/* Caption Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-body-mid)', textTransform: 'lowercase', fontFamily: 'var(--font-body)' }}>
+                  content
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--clr-ink)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-body)' }}>
-                  {selectedPostDetails.content || selectedPostDetails.title || 'No caption text'}
-                </p>
+                <div style={{ background: 'var(--clr-canvas)', border: '1px solid var(--clr-border)', borderRadius: '8px', padding: '16px', boxSizing: 'border-box' }}>
+                  <p style={{ fontSize: 14, color: 'var(--clr-ink)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-body)' }}>
+                    {selectedPostDetails.content || selectedPostDetails.title || 'No content'}
+                  </p>
+                </div>
               </div>
 
               {/* Media Thumbnails if any */}
               {selectedPostDetails.mediaItems && selectedPostDetails.mediaItems.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-body-mid)', textTransform: 'lowercase', fontFamily: 'var(--font-body)' }}>
                     media
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
@@ -1253,46 +1250,119 @@ export default function PostsOverviewPage() {
                 </div>
               )}
 
-              {/* Metadata Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', borderTop: '1px solid var(--clr-border)', paddingTop: '14px', marginTop: '4px' }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
-                    schedule date
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
-                    {formatPostDate(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt)}
-                  </div>
+              {/* Platforms Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-body-mid)', textTransform: 'lowercase', fontFamily: 'var(--font-body)' }}>
+                  platforms
                 </div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
-                    author
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
-                    {user?.displayName || 'You'}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
-                    post id
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--clr-body-mid)', marginTop: '2px', fontFamily: 'monospace' }}>
-                    {selectedPostDetails.id}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-body-mid)', textTransform: 'lowercase' }}>
-                    workspace
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px' }}>
-                    {activeWorkspace?.name || 'Default Workspace'}
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(() => {
+                    const targets = selectedPostDetails.platformTargets || [];
+                    if (targets.length === 0) {
+                      // Fallback when platformTargets is empty (render from platforms array)
+                      const platforms = selectedPostDetails.platforms || ['facebook'];
+                      return platforms.map((plat) => {
+                        const isPub = selectedPostDetails.status === 'published';
+                        const fallbackUrl = plat.toLowerCase() === 'facebook' 
+                          ? 'https://www.facebook.com' 
+                          : `https://${plat.toLowerCase()}.com`;
+                        return (
+                          <div 
+                            key={plat} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between', 
+                              padding: '12px 16px', 
+                              background: 'var(--clr-canvas-soft)', 
+                              border: '1px solid var(--clr-border)', 
+                              borderRadius: '8px' 
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <PlatformIcon platform={plat} size={20} />
+                              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
+                                {plat}
+                              </span>
+                              <StatusBadge status={selectedPostDetails.status} />
+                              <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
+                                {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
+                              </span>
+                            </div>
+                            {isPub && (
+                              <a 
+                                href={fallbackUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', borderBottom: '1px solid transparent', paddingBottom: '2px' }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
+                              >
+                                View on {plat.toLowerCase()}
+                              </a>
+                            )}
+                          </div>
+                        );
+                      });
+                    }
+
+                    return targets.map((target) => {
+                      const isPub = target.status === 'Published' || selectedPostDetails.status === 'published';
+                      const linkPlatform = target.platform.toLowerCase();
+                      const fallbackUrl = linkPlatform === 'facebook' 
+                        ? 'https://www.facebook.com' 
+                        : `https://${linkPlatform}.com`;
+                      const destinationUrl = target.externalPostUrl || fallbackUrl;
+
+                      return (
+                        <div 
+                          key={target.id} 
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            padding: '12px 16px', 
+                            background: 'var(--clr-canvas-soft)', 
+                            border: '1px solid var(--clr-border)', 
+                            borderRadius: '8px' 
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <PlatformIcon platform={target.platform} size={20} />
+                            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
+                              {target.platform}
+                            </span>
+                            <StatusBadge status={target.status.toLowerCase() as any} />
+                            <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
+                              {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          {isPub && (
+                            <a 
+                              href={destinationUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', transition: 'color 0.2s' }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
+                            >
+                              View on {target.platform.toLowerCase()}
+                            </a>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
             </div>
 
-            {/* Footer Buttons */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid var(--clr-border)', paddingTop: '16px', marginTop: '4px' }}>
+            {/* Modal Bottom / ID */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--clr-border)', paddingTop: '16px', marginTop: '4px' }}>
+              <span style={{ fontSize: 12, color: 'var(--clr-body-mid)', fontFamily: 'monospace' }}>
+                Post ID: {selectedPostDetails.id}
+              </span>
               <button
                 type="button"
                 className={styles.pageBtn}
