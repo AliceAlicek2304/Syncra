@@ -10,6 +10,7 @@ import { postsApi } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
 import { mediaApi } from '../../api/media'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
+import type { AllPlatformData } from './PlatformSpecificForm'
 
 export function getUtcString(localStr: string, timezone: string): string | undefined {
   if (!localStr) return undefined
@@ -247,6 +248,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [platformTimeOverrides, setPlatformTimeOverrides] = useState<Record<string, string>>({})
   const [timezone, setTimezone] = useState('Bangkok')
 
+  // Per-platform advanced settings (PlatformSpecificForm)
+  const [platformSpecificData, setPlatformSpecificData] = useState<AllPlatformData>({})
+
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
     tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false
   })
@@ -433,6 +437,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setPlatformTimeOverrides({})
     setIsCreatingGroup(false)
     setNewGroupName('')
+    setPlatformSpecificData({})
     initialSnapshotRef.current = null
     didInitRef.current = false
   }, [mediaHook, aiHook])
@@ -946,6 +951,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       platformTimeOverrides,
       timezone,
       mainContent,
+      platformSpecificData,
     },
     refs,
     actions: {
@@ -990,6 +996,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setTiktokPhotoDescription,
       setPlatformTimeOverrides,
       setTimezone,
+      setPlatformSpecificData,
     }
   }
 }

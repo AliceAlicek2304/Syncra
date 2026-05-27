@@ -1,0 +1,457 @@
+/* ──────────────────────────────────────────────
+   PlatformSpecificForm — per-platform config UI
+   Follows DESIGN.md: warm canvas, coffee ink, orange primary
+   ────────────────────────────────────────────── */
+
+/* ── Platform Section Wrapper ── */
+.platformSection {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-canvas);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.platformSection:hover {
+  box-shadow: 0 2px 8px rgba(32, 21, 21, 0.06);
+}
+
+/* ── Accordion Header ── */
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--clr-canvas);
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s ease;
+  font-family: inherit;
+  color: var(--clr-ink);
+}
+
+.accordionHeader:hover {
+  background: var(--clr-canvas-soft);
+}
+
+.platformBadge {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.platformTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clr-ink);
+  flex: 1;
+}
+
+.accordionChevron {
+  color: var(--clr-body-mid);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.accordionChevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Accordion Body ── */
+.accordionBody {
+  border-top: 1px solid var(--clr-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: slideDown 0.18s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Field Groups ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-body-mid);
+  text-transform: lowercase;
+  letter-spacing: 0.01em;
+}
+
+.labelRequired::after {
+  content: ' *';
+  color: var(--clr-primary);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--clr-mute);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ── Text Inputs ── */
+.input,
+.select,
+.textarea {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-canvas);
+  color: var(--clr-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--clr-primary);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--clr-mute);
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23939084' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* ── Switch / Toggle ── */
+.switchRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.switchTrack {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+  background: var(--clr-border);
+  margin-top: 1px;
+}
+
+.switchTrack.switchOn {
+  background: var(--clr-primary);
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.switchOn .switchKnob {
+  transform: translateX(16px);
+}
+
+.switchMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.switchLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-ink);
+  line-height: 1.3;
+}
+
+.switchDesc {
+  font-size: 11px;
+  color: var(--clr-body-mid);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ── SubForm (object / nested) ── */
+.subFormBox {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-canvas-soft);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subFormTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-ink-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Array Items ── */
+.arrayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.arrayItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arrayItem {
+  position: relative;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-canvas);
+  padding: 10px 10px 10px 12px;
+}
+
+.arrayItemIndex {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--clr-mute);
+}
+
+.arrayItemBody {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arrayItemRemoveBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--clr-mute);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.arrayItemRemoveBtn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* ── Add Button ── */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--clr-primary);
+  background: transparent;
+  border: 1px dashed var(--clr-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.addBtn:hover {
+  background: rgba(255, 79, 0, 0.04);
+}
+
+/* ── Geo Restriction ── */
+.countriesTagInput {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  min-height: 40px;
+  cursor: text;
+  transition: border-color 0.15s ease;
+  background: var(--clr-canvas);
+}
+
+.countriesTagInput:focus-within {
+  border-color: var(--clr-primary);
+}
+
+.countryTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-ink-mid);
+  text-transform: uppercase;
+}
+
+.countryTagRemove {
+  border: none;
+  background: none;
+  color: var(--clr-mute);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  font-size: 10px;
+}
+
+.countryTagRemove:hover {
+  color: #ef4444;
+}
+
+.countriesInput {
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: var(--clr-ink);
+  background: transparent;
+  min-width: 60px;
+  font-family: inherit;
+}
+
+/* ── Todo Banner ── */
+.todoBanner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 79, 0, 0.05);
+  border: 1px solid rgba(255, 79, 0, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--clr-body);
+  font-style: italic;
+}
+
+/* ── Section divider ── */
+.sectionDivider {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 2px 0;
+}
+
+/* ── Conditional field (shows when parent is active) ── */
+.conditionalField {
+  animation: slideDown 0.15s ease;
+}
+
+/* ── Tab strip (Facebook content type) ── */
+.tabStrip {
+  display: flex;
+  background: var(--clr-border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.tabBtn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--clr-body-mid);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.tabBtnActive {
+  background: var(--clr-canvas);
+  color: var(--clr-ink);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tabBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Color swatch for Discord embed ── */
+.colorSwatchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--clr-border);
+  cursor: pointer;
+}
+
+/* ── Datetime pair (GBP event) ── */
+.dateTimePair {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
