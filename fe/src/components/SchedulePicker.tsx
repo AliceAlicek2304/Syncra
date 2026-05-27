@@ -1,6 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
-import { format } from 'date-fns'
-import { CalendarDays } from 'lucide-react'
+import { 
+  format, 
+  addMonths, 
+  subMonths, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval, 
+  startOfWeek, 
+  endOfWeek, 
+  isSameDay, 
+  isToday as isDateToday 
+} from 'date-fns'
+import { CalendarDays, ChevronUp, ChevronDown } from 'lucide-react'
 import styles from './SchedulePicker.module.css'
 
 interface SchedulePickerProps {
@@ -16,6 +27,42 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
   const popoverRef = useRef<HTMLDivElement>(null)
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
 
+  const hourListRef = useRef<HTMLDivElement>(null)
+  const minuteListRef = useRef<HTMLDivElement>(null)
+  const amPmListRef = useRef<HTMLDivElement>(null)
+
+  const parseValue = (val: string) => {
+    if (!val) {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      return { date: tomorrow, hour: 9, minute: 0, isPM: false }
+    }
+    const [d, t] = val.split('T')
+    if (!d || !t) return { date: new Date(), hour: 9, minute: 0, isPM: false }
+    const [y, m, day] = d.split('-').map(Number)
+    const [hr, min] = t.split(':').map(Number)
+    
+    const isPM = hr >= 12
+    const displayHour = hr % 12 === 0 ? 12 : hr % 12
+    return {
+      date: new Date(y, m - 1, day),
+      hour: displayHour,
+      minute: min,
+      isPM
+    }
+  }
+
+  const { date: selectedDate, hour, minute, isPM } = parseValue(value)
+  const [currentMonth, setCurrentMonth] = useState(selectedDate || new Date())
+
+  // Keep track of the current month view centered on selected date
+  useEffect(() => {
+    if (selectedDate) {
+      setCurrentMonth(selectedDate)
+    }
+  }, [value])
+
+  // Click outside listener
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -26,6 +73,19 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
+  // Scroll time columns into view when popover opens
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        hourListRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+        minuteListRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+        amPmListRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+      }, 80)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, hour, minute, isPM])
+
+  // Position alignment
   useEffect(() => {
     if (isOpen && popoverRef.current) {
       const rect = popoverRef.current.getBoundingClientRect()
@@ -60,51 +120,50 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
     }
   }, [isOpen, align])
 
-  const getInitialValues = () => {
-    if (!value) {
-      const tmrw = new Date()
-      tmrw.setDate(tmrw.getDate() + 1)
-      const y = tmrw.getFullYear()
-      const m = String(tmrw.getMonth() + 1).padStart(2, '0')
-      const d = String(tmrw.getDate()).padStart(2, '0')
-      return { date: `${y}-${m}-${d}`, time: '09:00' }
-    }
-    const [d, t] = value.split('T')
-    return { date: d || '', time: t ? t.substring(0, 5) : '09:00' }
+  const handleUpdate = (newDate: Date, newHour: number, newMin: number, pm: boolean) => {
+    const year = newDate.getFullYear()
+    const month = String(newDate.getMonth() + 1).padStart(2, '0')
+    const day = String(newDate.getDate()).padStart(2, '0')
+    
+    let militaryHour = newHour
+    if (pm && newHour < 12) militaryHour += 12
+    if (!pm && newHour === 12) militaryHour = 0
+    
+    const hh = String(militaryHour).padStart(2, '0')
+    const mm = String(newMin).padStart(2, '0')
+    onChange(`${year}-${month}-${day}T${hh}:${mm}`)
   }
 
-  const { date: dateString, time: timeString } = getInitialValues()
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = e.target.value
-    onChange(`${newDate}T${timeString}`)
+  const handleDateSelect = (d: Date) => {
+    handleUpdate(d, hour, minute, isPM)
   }
 
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = e.target.value
-    onChange(`${dateString}T${newTime}`)
+  const handleHourSelect = (h: number) => {
+    handleUpdate(selectedDate || new Date(), h, minute, isPM)
   }
 
-  const parseDate = (dStr: string) => {
-    if (!dStr) return null
-    const [y, m, d] = dStr.split('-').map(Number)
-    return new Date(y, m - 1, d)
+  const handleMinuteSelect = (m: number) => {
+    handleUpdate(selectedDate || new Date(), hour, m, isPM)
   }
 
-  const formatDisplayTime = (tStr: string) => {
-    if (!tStr) return ''
-    const [hStr, mStr] = tStr.split(':')
-    const h = parseInt(hStr, 10)
-    const m = parseInt(mStr, 10)
-    const isPM = h >= 12
-    const displayHour = h % 12 === 0 ? 12 : h % 12
-    return `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`
+  const handleAmPmSelect = (pm: boolean) => {
+    handleUpdate(selectedDate || new Date(), hour, minute, pm)
   }
 
-  const parsedDate = parseDate(dateString)
-  const displayValue = (value && parsedDate) 
-    ? format(parsedDate, 'MMM d, yyyy') + ` at ${formatDisplayTime(timeString)}` 
+  // Format trigger display value
+  const displayValue = value
+    ? format(selectedDate, 'MM/dd/yyyy') + ` ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`
     : 'Select date & time'
+
+  // Generate calendar days
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(monthStart)
+  const calendarStart = startOfWeek(monthStart)
+  const calendarEnd = endOfWeek(monthEnd)
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+
+  const hoursArray = Array.from({ length: 12 }, (_, i) => i + 1)
+  const minutesArray = Array.from({ length: 60 }, (_, i) => i)
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -113,47 +172,152 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
         className={styles.trigger} 
         onClick={() => setIsOpen(!isOpen)}
       >
-        <CalendarDays size={14} />
-        {displayValue}
+        <span>{displayValue}</span>
+        <CalendarDays size={16} className={styles.triggerIcon} />
       </button>
 
       {isOpen && (
         <div className={styles.popover} ref={popoverRef} style={popoverStyle}>
-          <div className={styles.customDateInputs}>
-            <label className={styles.dateLabel}>Date:</label>
-            <input 
-              type="date" 
-              value={dateString} 
-              onChange={handleDateChange}
-              className={styles.datePickerInput}
-            />
-            <label className={styles.dateLabel}>Time:</label>
-            <input 
-              type="time" 
-              value={timeString} 
-              onChange={handleTimeChange}
-              className={styles.datePickerInput}
-            />
-            <div className={styles.actionButtons}>
-              <button 
-                type="button"
-                onClick={() => setIsOpen(false)} 
-                className={styles.applyDateBtn}
-              >
-                Apply
-              </button>
-              {onClear && (
+          <div className={styles.popoverBody}>
+            {/* Left side: Calendar */}
+            <div className={styles.calendarSection}>
+              <div className={styles.calendarHeader}>
+                <span className={styles.monthLabel}>{format(currentMonth, 'MMMM yyyy')}</span>
+                <div className={styles.navButtons}>
+                  <button 
+                    type="button" 
+                    className={styles.navBtn} 
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  >
+                    <ChevronUp size={16} style={{ transform: 'rotate(-90deg)' }} />
+                  </button>
+                  <button 
+                    type="button" 
+                    className={styles.navBtn} 
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  >
+                    <ChevronDown size={16} style={{ transform: 'rotate(-90deg)' }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Day headers */}
+              <div className={styles.daysGridHeader}>
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                  <div key={d} className={styles.dayOfWeek}>{d}</div>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div className={styles.daysGrid}>
+                {calendarDays.map((day, idx) => {
+                  const isSelected = selectedDate && isSameDay(day, selectedDate)
+                  const isCurrentMonth = day.getMonth() === currentMonth.getMonth()
+                  const isTodayDate = isDateToday(day)
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleDateSelect(day)}
+                      className={`${styles.dayButton} ${isSelected ? styles.daySelected : ''} ${!isCurrentMonth ? styles.dayOutside : ''} ${isTodayDate && !isSelected ? styles.dayToday : ''}`}
+                    >
+                      {day.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Calendar Footer */}
+              <div className={styles.calendarFooter}>
                 <button 
                   type="button" 
-                  className={styles.clearBtn}
+                  className={styles.footerLink}
                   onClick={() => {
-                    onClear()
+                    if (onClear) {
+                      onClear()
+                    } else {
+                      onChange('')
+                    }
                     setIsOpen(false)
                   }}
                 >
                   Clear
                 </button>
-              )}
+                <button 
+                  type="button" 
+                  className={styles.footerLink}
+                  onClick={() => {
+                    const today = new Date()
+                    handleDateSelect(today)
+                    setCurrentMonth(today)
+                  }}
+                >
+                  Today
+                </button>
+              </div>
+            </div>
+
+            {/* Vertical Line Separator */}
+            <div className={styles.divider} />
+
+            {/* Right side: Time columns */}
+            <div className={styles.timeSection}>
+              {/* Hours Column */}
+              <div className={styles.timeColumn} ref={hourListRef}>
+                {hoursArray.map(h => {
+                  const active = hour === h
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      data-selected={active}
+                      className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
+                      onClick={() => handleHourSelect(h)}
+                    >
+                      {String(h).padStart(2, '0')}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Minutes Column */}
+              <div className={styles.timeColumn} ref={minuteListRef}>
+                {minutesArray.map(m => {
+                  const active = minute === m
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      data-selected={active}
+                      className={`${styles.timeItem} ${active ? styles.timeItemActive : ''}`}
+                      onClick={() => handleMinuteSelect(m)}
+                    >
+                      {String(m).padStart(2, '0')}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* AM/PM Column */}
+              <div className={styles.timeColumn} ref={amPmListRef}>
+                <button
+                  type="button"
+                  data-selected={!isPM}
+                  className={`${styles.timeItem} ${!isPM ? styles.timeItemActive : ''}`}
+                  onClick={() => handleAmPmSelect(false)}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  data-selected={isPM}
+                  className={`${styles.timeItem} ${isPM ? styles.timeItemActive : ''}`}
+                  onClick={() => handleAmPmSelect(true)}
+                >
+                  PM
+                </button>
+              </div>
             </div>
           </div>
         </div>
