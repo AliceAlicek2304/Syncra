@@ -35,21 +35,10 @@ public sealed class CreateZernioPostCommandValidator : AbstractValidator<CreateZ
             .Must(BeFutureWhenSpecified)
             .When(x => x.ScheduledAtUtc.HasValue)
             .WithMessage("Scheduled time must be in the future.");
-
-        RuleFor(x => x)
-            .Must(HaveValidScheduleChoice)
-            .WithMessage("Either ScheduledAtUtc or PublishNow must be set, but not both.");
     }
 
     private static bool BeFutureWhenSpecified(DateTime? scheduledAtUtc)
     {
         return !scheduledAtUtc.HasValue || scheduledAtUtc.Value > DateTime.UtcNow;
-    }
-
-    private static bool HaveValidScheduleChoice(CreateZernioPostCommand command)
-    {
-        var hasSchedule = command.ScheduledAtUtc.HasValue;
-        var publishNow = command.PublishNow;
-        return (hasSchedule && !publishNow) || (!hasSchedule && publishNow);
     }
 }
