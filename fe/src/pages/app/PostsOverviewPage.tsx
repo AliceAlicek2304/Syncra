@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
-  X, HelpCircle, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
+  X, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
   MoreVertical, Copy, Check, Trash2
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -16,99 +16,10 @@ import type { SocialAccountDto } from '../../api/socialAccounts'
 import styles from './PostsOverviewPage.module.css'
 import SchedulePicker from '../../components/SchedulePicker'
 
-// ─── Platform Icon Definitions ───
+import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
+
 const PlatformIcon = ({ platform, size = 18 }: { platform: string; size?: number }) => {
-  const name = platform.toLowerCase()
-  
-  if (name.includes('facebook')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.025 4.416 11.018 10.125 11.913v-8.427H7.078v-3.486h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.486h-2.796v8.427C19.584 23.09 24 18.098 24 12.073z" fill="#1877F2"/>
-      </svg>
-    )
-  }
-  if (name.includes('instagram')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <radialGradient id="ig-grad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(27.5 27.5 -27.5 27.5 27.5 0)">
-          <stop offset="0" stopColor="#E09B3D"/>
-          <stop offset=".3" stopColor="#C74C4D"/>
-          <stop offset=".6" stopColor="#C21975"/>
-          <stop offset="1" stopColor="#7024C4"/>
-        </radialGradient>
-        <rect width="24" height="24" rx="6" fill="url(#ig-grad)"/>
-        <path d="M12 6.857a5.143 5.143 0 100 10.286 5.143 5.143 0 000-10.286zm0 8.571a3.429 3.429 0 110-6.858 3.429 3.429 0 010 6.858zm5.286-9.117a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('tiktok') || name.includes('d')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="#000000"/>
-        <path d="M16.8 7.2a4.4 4.4 0 01-3.6-1.6v6.4c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c.4 0 .8.1 1.2.2v2.1c-.4-.2-.8-.3-1.2-.3-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2V4.8h2c0 1.3 1.1 2.4 2.4 2.4H16.8z" fill="#FFF"/>
-        <path d="M16.8 7.2a4.4 4.4 0 01-3.6-1.6v.2a4.4 4.4 0 003.6 1.4h.2z" fill="#25F4EE"/>
-      </svg>
-    )
-  }
-  if (name.includes('youtube')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="#FF0000"/>
-        <path d="M9.6 15.6l6-3.6-6-3.6v7.2z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('linkedin')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="#0A66C2"/>
-        <path d="M6.2 18V8.8H3.2V18H6.2zM4.7 7.5c1 0 1.8-.8 1.8-1.8S5.7 3.9 4.7 3.9 2.9 4.7 2.9 5.7s.8 1.8 1.8 1.8zM18 18v-5.2c0-2.8-1.5-4.1-3.5-4.1-1.6 0-2.3.9-2.7 1.5v-1.4H8.8V18h3V13.1c0-.3 0-.5.1-.7.2-.5.7-1.1 1.5-1.1.9 0 1.3.8 1.3 2V18h3z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('twitter') || name.includes('x')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="#000000"/>
-        <path d="M14.2 4.8h1.8l-4 4.5 4.7 6.2h-3.6l-2.8-3.7-3.2 3.7H5.3l4.2-4.8L5 4.8h3.7l2.6 3.4 2.9-3.4zm-.6 9.6h1l-6.4-8.5H7.2l6.4 8.5z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('threads')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="#101010"/>
-        <path d="M12 4.8c-3.9 0-5.8 2-5.8 5.7 0 2.2.8 3.8 2.2 4.7.9.6 2 .9 3.2.9 1.6 0 2.9-.6 3.6-1.7l-1.3-1c-.5.7-1.3 1.1-2.3 1.1-.9 0-1.7-.2-2.3-.7-.9-.7-1.3-1.8-1.3-3.3 0-3.1 1.4-4.2 4.2-4.2s4.2 1.1 4.2 4.2v.9c0 .7-.4 1.1-1.1 1.1s-1.1-.4-1.1-1.1v-2.8c0-1.8-.8-2.6-2.2-2.6S9.1 8 9.1 9.8v1.6c0 1.8.8 2.6 2.2 2.6.7 0 1.3-.2 1.8-.7.4.8 1.1 1.3 2.1 1.3 1.9 0 2.8-1.3 2.8-2.7V10.5c0-3.7-1.9-5.7-5.8-5.7zm-1.4 6.6V9.8c0-.9.4-1.3.9-1.3s.9.4.9 1.3v1.6c0 .9-.4 1.3-.9 1.3s-.9-.4-.9-1.3z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('pinterest')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="12" fill="#E60023"/>
-        <path d="M12 3.6c-4.6 0-8.4 3.8-8.4 8.4 0 3.6 2.2 6.6 5.4 7.8-.1-.7-.2-1.7 0-2.4l1.2-5c-.3-.6-.5-1.5-.5-2.5 0-2.3 1.4-4.1 3-4.1 1.4 0 2.1 1.1 2.1 2.4 0 1.4-.9 3.6-1.4 5.6-.4 1.7.9 3.1 2.6 3.1 3.1 0 5.5-3.3 5.5-8 0-4.2-3-7.1-7.3-7.1C9.6 3.6 6.3 6.9 6.3 11.5c0 1.5.6 3.1 1.3 4 .1.2.2.3.1.5l-.5 2c-.1.3-.3.4-.6.2-2-1-3.3-3.9-3.3-6.2C3.3 7 7 2.4 12.6 2.4c4.3 0 7.7 3.1 7.7 7.2 0 4.3-2.7 7.8-6.5 7.8-1.3 0-2.5-.7-2.9-1.5l-.8 3.1c-.3 1.1-.9 2.2-1.4 3 1.1.3 2.3.5 3.6.5 4.6 0 8.4-3.8 8.4-8.4 0-4.6-3.8-8.4-8.4-8.4z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('reddit')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="12" fill="#FF4500"/>
-        <path d="M18.6 11.4c0-.8-.7-1.4-1.4-1.4-.4 0-.7.2-.9.4-1-.7-2.4-1.2-4-1.3l.9-2.7 2.4.5c.1.5.5.9 1 1 .6 0 1-.4 1-1s-.4-1-1-1c-.5 0-.9.3-1 .8l-2.7-.6c-.2 0-.4.2-.4.4l-1 3.1c-1.6 0-3 .5-4.1 1.2-.2-.2-.5-.4-.9-.4-.8 0-1.4.7-1.4 1.4 0 .5.3 1 .7 1.2-.1.3-.1.6-.1.9 0 2.4 2.8 4.3 6.2 4.3s6.2-1.9 6.2-4.3c0-.3 0-.6-.1-.9.5-.2.7-.7.7-1.2zm-9.3.9c.5 0 .9.4 0 .9s-.9.4-.9.9c.5 0 .9-.4.9-.9zm5.5 2.6c-1 1-2.9 1-3.9 0-.1-.1-.1-.3 0-.4s.3-.1.4 0c.8.8 2.3.8 3.1 0 .1-.1.3-.1.4 0s.1.3 0 .4zm-1.8-1.7c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  if (name.includes('telegram')) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="12" fill="#229ED9"/>
-        <path d="M17.4 7.8l-2.4 11.4c-.2.8-.7 1-1.4.6l-3.7-2.7-1.8 1.7c-.2.2-.4.4-.8.4l.3-3.8 6.9-6.2c.3-.3-.1-.4-.5-.1l-8.5 5.4-3.7-1.2c-.8-.2-.8-.8.2-1.2L16 6.3c.7-.3 1.4.2 1.4 1.5z" fill="#FFF"/>
-      </svg>
-    )
-  }
-  
-  // Default Lucide HelpCircle as fallback
-  return <HelpCircle size={size} className={styles.fallbackIcon} />
+  return <ExtendedPlatformIcon platform={platform} size={size} />
 }
 
 // ─── Status Badge Definition ───
@@ -147,7 +58,7 @@ const StatusBadge = ({ status }: { status: Post['status'] }) => {
 export default function PostsOverviewPage() {
   const { workspaces, activeWorkspace } = useWorkspace()
   const { user } = useAuth()
-  const { openCreatePost } = useCreatePostModal()
+  const { openCreatePost, openEditPost } = useCreatePostModal()
   const { success: showSuccess } = useToast()
   
   const queryClient = useQueryClient()
@@ -169,7 +80,7 @@ export default function PostsOverviewPage() {
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'calendar'>('grid')
-  const [limitPerPage, setLimitPerPage] = useState<number>(4)
+  const [limitPerPage] = useState<number>(20)
   const [currentPage, setCurrentPage] = useState<number>(1)
   
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
@@ -181,18 +92,21 @@ export default function PostsOverviewPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
 
   // ─── Fetch Active Connected Profiles ───
-  const { data: socialAccounts = [] } = useQuery<SocialAccountDto[]>({
+  const { data: socialAccountsPage } = useQuery<ReturnType<typeof socialAccountsApi.getSocialAccounts> extends Promise<infer R> ? R : never>({
     queryKey: ['social-accounts', workspaceId],
     enabled: Boolean(workspaceId),
     queryFn: () => socialAccountsApi.getSocialAccounts(workspaceId!),
   })
+  const socialAccounts: SocialAccountDto[] = socialAccountsPage?.items ?? []
 
   // ─── Fetch Posts from API ───
-  const { data: apiPosts = [], isLoading: isPostsLoading } = useQuery<Post[]>({
-    queryKey: ['posts', workspaceId],
+  const statusParam = statusFilter !== 'All posts' ? statusFilter.toLowerCase() : undefined
+  const { data: postsPage, isLoading: isPostsLoading } = useQuery({
+    queryKey: ['posts', workspaceId, statusParam],
     enabled: Boolean(workspaceId),
-    queryFn: () => postsApi.getPosts(workspaceId!),
+    queryFn: () => postsApi.getPosts(workspaceId!, statusParam ? { status: statusParam } : undefined),
   })
+  const apiPosts: Post[] = postsPage?.items ?? []
 
   // ─── CSV Import Posts ───
   const [csvPosts, setCsvPosts] = useState<Post[]>([])
@@ -201,6 +115,32 @@ export default function PostsOverviewPage() {
     e.stopPropagation()
     navigator.clipboard.writeText(text)
     showSuccess("Copied post ID to clipboard!")
+  }
+
+  const handlePostClick = (post: Post) => {
+    if (post.status === 'published') {
+      setSelectedPostDetails(post)
+    } else if (post.status === 'scheduled' || post.status === 'draft') {
+      const scheduledDate = new Date(post.scheduledAtUtc || post.createdAt)
+      const scheduledTimeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) // e.g. "14:30"
+      openEditPost({
+        id: post.id,
+        title: post.title,
+        caption: post.content || '',
+        platform: post.platforms?.[0] || 'facebook',
+        status: post.status,
+        year: scheduledDate.getFullYear(),
+        month: scheduledDate.getMonth(),
+        day: scheduledDate.getDate(),
+        time: scheduledTimeStr,
+        color: '#ff4f00',
+        hashtags: [],
+        zernioPostId: post.zernioPostId,
+        platformTargets: post.platformTargets,
+        mediaItems: post.mediaItems,
+        media: post.mediaItems
+      })
+    }
   }
 
   // Close dropdown when clicking outside
@@ -573,7 +513,7 @@ export default function PostsOverviewPage() {
                       key={p.id} 
                       className={`${styles.calendarPostBadge} ${p.status === 'published' ? styles.calPublished : styles.calScheduled}`}
                       title={p.content || p.title}
-                      onClick={(e) => { e.stopPropagation(); setSelectedPostDetails(p); }}
+                      onClick={(e) => { e.stopPropagation(); handlePostClick(p); }}
                       style={{ cursor: 'pointer' }}
                     >
                       <span className={styles.calPostTitle}>{p.title}</span>
@@ -844,24 +784,7 @@ export default function PostsOverviewPage() {
             </button>
           </div>
 
-          {/* Pagination limit control */}
-          {viewMode !== 'calendar' && (
-            <div className={styles.limitControl}>
-              <button 
-                onClick={() => setLimitPerPage(prev => Math.max(1, prev - 1))}
-                className={styles.limitBtn}
-              >
-                -
-              </button>
-              <span className={styles.limitValue}>{limitPerPage}</span>
-              <button 
-                onClick={() => setLimitPerPage(prev => prev + 1)}
-                className={styles.limitBtn}
-              >
-                +
-              </button>
-            </div>
-          )}
+
 
         </div>
       </div>
@@ -922,7 +845,7 @@ export default function PostsOverviewPage() {
                 const platform = post.platforms?.[0] || 'facebook'
                 const isChecked = selectedPostIds.includes(post.id)
                 return (
-                  <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`} onClick={() => setSelectedPostDetails(post)} style={{ cursor: 'pointer' }}>
+                  <div key={post.id} className={`${styles.postCard} ${isChecked ? styles.postCardChecked : ''}`} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
                     {/* Hover check button */}
                     <div className={`${styles.checkboxContainer} ${isChecked || selectedPostIds.length > 0 ? styles.checkboxContainerActive : ''}`}>
                       <button 
@@ -943,11 +866,13 @@ export default function PostsOverviewPage() {
                       <div className={styles.cardInfo}>
                         <p className={styles.cardTitle} title={post.content}>{post.content || post.title}</p>
                         
-                        <div className={styles.platformBadgeWrapper}>
-                          <div className={styles.platformBadge}>
-                            <PlatformIcon platform={platform} size={16} />
-                            <span className={styles.platformBadgeDot}></span>
-                          </div>
+                        <div className={styles.platformBadgeWrapper} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {(post.platforms && post.platforms.length > 0 ? post.platforms : [platform]).map((plat, idx) => (
+                            <div key={idx} className={styles.platformBadge}>
+                              <PlatformIcon platform={plat} size={16} />
+                              <span className={styles.platformBadgeDot}></span>
+                            </div>
+                          ))}
                         </div>
 
                         <div className={styles.cardDate}>{formatPostDate(post.scheduledAtUtc || post.createdAt)}</div>
@@ -968,7 +893,7 @@ export default function PostsOverviewPage() {
                       </div>
 
                       {post.mediaItems?.[0] && (
-                        <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media" onClick={(e) => { e.stopPropagation(); setSelectedPostDetails(post); }}>
+                        <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media" onClick={(e) => { e.stopPropagation(); handlePostClick(post); }}>
                           <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
                         </button>
                       )}
@@ -1027,7 +952,7 @@ export default function PostsOverviewPage() {
                     const platform = post.platforms?.[0] || 'facebook'
                     const isChecked = selectedPostIds.includes(post.id)
                     return (
-                      <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => setSelectedPostDetails(post)} style={{ cursor: 'pointer' }}>
+                      <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
                         <td onClick={(e) => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
@@ -1040,8 +965,10 @@ export default function PostsOverviewPage() {
                           <div className={styles.tableTitle}>{post.title}</div>
                         </td>
                         <td>
-                          <div className={styles.tablePlatforms}>
-                            <PlatformIcon platform={platform} size={16} />
+                          <div className={styles.tablePlatforms} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {(post.platforms && post.platforms.length > 0 ? post.platforms : [platform]).map((plat, idx) => (
+                              <PlatformIcon key={idx} platform={plat} size={16} />
+                            ))}
                           </div>
                         </td>
                         <td className={styles.tableDate}>{formatPostDate(post.scheduledAtUtc || post.createdAt)}</td>
@@ -1173,21 +1100,44 @@ export default function PostsOverviewPage() {
       )}
 
       {selectedPostDetails && (
-        <div className={styles.editorBackdrop} style={{ zIndex: 10000 }} onClick={() => setSelectedPostDetails(null)}>
+        <div 
+          className={styles.editorBackdrop} 
+          style={{ 
+            zIndex: 10000, 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            alignItems: 'stretch',
+            background: 'rgba(0, 0, 0, 0.4)'
+          }} 
+          onClick={() => setSelectedPostDetails(null)}
+        >
           <div 
             className={styles.editorModal} 
             style={{ 
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
               width: '100%',
-              maxWidth: 640, 
+              maxWidth: 500, 
               padding: '32px', 
               display: 'flex', 
               flexDirection: 'column', 
               gap: '24px', 
               background: 'var(--clr-canvas)', 
-              borderRadius: '12px', 
-              border: '1px solid var(--clr-border)',
-              position: 'relative',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+              borderRadius: '0px', 
+              borderLeft: '1px solid var(--clr-border)',
+              borderTop: 'none',
+              borderRight: 'none',
+              borderBottom: 'none',
+              boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+              height: '100vh',
+              margin: 0
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1216,7 +1166,7 @@ export default function PostsOverviewPage() {
             </div>
 
             {/* Content Body */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
               
               {/* Caption Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

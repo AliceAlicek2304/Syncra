@@ -95,13 +95,36 @@ export function useCreatePostState(props: CreatePostModalProps) {
   useEffect(() => {
     if (isOpen) {
       if (editPost && editPost.platformTargets) {
-        const editAccountIds = editPost.platformTargets
-          .map(t => t.zernioAccountId)
+        const zernioIds = editPost.platformTargets
+          .map(t => t.zernioAccountId || (t as any).accountId)
           .filter(Boolean) as string[]
-        setSelectedSocialAccountIds(editAccountIds)
+        if (socialAccounts.length > 0 && zernioIds.length > 0) {
+          const localIds = zernioIds
+            .map(zid => socialAccounts.find(a => a.externalAccountId === zid)?.id)
+            .filter(Boolean) as string[]
+          setSelectedSocialAccountIds(localIds)
+        } else {
+          setSelectedSocialAccountIds(zernioIds)
+        }
       } else {
         setSelectedSocialAccountIds([])
       }
+    }
+  }, [isOpen, editPost, socialAccounts])
+
+  // On edit mode, load media
+  useEffect(() => {
+    const editPostMedia = editPost?.media || editPost?.mediaItems
+    if (isOpen && editPostMedia && editPostMedia.length > 0) {
+      const loadedMedia = editPostMedia.map(item => ({
+        id: shortId(),
+        url: item.url,
+        type: (item.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+        name: item.filename || item.url.split('/').pop() || 'media',
+      }))
+      mediaHook.setMedia(loadedMedia)
+    } else if (isOpen && !editPost) {
+      mediaHook.resetMedia()
     }
   }, [isOpen, editPost])
 
@@ -252,7 +275,16 @@ export function useCreatePostState(props: CreatePostModalProps) {
         }
         initPlatforms = [editPost.platform as Platform]
 
-        if (editPost.image) {
+        const editPostMedia = editPost.media || editPost.mediaItems
+        if (editPostMedia && editPostMedia.length > 0) {
+          const loadedMedia = editPostMedia.map(item => ({
+            id: shortId(),
+            url: item.url,
+            type: (item.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+            name: item.filename || item.url.split('/').pop() || 'media',
+          }))
+          mediaHook.setMedia(loadedMedia)
+        } else if (editPost.image) {
           mediaHook.setMedia([{ id: shortId(), url: editPost.image, type: 'image', name: 'image' }])
         }
 
@@ -393,7 +425,39 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [onClose, getIsDirty, reset])
 
-  const handleDraft = (): boolean => {
+  const handleDraft = async (): Promise<boolean> => {
+    if (activeWorkspace) {
+      try {
+        const wsId = activeWorkspace.id
+        const content = mainContent
+        const title = content.slice(0, 50) || 'Untitled Draft'
+        
+        await postsApi.createZernioPost(wsId, {
+          title,
+          content,
+          socialAccountIds: selectedSocialAccountIds,
+          scheduledAtUtc: undefined,
+          publishNow: false
+        })
+
+        onToast?.({ message: 'Draft saved successfully on Zernio!', type: 'success' })
+
+        void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+        void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+        void queryClient.invalidateQueries({ queryKey: ['posts'] })
+
+        localStorage.removeItem('syncra_draft')
+        initialSnapshotRef.current = currentSnapshot
+        
+        reset()
+        onClose()
+        return true
+      } catch (err) {
+        onToast?.({ message: 'Failed to save draft. Please try again.', type: 'error' })
+        return false
+      }
+    }
+
     if (!hasPlatforms) {
       onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
       return false
@@ -492,22 +556,29 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }
 
   const confirmSchedule = async () => {
-    if (selectedSocialAccountIds.length >= 1) {
+    if (activeWorkspace) {
+      const publishNow = publishingTab === 'now'
+      const isDraft = publishingTab === 'draft'
+
       // Group selected accounts by workspace ID
       const accountsByWorkspace: Record<string, string[]> = {}
-      selectedSocialAccountIds.forEach(id => {
-        const account = socialAccounts.find(a => a.id === id)
-        if (!account) return
-        const ws = workspaces.find(w => w.zernioProfileId === account.zernioProfileId)
-        const wsId = ws?.id || activeWorkspace?.id
-        if (wsId) {
-          if (!accountsByWorkspace[wsId]) accountsByWorkspace[wsId] = []
-          accountsByWorkspace[wsId].push(id)
-        }
-      })
+      if (selectedSocialAccountIds.length > 0) {
+        selectedSocialAccountIds.forEach(id => {
+          const account = socialAccounts.find(a => a.id === id)
+          if (!account) return
+          const ws = workspaces.find(w => w.zernioProfileId === account.zernioProfileId)
+          const wsId = ws?.id || activeWorkspace.id
+          if (wsId) {
+            if (!accountsByWorkspace[wsId]) accountsByWorkspace[wsId] = []
+            accountsByWorkspace[wsId].push(id)
+          }
+        })
+      } else {
+        accountsByWorkspace[activeWorkspace.id] = []
+      }
 
       let resolvedScheduleTime = scheduleTime
-      if (scheduleMode && !resolvedScheduleTime) {
+      if (publishingTab === 'schedule' && !resolvedScheduleTime) {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         const year = tomorrow.getFullYear()
@@ -516,62 +587,77 @@ export function useCreatePostState(props: CreatePostModalProps) {
         resolvedScheduleTime = `${year}-${month}-${day}T09:00`
       }
 
-      const publishNow = !scheduleMode
-
       try {
         const promises: Promise<any>[] = []
         
         Object.entries(accountsByWorkspace).forEach(([wsId, accountIds]) => {
-          // Group accounts in this workspace by schedule time and content overrides
-          const groupsByKey: Record<string, { ids: string[]; scheduledAtUtc?: string; content: string }> = {}
-          
-          accountIds.forEach(accountId => {
-            const account = socialAccounts.find(a => a.id === accountId)
-            if (!account) return
-            
-            const overrideTime = platformTimeOverrides[accountId]
-            const scheduledAtUtc = scheduleMode
-              ? (overrideTime ? getUtcString(overrideTime, timezone) : (resolvedScheduleTime ? getUtcString(resolvedScheduleTime, timezone) : undefined))
-              : undefined
-
-            const content = getResolvedContentForPlatform(account.platform as Platform)
-            
-            // Build unique key for this configuration
-            const key = `${scheduledAtUtc ?? 'now'}_${content}`
-            if (!groupsByKey[key]) {
-              groupsByKey[key] = {
-                ids: [],
-                scheduledAtUtc,
-                content
-              }
-            }
-            groupsByKey[key].ids.push(accountId)
-          })
-          
-          // Make create post requests
-          Object.values(groupsByKey).forEach(({ ids, scheduledAtUtc, content }) => {
-            const title = content.slice(0, 50) || 'Untitled Post'
+          if (accountIds.length === 0) {
+            // Draft post with no channels selected
+            const content = mainContent
+            const title = content.slice(0, 50) || 'Untitled Draft'
             promises.push(
               postsApi.createZernioPost(wsId, {
                 title,
                 content,
-                socialAccountIds: ids,
-                scheduledAtUtc,
-                publishNow: scheduledAtUtc === undefined || publishNow
+                socialAccountIds: [],
+                scheduledAtUtc: undefined,
+                publishNow: false
               })
             )
-          })
+          } else {
+            // Group accounts in this workspace by schedule time and content overrides
+            const groupsByKey: Record<string, { ids: string[]; scheduledAtUtc?: string; content: string }> = {}
+            
+            accountIds.forEach(accountId => {
+              const account = socialAccounts.find(a => a.id === accountId)
+              if (!account) return
+              
+              const overrideTime = platformTimeOverrides[accountId]
+              const scheduledAtUtc = (publishingTab === 'schedule' || publishingTab === 'draft')
+                ? (overrideTime ? getUtcString(overrideTime, timezone) : (resolvedScheduleTime ? getUtcString(resolvedScheduleTime, timezone) : undefined))
+                : undefined
+
+              const finalScheduledAtUtc = isDraft ? undefined : scheduledAtUtc
+              const content = getResolvedContentForPlatform(account.platform as Platform)
+              
+              // Build unique key for this configuration
+              const key = `${finalScheduledAtUtc ?? 'now'}_${content}`
+              if (!groupsByKey[key]) {
+                groupsByKey[key] = {
+                  ids: [],
+                  scheduledAtUtc: finalScheduledAtUtc,
+                  content
+                }
+              }
+              groupsByKey[key].ids.push(accountId)
+            })
+            
+            // Make create post requests
+            Object.values(groupsByKey).forEach(({ ids, scheduledAtUtc, content }) => {
+              const title = content.slice(0, 50) || 'Untitled Post'
+              promises.push(
+                postsApi.createZernioPost(wsId, {
+                  title,
+                  content,
+                  socialAccountIds: ids,
+                  scheduledAtUtc,
+                  publishNow: isDraft ? false : (scheduledAtUtc === undefined || publishNow)
+                })
+              )
+            })
+          }
         })
 
         await Promise.all(promises)
 
         onToast?.({
-          message: `Post ${publishNow ? 'published' : 'scheduled'} successfully on Zernio!`,
+          message: `Post ${isDraft ? 'saved as draft' : (publishNow ? 'published' : 'scheduled')} successfully on Zernio!`,
           type: 'success'
         })
 
         void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+        void queryClient.invalidateQueries({ queryKey: ['posts'] })
 
         localStorage.removeItem('syncra_draft')
         setShowPublishConfirmDialog(false)
@@ -735,8 +821,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const reuseLastPost = useCallback(async () => {
     if (!workspaceId) return
     try {
-      const posts = await postsApi.getPosts(workspaceId, { status: 'published', pageSize: 10 })
-      const lastPost = posts.find(p => p.content)
+      const result = await postsApi.getPosts(workspaceId, { status: 'published', pageSize: 10 })
+      const lastPost = result.items.find(p => p.content)
       if (lastPost) {
         const text = lastPost.content || ''
         setMainContent(text)

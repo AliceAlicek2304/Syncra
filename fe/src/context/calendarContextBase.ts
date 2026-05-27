@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { PostPlatformTargetDto, Post } from '../api/posts'
+import type { PostMediaItem, PostPlatformTargetDto, Post } from '../api/posts'
 
 export interface ScheduledPost {
     id: string
@@ -16,6 +16,8 @@ export interface ScheduledPost {
     image?: string
     zernioPostId?: string
     platformTargets?: PostPlatformTargetDto[]
+    mediaItems?: PostMediaItem[]
+    media?: PostMediaItem[]
 }
 
 export interface CalendarContextValue {
