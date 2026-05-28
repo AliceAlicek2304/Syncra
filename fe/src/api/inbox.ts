@@ -25,6 +25,12 @@ export interface InboxMessageDto {
   sentAtUtc: string;
   zernioAccountId: string | null;
   createdAtUtc: string;
+  // Rich features for frontend integration & mock data
+  attachments?: Array<{ type: 'image' | 'video' | 'file' | 'audio'; url: string; name?: string }>;
+  buttons?: Array<{ label: string; payload?: string }>;
+  isEdited?: boolean;
+  isDeleted?: boolean;
+  isSystem?: boolean;
 }
 
 export interface InboxCommentDto {
@@ -188,6 +194,58 @@ export const inboxApi = {
     );
   },
 
+  likeComment: async (
+    workspaceId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<void> => {
+    await api.post(`workspaces/${workspaceId}/inbox/comments/${postId}/${commentId}/like`);
+  },
+
+  unlikeComment: async (
+    workspaceId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<void> => {
+    await api.delete(`workspaces/${workspaceId}/inbox/comments/${postId}/${commentId}/like`);
+  },
+
+  hideComment: async (
+    workspaceId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<void> => {
+    await api.post(`workspaces/${workspaceId}/inbox/comments/${postId}/${commentId}/hide`);
+  },
+
+  unhideComment: async (
+    workspaceId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<void> => {
+    await api.delete(`workspaces/${workspaceId}/inbox/comments/${postId}/${commentId}/hide`);
+  },
+
+  deleteComment: async (
+    workspaceId: string,
+    postId: string,
+  ): Promise<void> => {
+    await api.delete(`workspaces/${workspaceId}/inbox/comments/${postId}`);
+  },
+
+  sendPrivateReply: async (
+    workspaceId: string,
+    postId: string,
+    commentId: string,
+    message: string,
+  ): Promise<any> => {
+    const response = await api.post(
+      `workspaces/${workspaceId}/inbox/comments/${postId}/${commentId}/private-reply`,
+      { message }
+    );
+    return response.data;
+  },
+
   // ── Reviews ────────────────────────────────────────────────────────────
 
   getReviews: async (
@@ -230,6 +288,13 @@ export const inboxApi = {
     await api.patch(
       `workspaces/${workspaceId}/inbox/reviews/${reviewId}/read`,
     );
+  },
+
+  deleteReviewReply: async (
+    workspaceId: string,
+    reviewId: string,
+  ): Promise<void> => {
+    await api.delete(`workspaces/${workspaceId}/inbox/reviews/${reviewId}/reply`);
   },
 
   // ── Summary / Unread ───────────────────────────────────────────────────

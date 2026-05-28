@@ -20,7 +20,7 @@ function asPage<T>(items: T[]) {
     items,
     // The BE currently returns flat arrays; when cursor pagination is
     // implemented, this adapter reads nextCursor from the response envelope.
-    nextCursor: null as string | undefined,
+    nextCursor: null as unknown as string | undefined,
   }
 }
 
@@ -56,7 +56,7 @@ export function useInbox({ workspaceId, platform, accountId }: UseInboxArgs) {
   const conversationsQuery = useInfiniteQuery({
     queryKey: ['inbox-conversations', workspaceId, platform, accountId],
     enabled: Boolean(workspaceId),
-    queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+    queryFn: async ({ pageParam: _pageParam }: { pageParam: string | undefined }) => {
       if (!workspaceId) return asPage<InboxConversationDto>([])
       const items = await inboxApi.getConversations(workspaceId)
       return asPage(items)
@@ -113,7 +113,7 @@ export function useInbox({ workspaceId, platform, accountId }: UseInboxArgs) {
       if (!workspaceId) throw new Error('Missing workspace id')
       await inboxApi.markConversationRead(workspaceId, conversationId)
     },
-    onMutate: async (conversationId) => {
+    onMutate: async (_conversationId) => {
       const queryKey = ['inbox-conversations', workspaceId, platform, accountId]
       await queryClient.cancelQueries({ queryKey })
     },
@@ -210,6 +210,82 @@ export function useInbox({ workspaceId, platform, accountId }: UseInboxArgs) {
     },
   })
 
+  const likeComment = useMutation({
+    mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.likeComment(workspaceId, postId, commentId)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const unlikeComment = useMutation({
+    mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.unlikeComment(workspaceId, postId, commentId)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const hideComment = useMutation({
+    mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.hideComment(workspaceId, postId, commentId)
+    },
+    onSuccess: () => success('Comment hidden'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const unhideComment = useMutation({
+    mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.unhideComment(workspaceId, postId, commentId)
+    },
+    onSuccess: () => success('Comment unhidden'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const deleteComment = useMutation({
+    mutationFn: async ({ postId }: { postId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.deleteComment(workspaceId, postId)
+    },
+    onSuccess: () => success('Comment deleted'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const sendPrivateReply = useMutation({
+    mutationFn: async ({ postId, commentId, message }: { postId: string; commentId: string; message: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      return inboxApi.sendPrivateReply(workspaceId, postId, commentId, message)
+    },
+    onSuccess: () => success('Private DM sent to commenter'),
+    onError: () => error('Could not send private reply.'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-comments'] })
+    },
+  })
+
+  const deleteReviewReply = useMutation({
+    mutationFn: async ({ reviewId }: { reviewId: string }) => {
+      if (!workspaceId) throw new Error('Missing workspace id')
+      await inboxApi.deleteReviewReply(workspaceId, reviewId)
+    },
+    onSuccess: () => success('Review reply deleted'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['inbox-reviews'] })
+    },
+  })
+
   return {
     unreadCount,
     conversations: conversationsQuery,
@@ -222,5 +298,12 @@ export function useInbox({ workspaceId, platform, accountId }: UseInboxArgs) {
     sendDmReply: sendDmReply.mutateAsync,
     replyToComment: replyToComment.mutateAsync,
     replyToReview: replyToReview.mutateAsync,
+    likeComment: likeComment.mutateAsync,
+    unlikeComment: unlikeComment.mutateAsync,
+    hideComment: hideComment.mutateAsync,
+    unhideComment: unhideComment.mutateAsync,
+    deleteComment: deleteComment.mutateAsync,
+    sendPrivateReply: sendPrivateReply.mutateAsync,
+    deleteReviewReply: deleteReviewReply.mutateAsync,
   }
 }
