@@ -5,9 +5,10 @@ interface SkeletonProps {
   height?: string | number;
   borderRadius?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export default function Skeleton({ width, height, borderRadius, className }: SkeletonProps) {
+export default function Skeleton({ width, height, borderRadius, className, style }: SkeletonProps) {
   return (
     <div 
       data-testid="skeleton-loader"
@@ -15,7 +16,8 @@ export default function Skeleton({ width, height, borderRadius, className }: Ske
       style={{ 
         width: width || '100%', 
         height: height || '20px', 
-        borderRadius: borderRadius || '8px' 
+        borderRadius: borderRadius || '8px',
+        ...style
       }} 
     />
   );
