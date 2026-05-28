@@ -44,7 +44,9 @@ export default function AppLayout() {
                         location.pathname.includes('/posts') || 
                         location.pathname.includes('/posts-all') ||
                         location.pathname.includes('/inbox') ||
-                        location.pathname.includes('/ideas')
+                        location.pathname.includes('/ideas') ||
+                        location.pathname.includes('/repurpose') ||
+                        location.pathname.includes('/media')
 
   const handleLogout = () => {
     logout()
