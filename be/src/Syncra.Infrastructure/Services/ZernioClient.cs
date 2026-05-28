@@ -23,6 +23,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly ReviewsApi _reviewsApi;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ZernioClient> _logger;
+    private readonly ZernioOptions _options;
 
     public ZernioClient(
         IOptions<ZernioOptions> options,
@@ -44,6 +45,7 @@ public sealed class ZernioClient : IZernioClient
         _reviewsApi = new ReviewsApi(config);
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _options = options.Value;
     }
 
     public async Task<ZernioConnectUrlResult> GetConnectUrlAsync(
@@ -528,6 +530,79 @@ public sealed class ZernioClient : IZernioClient
             _logger.LogError(ex, "Zernio API error creating post: {Message}", ex.Message);
             throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {ex.Message}", ex);
         }
+    }
+
+    public async Task<string> UploadMediaToZernioAsync(
+        Stream fileStream,
+        string contentType,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
+        if (string.IsNullOrWhiteSpace(contentType)) throw new ArgumentException("Content type cannot be null or empty.", nameof(contentType));
+        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
+
+        _logger.LogInformation("Requesting presigned upload URL from Zernio for file: {FileName}, Type: {ContentType}", fileName, contentType);
+
+        var config = _postsApi.Configuration;
+        var baseUrl = config.BasePath.TrimEnd('/');
+        var presignRequestUrl = $"{baseUrl}/v1/media/presign";
+
+        var presignPayload = new ZernioPresignRequest(fileName, contentType);
+
+        using var presignHttpRequest = new HttpRequestMessage(HttpMethod.Post, presignRequestUrl)
+        {
+            Content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(presignPayload, _jsonOptions),
+                System.Text.Encoding.UTF8,
+                "application/json")
+        };
+        presignHttpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(30);
+        var presignHttpResponse = await httpClient.SendAsync(presignHttpRequest, cancellationToken);
+
+        if (!presignHttpResponse.IsSuccessStatusCode)
+        {
+            var errorResponse = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Failed to get presigned URL from Zernio. Status: {StatusCode}, Error: {Error}",
+                presignHttpResponse.StatusCode, errorResponse);
+            throw new DomainException("zernio_presign_error", $"Zernio presign request failed. Status: {presignHttpResponse.StatusCode}. Error: {errorResponse}");
+        }
+
+        var responseContent = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
+        var presignResult = System.Text.Json.JsonSerializer.Deserialize<ZernioPresignResponse>(responseContent, _jsonOptions);
+
+        if (presignResult == null || string.IsNullOrEmpty(presignResult.UploadUrl) || string.IsNullOrEmpty(presignResult.PublicUrl))
+        {
+            throw new DomainException("zernio_presign_error", "Zernio returned an invalid presign response.");
+        }
+
+        _logger.LogInformation("Received upload URL. Streaming file content to Zernio storage...");
+
+        using var uploadHttpRequest = new HttpRequestMessage(HttpMethod.Put, presignResult.UploadUrl);
+        
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        uploadHttpRequest.Content = streamContent;
+
+        using var uploadHttpClient = _httpClientFactory.CreateClient();
+        uploadHttpClient.Timeout = TimeSpan.FromMinutes(30);
+
+        var uploadHttpResponse = await uploadHttpClient.SendAsync(uploadHttpRequest, cancellationToken);
+
+        if (!uploadHttpResponse.IsSuccessStatusCode)
+        {
+            var errorResponse = await uploadHttpResponse.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Failed to upload file stream to Zernio storage. Status: {StatusCode}, Error: {Error}",
+                uploadHttpResponse.StatusCode, errorResponse);
+            throw new DomainException("zernio_upload_error", $"Failed to upload media to Zernio. Status: {uploadHttpResponse.StatusCode}. Error: {errorResponse}");
+        }
+
+        _logger.LogInformation("Successfully uploaded media to Zernio. Public URL: {PublicUrl}", presignResult.PublicUrl);
+
+        return presignResult.PublicUrl;
     }
 
     public async Task UpdatePostAsync(

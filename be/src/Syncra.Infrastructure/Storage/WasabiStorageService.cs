@@ -114,5 +114,32 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<Stream> OpenReadAsync(string storageKey)
+    {
+        try
+        {
+            var getRequest = new GetObjectRequest
+            {
+                BucketName = _options.BucketName,
+                Key = storageKey
+            };
+
+            var response = await _s3Client.GetObjectAsync(getRequest);
+            return response.ResponseStream;
+        }
+        catch (AmazonS3Exception ex)
+        {
+            _logger.LogError(ex, "Wasabi S3 error while reading key {StorageKey}. ErrorCode={ErrorCode}.",
+                storageKey, ex.ErrorCode);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while reading key {StorageKey} from Wasabi.", storageKey);
+            throw;
+        }
+    }
+
     public void Dispose() => _s3Client.Dispose();
 }

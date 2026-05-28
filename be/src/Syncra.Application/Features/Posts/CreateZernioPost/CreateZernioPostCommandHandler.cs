@@ -1,7 +1,9 @@
 using MediatR;
+using Microsoft.Extensions.Options;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
+using Syncra.Application.Options;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
@@ -15,19 +17,25 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IPostRepository _postRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IStorageService _storageService;
+    private readonly WasabiOptions _wasabiOptions;
 
     public CreateZernioPostCommandHandler(
         IZernioClient zernioClient,
         ISocialAccountRepository socialAccountRepository,
         IZernioProfileRepository zernioProfileRepository,
         IPostRepository postRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IStorageService storageService,
+        IOptions<WasabiOptions> wasabiOptions)
     {
         _zernioClient = zernioClient;
         _socialAccountRepository = socialAccountRepository;
         _zernioProfileRepository = zernioProfileRepository;
         _postRepository = postRepository;
         _unitOfWork = unitOfWork;
+        _storageService = storageService;
+        _wasabiOptions = wasabiOptions.Value;
     }
 
     public async Task<PostDto> Handle(CreateZernioPostCommand request, CancellationToken cancellationToken)
@@ -61,6 +69,29 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             throw new DomainException("zernio_profile_missing", "No Zernio profile exists for this workspace.");
         }
 
+        // Upload media files to Zernio if present
+        var updatedMediaItems = new List<PostMediaItemDto>();
+        if (request.MediaItems != null)
+        {
+            foreach (var mediaItem in request.MediaItems)
+            {
+                var storageKey = ExtractStorageKey(mediaItem.Url);
+                using var stream = await _storageService.OpenReadAsync(storageKey);
+                
+                var zernioPublicUrl = await _zernioClient.UploadMediaToZernioAsync(
+                    stream,
+                    mediaItem.MimeType ?? "application/octet-stream",
+                    mediaItem.Filename ?? "file",
+                    cancellationToken);
+
+                updatedMediaItems.Add(new PostMediaItemDto(
+                    Url: zernioPublicUrl,
+                    Type: mediaItem.Type,
+                    Filename: mediaItem.Filename,
+                    MimeType: mediaItem.MimeType));
+            }
+        }
+
         // Build the Zernio API request
         var platforms = activeAccounts
             .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
@@ -73,7 +104,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.ScheduledAtUtc,
             request.PublishNow,
             request.IsDraft,
-            request.MediaItems,
+            updatedMediaItems.Count > 0 ? updatedMediaItems : request.MediaItems,
             request.PlatformContents);
 
         // Send to Zernio API
@@ -115,5 +146,14 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PostMapper.ToDto(post);
+    }
+
+    private string ExtractStorageKey(string fileUrl)
+    {
+        var prefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
+        if (!string.IsNullOrEmpty(_wasabiOptions.BucketName) && fileUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return fileUrl[prefix.Length..];
+
+        return System.IO.Path.GetFileName(fileUrl);
     }
 }

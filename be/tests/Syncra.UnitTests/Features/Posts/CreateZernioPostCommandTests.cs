@@ -41,13 +41,23 @@ public class CreateZernioPostCommandTests : IDisposable
         _zernioProfileRepository = new ZernioProfileRepository(_db);
 
         var postRepository = new PostRepository(_db);
+        
+        var storageServiceMock = new Mock<IStorageService>();
+        var wasabiOptionsMock = new Mock<Microsoft.Extensions.Options.IOptions<Syncra.Application.Options.WasabiOptions>>();
+        wasabiOptionsMock.Setup(o => o.Value).Returns(new Syncra.Application.Options.WasabiOptions
+        {
+            BucketName = "test-bucket",
+            ServiceUrl = "https://s3.wasabi.com"
+        });
 
         _handler = new CreateZernioPostCommandHandler(
             _zernioClientMock.Object,
             _socialAccountRepository,
             _zernioProfileRepository,
             postRepository,
-            _unitOfWork);
+            _unitOfWork,
+            storageServiceMock.Object,
+            wasabiOptionsMock.Object);
     }
 
     public void Dispose()
@@ -287,6 +297,17 @@ public class CreateZernioPostCommandTests : IDisposable
 
         Assert.NotNull(method);
 
+        var dummyRequest = new ZernioCreatePostRequest(
+            Title: "Test Title",
+            Content: "Test Content",
+            Platforms: Array.Empty<ZernioCreatePostPlatformTarget>(),
+            ScheduledForUtc: null,
+            PublishNow: true,
+            IsDraft: false,
+            MediaItems: null,
+            PlatformContents: null
+        );
+
         var platforms = new[]
         {
             "bluesky", "facebook", "google", "googlebusiness", "instagram", "linkedin",
@@ -296,8 +317,21 @@ public class CreateZernioPostCommandTests : IDisposable
 
         foreach (var platform in platforms)
         {
-            var result = method.Invoke(null, new object[] { platform });
-            Assert.Null(result); // Should be null to avoid empty object serialization and schema collision
+            var result = method.Invoke(null, new object?[] { platform, dummyRequest });
+            var expectedNull = platform.ToLowerInvariant() switch
+            {
+                "pinterest" or "youtube" or "reddit" or "facebook" or "instagram" or "linkedin" => false,
+                _ => true
+            };
+
+            if (expectedNull)
+            {
+                Assert.Null(result);
+            }
+            else
+            {
+                Assert.NotNull(result);
+            }
         }
     }
 }

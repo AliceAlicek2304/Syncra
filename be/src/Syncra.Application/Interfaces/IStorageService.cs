@@ -9,4 +9,5 @@ public interface IStorageService
 {
     Task<StorageUploadResult> SaveAsync(Stream stream, string fileName, string mimeType);
     Task DeleteAsync(string storageKey);
+    Task<Stream> OpenReadAsync(string storageKey);
 }

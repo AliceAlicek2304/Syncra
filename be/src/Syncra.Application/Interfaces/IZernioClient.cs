@@ -61,6 +61,12 @@ public interface IZernioClient
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<string> UploadMediaToZernioAsync(
+        Stream fileStream,
+        string contentType,
+        string fileName,
+        CancellationToken cancellationToken = default);
+
     Task UpdatePostAsync(
         string zernioPostId,
         Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto request,

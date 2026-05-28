@@ -1,4 +1,16 @@
+using System.Text.Json.Serialization;
+
 namespace Syncra.Application.DTOs.Zernio;
+
+public sealed record ZernioPresignRequest(
+    [property: JsonPropertyName("filename")] string Filename,
+    [property: JsonPropertyName("contentType")] string ContentType
+);
+
+public sealed record ZernioPresignResponse(
+    [property: JsonPropertyName("uploadUrl")] string UploadUrl,
+    [property: JsonPropertyName("publicUrl")] string PublicUrl
+);
 
 public sealed record ZernioConnectUrlResult(string ConnectUrl);
 

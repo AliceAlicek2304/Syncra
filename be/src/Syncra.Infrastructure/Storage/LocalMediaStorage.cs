@@ -66,4 +66,15 @@ public class LocalMediaStorage : IStorageService
 
         return Task.CompletedTask;
     }
+
+    public Task<Stream> OpenReadAsync(string storageKey)
+    {
+        var filePath = Path.Combine(_options.LocalRootPath, storageKey);
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException("File not found in local storage.", filePath);
+        }
+
+        return Task.FromResult<Stream>(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+    }
 }
