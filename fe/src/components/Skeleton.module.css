@@ -21,6 +21,19 @@
   animation: shimmer 2s infinite;
 }
 
+:global(.lightThemeLayout) .skeleton {
+  background: var(--clr-border);
+}
+
+:global(.lightThemeLayout) .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

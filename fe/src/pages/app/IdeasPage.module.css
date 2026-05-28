@@ -125,6 +125,19 @@
     background: var(--clr-body-mid);
 }
 
+.skeletonColumn {
+    background: var(--clr-canvas-soft);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    width: 280px;
+    min-width: 280px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
 /* ── New Group Column ───────────────────────────────────────────── */
 .newGroupColumn {
     width: 280px;

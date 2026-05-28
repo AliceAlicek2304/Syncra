@@ -138,18 +138,7 @@ export default function IdeasPage() {
                 {isLoading ? (
                     <div className={styles.board}>
                         {Array(4).fill(0).map((_, i) => (
-                            <div key={i} style={{
-                                background: 'rgba(13, 17, 28, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.06)',
-                                borderRadius: 16,
-                                width: 280,
-                                minWidth: 280,
-                                padding: 16,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 12,
-                                flexShrink: 0,
-                            }}>
+                            <div key={i} className={styles.skeletonColumn}>
                                 <Skeleton height="40px" />
                                 <Skeleton height="120px" />
                             </div>
