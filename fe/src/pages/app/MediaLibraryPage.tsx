@@ -31,7 +31,7 @@ function MediaCard({ asset, onDelete, uploadProgress }: MediaCardProps) {
   const isUploading = uploadProgress !== undefined && uploadProgress < 100
 
   return (
-    <div className={`glass-card ${styles.mediaCard}`}>
+    <div className={styles.mediaCard}>
       {isImage ? (
         <img src={asset.fileUrl} alt={asset.fileName} className={styles.cardImage} />
       ) : (
@@ -174,7 +174,7 @@ export default function MediaLibraryPage() {
 
           {/* Upload button */}
           <button
-            className="btn-primary"
+            className={styles.uploadBtn}
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
@@ -209,7 +209,7 @@ export default function MediaLibraryPage() {
             Upload images, videos, or documents to use in your posts.
           </p>
           <button
-            className="btn-primary"
+            className={styles.uploadBtn}
             onClick={() => fileInputRef.current?.click()}
           >
             Upload your first file
