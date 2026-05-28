@@ -581,10 +581,30 @@ public sealed class ZernioClient : IZernioClient
 
         _logger.LogInformation("Received upload URL. Streaming file content to Zernio storage...");
 
+        Stream contentStream = fileStream;
+        long? contentLength = null;
+
+        if (fileStream.CanSeek)
+        {
+            contentLength = fileStream.Length;
+        }
+        else
+        {
+            var ms = new System.IO.MemoryStream();
+            await fileStream.CopyToAsync(ms, cancellationToken);
+            ms.Position = 0;
+            contentStream = ms;
+            contentLength = ms.Length;
+        }
+
         using var uploadHttpRequest = new HttpRequestMessage(HttpMethod.Put, presignResult.UploadUrl);
         
-        var streamContent = new StreamContent(fileStream);
+        var streamContent = new StreamContent(contentStream);
         streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+        if (contentLength.HasValue)
+        {
+            streamContent.Headers.ContentLength = contentLength.Value;
+        }
         uploadHttpRequest.Content = streamContent;
 
         using var uploadHttpClient = _httpClientFactory.CreateClient();
