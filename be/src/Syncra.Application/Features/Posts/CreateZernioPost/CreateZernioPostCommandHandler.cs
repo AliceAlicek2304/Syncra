@@ -78,9 +78,11 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
                 var storageKey = ExtractStorageKey(mediaItem.Url);
                 using var stream = await _storageService.OpenReadAsync(storageKey);
                 
+                var resolvedMimeType = GetMimeType(mediaItem.Filename ?? mediaItem.Url ?? "file", mediaItem.MimeType);
+
                 var zernioPublicUrl = await _zernioClient.UploadMediaToZernioAsync(
                     stream,
-                    mediaItem.MimeType ?? "application/octet-stream",
+                    resolvedMimeType,
                     mediaItem.Filename ?? "file",
                     cancellationToken);
 
@@ -88,7 +90,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
                     Url: zernioPublicUrl,
                     Type: mediaItem.Type,
                     Filename: mediaItem.Filename,
-                    MimeType: mediaItem.MimeType));
+                    MimeType: resolvedMimeType));
             }
         }
 
@@ -155,5 +157,24 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             return fileUrl[prefix.Length..];
 
         return System.IO.Path.GetFileName(fileUrl);
+    }
+
+    private static string GetMimeType(string filename, string? providedMimeType)
+    {
+        if (!string.IsNullOrWhiteSpace(providedMimeType) && 
+            providedMimeType != "application/octet-stream")
+        {
+            return providedMimeType;
+        }
+
+        var extension = System.IO.Path.GetExtension(filename).ToLowerInvariant();
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".mp4" => "video/mp4",
+            _ => "application/octet-stream"
+        };
     }
 }

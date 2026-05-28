@@ -87,7 +87,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
           throw new Error(`Media item "${m.name}" has a local URL but no File object — cannot upload.`)
         }
         const asset = await mediaApi.uploadMedia(wsId, m.file)
-        return { ...m, url: asset.publicUrl, file: undefined }
+        return { ...m, url: asset.publicUrl, mimeType: asset.mimeType, file: undefined }
       })
     )
     return resolved
@@ -147,6 +147,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
         url: item.url,
         type: (item.type === 'video' ? 'video' : 'image') as 'image' | 'video',
         name: item.filename || item.url.split('/').pop() || 'media',
+        mimeType: item.mimeType,
       }))
       mediaHook.setMedia(loadedMedia)
     } else if (isOpen && !editPost) {
@@ -468,7 +469,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
         const mediaItems = resolvedMedia.map(m => ({
           url: m.url,
           type: m.type,
-          filename: m.name
+          filename: m.name,
+          mimeType: m.mimeType || m.file?.type
         }))
 
         const platformContents = selectedSocialAccountIds.map(id => {
@@ -696,7 +698,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
             const mediaItems = resolvedMedia.map(m => ({
               url: m.url,
               type: m.type,
-              filename: m.name
+              filename: m.name,
+              mimeType: m.mimeType || m.file?.type
             }))
 
             Object.values(groupsByKey).forEach(({ ids, scheduledAtUtc, content }) => {

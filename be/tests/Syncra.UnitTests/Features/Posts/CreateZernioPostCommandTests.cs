@@ -43,6 +43,8 @@ public class CreateZernioPostCommandTests : IDisposable
         var postRepository = new PostRepository(_db);
         
         var storageServiceMock = new Mock<IStorageService>();
+        storageServiceMock.Setup(s => s.OpenReadAsync(It.IsAny<string>()))
+            .ReturnsAsync(new System.IO.MemoryStream());
         var wasabiOptionsMock = new Mock<Microsoft.Extensions.Options.IOptions<Syncra.Application.Options.WasabiOptions>>();
         wasabiOptionsMock.Setup(o => o.Value).Returns(new Syncra.Application.Options.WasabiOptions
         {
@@ -333,5 +335,51 @@ public class CreateZernioPostCommandTests : IDisposable
                 Assert.NotNull(result);
             }
         }
+    }
+
+    [Fact]
+    public async Task Handler_WithMediaItemsNullOrGenericMimeType_ResolvesMimeTypeFromExtension()
+    {
+        // Arrange
+        var account1 = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_twitter_1");
+
+        _zernioClientMock
+            .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ZernioCreatePostResult("zernio_post_media", "scheduled", 1));
+
+        _zernioClientMock
+            .Setup(x => x.UploadMediaToZernioAsync(It.IsAny<System.IO.Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://zernio.com/public/media.png");
+
+        var mediaItem = new PostMediaItemDto(
+            Url: "https://s3.wasabi.com/test-bucket/media.png",
+            Type: "image",
+            Filename: "media.png",
+            MimeType: null // Null mime type should trigger guessing logic
+        );
+
+        var command = new CreateZernioPostCommand(
+            _workspaceId,
+            _userId,
+            "Post with Media",
+            "Content",
+            new List<Guid> { account1.Id },
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: new List<PostMediaItemDto> { mediaItem },
+            PlatformContents: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        _zernioClientMock.Verify(x => x.UploadMediaToZernioAsync(
+            It.IsAny<System.IO.Stream>(),
+            "image/png", // Should be resolved from "media.png" extension
+            "media.png",
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
     }
 }
