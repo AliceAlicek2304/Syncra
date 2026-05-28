@@ -1,21 +1,23 @@
 .faqGroup { margin-bottom: 28px; }
 .faqGroupTitle {
-  font-size: .75rem;
-  font-weight: 700;
-  color: rgba(255,255,255,.3);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #939084;
   text-transform: uppercase;
   letter-spacing: .08em;
   margin-bottom: 10px;
 }
 .faqItem {
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 10px;
+  border: 1px solid #e5dfd3;
+  border-radius: 12px;
   margin-bottom: 8px;
   overflow: hidden;
+  background: #fff;
   transition: border-color .2s;
 }
-.faqItem:hover { border-color: rgba(139,92,246,.3); }
-.faqItemOpen { border-color: rgba(139,92,246,.4); background: rgba(139,92,246,.04); }
+.faqItem:hover { border-color: #c5c0b1; }
+.faqItemOpen { border-color: #ff4f00; }
 
 .faqQuestion {
   width: 100%;
@@ -23,30 +25,31 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
   font-weight: 500;
-  color: rgba(255,255,255,.85);
+  color: #201515;
   text-align: left;
-  font-family: inherit;
   transition: color .15s;
 }
-.faqQuestion:hover { color: #fff; }
+.faqQuestion:hover { color: #ff4f00; }
 
 .faqChevron {
   flex-shrink: 0;
-  color: rgba(255,255,255,.3);
+  color: #c5c0b1;
   transition: transform .25s;
 }
-.faqChevronOpen { transform: rotate(180deg); color: #a78bfa; }
+.faqChevronOpen { transform: rotate(180deg); color: #ff4f00; }
 
 .faqAnswer {
-  padding: 0 18px 16px;
-  font-size: 13.5px;
-  color: rgba(255,255,255,.55);
+  padding: 0 20px 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  color: #605d52;
   line-height: 1.65;
   animation: fadeIn .15s ease;
 }

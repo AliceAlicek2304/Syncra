@@ -23,11 +23,9 @@ export default function HelpPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <div className={styles.headerIcon}><HelpCircle size={20} /></div>
-        <div>
-          <h1 className={styles.title}>Help Center</h1>
-          <p className={styles.subtitle}>FAQ, tài liệu, video hướng dẫn và hỗ trợ kỹ thuật</p>
-        </div>
+        <div className={styles.eyebrow}>Support</div>
+        <h1 className={styles.title}>Help Center</h1>
+        <p className={styles.subtitle}>FAQ, tài liệu, video hướng dẫn và hỗ trợ kỹ thuật</p>
       </div>
 
       <div className={styles.tabBar}>

@@ -6,7 +6,7 @@ export function ContactTab({ onDocs }: { onDocs?: () => void }) {
   return (
     <div className={pageStyles.section}>
       <div className={styles.contactGrid}>
-        <div className={`glass-card ${styles.contactCard}`}>
+        <div className={styles.contactCard}>
           <div className={styles.contactIcon} style={{ background: 'linear-gradient(135deg,#8b5cf6,#ec4899)' }}>
             <Mail size={22} />
           </div>
@@ -16,13 +16,13 @@ export function ContactTab({ onDocs }: { onDocs?: () => void }) {
             <span className={styles.contactMetaItem}><Clock size={13} /> Phản hồi trong 24–48 giờ</span>
             <span className={styles.contactMetaItem}><CheckCircle size={13} style={{ color: '#10b981' }} /> Thứ 2 – Thứ 6 (9:00 – 18:00 GMT+7)</span>
           </div>
-          <a className={`btn-primary ${styles.contactBtn}`} href="mailto:support@syncra.io">
+          <a className={styles.primaryBtn} href="mailto:support@syncra.io">
             Gửi email support
           </a>
           <p className={styles.contactEmail}>support@syncra.io</p>
         </div>
 
-        <div className={`glass-card ${styles.contactCard}`}>
+        <div className={styles.contactCard}>
           <div className={styles.contactIcon} style={{ background: 'linear-gradient(135deg,#06b6d4,#3b82f6)' }}>
             <MessageSquare size={22} />
           </div>
@@ -32,12 +32,12 @@ export function ContactTab({ onDocs }: { onDocs?: () => void }) {
             <span className={styles.contactMetaItem}><CheckCircle size={13} style={{ color: '#10b981' }} /> 1,200+ thành viên</span>
             <span className={styles.contactMetaItem}><Zap size={13} style={{ color: '#f59e0b' }} /> Phản hồi nhanh từ cộng đồng</span>
           </div>
-          <button className={`btn-secondary ${styles.contactBtn}`}>
+          <button className={styles.secondaryBtn}>
             Tham gia Discord
           </button>
         </div>
 
-        <div className={`glass-card ${styles.contactCard}`}>
+        <div className={styles.contactCard}>
           <div className={styles.contactIcon} style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
             <BookOpen size={22} />
           </div>
@@ -47,13 +47,13 @@ export function ContactTab({ onDocs }: { onDocs?: () => void }) {
             <span className={styles.contactMetaItem}><FileText size={13} /> 50+ bài viết hướng dẫn</span>
             <span className={styles.contactMetaItem}><PlayCircle size={13} /> 10+ video tutorial</span>
           </div>
-          <button className={`btn-secondary ${styles.contactBtn}`} onClick={onDocs}>
+          <button className={styles.secondaryBtn} onClick={onDocs}>
             Xem tài liệu →
           </button>
         </div>
       </div>
 
-      <div className={`glass-card ${styles.statusBanner}`}>
+      <div className={styles.statusBanner}>
         <div className={styles.statusDot} />
         <div>
           <strong>Tất cả hệ thống hoạt động bình thường</strong>

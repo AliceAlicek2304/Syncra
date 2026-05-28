@@ -46,7 +46,8 @@ export default function AppLayout() {
                         location.pathname.includes('/ideas') ||
                         location.pathname.includes('/repurpose') ||
                         location.pathname.includes('/media') ||
-                        location.pathname.includes('/trends')
+                        location.pathname.includes('/trends') ||
+                        location.pathname.includes('/help')
 
   const handleLogout = () => {
     logout()

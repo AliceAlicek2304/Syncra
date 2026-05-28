@@ -157,44 +157,11 @@ export default function AnalyticsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Performance Analytics</h1>
-          <p className={styles.subtitle}>Tổng quan hiệu suất content tháng này</p>
+          <h1 className={styles.title}>Analytics</h1>
+          <p className={styles.subtitle}>View post performance metrics</p>
         </div>
 
         <div className={styles.headerActions}>
-          <div className={styles.presetWrap}>
-            <button
-              type="button"
-              className={styles.presetBtn}
-              onClick={() => setShowPresetDropdown((v) => !v)}
-            >
-              <Calendar size={14} />
-              {PRESET_LABELS[presetDays]}
-              <ChevronDown size={14} />
-            </button>
-
-            {showPresetDropdown && (
-              <div className={`glass-card ${styles.presetDropdown}`}>
-                {([7, 30, 90] as const).map((days) => (
-                  <button
-                    key={days}
-                    type="button"
-                    className={styles.presetOption}
-                    onClick={() => {
-                      setPresetDays(days)
-                      setShowPresetDropdown(false)
-                    }}
-                  >
-                    {presetDays === days && <Check size={14} color="var(--purple-300)" />}
-                    <span>{PRESET_LABELS[days]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <span className={styles.rangeLabel}>{rangeLabel}</span>
-          </div>
-
           <button
             type="button"
             className={styles.refreshBtn}
@@ -205,6 +172,58 @@ export default function AnalyticsPage() {
             <RefreshCw size={14} className={isFetching ? styles.refreshSpinning : ''} />
             {isFetching ? 'Refreshing...' : 'Refresh'}
           </button>
+        </div>
+      </div>
+
+      <div className={styles.filterRow}>
+        <div className={styles.filterGroup}>
+          <button type="button" className={styles.filterBtn}>
+            All platforms <ChevronDown size={12} />
+          </button>
+          <button type="button" className={styles.filterBtn}>
+            All profiles <ChevronDown size={12} />
+          </button>
+          <button type="button" className={styles.filterBtn}>
+            All sources <ChevronDown size={12} />
+          </button>
+          <div className={styles.presetWrap}>
+            <button
+              type="button"
+              className={styles.filterBtn}
+              onClick={() => setShowPresetDropdown((v) => !v)}
+            >
+              <Calendar size={12} />
+              {PRESET_LABELS[presetDays]}
+              <ChevronDown size={12} />
+            </button>
+
+            {showPresetDropdown && (
+              <div className={`${styles.dropdown} ${styles.presetDropdown}`}>
+                {([7, 30, 90] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    className={styles.presetOption}
+                    onClick={() => {
+                      setPresetDays(days)
+                      setShowPresetDropdown(false)
+                    }}
+                  >
+                    {presetDays === days && <Check size={14} color="var(--analytics-ink)" />}
+                    <span>{PRESET_LABELS[days]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button type="button" className={styles.filterBtn}>
+            Newest first <ChevronDown size={12} />
+          </button>
+        </div>
+        <div className={styles.syncInfo}>
+          <span>Last sync: 46m ago</span>
+          <span>Next sync: in 14m</span>
+          <span className={styles.rangeLabel}>{rangeLabel}</span>
         </div>
       </div>
 
@@ -242,7 +261,7 @@ export default function AnalyticsPage() {
       {/* Top metrics */}
       <div className={styles.metricsRow}>
         {metrics.map(m => (
-          <div key={m.label} className={`glass-card ${styles.metricCard}`}>
+          <div key={m.label} className={`${styles.card} ${styles.metricCard}`}>
             <div className={styles.metricIcon} style={{ color: m.color, background: `${m.color}18` }}>{m.icon}</div>
             <div className={styles.metricValue}>
               {isLoading ? <SkeletonLoader height="28px" /> : <CountingNumber value={m.value} format={m.format} />}
@@ -257,7 +276,7 @@ export default function AnalyticsPage() {
 
       <div className={styles.row2}>
         {/* Weekly chart */}
-        <div className={`glass-card ${styles.chartCard}`}>
+        <div className={`${styles.card} ${styles.chartCard}`}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Reach theo tuần</h2>
             <span className={styles.cardSub}>{PRESET_LABELS[presetDays]}</span>
@@ -276,7 +295,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* AI Insights */}
-        <div className={`glass-card ${styles.insightCard}`}>
+        <div className={`${styles.card} ${styles.insightCard}`}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>✨ AI Insights</h2>
             <span className={styles.cardSub}>Gợi ý cải thiện</span>
@@ -292,7 +311,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Best Time to Post Heatmap */}
-      <div className={`glass-card ${styles.heatmapCard}`}>
+      <div className={`${styles.card} ${styles.heatmapCard}`}>
         <div className={styles.cardHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
@@ -307,7 +326,7 @@ export default function AnalyticsPage() {
                 <ChevronDown size={12} />
               </button>
               {showPlatformDropdown && (
-                <div className={`glass-card ${styles.platformFilterDropdown}`}>
+                <div className={`${styles.dropdown} ${styles.platformFilterDropdown}`}>
                   {PLATFORM_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
@@ -337,7 +356,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Platform breakdown */}
-      <div className={`glass-card ${styles.tableCard}`}>
+      <div className={`${styles.card} ${styles.tableCard}`}>
         <div className={styles.cardHeader}>
           <h2 className={styles.cardTitle}>Hiệu suất từng nền tảng</h2>
         </div>

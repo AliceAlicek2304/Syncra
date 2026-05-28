@@ -11,7 +11,7 @@
  *   BlueskyPlatformData, DiscordPlatformData
  */
 
-import { useState, KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
 import styles from './PlatformSpecificForm.module.css'
@@ -708,8 +708,6 @@ function FacebookForm({ value, onChange }: {
         </div>
       )}
 
-      <TodoSelect label="page ID" placeholder="// TODO: Fetch pages from API" />
-
       {value.contentType !== 'story' && value.contentType !== 'reel' && (
         <>
           <div className={styles.sectionDivider} />
@@ -784,11 +782,6 @@ function FacebookForm({ value, onChange }: {
           </div>
         </>
       )}
-
-      <GeoRestrictionField
-        value={value.geoRestriction}
-        onChange={v => set('geoRestriction', v)}
-      />
     </>
   )
 }

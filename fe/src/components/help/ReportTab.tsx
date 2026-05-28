@@ -33,7 +33,7 @@ export function ReportTab({ categories }: { categories: string[] }) {
           <p>Ticket ID: <strong>#SYN-{ticketId}</strong></p>
           <p>Đội ngũ kỹ thuật Syncra sẽ xem xét và phản hồi trong vòng <strong>24–48 giờ</strong> qua email của bạn.</p>
           <button
-            className={`btn-secondary ${styles.resetBtn}`}
+            className={styles.resetBtn}
             onClick={() => { setIssueSubmitted(false); setIssueForm({ title: '', category: '', description: '', severity: 'medium', email: '' }) }}
           >
             Báo lỗi khác
@@ -46,7 +46,7 @@ export function ReportTab({ categories }: { categories: string[] }) {
   return (
     <div className={pageStyles.section}>
       <div className={styles.reportWrap}>
-        <div className={`glass-card ${styles.reportCard}`}>
+          <div className={styles.reportCard}>
           <h2 className={styles.cardTitle}>
             <Bug size={18} /> Báo cáo sự cố
           </h2>
@@ -124,7 +124,7 @@ export function ReportTab({ categories }: { categories: string[] }) {
 
             <button
               type="submit"
-              className={`btn-primary ${styles.submitBtn}`}
+              className={styles.submitBtn}
               disabled={!issueForm.title || !issueForm.category || !issueForm.description}
             >
               <Send size={15} />
@@ -134,7 +134,7 @@ export function ReportTab({ categories }: { categories: string[] }) {
         </div>
 
         <div className={styles.reportSidebar}>
-          <div className={`glass-card ${styles.tipCard}`}>
+          <div className={styles.tipCard}>
             <h4><AlertCircle size={15} /> Tips báo lỗi hiệu quả</h4>
             <ul>
               <li>Mô tả chính xác các bước để tái hiện lỗi</li>
@@ -143,7 +143,7 @@ export function ReportTab({ categories }: { categories: string[] }) {
               <li>Kiểm tra xem lỗi có tái hiện sau khi refresh không</li>
             </ul>
           </div>
-          <div className={`glass-card ${styles.tipCard}`}>
+          <div className={styles.tipCard}>
             <h4><Clock size={15} /> Thời gian phản hồi</h4>
             <div className={styles.responseTable}>
               <div><span>Critical</span><span className={styles.responseTime} style={{ color: '#ef4444' }}>&lt; 4 giờ</span></div>
