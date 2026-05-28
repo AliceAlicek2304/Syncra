@@ -75,6 +75,13 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         {
             foreach (var mediaItem in request.MediaItems)
             {
+                if (!string.IsNullOrEmpty(mediaItem.Url) && 
+                    mediaItem.Url.Contains("zernio.com", StringComparison.OrdinalIgnoreCase))
+                {
+                    updatedMediaItems.Add(mediaItem);
+                    continue;
+                }
+
                 var storageKey = ExtractStorageKey(mediaItem.Url);
                 using var stream = await _storageService.OpenReadAsync(storageKey);
                 

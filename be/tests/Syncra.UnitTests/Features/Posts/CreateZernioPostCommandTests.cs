@@ -382,4 +382,49 @@ public class CreateZernioPostCommandTests : IDisposable
             It.IsAny<CancellationToken>()
         ), Times.Once);
     }
+
+    [Fact]
+    public async Task Handler_WithZernioMediaUrl_DoesNotReuploadToZernio()
+    {
+        // Arrange
+        var account1 = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_twitter_1");
+
+        _zernioClientMock
+            .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ZernioCreatePostResult("zernio_post_media", "scheduled", 1));
+
+        var zernioMediaUrl = "https://media.zernio.com/temp/123_dog.jpg";
+        var mediaItem = new PostMediaItemDto(
+            Url: zernioMediaUrl,
+            Type: "image",
+            Filename: "dog.jpg",
+            MimeType: "image/jpeg"
+        );
+
+        var command = new CreateZernioPostCommand(
+            _workspaceId,
+            _userId,
+            "Post with Media",
+            "Content",
+            new List<Guid> { account1.Id },
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: new List<PostMediaItemDto> { mediaItem },
+            PlatformContents: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        
+        // Verify that UploadMediaToZernioAsync is NEVER called because the file is already on Zernio
+        _zernioClientMock.Verify(x => x.UploadMediaToZernioAsync(
+            It.IsAny<System.IO.Stream>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()
+        ), Times.Never);
+    }
 }
