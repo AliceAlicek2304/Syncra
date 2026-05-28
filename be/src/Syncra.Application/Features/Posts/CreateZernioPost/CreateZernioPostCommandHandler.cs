@@ -173,7 +173,11 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",
             ".gif" => "image/gif",
+            ".webp" => "image/webp",
             ".mp4" => "video/mp4",
+            ".mov" => "video/quicktime",
+            ".webm" => "video/webm",
+            ".pdf" => "application/pdf",
             _ => "application/octet-stream"
         };
     }
