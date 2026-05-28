@@ -12,9 +12,6 @@ export default function RepurposePage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.orb1} />
-      <div className={styles.orb2} />
-
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.aiPill}>

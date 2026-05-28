@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import type { RepurposeAtom, AtomType } from '../../data/mockAI'
 import { getPlatformById } from '../../data/platforms'
+import { REPURPOSE_PLATFORM_COLORS } from './ConfigBar'
 import styles from './RepurposeComponents.module.css'
 
 interface Props {
@@ -26,11 +27,16 @@ export default function AtomCard({ atom, index = 0 }: Props) {
     const [expanded, setExpanded] = useState(false)
 
     const platformDef = getPlatformById(atom.platform) ?? getPlatformById('linkedin')!
-    const platform = {
+    const colors = REPURPOSE_PLATFORM_COLORS[atom.platform] ?? {
         color: platformDef.color,
-        bg: platformDef.bg,
-        border: platformDef.border,
-        xText: platformDef.xText,
+        bg: 'rgba(167,139,250,0.08)',
+        border: 'rgba(167,139,250,0.22)',
+    }
+    const platform = {
+        color: colors.color,
+        bg: colors.bg,
+        border: colors.border,
+        xText: platformDef.id === 'twitter' ? 'X' : platformDef.label.charAt(0),
     }
     const typeInfo = TYPE_CFG[atom.type]
     const TypeIcon = typeInfo.icon

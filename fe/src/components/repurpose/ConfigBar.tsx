@@ -13,21 +13,21 @@ interface PlatformDef {
     border: string
 }
 
-const REPURPOSE_PLATFORM_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-    linkedin:  { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.35)' },
-    twitter:   { color: '#e2e8f0', bg: 'rgba(226,232,240,0.07)', border: 'rgba(226,232,240,0.25)' },
-    instagram: { color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.35)' },
-    tiktok:    { color: '#ff0050', bg: 'rgba(255,0,80,0.12)', border: 'rgba(255,0,80,0.35)' },
-    facebook:  { color: '#1877f2', bg: 'rgba(24,119,242,0.12)', border: 'rgba(24,119,242,0.35)' },
-    youtube:   { color: '#ff0000', bg: 'rgba(255,0,0,0.12)', border: 'rgba(255,0,0,0.35)' },
-    pinterest: { color: '#e60023', bg: 'rgba(230,0,35,0.12)', border: 'rgba(230,0,35,0.35)' },
-    bluesky:   { color: '#0085ff', bg: 'rgba(0,133,255,0.12)', border: 'rgba(0,133,255,0.35)' },
-    threads:   { color: '#e7e9ea', bg: 'rgba(231,233,234,0.07)', border: 'rgba(231,233,234,0.25)' },
-    googlebusiness: { color: '#4285f4', bg: 'rgba(66,133,244,0.12)', border: 'rgba(66,133,244,0.35)' },
-    telegram:  { color: '#0088cc', bg: 'rgba(0,136,204,0.12)', border: 'rgba(0,136,204,0.35)' },
-    snapchat:  { color: '#fffc00', bg: 'rgba(255,252,0,0.12)', border: 'rgba(255,252,0,0.35)' },
-    whatsapp:  { color: '#25D366', bg: 'rgba(37,211,102,0.12)', border: 'rgba(37,211,102,0.35)' },
-    reddit:    { color: '#ff4500', bg: 'rgba(255,69,0,0.12)', border: 'rgba(255,69,0,0.35)' },
+export const REPURPOSE_PLATFORM_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+    linkedin:  { color: '#0a66c2', bg: 'rgba(10,102,194,0.08)', border: 'rgba(10,102,194,0.22)' },
+    twitter:   { color: '#201515', bg: 'rgba(32,21,21,0.06)', border: 'rgba(32,21,21,0.15)' },
+    instagram: { color: '#d62976', bg: 'rgba(214,41,118,0.08)', border: 'rgba(214,41,118,0.22)' },
+    tiktok:    { color: '#ef2950', bg: 'rgba(239,41,80,0.08)', border: 'rgba(239,41,80,0.22)' },
+    facebook:  { color: '#1877f2', bg: 'rgba(24,119,242,0.08)', border: 'rgba(24,119,242,0.22)' },
+    youtube:   { color: '#c20000', bg: 'rgba(194,0,0,0.06)', border: 'rgba(194,0,0,0.22)' },
+    pinterest: { color: '#bd081c', bg: 'rgba(189,8,28,0.08)', border: 'rgba(189,8,28,0.22)' },
+    bluesky:   { color: '#0085ff', bg: 'rgba(0,133,255,0.08)', border: 'rgba(0,133,255,0.22)' },
+    threads:   { color: '#201515', bg: 'rgba(32,21,21,0.06)', border: 'rgba(32,21,21,0.15)' },
+    googlebusiness: { color: '#0f9d58', bg: 'rgba(15,157,88,0.08)', border: 'rgba(15,157,88,0.22)' },
+    telegram:  { color: '#0088cc', bg: 'rgba(0,136,204,0.08)', border: 'rgba(0,136,204,0.22)' },
+    snapchat:  { color: '#a68000', bg: 'rgba(166,128,0,0.08)', border: 'rgba(166,128,0,0.22)' },
+    whatsapp:  { color: '#075e54', bg: 'rgba(7,94,84,0.08)', border: 'rgba(7,94,84,0.22)' },
+    reddit:    { color: '#ff4500', bg: 'rgba(255,69,0,0.08)', border: 'rgba(255,69,0,0.22)' },
 }
 
 const PLATFORMS: PlatformDef[] = ZERNIO_PLATFORMS.map(p => {

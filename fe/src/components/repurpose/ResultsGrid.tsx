@@ -69,7 +69,6 @@ export default function ResultsGrid() {
                     <div className={styles.platformTabs}>
                         {filterTabs.map(p => {
                             const meta = PLATFORM_META[p] ?? { color: '#a78bfa' }
-                            const Icon = meta.icon
                             const count = p === 'All' ? results.length : results.filter(r => r.platform === p).length
                             return (
                                 <button
@@ -78,7 +77,6 @@ export default function ResultsGrid() {
                                     style={activeFilter === p ? { '--tab-color': meta.color } as React.CSSProperties : {}}
                                     onClick={() => setActiveFilter(p)}
                                 >
-                                    {Icon && <Icon size={12} />}
                                     <span>{p} ({count})</span>
                                 </button>
                             )
