@@ -6,6 +6,7 @@ import {
 import type { RepurposeAtom, AtomType } from '../../data/mockAI'
 import { getPlatformById } from '../../data/platforms'
 import { REPURPOSE_PLATFORM_COLORS } from './ConfigBar'
+import { ExtendedPlatformIcon } from '../create-post/platformIcons'
 import styles from './RepurposeComponents.module.css'
 
 interface Props {
@@ -73,7 +74,7 @@ export default function AtomCard({ atom, index = 0 }: Props) {
                         className={styles.platformBadge}
                         style={{ color: platform.color, background: platform.bg, borderColor: platform.border }}
                     >
-                        <span className={styles.xBadgeText}>{platform.xText}</span>
+                        <ExtendedPlatformIcon platform={atom.platform} size={14} />
                         {atom.platform}
                     </span>
                     <span className={styles.typeBadge}>

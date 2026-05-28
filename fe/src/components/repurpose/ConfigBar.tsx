@@ -3,6 +3,7 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import type { RepurposePlatform } from '../../context/repurposeContextBase'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
+import { ExtendedPlatformIcon } from '../create-post/platformIcons'
 import styles from './RepurposeComponents.module.css'
 
 interface PlatformDef {
@@ -100,7 +101,7 @@ export default function ConfigBar() {
                                 } as React.CSSProperties : {}}
                                 onClick={() => togglePlatform(p.id)}
                             >
-                                <span className={styles.xIcon}>{p.xText}</span>
+                                <ExtendedPlatformIcon platform={p.id} size={16} />
                                 <span>{p.id}</span>
                                 {isActive && <span className={styles.platformCheck}>✓</span>}
                             </button>

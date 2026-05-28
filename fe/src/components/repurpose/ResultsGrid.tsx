@@ -3,6 +3,7 @@ import { Download, Sparkles } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import type { RepurposePlatform } from '../../context/repurposeContextBase'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
+import { ExtendedPlatformIcon } from '../create-post/platformIcons'
 import AtomCard from './AtomCard.tsx'
 import styles from './RepurposeComponents.module.css'
 
@@ -77,6 +78,7 @@ export default function ResultsGrid() {
                                     style={activeFilter === p ? { '--tab-color': meta.color } as React.CSSProperties : {}}
                                     onClick={() => setActiveFilter(p)}
                                 >
+                                    {p !== 'All' && <ExtendedPlatformIcon platform={p} size={14} />}
                                     <span>{p} ({count})</span>
                                 </button>
                             )
