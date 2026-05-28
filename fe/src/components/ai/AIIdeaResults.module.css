@@ -6,30 +6,34 @@
 
 .resultsHint {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--clr-body-mid);
   margin-bottom: 4px;
 }
 
 .resultsHint strong {
-  color: var(--purple-400);
+  color: var(--clr-primary);
 }
 
 .resultCard {
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .resultCard:hover {
-  border-color: rgba(139, 92, 246, 0.25);
+  border-color: rgba(255, 79, 0, 0.25);
+  background: rgba(255, 79, 0, 0.01);
 }
 
 .resultCardSelected {
-  border-color: var(--purple-400) !important;
-  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: var(--clr-primary) !important;
+  background: rgba(255, 79, 0, 0.06) !important;
 }
 
 .resultCardTop {
@@ -44,28 +48,25 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--clr-primary);
 }
 
 .resultPlatforms {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--clr-body-mid);
 }
 
 .resultTitle {
-  font-family: var(--font-title);
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--clr-ink);
   line-height: 1.4;
 }
 
 .resultHook {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--clr-body);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -82,35 +83,34 @@
   padding: 7px 14px;
   font-size: 12px;
   font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-primary);
   background: transparent;
-  color: var(--purple-400);
+  color: var(--clr-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .selectBtn:hover {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: var(--purple-400);
+  background: rgba(255, 79, 0, 0.08);
+  border-color: var(--clr-primary);
 }
 
 .selectBtnSelected {
-  background: var(--gradient-brand);
+  background: var(--clr-primary);
   border-color: transparent;
-  color: #fff;
+  color: var(--clr-on-primary);
 }
 
 .selectBtnSelected:hover {
-  opacity: 0.88;
-  background: var(--gradient-brand);
+  background: var(--clr-primary-hover);
 }
 
 .bulkFooter {
   position: sticky;
   bottom: 0;
-  background: rgba(13, 17, 28, 0.97);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--clr-canvas);
+  border-top: 1px solid var(--clr-border);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -122,8 +122,8 @@
 
 .bulkCount {
   font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
+  color: var(--clr-body-mid);
+  font-weight: 600;
 }
 
 .bulkAddBtn {
@@ -131,11 +131,17 @@
   padding: 9px 18px !important;
   gap: 6px !important;
   flex-shrink: 0;
+  background: var(--clr-primary) !important;
+  color: var(--clr-on-primary) !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.bulkAddBtn:hover:not(:disabled) {
+  background: var(--clr-primary-hover) !important;
 }
 
 .bulkAddBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
 }

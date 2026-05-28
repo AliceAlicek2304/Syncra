@@ -7,8 +7,6 @@ import type { Idea } from '../../api/ideas'
 const mockGroup: Group = {
   id: 'group-1',
   name: 'Unassigned',
-  order: 0,
-  createdAt: '2026-01-01',
 }
 
 const mockIdeas: Idea[] = [

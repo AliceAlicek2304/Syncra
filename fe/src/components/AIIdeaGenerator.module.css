@@ -1,39 +1,27 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(32, 21, 21, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0 }
-  to { opacity: 1 }
 }
 
 .dialog {
-  background: rgba(13, 17, 28, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
   width: 100%;
   max-width: 520px;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.08);
-  animation: slideUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.97) }
-  to { opacity: 1; transform: translateY(0) scale(1) }
+  box-shadow: 0 24px 80px rgba(32, 21, 21, 0.12);
 }
 
 .modalHeader {
@@ -41,7 +29,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--clr-border);
   flex-shrink: 0;
 }
 
@@ -49,14 +37,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--font-title);
+  font-family: var(--font-body);
   font-size: 17px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--clr-ink);
 }
 
 .modalTitleIcon {
-  color: var(--purple-400);
+  color: var(--clr-primary);
 }
 
 .modalHeaderActions {
@@ -66,38 +54,40 @@
 }
 
 .resetBtn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--text-secondary);
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  color: var(--clr-body);
   font-size: 12px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .resetBtn:hover {
-  border-color: var(--purple-400);
-  color: var(--text-primary);
+  border-color: var(--clr-mute);
+  color: var(--clr-ink);
+  background: var(--clr-canvas-soft);
 }
 
 .closeBtn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: var(--text-muted);
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  color: var(--clr-body-mid);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .closeBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
+  background: var(--clr-canvas-soft);
+  color: var(--clr-ink);
+  border-color: var(--clr-mute);
 }
 
 .modalBody {
@@ -119,7 +109,7 @@
   position: absolute;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 79, 0, 0.12), transparent 70%);
   border-radius: 50%;
   filter: blur(30px);
   pointer-events: none;
@@ -129,31 +119,31 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--gradient-brand);
+  background: var(--clr-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--clr-on-primary);
   position: relative;
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4) }
-  50% { box-shadow: 0 0 0 16px rgba(139, 92, 246, 0) }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 79, 0, 0.4) }
+  50% { box-shadow: 0 0 0 16px rgba(255, 79, 0, 0) }
 }
 
 .loadingTitle {
-  font-family: var(--font-title);
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--clr-ink);
   position: relative;
 }
 
 .loadingDesc {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--clr-body-mid);
   position: relative;
 }
 
@@ -168,7 +158,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--purple-400);
+  background: var(--clr-primary);
   animation: bounce 1.2s ease-in-out infinite;
 }
 

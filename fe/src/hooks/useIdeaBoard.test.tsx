@@ -50,13 +50,13 @@ describe('useIdeaBoard', () => {
 
   it('handleDragStart updates activeId state', () => {
     const { result } = renderHook(() => useIdeaBoard('ws-1'), { wrapper: createWrapper() })
-    act(() => { result.current.handleDragStart({ active: { id: 'idea-1' } }) })
+    act(() => { result.current.handleDragStart({ active: { id: 'idea-1' } } as any) })
     expect(result.current.activeId).toBe('idea-1')
   })
 
   it('handleDragEnd clears activeId', () => {
     const { result } = renderHook(() => useIdeaBoard('ws-1'), { wrapper: createWrapper() })
-    act(() => { result.current.handleDragStart({ active: { id: 'idea-1' } }) })
+    act(() => { result.current.handleDragStart({ active: { id: 'idea-1' } } as any) })
     expect(result.current.activeId).toBe('idea-1')
     act(() => { result.current.handleDragEnd() })
     expect(result.current.activeId).toBeNull()

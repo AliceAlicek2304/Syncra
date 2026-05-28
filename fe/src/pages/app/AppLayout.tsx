@@ -43,7 +43,8 @@ export default function AppLayout() {
   const isLightTheme = location.pathname.endsWith('/connections') || 
                         location.pathname.includes('/posts') || 
                         location.pathname.includes('/posts-all') ||
-                        location.pathname.includes('/inbox')
+                        location.pathname.includes('/inbox') ||
+                        location.pathname.includes('/ideas')
 
   const handleLogout = () => {
     logout()

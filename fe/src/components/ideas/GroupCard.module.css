@@ -1,8 +1,8 @@
 /* ── Column ─────────────────────────────────────────────────────── */
 .column {
-    background: rgba(13, 17, 28, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
+    background: var(--clr-canvas-soft);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
     width: 280px;
     min-width: 280px;
     max-height: calc(100vh - 220px);
@@ -10,13 +10,11 @@
     flex-direction: column;
     overflow: visible;
     flex-shrink: 0;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: border-color 0.2s;
+    transition: border-color 0.15s ease;
 }
 
 .column:hover {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--clr-mute);
 }
 
 .columnHeader {
@@ -39,11 +37,11 @@
 }
 
 .columnTitle {
-    font-family: var(--font-title);
+    font-family: var(--font-body);
     font-size: 13px;
     font-weight: 700;
-    color: var(--text-secondary);
-    letter-spacing: 0.02em;
+    color: var(--clr-ink);
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     display: block;
     overflow: hidden;
@@ -59,11 +57,11 @@
 }
 
 .columnBadge {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--clr-border);
     border-radius: 20px;
     font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: 700;
+    color: var(--clr-body-mid);
     padding: 2px 8px;
     min-width: 22px;
     text-align: center;
@@ -72,15 +70,15 @@
 .deleteColBtn {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--clr-body-mid);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 20px;
     height: 20px;
-    border-radius: 4px;
-    transition: all 0.15s;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
     opacity: 0;
 }
 
@@ -89,7 +87,7 @@
 }
 
 .deleteColBtn:hover {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
 }
 
@@ -102,22 +100,27 @@
 
 .renameInput {
     flex: 1;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--purple-400);
-    border-radius: 6px;
-    color: var(--text-primary);
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-ink);
     font-size: 13px;
     font-weight: 700;
     padding: 4px 8px;
     outline: none;
     min-width: 0;
+    transition: border-color 0.15s ease;
+}
+
+.renameInput:focus {
+    border-color: var(--clr-primary);
 }
 
 .renameOk {
-    background: var(--gradient-brand);
+    background: var(--clr-primary);
     border: none;
-    border-radius: 4px;
-    color: #fff;
+    border-radius: var(--radius-sm);
+    color: var(--clr-on-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -125,6 +128,11 @@
     height: 22px;
     cursor: pointer;
     flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.renameOk:hover {
+    background: var(--clr-primary-hover);
 }
 
 /* ── Card list ──────────────────────────────────────────────────── */
@@ -146,30 +154,35 @@
 }
 
 .cardList::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+    background: var(--clr-mute);
+    border-radius: var(--radius-pill);
+}
+
+.cardList::-webkit-scrollbar-thumb:hover {
+    background: var(--clr-body-mid);
 }
 
 /* ── Add Idea Button ────────────────────────────────────────────── */
 .addIdeaBtn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     margin: 8px 12px 12px;
     padding: 8px 10px;
     background: transparent;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: var(--text-muted);
+    border: 1px dashed var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-body);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
     flex-shrink: 0;
 }
 
 .addIdeaBtn:hover {
-    border-color: var(--purple-400);
-    color: var(--purple-400);
-    background: rgba(139, 92, 246, 0.05);
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+    background: rgba(255, 79, 0, 0.04);
 }

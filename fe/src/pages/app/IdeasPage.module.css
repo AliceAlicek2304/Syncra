@@ -6,6 +6,8 @@
     overflow: hidden;
     padding: 28px 28px 0;
     gap: 20px;
+    background: var(--clr-canvas);
+    font-family: var(--font-body);
 }
 
 /* ── Header ─────────────────────────────────────────────────────── */
@@ -26,27 +28,26 @@
 .headerIcon {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
-    background: var(--gradient-brand);
+    border-radius: var(--radius-md);
+    background: rgba(255, 79, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: var(--clr-primary);
     flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
 }
 
 .title {
-    font-family: var(--font-title);
+    font-family: var(--font-display);
     font-size: 22px;
-    font-weight: 800;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: var(--clr-ink);
     line-height: 1.2;
 }
 
 .subtitle {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--clr-body-mid);
     margin-top: 2px;
 }
 
@@ -62,21 +63,20 @@
     align-items: center;
     gap: 6px;
     padding: 9px 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    color: var(--text-secondary);
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-ink);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
     white-space: nowrap;
 }
 
 .newGroupBtn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--purple-400);
-    color: var(--text-primary);
+    background: var(--clr-canvas-soft);
+    border-color: var(--clr-mute);
 }
 
 .aiBtn {
@@ -84,12 +84,23 @@
     padding: 9px 18px !important;
     gap: 7px !important;
     white-space: nowrap;
+    background: var(--clr-primary) !important;
+    color: var(--clr-on-primary) !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 4px 14px rgba(255, 79, 0, 0.15) !important;
+}
+
+.aiBtn:hover {
+    background: var(--clr-primary-hover) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(255, 79, 0, 0.25) !important;
 }
 
 /* ── Board ──────────────────────────────────────────────────────── */
 .board {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 28px;
@@ -106,17 +117,21 @@
 }
 
 .board::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    background: var(--clr-mute);
+    border-radius: var(--radius-pill);
+}
+
+.board::-webkit-scrollbar-thumb:hover {
+    background: var(--clr-body-mid);
 }
 
 /* ── New Group Column ───────────────────────────────────────────── */
 .newGroupColumn {
-    width: 240px;
-    min-width: 240px;
-    background: rgba(13, 17, 28, 0.4);
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    width: 280px;
+    min-width: 280px;
+    background: var(--clr-canvas-soft);
+    border: 1px dashed var(--clr-border);
+    border-radius: var(--radius-md);
     padding: 16px;
     display: flex;
     flex-direction: column;
@@ -126,15 +141,20 @@
 }
 
 .newGroupInput {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--purple-400);
-    border-radius: 8px;
-    color: var(--text-primary);
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-ink);
     font-size: 13px;
     font-weight: 600;
     padding: 8px 12px;
     outline: none;
     width: 100%;
+    transition: border-color 0.15s ease;
+}
+
+.newGroupInput:focus {
+    border-color: var(--clr-primary);
 }
 
 .newGroupActions {
@@ -146,38 +166,26 @@
 .editOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(32, 21, 21, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 300;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
-    animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0 }
-    to { opacity: 1 }
 }
 
 .editModal {
-    background: rgba(13, 17, 28, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
     width: 100%;
     max-width: 480px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(16px) scale(0.98) }
-    to { opacity: 1; transform: translateY(0) scale(1) }
+    box-shadow: 0 20px 50px rgba(32, 21, 21, 0.12);
 }
 
 .editModalHeader {
@@ -185,33 +193,34 @@
     align-items: center;
     justify-content: space-between;
     padding: 18px 20px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--clr-border);
 }
 
 .editModalTitle {
-    font-family: var(--font-title);
+    font-family: var(--font-body);
     font-size: 16px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--clr-ink);
 }
 
 .closeBtn {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    color: var(--text-muted);
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-body-mid);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 30px;
     height: 30px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
 }
 
 .closeBtn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-primary);
+    background: var(--clr-canvas-soft);
+    color: var(--clr-ink);
+    border-color: var(--clr-mute);
 }
 
 .editModalBody {
@@ -230,29 +239,29 @@
 .editLabel {
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--clr-body-mid);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .editInput {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    color: var(--text-primary);
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-ink);
     font-size: 14px;
     padding: 10px 13px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s ease;
 }
 
 .editInput:focus {
-    border-color: var(--purple-400);
+    border-color: var(--clr-primary);
 }
 
 .editModalFooter {
     padding: 14px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--clr-border);
     display: flex;
     align-items: center;
     justify-content: flex-end;

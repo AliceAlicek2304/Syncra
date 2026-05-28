@@ -14,8 +14,8 @@ const mockIdea: Idea = {
 }
 
 const mockGroups: Group[] = [
-  { id: 'group-1', name: 'Unassigned', order: 0, createdAt: '2026-01-01' },
-  { id: 'group-2', name: 'Todo', order: 1, createdAt: '2026-01-01' },
+  { id: 'group-1', name: 'Unassigned' },
+  { id: 'group-2', name: 'Todo' },
 ]
 
 describe('IdeaCard', () => {
