@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, CalendarDays,
-  BarChart3, LogOut, ChevronLeft, Menu, PenSquare, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
+  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
   FileText, ChevronDown, ChevronUp, Layers
 } from 'lucide-react'
 import { useState } from 'react'
@@ -42,14 +42,15 @@ export default function AppLayout() {
 
   const isLightTheme = location.pathname.endsWith('/connections') || 
                         location.pathname.includes('/posts') || 
-                        location.pathname.includes('/posts-all')
+                        location.pathname.includes('/posts-all') ||
+                        location.pathname.includes('/inbox')
 
   const handleLogout = () => {
     logout()
     navigate('/')
   }
 
-  const handlePostsHeaderClick = (e: React.MouseEvent) => {
+  const handlePostsHeaderClick = () => {
     if (collapsed) {
       navigate('/app/posts-all')
     } else {
@@ -102,7 +103,7 @@ export default function AppLayout() {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handlePostsHeaderClick(e as any)
+                  handlePostsHeaderClick()
                 }
               }}
             >
