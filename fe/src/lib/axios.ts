@@ -7,7 +7,31 @@ const api = axios.create({
   },
 });
 
+type RequestListener = (pendingCount: number, activeUrls: string[]) => void;
+const listeners = new Set<RequestListener>();
+let activeCount = 0;
+const activeUrls: string[] = [];
+
+const notifyListeners = () => {
+  listeners.forEach((listener) => listener(activeCount, [...activeUrls]));
+};
+
+export const subscribeToRequests = (listener: RequestListener) => {
+  listeners.add(listener);
+  // Immediate invocation for current state
+  listener(activeCount, [...activeUrls]);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
 api.interceptors.request.use((config) => {
+  activeCount++;
+  if (config.url) {
+    activeUrls.push(config.url);
+  }
+  notifyListeners();
+
   const token = localStorage.getItem('syncra_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -27,8 +51,27 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    activeCount = Math.max(0, activeCount - 1);
+    if (response.config?.url) {
+      const idx = activeUrls.indexOf(response.config.url);
+      if (idx !== -1) {
+        activeUrls.splice(idx, 1);
+      }
+    }
+    notifyListeners();
+    return response;
+  },
   (error) => {
+    activeCount = Math.max(0, activeCount - 1);
+    if (error.config?.url) {
+      const idx = activeUrls.indexOf(error.config.url);
+      if (idx !== -1) {
+        activeUrls.splice(idx, 1);
+      }
+    }
+    notifyListeners();
+
     if (error.response?.status === 401) {
       if (error.response?.data?.code === 'oauth_token_revoked') {
         const provider = error.response.data.provider ?? 'google';
@@ -57,3 +100,4 @@ export const registerErrorHandler = (handler: (message: string) => void) => {
 };
 
 export default api;
+
