@@ -10,7 +10,8 @@ public record CreateZernioPostDto(
     bool PublishNow,
     bool? IsDraft,
     IReadOnlyList<PostMediaItemDto>? MediaItems,
-    IReadOnlyList<PlatformContentDto>? PlatformContents
+    IReadOnlyList<PlatformContentDto>? PlatformContents,
+    string? PostId = null
 );
 
 public record PlatformContentDto(

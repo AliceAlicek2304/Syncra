@@ -476,14 +476,57 @@ public sealed class ZernioClient : IZernioClient
                 tiktokSettings
             );
 
-            _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions));
-
             var config = _postsApi.Configuration;
             var baseUrl = config.BasePath.TrimEnd('/');
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts")
+            HttpRequestMessage httpRequest;
+
+            if (!string.IsNullOrEmpty(request.PostId))
             {
-                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
-            };
+                var normalizedStatus = request.Status?.ToLowerInvariant() ?? "draft";
+                if (normalizedStatus == "published")
+                {
+                    if (request.Platforms.Count != 1 || !string.Equals(request.Platforms[0].Platform, "twitter", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new DomainException("invalid_edit_platform", "Only published posts on Twitter/X can be edited.");
+                    }
+
+                    var editRequest = new
+                    {
+                        platform = "twitter",
+                        content = request.Content
+                    };
+
+                    _logger.LogInformation("Sending EditPublishedPostRequest to Zernio API for post {PostId}", request.PostId);
+
+                    httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts/{request.PostId}/edit")
+                    {
+                        Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(editRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
+                    };
+                }
+                else if (normalizedStatus == "draft" || normalizedStatus == "scheduled" || normalizedStatus == "failed" || normalizedStatus == "partial")
+                {
+                    _logger.LogInformation("Sending UpdatePostRequest to Zernio API for post {PostId}", request.PostId);
+
+                    httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/v1/posts/{request.PostId}")
+                    {
+                        Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
+                    };
+                }
+                else
+                {
+                    throw new DomainException("invalid_edit_status", $"Cannot edit post in '{request.Status}' status.");
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions));
+
+                httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts")
+                {
+                    Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+
             httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
 
             using var httpClient = _httpClientFactory.CreateClient();
@@ -493,24 +536,37 @@ public sealed class ZernioClient : IZernioClient
             var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
             if (!httpResponse.IsSuccessStatusCode)
             {
-                _logger.LogError("Zernio API error creating post. Status: {StatusCode}, Content: {Content}", httpResponse.StatusCode, json);
-                
+                _logger.LogError("Zernio API error saving post. Status: {StatusCode}, Content: {Content}", httpResponse.StatusCode, json);
+
                 if (httpResponse.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
                 {
                     throw new ZernioBillingRequiredException(
-                        "A paid Zernio plan is required to create posts.",
+                        "A paid Zernio plan is required to save posts.",
                         reason: "post_limit_reached",
                         dashboardUrl: "https://zernio.com/dashboard/billing",
                         details: new { platforms = request.Platforms.Count });
                 }
-                
-                throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {json}");
+
+                throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post. Error: {json}");
             }
-            
+
             using var document = System.Text.Json.JsonDocument.Parse(json);
-            var postElement = document.RootElement.GetProperty("post");
-            var postId = postElement.TryGetProperty("_id", out var idEl) ? idEl.GetString() ?? string.Empty : string.Empty;
-            var status = postElement.TryGetProperty("status", out var statusEl) ? statusEl.GetString() ?? "scheduled" : "scheduled";
+            string postId = request.PostId ?? string.Empty;
+            string status = request.Status ?? "scheduled";
+
+            if (document.RootElement.TryGetProperty("post", out var postElement))
+            {
+                postId = postElement.TryGetProperty("_id", out var idEl) ? idEl.GetString() ?? postId : postId;
+                status = postElement.TryGetProperty("status", out var statusEl) ? statusEl.GetString() ?? status : status;
+            }
+            else if (document.RootElement.TryGetProperty("id", out var idEl))
+            {
+                postId = idEl.GetString() ?? postId;
+            }
+            else if (document.RootElement.TryGetProperty("_id", out var idEl2))
+            {
+                postId = idEl2.GetString() ?? postId;
+            }
 
             return new ZernioCreatePostResult(
                 postId,
@@ -527,8 +583,8 @@ public sealed class ZernioClient : IZernioClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Zernio API error creating post: {Message}", ex.Message);
-            throw new DomainException("zernio_create_post_error", $"Failed to create Zernio post. Error: {ex.Message}", ex);
+            _logger.LogError(ex, "Zernio API error saving post: {Message}", ex.Message);
+            throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post. Error: {ex.Message}", ex);
         }
     }
 

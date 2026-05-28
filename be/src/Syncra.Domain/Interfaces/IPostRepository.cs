@@ -47,4 +47,5 @@ public interface IPostRepository
     /// </summary>
     Task<Post?> GetByIdWithPlatformTargetsAsync(Guid id);
     Task<Post?> GetByZernioPostIdAsync(string zernioPostId);
+    void AddPlatformTarget(PostPlatformTarget target);
 }

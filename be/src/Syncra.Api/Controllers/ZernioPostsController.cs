@@ -40,7 +40,8 @@ public sealed class ZernioPostsController : ControllerBase
             dto.PublishNow,
             dto.IsDraft,
             dto.MediaItems,
-            dto.PlatformContents);
+            dto.PlatformContents,
+            dto.PostId);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -49,6 +50,34 @@ public sealed class ZernioPostsController : ControllerBase
             "Posts",
             new { workspaceId, postId = result.Id },
             result);
+    }
+
+    [HttpPut("{postId}")]
+    public async Task<IActionResult> UpdateZernioPost(
+        Guid workspaceId,
+        string postId,
+        [FromBody] CreateZernioPostDto dto,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var command = new CreateZernioPostCommand(
+            workspaceId,
+            userId.Value,
+            dto.Title,
+            dto.Content,
+            dto.SocialAccountIds,
+            dto.ScheduledAtUtc,
+            dto.PublishNow,
+            dto.IsDraft,
+            dto.MediaItems,
+            dto.PlatformContents,
+            postId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return Ok(result);
     }
 
     [HttpPost("{postId:guid}/retry")]

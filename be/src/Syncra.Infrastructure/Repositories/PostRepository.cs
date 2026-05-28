@@ -135,6 +135,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         return await _dbSet
             .Include(p => p.Media)
             .Include(p => p.Integration)
+            .Include(p => p.PlatformTargets)
             .FirstOrDefaultAsync(p => p.ZernioPostId == zernioPostId);
     }
 
@@ -185,5 +186,10 @@ public class PostRepository : Repository<Post>, IPostRepository
                 p.Integration != null ? p.Integration.Platform : "unknown",
                 p.Status.ToString()))
             .ToListAsync(cancellationToken);
+    }
+
+    public void AddPlatformTarget(PostPlatformTarget target)
+    {
+        _context.Set<PostPlatformTarget>().Add(target);
     }
 }

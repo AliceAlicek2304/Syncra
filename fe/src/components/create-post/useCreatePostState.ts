@@ -482,6 +482,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
         })
 
         await postsApi.createZernioPost(wsId, {
+          postId: editPost?.zernioPostId,
+          status: editPost?.status,
           title,
           content,
           socialAccountIds: selectedSocialAccountIds,
@@ -657,6 +659,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
             }))
             promises.push(
               postsApi.createZernioPost(wsId, {
+                postId: editPost?.zernioPostId,
+                status: editPost?.status,
                 title,
                 content,
                 socialAccountIds: [],
@@ -715,6 +719,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
               promises.push(
                 postsApi.createZernioPost(wsId, {
+                  postId: editPost?.zernioPostId,
+                  status: editPost?.status,
                   title,
                   content,
                   socialAccountIds: ids,

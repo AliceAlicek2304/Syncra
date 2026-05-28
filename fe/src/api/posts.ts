@@ -73,6 +73,8 @@ export interface UpdatePostRequest {
 }
 
 export interface CreateZernioPostRequest {
+  postId?: string;
+  status?: string;
   title?: string;
   content?: string;
   socialAccountIds?: string[];
@@ -118,6 +120,10 @@ export const postsApi = {
   },
 
   createZernioPost: async (workspaceId: string, data: CreateZernioPostRequest): Promise<Post> => {
+    if (data.postId) {
+      const response = await api.put<Post>(`workspaces/${workspaceId}/posts/zernio/${data.postId}`, data);
+      return response.data;
+    }
     const response = await api.post<Post>(`workspaces/${workspaceId}/posts/zernio`, data);
     return response.data;
   },

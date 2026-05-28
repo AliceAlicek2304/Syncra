@@ -87,6 +87,14 @@ public sealed class Post : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void UpdatePublishedContent(string title, string content)
+    {
+        Title = PostTitle.Create(title);
+        Content = PostContent.Create(content);
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+
     public void Schedule(DateTime scheduledAtUtc)
     {
         var scheduledTime = ScheduledTime.Create(scheduledAtUtc);

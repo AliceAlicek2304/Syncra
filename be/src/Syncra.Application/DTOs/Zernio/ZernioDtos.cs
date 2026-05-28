@@ -48,7 +48,9 @@ public sealed record ZernioCreatePostRequest(
     bool PublishNow,
     bool? IsDraft,
     IReadOnlyList<Syncra.Application.DTOs.Posts.PostMediaItemDto>? MediaItems,
-    IReadOnlyList<Syncra.Application.DTOs.Posts.PlatformContentDto>? PlatformContents);
+    IReadOnlyList<Syncra.Application.DTOs.Posts.PlatformContentDto>? PlatformContents,
+    string? PostId = null,
+    string? Status = null);
 
 public sealed record ZernioCreatePostResult(
     string ZernioPostId,
