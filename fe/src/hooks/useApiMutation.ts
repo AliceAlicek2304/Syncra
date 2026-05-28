@@ -1,4 +1,5 @@
-import { useMutation, UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
+import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
 
 /**
  * Custom hook wrapping React Query's useMutation.

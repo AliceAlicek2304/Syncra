@@ -28,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     }
     
     if (onClick) {
-      const result = onClick(e);
+      const result = onClick(e) as any;
       if (result instanceof Promise) {
         setLocalLoading(true);
         try {

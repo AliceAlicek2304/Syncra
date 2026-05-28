@@ -952,6 +952,11 @@ export default function PostsOverviewPage() {
                       {post.mediaItems?.[0] && (
                         <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media" onClick={(e) => { e.stopPropagation(); handlePostClick(post); }}>
                           <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
+                          {post.mediaItems.length > 1 && (
+                            <span className={styles.mediaCountBadge}>
+                              {post.mediaItems.length}
+                            </span>
+                          )}
                         </button>
                       )}
                     </div>
