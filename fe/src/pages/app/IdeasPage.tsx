@@ -61,8 +61,8 @@ function QuickAddModal({ groupId, onAdd, onClose }: QuickAddProps) {
                     </div>
                 </div>
                 <div className={styles.editModalFooter}>
-                    <button className="btn-secondary" onClick={onClose} style={{ fontSize: 13 }}>Cancel</button>
-                    <button className="btn-primary" onClick={handleAdd} disabled={!title.trim()}>Add Idea</button>
+                    <button className={styles.secondaryBtn} onClick={onClose}>Cancel</button>
+                    <button className={styles.primaryBtn} onClick={handleAdd} disabled={!title.trim()}>Add Idea</button>
                 </div>
             </motion.div>
         </motion.div>
@@ -190,8 +190,8 @@ export default function IdeasPage() {
                                     }}
                                 />
                                 <div className={styles.newGroupActions}>
-                                    <button className="btn-primary" onClick={handleAddGroup} disabled={!newGroupName.trim()} style={{ fontSize: 13, padding: '8px 16px' }}>Add</button>
-                                    <button className="btn-secondary" onClick={() => { setAddingGroup(false); setNewGroupName('') }} style={{ fontSize: 13, padding: '8px 16px' }}>Cancel</button>
+                                    <button className={styles.primaryBtn} onClick={handleAddGroup} disabled={!newGroupName.trim()}>Add</button>
+                                    <button className={styles.secondaryBtn} onClick={() => { setAddingGroup(false); setNewGroupName('') }}>Cancel</button>
                                 </div>
                             </div>
                         ) : null}

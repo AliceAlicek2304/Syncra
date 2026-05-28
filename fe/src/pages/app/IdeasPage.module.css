@@ -267,3 +267,52 @@
     justify-content: flex-end;
     gap: 10px;
 }
+
+.primaryBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: var(--clr-primary);
+    color: var(--clr-on-primary);
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px rgba(255, 79, 0, 0.15);
+    text-decoration: none;
+}
+
+.primaryBtn:hover:not(:disabled) {
+    background: var(--clr-primary-hover);
+}
+
+.primaryBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.secondaryBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: var(--clr-canvas);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-ink-mid);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.secondaryBtn:hover {
+    background: var(--clr-canvas-soft);
+    color: var(--clr-ink);
+    border-color: var(--clr-mute);
+}
