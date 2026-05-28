@@ -534,21 +534,21 @@ public sealed class ZernioClient : IZernioClient
 
     public async Task<string> UploadMediaToZernioAsync(
         Stream fileStream,
-        string contentType,
+        string mimeType,
         string fileName,
         CancellationToken cancellationToken = default)
     {
         if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
-        if (string.IsNullOrWhiteSpace(contentType)) throw new ArgumentException("Content type cannot be null or empty.", nameof(contentType));
+        if (string.IsNullOrWhiteSpace(mimeType)) throw new ArgumentException("Mime type cannot be null or empty.", nameof(mimeType));
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
 
-        _logger.LogInformation("Requesting presigned upload URL from Zernio for file: {FileName}, Type: {ContentType}", fileName, contentType);
+        _logger.LogInformation("Requesting presigned upload URL from Zernio for file: {FileName}, Type: {MimeType}", fileName, mimeType);
 
         var config = _postsApi.Configuration;
         var baseUrl = config.BasePath.TrimEnd('/');
         var presignRequestUrl = $"{baseUrl}/v1/media/presign";
 
-        var presignPayload = new ZernioPresignRequest(fileName, contentType);
+        var presignPayload = new ZernioPresignRequest(fileName, mimeType);
 
         using var presignHttpRequest = new HttpRequestMessage(HttpMethod.Post, presignRequestUrl)
         {
@@ -584,7 +584,7 @@ public sealed class ZernioClient : IZernioClient
         using var uploadHttpRequest = new HttpRequestMessage(HttpMethod.Put, presignResult.UploadUrl);
         
         var streamContent = new StreamContent(fileStream);
-        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
         uploadHttpRequest.Content = streamContent;
 
         using var uploadHttpClient = _httpClientFactory.CreateClient();

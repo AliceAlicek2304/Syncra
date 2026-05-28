@@ -51,4 +51,22 @@ public class ZernioClientInterfaceTests
             Assert.Contains(name, methodNames);
         }
     }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareUploadMediaToZernioAsyncWithMimeType()
+    {
+        // Arrange
+        var interfaceType = typeof(IZernioClient);
+        var method = interfaceType.GetMethod("UploadMediaToZernioAsync");
+
+        // Assert
+        Assert.NotNull(method);
+        Assert.Equal(typeof(Task<string>), method!.ReturnType);
+
+        var parameters = method.GetParameters();
+        Assert.Contains(parameters, p => p.Name == "fileStream" && p.ParameterType == typeof(System.IO.Stream));
+        Assert.Contains(parameters, p => p.Name == "mimeType" && p.ParameterType == typeof(string));
+        Assert.Contains(parameters, p => p.Name == "fileName" && p.ParameterType == typeof(string));
+        Assert.Contains(parameters, p => p.Name == "cancellationToken" && p.ParameterType == typeof(CancellationToken));
+    }
 }

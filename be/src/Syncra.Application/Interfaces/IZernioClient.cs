@@ -63,7 +63,7 @@ public interface IZernioClient
 
     Task<string> UploadMediaToZernioAsync(
         Stream fileStream,
-        string contentType,
+        string mimeType,
         string fileName,
         CancellationToken cancellationToken = default);
 
