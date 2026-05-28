@@ -60,7 +60,7 @@ export default function InboxPage() {
 
   // Fetch social accounts for filters
   const { data: socialAccounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['social-accounts', workspaceId],
+    queryKey: ['social-accounts-list', workspaceId],
     enabled: Boolean(workspaceId),
     queryFn: () => {
       if (!workspaceId) return [];
@@ -92,7 +92,10 @@ export default function InboxPage() {
   // Filter social accounts based on active tab & selected platform
   const filteredAccounts = useMemo(() => {
     const supportedKeys = PLATFORMS_BY_TAB[activeTab];
-    return socialAccounts.filter((acc) => {
+    const accountsArray = Array.isArray(socialAccounts)
+      ? socialAccounts
+      : (socialAccounts as any)?.items || [];
+    return accountsArray.filter((acc: any) => {
       const matchTab = supportedKeys.includes(acc.platform);
       const matchPlatform = !platformFilter || acc.platform === platformFilter;
       return matchTab && matchPlatform;
@@ -250,7 +253,7 @@ export default function InboxPage() {
                 >
                   All Accounts
                 </button>
-                {filteredAccounts.map((acc) => (
+                {filteredAccounts.map((acc: any) => (
                   <button
                     key={acc.id}
                     className={`${styles.accountItem} ${accountFilter === acc.id ? styles.accountItemActive : ''}`}
