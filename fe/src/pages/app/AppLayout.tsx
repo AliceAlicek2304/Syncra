@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Lightbulb, CalendarDays,
+  LayoutDashboard, Lightbulb,
   BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
   FileText, ChevronDown, ChevronUp, Layers
 } from 'lucide-react'
@@ -24,7 +24,6 @@ const NAV_ITEMS = [
   { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
-  { to: '/app/posts-all?view=calendar', icon: <CalendarDays size={18} />, label: 'Calendar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
   { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
 ]
@@ -127,11 +126,9 @@ export default function AppLayout() {
               <div className={styles.subItems}>
                 <NavLink
                   to="/app/posts-all"
-                  className={({ isActive }) => {
-                    const params = new URLSearchParams(location.search)
-                    const isCal = params.get('view') === 'calendar'
-                    return `${styles.subNavItem} ${(isActive && !isCal) ? styles.subNavItemActive : ''}`
-                  }}
+                  className={({ isActive }) =>
+                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
+                  }
                 >
                   <span className={styles.subMenuIcon}>
                     <LayoutDashboard size={14} />
@@ -158,13 +155,9 @@ export default function AppLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => {
-                const params = new URLSearchParams(location.search)
-                const isCal = params.get('view') === 'calendar'
-                const isItemCalendar = item.to.includes('view=calendar')
-                const active = isItemCalendar ? (location.pathname === '/app/posts-all' && isCal) : (isActive && !(location.pathname === '/app/posts-all' && isCal))
-                return `${styles.navItem} ${active ? styles.navItemActive : ''}`
-              }}
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+              }
             >
               <span className={styles.navIcon}>{item.icon}</span>
               {!collapsed && (
