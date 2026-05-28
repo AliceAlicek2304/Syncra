@@ -16,7 +16,7 @@ const NAV_LINKS = [
 const USER_MENU = [
   { label: 'Connections', icon: Plug, path: '/app/connections' },
   { label: 'Ideas', icon: Lightbulb, path: '/app/ideas' }, 
-  { label: 'Calendar', icon: Calendar, path: '/app/calendar' },
+  { label: 'Calendar', icon: Calendar, path: '/app/posts-all?view=calendar' },
   { label: 'Analytics', icon: BarChart2, path: '/app/analytics' },
 ]
 

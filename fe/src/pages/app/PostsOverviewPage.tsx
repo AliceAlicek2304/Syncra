@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
@@ -79,7 +80,36 @@ export default function PostsOverviewPage() {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
-  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'calendar'>('grid')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const viewParam = searchParams.get('view')
+
+  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'calendar'>(() => {
+    if (viewParam === 'calendar' || viewParam === 'table' || viewParam === 'grid') {
+      return viewParam as 'grid' | 'table' | 'calendar'
+    }
+    return 'grid'
+  })
+
+  // Sync state if URL changes (e.g. navigation via sidebar/navbar)
+  useEffect(() => {
+    if (viewParam === 'calendar' || viewParam === 'table' || viewParam === 'grid') {
+      setViewMode(viewParam as 'grid' | 'table' | 'calendar')
+    }
+  }, [viewParam])
+
+  // Sync URL search param with state changes
+  useEffect(() => {
+    const currentView = searchParams.get('view')
+    if (currentView !== viewMode) {
+      setSearchParams(
+        (prev) => {
+          prev.set('view', viewMode)
+          return prev
+        },
+        { replace: true }
+      )
+    }
+  }, [viewMode, searchParams, setSearchParams])
   const [limitPerPage] = useState<number>(20)
   const [currentPage, setCurrentPage] = useState<number>(1)
   

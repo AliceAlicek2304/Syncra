@@ -24,10 +24,8 @@ import { WorkspaceProvider } from './context/WorkspaceContext'
 import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
-import DashboardPage from './pages/app/DashboardPage'
 import IdeasPage from './pages/app/IdeasPage'
 import MediaLibraryPage from './pages/app/MediaLibraryPage'
-import CalendarPage from './pages/app/CalendarPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
@@ -137,7 +135,7 @@ function AnimatedRoutes() {
           <Route path="posts/queues" element={<PageWrapper><PostsQueuesPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
           <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
-          <Route path="calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
+          <Route path="calendar" element={<Navigate to="/app/posts-all?view=calendar" replace />} />
           <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
           <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />

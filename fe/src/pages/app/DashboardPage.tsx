@@ -275,7 +275,7 @@ export default function DashboardPage() {
         <div className={`glass-card ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Posts gần đây</h2>
-            <button className={styles.seeAll} onClick={() => navigate('/app/calendar')}>
+            <button className={styles.seeAll} onClick={() => navigate('/app/posts-all?view=calendar')}>
               Xem tất cả <ArrowUpRight size={13} />
             </button>
           </div>

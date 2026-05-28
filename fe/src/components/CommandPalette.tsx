@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plug, Sparkles, Repeat,
-  TrendingUp, CalendarDays, BarChart3, Settings,
+  TrendingUp, CalendarDays, BarChart3,
   PlusSquare, Command
 } from 'lucide-react'
 import styles from './CommandPalette.module.css'
@@ -29,7 +29,7 @@ export default function CommandPalette({ onNewPost }: { onNewPost: () => void })
     { id: 'ideas', label: 'Ideas', icon: <Sparkles size={18} />, action: () => navigate('/app/ideas'), category: 'Navigation' },
     { id: 'repurpose', label: 'AI Repurpose Engine', icon: <Repeat size={18} />, action: () => navigate('/app/repurpose'), category: 'Navigation' },
     { id: 'trends', label: 'Trend Radar', icon: <TrendingUp size={18} />, action: () => navigate('/app/trends'), category: 'Navigation' },
-    { id: 'calendar', label: 'Content Calendar', icon: <CalendarDays size={18} />, action: () => navigate('/app/calendar'), category: 'Navigation' },
+    { id: 'calendar', label: 'Content Calendar', icon: <CalendarDays size={18} />, action: () => navigate('/app/posts-all?view=calendar'), category: 'Navigation' },
     { id: 'analytics', label: 'Analytics Insights', icon: <BarChart3 size={18} />, action: () => navigate('/app/analytics'), category: 'Navigation' },
     { id: 'settings', label: 'Connections', icon: <Plug size={18} />, action: () => navigate('/app/connections'), category: 'Navigation' },
     { id: 'new-post', label: 'Create New Post', icon: <PlusSquare size={18} />, action: () => onNewPost(), category: 'Actions', shortcut: 'N' },
