@@ -489,6 +489,13 @@ public sealed class ZernioClient : IZernioClient
                 );
             }
 
+            FacebookPlatformDataDto? facebookSettings = request.FacebookSettings;
+            if (facebookSettings == null && request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
+            {
+                facebookSettings = request.PlatformSpecificData?.Facebook 
+                    ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false);
+            }
+
             var apiRequest = new ZernioCreatePostApiRequest(
                 request.Content,
                 platforms,
@@ -497,7 +504,8 @@ public sealed class ZernioClient : IZernioClient
                 request.PublishNow,
                 request.IsDraft ?? false,
                 mediaItems,
-                tiktokSettings
+                tiktokSettings,
+                facebookSettings
             );
 
             var config = _postsApi.Configuration;
@@ -912,8 +920,9 @@ public sealed class ZernioClient : IZernioClient
         {
             "twitter" => request.PlatformSpecificData?.Twitter,
             "threads" => request.PlatformSpecificData?.Threads,
-            "facebook" => request.PlatformSpecificData?.Facebook 
-                ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
+            "facebook" => request.PlatformSpecificData?.Facebook is { } fb
+                ? fb with { Draft = fb.Draft ?? request.FacebookSettings?.Draft ?? request.IsDraft ?? false }
+                : (request.FacebookSettings ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false)),
             "instagram" => request.PlatformSpecificData?.Instagram 
                 ?? new InstagramPlatformDataDto(),
             "linkedin" => request.PlatformSpecificData?.LinkedIn 

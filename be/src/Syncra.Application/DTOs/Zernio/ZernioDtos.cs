@@ -71,7 +71,8 @@ public sealed record ZernioCreatePostRequest(
     string? PostId = null,
     string? Status = null,
     AllPlatformDataDto? PlatformSpecificData = null,
-    TikTokSettingsDto? TiktokSettings = null);
+    TikTokSettingsDto? TiktokSettings = null,
+    FacebookPlatformDataDto? FacebookSettings = null);
 
 public sealed record ZernioCreatePostResult(
     string ZernioPostId,
@@ -330,7 +331,20 @@ public sealed record ZernioFacebookConnectPageDto(
     [property: JsonPropertyName("username")] string? Username,
     [property: JsonPropertyName("access_token")] string? AccessToken,
     [property: JsonPropertyName("category")] string? Category,
-    [property: JsonPropertyName("tasks")] IReadOnlyList<string>? Tasks
+    [property: JsonPropertyName("tasks")] IReadOnlyList<string>? Tasks,
+    [property: JsonPropertyName("fan_count")] long? FanCount,
+    [property: JsonPropertyName("picture")] ZernioFacebookPagePicture? Picture
+);
+
+public sealed record ZernioFacebookPagePicture(
+    [property: JsonPropertyName("data")] ZernioFacebookPagePictureData Data
+);
+
+public sealed record ZernioFacebookPagePictureData(
+    [property: JsonPropertyName("height")] int Height,
+    [property: JsonPropertyName("is_silhouette")] bool IsSilhouette,
+    [property: JsonPropertyName("url")] string Url,
+    [property: JsonPropertyName("width")] int Width
 );
 
 public sealed record ZernioFacebookConnectPagesResponseDto(

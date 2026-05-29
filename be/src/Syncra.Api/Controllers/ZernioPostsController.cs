@@ -43,7 +43,8 @@ public sealed class ZernioPostsController : ControllerBase
             dto.PlatformContents,
             dto.PostId,
             dto.PlatformSpecificData,
-            dto.TiktokSettings);
+            dto.TiktokSettings,
+            dto.FacebookSettings);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -77,7 +78,8 @@ public sealed class ZernioPostsController : ControllerBase
             dto.PlatformContents,
             postId,
             dto.PlatformSpecificData,
-            dto.TiktokSettings);
+            dto.TiktokSettings,
+            dto.FacebookSettings);
 
         var result = await _mediator.Send(command, cancellationToken);
 

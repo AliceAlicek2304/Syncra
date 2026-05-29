@@ -86,6 +86,7 @@ export interface CreateZernioPostRequest {
   platformContents?: PlatformContent[];
   platformSpecificData?: any;
   tiktokSettings?: any;
+  facebookSettings?: any;
 }
 
 export interface ScheduledPostsCountResponse {

@@ -139,7 +139,11 @@ export default function SocialAccountsSelect() {
           );
         }
         const resData = response.data as any;
-        setItems(resData.pages ? resData.pages : (resData.options ? resData.options : resData));
+        const rawItems: any[] = resData.pages ? resData.pages : (resData.options ? resData.options : resData);
+        setItems(rawItems.map((item: any) => ({
+          ...item,
+          avatarUrl: item.picture?.data?.url || item.avatarUrl,
+        })));
         setLoadState('loaded');
       } catch (err) {
         const msg =
@@ -165,7 +169,10 @@ export default function SocialAccountsSelect() {
           profileId,
           pageId: selectedId,
           tempToken,
-          userProfile: userProfileObj,
+          userProfile: {
+            ...(userProfileObj || {}),
+            name: userProfileObj?.name || userProfileObj?.displayName || userProfileObj?.username || '',
+          },
         }, {
           headers: {
             'X-Workspace-Id': activeWorkspace.id

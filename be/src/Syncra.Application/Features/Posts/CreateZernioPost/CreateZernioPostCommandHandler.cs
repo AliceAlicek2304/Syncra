@@ -129,7 +129,8 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.PostId,
             post?.Status.ToString().ToLowerInvariant(),
             request.PlatformSpecificData,
-            request.TiktokSettings);
+            request.TiktokSettings,
+            request.FacebookSettings);
 
         // Send to Zernio API (create or update based on request.PostId)
         var zernioResult = await _zernioClient.CreatePostAsync(zernioRequest, cancellationToken);
