@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import logo from '../../assets/syncra-logo.png';
+import axios from 'axios';
 
   // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -94,18 +95,34 @@ export default function SocialAccountsSelect() {
 
     const fetchPages = async () => {
       try {
-        const response = await api.get<PageItem[]>(
-          `social-accounts/${platform}/pages`,
-          {
-            params: { tempToken, state },
-            headers: {
-              'X-Workspace-Id': activeWorkspace.id
+        if (platform.toLowerCase() === 'facebook') {
+          const profileId = searchParams.get('profileId') ?? '';
+          const connectToken = searchParams.get('connect_token') ?? '';
+          const response = await axios.get(
+            `https://zernio.com/api/v1/connect/facebook/select-page`,
+            {
+              params: { profileId, tempToken },
+              headers: {
+                'X-Connect-Token': connectToken
+              }
             }
-          }
-        );
-        const resData = response.data as any;
-        setItems(resData.options ? resData.options : resData);
-        setLoadState('loaded');
+          );
+          setItems(response.data.pages ?? []);
+          setLoadState('loaded');
+        } else {
+          const response = await api.get<PageItem[]>(
+            `social-accounts/${platform}/pages`,
+            {
+              params: { tempToken, state },
+              headers: {
+                'X-Workspace-Id': activeWorkspace.id
+              }
+            }
+          );
+          const resData = response.data as any;
+          setItems(resData.options ? resData.options : resData);
+          setLoadState('loaded');
+        }
       } catch (err) {
         const msg =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -125,17 +142,56 @@ export default function SocialAccountsSelect() {
 
     setIsSubmitting(true);
     try {
-      await api.post(`social-accounts/${platform}/select-page`, {
-        selectedId: selectedId,
-        tempToken,
-        state,
-      }, {
-        headers: {
-          'X-Workspace-Id': activeWorkspace.id
+      if (platform.toLowerCase() === 'facebook') {
+        const profileId = searchParams.get('profileId') ?? '';
+        const connectToken = searchParams.get('connect_token') ?? '';
+        const userProfileStr = searchParams.get('userProfile') ?? '';
+        let userProfileObj = null;
+        try {
+          if (userProfileStr) {
+            userProfileObj = JSON.parse(decodeURIComponent(userProfileStr));
+          }
+        } catch (e) {
+          console.error('Failed to parse userProfile', e);
         }
-      });
-      showSuccess(`${platform} account connected successfully`);
-      navigate('/app/connections', { replace: true });
+
+        const formattedProfile = userProfileObj ? {
+          id: userProfileObj.id,
+          name: userProfileObj.name || userProfileObj.displayName || userProfileObj.username || '',
+          profilePicture: userProfileObj.profilePicture || ''
+        } : null;
+
+        await axios.post(
+          `https://zernio.com/api/v1/connect/facebook/select-page`,
+          {
+            profileId,
+            pageId: selectedId,
+            tempToken,
+            userProfile: formattedProfile
+          },
+          {
+            headers: {
+              'X-Connect-Token': connectToken
+            }
+          }
+        );
+        showSuccess(`Facebook page connected successfully`);
+        setTimeout(() => {
+          navigate('/app/connections', { replace: true });
+        }, 500);
+      } else {
+        await api.post(`social-accounts/${platform}/select-page`, {
+          selectedId: selectedId,
+          tempToken,
+          state,
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        });
+        showSuccess(`${platform} account connected successfully`);
+        navigate('/app/connections', { replace: true });
+      }
     } catch (err) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
