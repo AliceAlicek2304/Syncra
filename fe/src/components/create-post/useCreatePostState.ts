@@ -56,6 +56,29 @@ function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: 
   return clean
 }
 
+function prepareTikTokSettings(data?: any) {
+  if (!data) return undefined
+  return {
+    draft: data.draft,
+    privacy_level: data.privacyLevel,
+    allow_comment: data.allowComment,
+    allow_duet: data.allowDuet,
+    allow_stitch: data.allowStitch,
+    commercial_content_type: data.commercialContentType,
+    brand_partner_promote: data.brandPartnerPromote,
+    is_brand_organic_post: data.isBrandOrganicPost,
+    content_preview_confirmed: data.contentPreviewConfirmed,
+    express_consent_given: data.expressConsentGiven,
+    media_type: data.mediaType,
+    video_cover_timestamp_ms: data.videoCoverTimestampMs,
+    video_cover_image_url: data.videoCoverImageUrl,
+    photo_cover_index: data.photoCoverIndex,
+    auto_add_music: data.autoAddMusic,
+    video_made_with_ai: data.videoMadeWithAi,
+    description: data.description,
+  }
+}
+
 export function useCreatePostState(props: CreatePostModalProps) {
   const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
   const { user } = useAuth()
@@ -291,6 +314,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initSchMode = false
       let initSchTime = ''
       let loadedFromDraft = false
+      let initialPlatformSpecificData: AllPlatformData = {}
 
       if (editPost) {
         nextContent = editPost.caption
@@ -304,6 +328,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
           pinterest: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
+
+        if (editPost.platformTargets) {
+          editPost.platformTargets.forEach(target => {
+            if (target.platformSpecificData) {
+              const platformKey = target.platform.toLowerCase() as keyof AllPlatformData
+              initialPlatformSpecificData[platformKey] = target.platformSpecificData
+            }
+          })
+        }
 
         const editPostMedia = editPost.media || editPost.mediaItems
         if (editPostMedia && editPostMedia.length > 0) {
@@ -358,6 +391,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       setMainContent(nextContent)
       setCaptionsByPlatform(nextCaptions)
+      setPlatformSpecificData(initialPlatformSpecificData)
       setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
@@ -491,7 +525,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
           publishNow: false,
           isDraft: true,
           mediaItems,
-          platformContents
+          platformContents,
+          platformSpecificData,
+          tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
+          facebookSettings: platformSpecificData.facebook
         })
 
         onToast?.({ message: 'Draft saved successfully on Zernio!', type: 'success' })
@@ -728,7 +765,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
                   publishNow: isDraft ? false : (scheduledAtUtc === undefined || publishNow),
                   isDraft,
                   mediaItems,
-                  platformContents
+                  platformContents,
+                  platformSpecificData,
+                  tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
+                  facebookSettings: platformSpecificData.facebook
                 })
               )
             })

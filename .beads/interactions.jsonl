@@ -28,3 +28,4 @@
 {"id":"int-66824d56","kind":"field_change","created_at":"2026-05-28T15:17:38.7538429Z","actor":"Syncra Dev","issue_id":"Syncra-71a","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
 {"id":"int-42a8d7e2","kind":"field_change","created_at":"2026-05-28T15:21:30.0027469Z","actor":"Syncra Dev","issue_id":"Syncra-3r7","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
 {"id":"int-533c196b","kind":"field_change","created_at":"2026-05-28T15:40:49.305587Z","actor":"Syncra Dev","issue_id":"Syncra-85j","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
+{"id":"int-523088c0","kind":"field_change","created_at":"2026-05-29T02:32:35.6707816Z","actor":"Syncra Dev","issue_id":"Syncra-939","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}

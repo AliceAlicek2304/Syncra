@@ -58,8 +58,8 @@ describe('AnalyticsPage', () => {
   it('renders title and subtitle', async () => {
     await mockHook({ isLoading: true })
     render(<AnalyticsPage />, { wrapper: createWrapper() })
-    expect(screen.getByText('Performance Analytics')).toBeDefined()
-    expect(screen.getByText('Tổng quan hiệu suất content tháng này')).toBeDefined()
+    expect(screen.getByText('Analytics')).toBeDefined()
+    expect(screen.getByText('View post performance metrics')).toBeDefined()
   })
 
   it('renders refresh button', async () => {

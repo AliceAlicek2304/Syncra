@@ -10,7 +10,8 @@ public sealed record ZernioCreatePostApiRequest(
     [property: JsonPropertyName("publishNow")] bool PublishNow = false,
     [property: JsonPropertyName("isDraft")] bool IsDraft = false,
     [property: JsonPropertyName("mediaItems")] IReadOnlyList<ZernioMediaItemRequestDto>? MediaItems = null,
-    [property: JsonPropertyName("tiktokSettings")] TikTokSettingsDto? TiktokSettings = null
+    [property: JsonPropertyName("tiktokSettings")] TikTokSettingsDto? TiktokSettings = null,
+    [property: JsonPropertyName("facebookSettings")] FacebookPlatformDataDto? FacebookSettings = null
 );
 
 public sealed record ZernioCreatePostPlatformInnerDto(
@@ -18,6 +19,23 @@ public sealed record ZernioCreatePostPlatformInnerDto(
     [property: JsonPropertyName("accountId")] string AccountId,
     [property: JsonPropertyName("customContent")] string? CustomContent = null,
     [property: JsonPropertyName("platformSpecificData")] object? PlatformSpecificData = null
+);
+
+public sealed record AllPlatformDataDto(
+    [property: JsonPropertyName("twitter")] TwitterPlatformDataDto? Twitter = null,
+    [property: JsonPropertyName("threads")] ThreadsPlatformDataDto? Threads = null,
+    [property: JsonPropertyName("facebook")] FacebookPlatformDataDto? Facebook = null,
+    [property: JsonPropertyName("instagram")] InstagramPlatformDataDto? Instagram = null,
+    [property: JsonPropertyName("linkedin")] LinkedInPlatformDataDto? LinkedIn = null,
+    [property: JsonPropertyName("pinterest")] PinterestPlatformDataDto? Pinterest = null,
+    [property: JsonPropertyName("youtube")] YouTubePlatformDataDto? YouTube = null,
+    [property: JsonPropertyName("googlebusiness")] GoogleBusinessPlatformDataDto? GoogleBusiness = null,
+    [property: JsonPropertyName("tiktok")] TikTokSettingsDto? TikTok = null,
+    [property: JsonPropertyName("telegram")] TelegramPlatformDataDto? Telegram = null,
+    [property: JsonPropertyName("snapchat")] SnapchatPlatformDataDto? Snapchat = null,
+    [property: JsonPropertyName("reddit")] RedditPlatformDataDto? Reddit = null,
+    [property: JsonPropertyName("bluesky")] BlueskyPlatformDataDto? Bluesky = null,
+    [property: JsonPropertyName("discord")] DiscordPlatformDataDto? Discord = null
 );
 
 public sealed record ZernioMediaItemRequestDto(

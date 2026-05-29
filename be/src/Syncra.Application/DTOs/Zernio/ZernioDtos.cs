@@ -50,7 +50,10 @@ public sealed record ZernioCreatePostRequest(
     IReadOnlyList<Syncra.Application.DTOs.Posts.PostMediaItemDto>? MediaItems,
     IReadOnlyList<Syncra.Application.DTOs.Posts.PlatformContentDto>? PlatformContents,
     string? PostId = null,
-    string? Status = null);
+    string? Status = null,
+    AllPlatformDataDto? PlatformSpecificData = null,
+    TikTokSettingsDto? TiktokSettings = null,
+    FacebookPlatformDataDto? FacebookSettings = null);
 
 public sealed record ZernioCreatePostResult(
     string ZernioPostId,
@@ -263,7 +266,8 @@ public sealed record ZernioPostPlatformTargetDto(
     string? PlatformPostId,
     string? PlatformPostUrl,
     DateTime? PublishedAt,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    System.Text.Json.Nodes.JsonNode? PlatformSpecificData = null);
 
 public sealed record ZernioPostListItemDto(
     string Id,

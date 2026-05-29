@@ -7,11 +7,12 @@ const mockPost: CalPost = {
   id: 'p1',
   title: 'Test Post Title',
   platform: 'Instagram',
+  status: 'scheduled',
   time: '14:30',
   color: '#ec4899',
-  date: new Date('2026-01-15'),
+  caption: 'Test caption',
+  hashtags: [],
   image: 'https://example.com/image.jpg',
-  postId: 'post-1',
 }
 
 describe('VisualCard', () => {

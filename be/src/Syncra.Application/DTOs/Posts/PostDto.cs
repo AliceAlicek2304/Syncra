@@ -29,5 +29,6 @@ public record PostPlatformTargetDto(
     string Status,
     string? ExternalPostUrl,
     string? ErrorMessage,
-    string? ZernioAccountId
+    string? ZernioAccountId,
+    System.Text.Json.Nodes.JsonNode? PlatformSpecificData = null
 );

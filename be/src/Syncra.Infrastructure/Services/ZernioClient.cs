@@ -451,8 +451,8 @@ public sealed class ZernioClient : IZernioClient
                 m.MimeType
             )).ToList();
 
-            TikTokSettingsDto? tiktokSettings = null;
-            if (request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
+            TikTokSettingsDto? tiktokSettings = request.TiktokSettings;
+            if (tiktokSettings == null && request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
             {
                 tiktokSettings = new TikTokSettingsDto(
                     Draft: request.IsDraft ?? false,
@@ -473,7 +473,8 @@ public sealed class ZernioClient : IZernioClient
                 request.PublishNow,
                 request.IsDraft ?? false,
                 mediaItems,
-                tiktokSettings
+                tiktokSettings,
+                request.FacebookSettings
             );
 
             var config = _postsApi.Configuration;
@@ -830,7 +831,8 @@ public sealed class ZernioClient : IZernioClient
                         PlatformPostId: pl.PlatformPostId,
                         PlatformPostUrl: pl.PlatformPostUrl,
                         PublishedAt: pl.PublishedAt,
-                        ErrorMessage: pl.ErrorMessage))
+                        ErrorMessage: pl.ErrorMessage,
+                        PlatformSpecificData: pl.PlatformSpecificData))
                     .ToList(),
                 Tags: p.Tags ?? [],
                 ZernioMediaItems: (p.MediaItems ?? []).Select(m => new ZernioMediaItemDto(
@@ -879,21 +881,27 @@ public sealed class ZernioClient : IZernioClient
 
         return normalizedPlatform switch
         {
-            "pinterest" => new PinterestPlatformDataDto(Title: request.Title ?? "", BoardId: ""),
-
-            "youtube" => new YouTubePlatformDataDto(Title: request.Title ?? ""),
-
-            "reddit" => new RedditPlatformDataDto(Subreddit: "", Title: request.Title ?? ""),
-
-            "facebook" => new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
-
-            "instagram" => new InstagramPlatformDataDto(),
-
-            "linkedin" => new LinkedInPlatformDataDto(),
-
+            "twitter" => request.PlatformSpecificData?.Twitter,
+            "threads" => request.PlatformSpecificData?.Threads,
+            "facebook" => request.PlatformSpecificData?.Facebook 
+                ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
+            "instagram" => request.PlatformSpecificData?.Instagram 
+                ?? new InstagramPlatformDataDto(),
+            "linkedin" => request.PlatformSpecificData?.LinkedIn 
+                ?? new LinkedInPlatformDataDto(),
+            "pinterest" => request.PlatformSpecificData?.Pinterest 
+                ?? new PinterestPlatformDataDto(Title: request.Title ?? "", BoardId: ""),
+            "youtube" => request.PlatformSpecificData?.YouTube 
+                ?? new YouTubePlatformDataDto(Title: request.Title ?? ""),
+            "googlebusiness" => request.PlatformSpecificData?.GoogleBusiness,
+            "telegram" => request.PlatformSpecificData?.Telegram,
+            "snapchat" => request.PlatformSpecificData?.Snapchat,
+            "reddit" => request.PlatformSpecificData?.Reddit 
+                ?? new RedditPlatformDataDto(Subreddit: "", Title: request.Title ?? ""),
+            "bluesky" => request.PlatformSpecificData?.Bluesky,
+            "discord" => request.PlatformSpecificData?.Discord,
             // TikTok settings must be at root level
             "tiktok" => null,
-
             _ => null
         };
     }
@@ -1893,6 +1901,7 @@ public sealed class ZernioClient : IZernioClient
         public string? PlatformPostUrl { get; set; }
         public DateTime? PublishedAt { get; set; }
         public string? ErrorMessage { get; set; }
+        public System.Text.Json.Nodes.JsonNode? PlatformSpecificData { get; set; }
     }
 
     private sealed class ZernioRawMediaItem

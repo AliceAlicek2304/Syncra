@@ -77,7 +77,8 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
                     Status: pt.Status,
                     ExternalPostUrl: pt.PlatformPostUrl,
                     ErrorMessage: pt.ErrorMessage,
-                    ZernioAccountId: pt.AccountId))
+                    ZernioAccountId: pt.AccountId,
+                    PlatformSpecificData: pt.PlatformSpecificData))
                 .ToList()
         );
     }

@@ -40,6 +40,7 @@ export interface PostPlatformTargetDto {
   externalPostUrl?: string;
   errorMessage?: string;
   zernioAccountId?: string;
+  platformSpecificData?: any;
 }
 
 export interface GetPostsParams {
@@ -83,6 +84,9 @@ export interface CreateZernioPostRequest {
   isDraft?: boolean;
   mediaItems?: PostMediaItem[];
   platformContents?: PlatformContent[];
+  platformSpecificData?: any;
+  tiktokSettings?: any;
+  facebookSettings?: any;
 }
 
 export interface ScheduledPostsCountResponse {

@@ -62,7 +62,7 @@ describe('GlassUpload', () => {
     const dt = new MockDataTransfer()
     dt.items.length = 1
     act(() => {
-      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt }))
+      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt as unknown as DataTransfer }))
     })
     expect(screen.getByText('Drop your media here')).toBeDefined()
   })
@@ -72,7 +72,7 @@ describe('GlassUpload', () => {
     const dt = new MockDataTransfer()
     dt.items.length = 1
     act(() => {
-      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt }))
+      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt as unknown as DataTransfer }))
     })
     expect(screen.getByText('Drop your media here')).toBeDefined()
     act(() => {
@@ -88,7 +88,7 @@ describe('GlassUpload', () => {
     const enterDt = new MockDataTransfer()
     enterDt.items.length = 1
     act(() => {
-      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt }))
+      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt as unknown as DataTransfer }))
     })
     expect(screen.getByText('Drop your media here')).toBeDefined()
 
@@ -97,7 +97,7 @@ describe('GlassUpload', () => {
     dropDt.add(file)
 
     await act(async () => {
-      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt }))
+      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt as unknown as DataTransfer }))
     })
 
     expect(mockUpload).toHaveBeenCalledWith(file, 'ws-1')
@@ -111,7 +111,7 @@ describe('GlassUpload', () => {
     const enterDt = new MockDataTransfer()
     enterDt.items.length = 1
     act(() => {
-      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt }))
+      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt as unknown as DataTransfer }))
     })
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
@@ -119,7 +119,7 @@ describe('GlassUpload', () => {
     dropDt.add(file)
 
     await act(async () => {
-      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt }))
+      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt as unknown as DataTransfer }))
     })
 
     expect(mockUpload).toHaveBeenCalled()
@@ -132,14 +132,14 @@ describe('GlassUpload', () => {
     const enterDt = new MockDataTransfer()
     enterDt.items.length = 1
     act(() => {
-      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt }))
+      window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: enterDt as unknown as DataTransfer }))
     })
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
     const dropDt = new MockDataTransfer()
     dropDt.add(file)
     await act(async () => {
-      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt }))
+      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dropDt as unknown as DataTransfer }))
     })
     expect(mockUpload).not.toHaveBeenCalled()
   })

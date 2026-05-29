@@ -33,7 +33,7 @@ describe('useR2Upload', () => {
 
     vi.mocked(mediaApi.presignUpload).mockResolvedValue(presignRes)
     vi.mocked(axios.put).mockResolvedValue({ status: 200 })
-    vi.mocked(mediaApi.confirmUpload).mockResolvedValue({ id: 'asset-1', filename: 'test.jpg', publicUrl: '', contentType: 'image/jpeg', sizeBytes: 5, createdAt: '' })
+    vi.mocked(mediaApi.confirmUpload).mockResolvedValue({ id: 'asset-1', fileName: 'test.jpg', publicUrl: '', mimeType: 'image/jpeg', sizeBytes: 5 })
 
     const { result } = renderHook(() => useR2Upload())
     let assetId: string | undefined

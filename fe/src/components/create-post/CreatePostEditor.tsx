@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react'
 import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check, Info, Settings2 } from 'lucide-react'
-import { ExtendedPlatformIcon } from './platformIcons'
-import { CROP_PRESETS, PLATFORMS } from './types'
+import { CROP_PRESETS } from './types'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import PlatformSpecificForm from './PlatformSpecificForm'
 import styles from '../CreatePostModal.module.css'
@@ -170,9 +169,7 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
   const isTiktokSelected = state.activePlatforms.includes('tiktok')
   const showTiktokPhotoWarning = isTiktokSelected && hasImages
 
-  // Helper to determine if Story/Reel options are valid for Facebook
-  const hasMedia = state.media.length > 0
-  const isSingleVideo = state.media.length === 1 && state.media[0].type === 'video'
+
 
   return (
     <div className={styles.postArea}>

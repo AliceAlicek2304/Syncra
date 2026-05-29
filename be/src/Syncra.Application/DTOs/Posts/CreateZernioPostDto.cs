@@ -11,7 +11,10 @@ public record CreateZernioPostDto(
     bool? IsDraft,
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     IReadOnlyList<PlatformContentDto>? PlatformContents,
-    string? PostId = null
+    string? PostId = null,
+    Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
+    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null,
+    Syncra.Application.DTOs.Zernio.FacebookPlatformDataDto? FacebookSettings = null
 );
 
 public record PlatformContentDto(

@@ -22,7 +22,7 @@ const TONE_PREFIXES: Record<string, string> = {
 }
 
 /** Generic content template for platforms without specific logic yet */
-function genericContent(platform: string, type: string): Pick<RepurposeAtom, 'type' | 'title' | 'content' | 'suggestedHashtags' | 'suggestedCTA'>[] {
+function genericContent(platform: string, _type: string): Pick<RepurposeAtom, 'type' | 'title' | 'content' | 'suggestedHashtags' | 'suggestedCTA'>[] {
   return [
     {
       type: 'POST' as RepurposeAtom['type'],
