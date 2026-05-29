@@ -12,6 +12,7 @@ export interface SocialAccountDto {
   zernioProfileId: string;
   metadata?: Record<string, unknown>;
   handle?: string;
+  username?: string;
 }
 
 export interface FacebookPageDto {

@@ -889,10 +889,14 @@ export default function ConnectionsPage() {
 
           <div className={styles.cardBody}>
             <div className={styles.workspaceDisplay}>
-              {account.displayName || account.externalAccountId}
+              {SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase())
+                ? (account.username || account.handle || 'Connected Account')
+                : (account.displayName || account.externalAccountId)}
             </div>
             <div className={styles.connectionMeta}>
-              {account.displayName || account.externalAccountId} • {displayDate}
+              {SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase())
+                ? `${account.displayName} • ${displayDate}`
+                : (account.username || account.handle ? `${account.username || account.handle} • ${displayDate}` : displayDate)}
             </div>
             <div
               className={styles.handleBlock}
