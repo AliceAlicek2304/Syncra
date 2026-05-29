@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
 import { socialAccountsApi } from '../../api/socialAccounts';
+import { getSocialAvatarUrl, getFbPageAvatarUrl } from '../../utils/social';
 import { postsApi } from '../../api/posts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
@@ -44,6 +45,48 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'xads', label: 'X Ads', color: '#201515', isSupported: false },
   { id: 'snapchat', label: 'Snapchat', color: '#fffc00', isSupported: true },
 ];
+
+const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
+
+const getManageButtonLabel = (platform: string): string => {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return 'Manage Pages';
+    case 'linkedin':
+      return 'Manage Orgs';
+    case 'pinterest':
+      return 'Manage Boards';
+    case 'googlebusiness':
+      return 'Manage Locations';
+    case 'whatsapp':
+      return 'Manage Phones';
+    case 'snapchat':
+      return 'Manage Profiles';
+    default:
+      return 'Manage Pages';
+  }
+};
+
+const getSubEntityName = (platform: string): string => {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return 'page';
+    case 'linkedin':
+      return 'organization';
+    case 'pinterest':
+      return 'board';
+    case 'googlebusiness':
+      return 'location';
+    case 'whatsapp':
+      return 'phone number';
+    case 'snapchat':
+      return 'profile';
+    default:
+      return 'page';
+  }
+};
 
 const PLATFORM_GROUPS: { title: string; platformIds: string[] }[] = [
   {
@@ -459,7 +502,7 @@ export default function ConnectionsPage() {
   const { data: connections = [], isLoading: isConnectionsLoading } = useQuery<
     (SocialAccountDto & { workspace: typeof workspaces[0] })[]
   >({
-    queryKey: ['connections-list', selectedWorkspaceFilter, workspaces.map(w => w.id).join(',')],
+    queryKey: ['connections-list', selectedWorkspaceFilter],
     queryFn: async () => {
       if (selectedWorkspaceFilter === 'all') {
         const promises = workspaces.map(async (ws) => {
@@ -485,6 +528,7 @@ export default function ConnectionsPage() {
         }
       }
     },
+    staleTime: 30_000,
     enabled: workspaces.length > 0,
   });
 
@@ -608,6 +652,36 @@ export default function ConnectionsPage() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to switch Facebook page';
+      showError(msg);
+    }
+  });
+
+  // LinkedIn organizations query (only for LinkedIn accounts in manage pages drawer)
+  const liAccountId = selectedManagePagesAccount?.platform?.toLowerCase() === 'linkedin'
+    ? selectedManagePagesAccount.id
+    : null;
+
+  const { data: liOrgsData, isLoading: isLiOrgsLoading } = useQuery({
+    queryKey: ['linkedin-organizations', liAccountId],
+    queryFn: () => socialAccountsApi.getLinkedInOrganizations(
+      selectedManagePagesAccount!.workspace.id,
+      liAccountId!
+    ),
+    enabled: liAccountId !== null,
+  });
+
+  // Switch LinkedIn organization mutation
+  const switchLiOrgMutation = useMutation({
+    mutationFn: async ({ accountId, workspaceId, selectedOrgUrn }: { accountId: string; workspaceId: string; selectedOrgUrn: string }) => {
+      await socialAccountsApi.updateLinkedInOrganization(workspaceId, accountId, selectedOrgUrn);
+    },
+    onSuccess: () => {
+      showSuccess('LinkedIn organization switched successfully');
+      setSelectedManagePagesAccount(null);
+      void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to switch LinkedIn organization';
       showError(msg);
     }
   });
@@ -769,10 +843,10 @@ export default function ConnectionsPage() {
           <div className={styles.cardHeader}>
             <div className={styles.cardHeaderLeft}>
               <div className={styles.cardAvatarWrap}>
-                {account.avatarUrl ? (
+                {getSocialAvatarUrl(account) ? (
                   <>
                     <img
-                      src={account.avatarUrl}
+                      src={getSocialAvatarUrl(account)}
                       alt=""
                       className={styles.cardAvatar}
                     />
@@ -840,13 +914,15 @@ export default function ConnectionsPage() {
             </div>
           </div>
 
-          <div className={styles.cardActions}>
-            <button
-              className={styles.managePagesBtn}
-              onClick={() => setSelectedManagePagesAccount(account)}
-            >
-              Manage Pages
-            </button>
+          <div className={styles.cardActions} style={SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase()) ? {} : { gridTemplateColumns: '1fr' }}>
+            {SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase()) && (
+              <button
+                className={styles.managePagesBtn}
+                onClick={() => setSelectedManagePagesAccount(account)}
+              >
+                {getManageButtonLabel(account.platform)}
+              </button>
+            )}
             <button
               className={styles.disconnectBtn}
               onClick={() => handleDisconnectInit(account)}
@@ -1427,9 +1503,9 @@ export default function ConnectionsPage() {
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>
-                  Switch {selectedManagePagesAccount.platform.charAt(0).toUpperCase() + selectedManagePagesAccount.platform.slice(1)} {selectedManagePagesAccount.platform.toLowerCase() === 'youtube' ? 'channel' : selectedManagePagesAccount.platform.toLowerCase() === 'instagram' ? 'account' : 'page'}
+                  Switch {selectedManagePagesAccount.platform.charAt(0).toUpperCase() + selectedManagePagesAccount.platform.slice(1)} {getSubEntityName(selectedManagePagesAccount.platform)}
                 </h2>
-                <p className={styles.drawerSubtitle}>Pick a different page to publish from.</p>
+                <p className={styles.drawerSubtitle}>Pick a different {getSubEntityName(selectedManagePagesAccount.platform)} to publish from.</p>
               </div>
               <button className={styles.drawerCloseBtn} onClick={() => setSelectedManagePagesAccount(null)}>
                 <X size={18} />
@@ -1469,9 +1545,9 @@ export default function ConnectionsPage() {
                           ) : (
                             <>
                               <div className={styles.pageAvatarWrap}>
-                                {selectedManagePagesAccount.avatarUrl ? (
+                                {getFbPageAvatarUrl(selectedManagePagesAccount, page.id) ? (
                               <img
-                                src={selectedManagePagesAccount.avatarUrl}
+                                src={getFbPageAvatarUrl(selectedManagePagesAccount, page.id)}
                                 alt={page.name}
                                 className={styles.pageAvatar}
                               />
@@ -1501,8 +1577,73 @@ export default function ConnectionsPage() {
                   ) : (
                     <p className={styles.pagesEmpty}>No pages found for this account.</p>
                   )
+                ) : selectedManagePagesAccount.platform.toLowerCase() === 'linkedin' ? (
+                  isLiOrgsLoading ? (
+                    <div className={styles.pagesLoading}>
+                      <Loader2 size={20} className={styles.spinner} />
+                      <span>Loading organizations...</span>
+                    </div>
+                  ) : liOrgsData?.organizations && liOrgsData.organizations.length > 0 ? (
+                    liOrgsData.organizations.map((org) => {
+                      const isCurrent = org.urn === liOrgsData.selectedOrganizationUrn;
+                      return (
+                        <button
+                          key={org.urn}
+                          type="button"
+                          className={styles.pageSelectorBtn}
+                          disabled={isCurrent || switchLiOrgMutation.isPending}
+                          onClick={() => {
+                            switchLiOrgMutation.mutate({
+                              accountId: selectedManagePagesAccount.id,
+                              workspaceId: selectedManagePagesAccount.workspace.id,
+                              selectedOrgUrn: org.urn,
+                            });
+                          }}
+                        >
+                          {switchLiOrgMutation.isPending && switchLiOrgMutation.variables?.selectedOrgUrn === org.urn ? (
+                            <div className={styles.pageLoadingWrap}>
+                              <Loader2 size={18} className={styles.btnSpinner} />
+                              <span>Switching...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className={styles.pageAvatarWrap}>
+                                {org.logoUrl ? (
+                                  <img
+                                    src={org.logoUrl}
+                                    alt={org.name}
+                                    className={styles.pageAvatar}
+                                  />
+                                ) : (
+                                  <div
+                                    className={styles.pagePlatformFallback}
+                                    style={{
+                                      color: ALL_PLATFORMS.find(p => p.id === 'linkedin')?.color || '#0a66c2'
+                                    }}
+                                  >
+                                    <PlatformIcon platform="linkedin" size={18} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className={styles.pageInfo}>
+                                <div className={styles.pageNameRow}>
+                                  <span className={styles.pageName}>{org.name}</span>
+                                  {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                                </div>
+                                <p className={styles.pageCategory}>LinkedIn Organization</p>
+                              </div>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.pagesEmpty}>No organizations found for this account.</p>
+                  )
                 ) : (
-                  <p className={styles.pagesEmpty}>Page switching is not available for this platform yet.</p>
+                  <p className={styles.pagesEmpty}>
+                    Selecting options for {selectedManagePagesAccount.platform} is done during the connection setup. To change it, please reconnect the account.
+                  </p>
                 )}
               </div>
             </div>

@@ -716,8 +716,9 @@ function FacebookForm({ value, onChange }: {
             placeholder="Optional first comment after publishing..."
             value={value.firstComment ?? ''}
             onChange={e => set('firstComment', e.target.value || undefined)}
+            disabled={value.draft}
           />
-          {value.draft && <p className={styles.hint}>⚠ Skipped when draft is enabled</p>}
+          {value.draft && <p className={styles.hint}>Skipped when draft is enabled</p>}
         </div>
       )}
 

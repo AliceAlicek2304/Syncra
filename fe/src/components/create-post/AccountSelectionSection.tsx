@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import type { SocialAccountDto } from '../../api/socialAccounts'
 import { ExtendedPlatformIcon } from './platformIcons'
+import { getSocialAvatarUrl } from '../../utils/social'
 import styles from './AccountSelectionSection.module.css'
 
 interface AccountSelectionSectionProps {
@@ -93,8 +94,8 @@ export function AccountSelectionSection({
                       />
                       
                       <div className={styles.avatarContainer}>
-                        {account.avatarUrl ? (
-                          <img src={account.avatarUrl} alt={account.displayName} className={styles.avatar} />
+                        {getSocialAvatarUrl(account) ? (
+                          <img src={getSocialAvatarUrl(account)} alt={account.displayName} className={styles.avatar} />
                         ) : (
                           <div className={styles.avatarFallback}>{initials}</div>
                         )}

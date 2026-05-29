@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, X, ChevronDown, Check } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
+import { getSocialAvatarUrl } from '../../utils/social'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { getPlatformValidationError } from './useCreatePostState'
@@ -306,9 +307,9 @@ export function RightPanel({ state, actions }: SidebarProps) {
                 )}
               >
                 <div className={styles.platformCardAvatar}>
-                  {account.avatarUrl ? (
+                  {getSocialAvatarUrl(account) ? (
                     <img
-                      src={account.avatarUrl}
+                      src={getSocialAvatarUrl(account)}
                       alt={`${account.displayName} profile`}
                       className={styles.platformAvatarImg}
                       referrerPolicy="no-referrer"

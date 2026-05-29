@@ -260,7 +260,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
   
   // Custom Platform settings & Overrides
   const [mainContent, setMainContent] = useState('')
-  const [facebookTab, setFacebookTab] = useState<'feed' | 'story' | 'reel'>('feed')
   const [facebookFirstComment, setFacebookFirstComment] = useState('')
   const [facebookCustomCaption, setFacebookCustomCaption] = useState('')
   const [tiktokDraft, setTiktokDraft] = useState(false)
@@ -463,7 +462,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setActiveTab('tiktok')
     setShowUnsavedDialog(false)
     setMainContent('')
-    setFacebookTab('feed')
     setFacebookFirstComment('')
     setFacebookCustomCaption('')
     setTiktokDraft(false)
@@ -989,7 +987,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
       platformGroups,
       isCreatingGroup,
       newGroupName,
-      facebookTab,
       facebookFirstComment,
       facebookCustomCaption,
       tiktokDraft,
@@ -1035,7 +1032,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setIsCreatingGroup,
       setNewGroupName,
       setMainContent,
-      setFacebookTab,
       setFacebookFirstComment,
       setFacebookCustomCaption,
       setTiktokDraft,

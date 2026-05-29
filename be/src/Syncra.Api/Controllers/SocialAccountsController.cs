@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
@@ -67,15 +68,19 @@ public sealed class SocialAccountsController : ControllerBase
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
 
+        Dictionary<string, ZernioAccountDto>? zernioByExternalId = null;
+
         if (zernioProfile is not null)
         {
             try
             {
-                var zernioAccounts = await _zernioClient.ListAccountsAsync(
+                var zernioResponse = await _zernioClient.ListAccountsAsync(
                     zernioProfile.ZernioProfileId,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
-                var pictureMap = zernioAccounts
+                zernioByExternalId = zernioResponse.Accounts.ToDictionary(a => a.Id);
+
+                var pictureMap = zernioResponse.Accounts
                     .Where(a => !string.IsNullOrEmpty(a.ProfilePicture))
                     .ToDictionary(a => a.Id, a => a.ProfilePicture!);
 
@@ -114,7 +119,7 @@ public sealed class SocialAccountsController : ControllerBase
         var totalItems = await baseQuery.CountAsync(cancellationToken);
         var totalPages = safePageSize > 0 ? (int)Math.Ceiling((double)totalItems / safePageSize) : 0;
 
-        var items = await baseQuery
+        var dbItems = await baseQuery
             .OrderBy(sa => sa.ConnectedAtUtc)
             .Skip((safePage - 1) * safePageSize)
             .Take(safePageSize)
@@ -131,9 +136,34 @@ public sealed class SocialAccountsController : ControllerBase
             })
             .ToListAsync(cancellationToken);
 
+        var enrichedItems = dbItems.Select(item =>
+        {
+            ZernioAccountDto? zernio = null;
+            if (zernioByExternalId?.TryGetValue(item.ExternalAccountId, out var z) == true)
+                zernio = z;
+            return new
+            {
+                item.Id,
+                item.Platform,
+                item.DisplayName,
+                item.AvatarUrl,
+                item.IsActive,
+                item.ConnectedAtUtc,
+                item.ExternalAccountId,
+                item.ZernioProfileId,
+                profileUrl = zernio?.ProfileUrl,
+                username = zernio?.Username,
+                metadata = zernio?.Metadata,
+                followersCount = zernio?.FollowersCount,
+                followersLastUpdated = zernio?.FollowersLastUpdated,
+                parentAccountId = zernio?.ParentAccountId,
+                enabled = zernio?.Enabled
+            };
+        }).ToList();
+
         return Ok(new
         {
-            items,
+            items = enrichedItems,
             pagination = new
             {
                 page = safePage,
@@ -341,6 +371,97 @@ public sealed class SocialAccountsController : ControllerBase
         });
     }
 
+    // ── POST /api/v1/social-accounts/direct-connect ─────────────────────────
+
+    /// <summary>
+    /// Creates or reactivates a local SocialAccount record directly for platforms
+    /// that do not require a sub-entity selection step.
+    /// </summary>
+    [HttpPost("direct-connect")]
+    public async Task<IActionResult> DirectConnect(
+        [FromBody] DirectConnectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        // Verify and consume state token (T-25-03-01)
+        var resolvedWorkspaceId = await VerifyAndConsumeStateTokenAsync(request.State, workspaceId.Value, request.Platform, cancellationToken);
+        if (resolvedWorkspaceId is null)
+        {
+            _logger.LogWarning(
+                "Invalid or expired state token {State} for workspace {WorkspaceId}",
+                request.State, workspaceId.Value);
+            return BadRequest(new { code = "invalid_state", message = "OAuth state token is invalid or has expired." });
+        }
+
+        var zernioProfile = await _db.ZernioProfiles
+            .FirstOrDefaultAsync(p => p.WorkspaceId == resolvedWorkspaceId.Value && p.IsActive, cancellationToken);
+
+        if (zernioProfile is null)
+        {
+            return NotFound(new { code = "not_found", message = "Zernio profile not found for this workspace." });
+        }
+
+        // Create or reactivate local SocialAccount
+        var existing = await _db.SocialAccounts
+            .FirstOrDefaultAsync(sa =>
+                sa.WorkspaceId == resolvedWorkspaceId.Value &&
+                sa.ExternalAccountId == request.AccountId &&
+                sa.Platform == request.Platform.ToLowerInvariant(),
+                cancellationToken);
+
+        if (existing is not null)
+        {
+            await _cache.RemoveAsync($"{DisconnectGraceCacheKeyPrefix}{existing.Id}", cancellationToken);
+
+            if (!existing.IsActive)
+            {
+                existing.Reactivate();
+                existing.Update(request.DisplayName, existing.AvatarUrl);
+            }
+            else
+            {
+                existing.Update(request.DisplayName, existing.AvatarUrl);
+            }
+
+            _logger.LogInformation(
+                "Reactivated existing SocialAccount {AccountId} via direct connect for workspace {WorkspaceId}",
+                existing.Id, resolvedWorkspaceId.Value);
+        }
+        else
+        {
+            var newAccount = SocialAccount.Create(
+                workspaceId: resolvedWorkspaceId.Value,
+                zernioProfileId: zernioProfile.Id,
+                externalAccountId: request.AccountId,
+                platform: request.Platform,
+                displayName: request.DisplayName,
+                avatarUrl: null); // Will be synced on next list or fetch
+
+            _db.SocialAccounts.Add(newAccount);
+            existing = newAccount;
+
+            _logger.LogInformation(
+                "Created SocialAccount {ExternalId} via direct connect for workspace {WorkspaceId}, platform {Platform}",
+                request.AccountId, resolvedWorkspaceId.Value, request.Platform);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new
+        {
+            id = existing.Id,
+            platform = existing.Platform,
+            displayName = existing.DisplayName,
+            avatarUrl = existing.AvatarUrl,
+            connectedAtUtc = existing.ConnectedAtUtc
+        });
+    }
+
     // ── DELETE /api/v1/social-accounts/{accountId} ──────────────────────────
 
     /// <summary>
@@ -526,16 +647,104 @@ public sealed class SocialAccountsController : ControllerBase
             return NotFound(new { code = "not_found", message = "Social account not found." });
         }
 
-        await _zernioClient.UpdateFacebookPageAsync(
+        var selectedPage = await _zernioClient.UpdateFacebookPageAsync(
             accountId: account.ExternalAccountId,
             selectedPageId: request.SelectedPageId,
             cancellationToken: cancellationToken);
+
+        if (selectedPage is not null)
+        {
+            account.Update(selectedPage.Name, account.AvatarUrl);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation(
             "Switched Facebook page for account {AccountId} to page {PageId}",
             accountId, request.SelectedPageId);
 
         return Ok(new { message = "Facebook page switched successfully." });
+    }
+
+    // ── GET /api/v1/social-accounts/{accountId}/linkedin-organization ──────
+
+    /// <summary>
+    /// Returns all LinkedIn organizations the connected account has access to,
+    /// including the currently selected organization.
+    /// </summary>
+    [HttpGet("{accountId:guid}/linkedin-organization")]
+    public async Task<IActionResult> GetLinkedInOrganizations(
+        Guid accountId,
+        [FromQuery] bool? refresh = null,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var organizations = await _zernioClient.GetLinkedInOrganizationsAsync(
+            accountId: account.ExternalAccountId,
+            refresh: refresh,
+            cancellationToken: cancellationToken);
+
+        return Ok(organizations);
+    }
+
+    // ── PUT /api/v1/social-accounts/{accountId}/linkedin-organization ──────
+
+    /// <summary>
+    /// Switches which LinkedIn Organization is active for a connected account.
+    /// </summary>
+    [HttpPut("{accountId:guid}/linkedin-organization")]
+    public async Task<IActionResult> UpdateLinkedInOrganization(
+        Guid accountId,
+        [FromBody] UpdateLinkedInOrganizationRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var selectedOrg = await _zernioClient.UpdateLinkedInOrganizationAsync(
+            accountId: account.ExternalAccountId,
+            selectedOrganizationUrn: request.SelectedOrganizationUrn,
+            cancellationToken: cancellationToken);
+
+        if (selectedOrg is not null)
+        {
+            account.Update(selectedOrg.Name, selectedOrg.LogoUrl ?? account.AvatarUrl);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        _logger.LogInformation(
+            "Switched LinkedIn organization for account {AccountId} to org {OrganizationUrn}",
+            accountId, request.SelectedOrganizationUrn);
+
+        return Ok(new { message = "LinkedIn organization switched successfully." });
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
@@ -627,3 +836,13 @@ public sealed record SelectPageRequest(
 
 public sealed record UpdateFacebookPageRequestDto(
     string SelectedPageId);
+
+public sealed record UpdateLinkedInOrganizationRequestDto(
+    string SelectedOrganizationUrn);
+
+public sealed record DirectConnectRequest(
+    string State,
+    string? ConnectToken,
+    string Platform,
+    string AccountId,
+    string DisplayName);

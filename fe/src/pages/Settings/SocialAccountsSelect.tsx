@@ -17,8 +17,8 @@ interface PageItem {
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
-// Platforms that connect directly without page/board selection step
-const DIRECT_CONNECT_PLATFORMS = ['tiktok'];
+// Platforms that require page/board/location/profile/phone selection step
+const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ export default function SocialAccountsSelect() {
   const accountId = searchParams.get('accountId') ?? '';
   const username = searchParams.get('username') ?? '';
 
-  const isDirectConnect = DIRECT_CONNECT_PLATFORMS.includes(platform) && !!accountId;
+  const isDirectConnect = !SUB_ENTITY_PLATFORMS.includes(platform.toLowerCase()) && !!accountId;
 
   // ─ Handle direct connect or fetch pages ──────────────────────────────
 

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
+using System.Net.Http.Headers;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
@@ -82,28 +84,50 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
+    public async Task<ZernioListAccountsResponseDto> ListAccountsAsync(
         string profileId,
+        string? platform = null,
+        bool? includeOverLimit = true,
+        int? page = null,
+        int? limit = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var response = await _accountsApi.ListAccountsAsync(
                 profileId,
-                platform: null,
-                includeOverLimit: null,
-                page: null,
-                limit: null,
+                platform: platform,
+                includeOverLimit: includeOverLimit,
+                page: page,
+                limit: limit,
                 cancellationToken);
 
-            return response.Accounts
+            var accounts = response.Accounts
                 .Select(a => new ZernioAccountDto(
                     a.Id,
                     a.Platform.ToString(),
                     a.DisplayName,
                     a.IsActive,
-                    a.ProfilePicture))
+                    a.ProfilePicture,
+                    a.ProfileUrl,
+                    a.Username,
+                    NormalizeMetadata(a.Metadata),
+                    a.ProfileId?.ToString(),
+                    (long?)a.FollowersCount,
+                    a.FollowersLastUpdated,
+                    a.ParentAccountId,
+                    a.Enabled))
                 .ToList();
+
+            ZernioListAccountsPaginationDto? pagination = response.Pagination != null
+                ? new ZernioListAccountsPaginationDto(
+                    response.Pagination.Page,
+                    response.Pagination.Limit,
+                    response.Pagination.Total,
+                    response.Pagination.Pages)
+                : null;
+
+            return new ZernioListAccountsResponseDto(accounts, response.HasAnalyticsAccess, pagination);
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
         {
@@ -874,6 +898,12 @@ public sealed class ZernioClient : IZernioClient
         PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
     };
 
+    private static object? NormalizeMetadata(object? metadata)
+    {
+        if (metadata is null) return null;
+        return System.Text.Json.JsonSerializer.Deserialize<object>(metadata.ToString());
+    }
+
     private static object? MapPlatformSpecificData(string platform, ZernioCreatePostRequest request)
     {
         var normalizedPlatform = platform.ToLowerInvariant();
@@ -1139,6 +1169,8 @@ public sealed class ZernioClient : IZernioClient
                     p.FanCount))
                 .ToList();
 
+            await EnrichFacebookPagesWithAvatarsAsync(pages, accountId, cancellationToken);
+
             return new ZernioFacebookPagesResponseDto(
                 pages,
                 response.SelectedPageId,
@@ -1160,7 +1192,59 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task UpdateFacebookPageAsync(
+    private async Task EnrichFacebookPagesWithAvatarsAsync(
+        List<ZernioFacebookPageDto> pages,
+        string accountId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var response = await client.GetAsync($"/v1/accounts/{accountId}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var metadata = root.TryGetProperty("account", out var accountEl)
+                ? accountEl.TryGetProperty("metadata", out var metaEl) ? metaEl : default
+                : root.TryGetProperty("metadata", out var m) ? m : default;
+
+            if (metadata.ValueKind != JsonValueKind.Object) return;
+
+            if (!metadata.TryGetProperty("availablePages", out var aPagesEl)) return;
+            if (aPagesEl.ValueKind != JsonValueKind.Array) return;
+
+            var pictureMap = new Dictionary<string, string?>(StringComparer.Ordinal);
+            foreach (var pageEl in aPagesEl.EnumerateArray())
+            {
+                var id = pageEl.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                var pictureUrl = pageEl.TryGetProperty("picture", out var picEl)
+                    && picEl.TryGetProperty("data", out var dataEl)
+                    && dataEl.TryGetProperty("url", out var urlEl)
+                    ? urlEl.GetString() : null;
+                if (id is not null)
+                    pictureMap[id] = pictureUrl;
+            }
+
+            if (pictureMap.Count == 0) return;
+
+            for (var i = 0; i < pages.Count; i++)
+            {
+                var p = pages[i];
+                if (pictureMap.TryGetValue(p.Id, out var pic) && pic is not null)
+                {
+                    pages[i] = new ZernioFacebookPageDto(p.Id, p.Name, p.Username, p.Category, p.FanCount, pic);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enrich Facebook pages with avatars for account {AccountId}. Continuing without avatars.", accountId);
+        }
+    }
+
+    public async Task<ZernioFacebookPageDto?> UpdateFacebookPageAsync(
         string accountId,
         string selectedPageId,
         CancellationToken cancellationToken = default)
@@ -1168,7 +1252,15 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var request = new UpdateFacebookPageRequest(selectedPageId);
-            await _connectApi.UpdateFacebookPageAsync(accountId, request, cancellationToken);
+            var response = await _connectApi.UpdateFacebookPageAsync(accountId, request, cancellationToken);
+            if (response?.SelectedPage is not null)
+            {
+                return new ZernioFacebookPageDto(
+                    response.SelectedPage.Id,
+                    response.SelectedPage.Name,
+                    null, null, null);
+            }
+            return null;
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
         {
@@ -1184,6 +1276,116 @@ public sealed class ZernioClient : IZernioClient
             _logger.LogError(ex, "Zernio API error switching Facebook page for account {AccountId}", accountId);
             throw new DomainException("zernio_facebook_page_switch_error", "Failed to switch Facebook page", ex);
         }
+    }
+
+    public async Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var url = $"/v1/accounts/{accountId}/linkedin-organizations";
+            if (refresh == true) url += "?refresh=true";
+
+            var response = await client.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationsResponse>(json, _jsonOptions);
+
+            var organizations = (result?.Organizations ?? [])
+                .Select(o => new ZernioLinkedInOrganizationDto(
+                    o.Id ?? string.Empty,
+                    o.Name ?? string.Empty,
+                    o.VanityName,
+                    o.LogoUrl))
+                .ToList();
+
+            return new ZernioLinkedInOrganizationsResponseDto(
+                organizations,
+                result?.SelectedOrganizationUrn,
+                result?.Cached ?? false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing LinkedIn organizations for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage LinkedIn organizations.",
+                reason: "linkedin_organizations_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing LinkedIn organizations for account {AccountId}", accountId);
+            throw new DomainException("zernio_linkedin_organizations_error", "Failed to list LinkedIn organizations", ex);
+        }
+    }
+
+    public async Task<ZernioLinkedInOrganizationDto?> UpdateLinkedInOrganizationAsync(
+        string accountId,
+        string selectedOrganizationUrn,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var url = $"/v1/accounts/{accountId}/linkedin-organization";
+
+            var request = new { organizationUrn = selectedOrganizationUrn };
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(request, _jsonOptions),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PutAsync(url, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationItem>(json, _jsonOptions);
+            if (result is not null)
+            {
+                return new ZernioLinkedInOrganizationDto(
+                    result.Id ?? string.Empty,
+                    result.Name ?? string.Empty,
+                    result.VanityName,
+                    result.LogoUrl);
+            }
+            return null;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered switching LinkedIn organization for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to switch LinkedIn organizations.",
+                reason: "linkedin_organization_switch_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error switching LinkedIn organization for account {AccountId}", accountId);
+            throw new DomainException("zernio_linkedin_organization_switch_error", "Failed to switch LinkedIn organization", ex);
+        }
+    }
+
+    // ── LinkedIn Organization response models ────────────────────────────────
+
+    private sealed class LinkedInOrganizationsResponse
+    {
+        public List<LinkedInOrganizationItem>? Organizations { get; set; }
+        public string? SelectedOrganizationUrn { get; set; }
+        public bool Cached { get; set; }
+    }
+
+    private sealed class LinkedInOrganizationItem
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? VanityName { get; set; }
+        public string? LogoUrl { get; set; }
     }
 
     // ── Inbox DM methods ────────────────────────────────────────────────────

@@ -19,7 +19,26 @@ public sealed record ZernioAccountDto(
     string Platform,
     string DisplayName,
     bool IsConnected,
-    string? ProfilePicture = null);
+    string? ProfilePicture = null,
+    string? ProfileUrl = null,
+    string? Username = null,
+    object? Metadata = null,
+    string? ProfileId = null,
+    long? FollowersCount = null,
+    DateTime? FollowersLastUpdated = null,
+    string? ParentAccountId = null,
+    bool? Enabled = null);
+
+public sealed record ZernioListAccountsResponseDto(
+    IReadOnlyList<ZernioAccountDto> Accounts,
+    bool HasAnalyticsAccess,
+    ZernioListAccountsPaginationDto? Pagination);
+
+public sealed record ZernioListAccountsPaginationDto(
+    int? Page,
+    int? Limit,
+    int? Total,
+    int? Pages);
 
 public sealed record ZernioProfileDto(
     string Id,
@@ -169,11 +188,25 @@ public sealed record ZernioFacebookPageDto(
     string Name,
     string? Username,
     string? Category,
-    int? FanCount);
+    int? FanCount,
+    string? PictureUrl = null);
 
 public sealed record ZernioFacebookPagesResponseDto(
     IReadOnlyList<ZernioFacebookPageDto> Pages,
     string? SelectedPageId,
+    bool Cached);
+
+// ── LinkedIn Organization DTOs ─────────────────────────────────────
+
+public sealed record ZernioLinkedInOrganizationDto(
+    string Id,
+    string Name,
+    string? VanityName,
+    string? LogoUrl);
+
+public sealed record ZernioLinkedInOrganizationsResponseDto(
+    IReadOnlyList<ZernioLinkedInOrganizationDto> Organizations,
+    string? SelectedOrganizationUrn,
     bool Cached);
 
 // ── Follower Stats DTOs ───────────────────────────────────────────

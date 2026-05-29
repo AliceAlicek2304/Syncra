@@ -12,8 +12,12 @@ public interface IZernioClient
         bool? headless = null,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
+    Task<ZernioListAccountsResponseDto> ListAccountsAsync(
         string profileId,
+        string? platform = null,
+        bool? includeOverLimit = null,
+        int? page = null,
+        int? limit = null,
         CancellationToken cancellationToken = default);
 
     Task DisconnectAccountAsync(
@@ -175,9 +179,21 @@ public interface IZernioClient
         bool? refresh = null,
         CancellationToken cancellationToken = default);
 
-    Task UpdateFacebookPageAsync(
+    Task<ZernioFacebookPageDto?> UpdateFacebookPageAsync(
         string accountId,
         string selectedPageId,
+        CancellationToken cancellationToken = default);
+
+    // ── LinkedIn Organization methods ────────────────────────────
+
+    Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioLinkedInOrganizationDto?> UpdateLinkedInOrganizationAsync(
+        string accountId,
+        string selectedOrganizationUrn,
         CancellationToken cancellationToken = default);
 
     // ── Follower Stats methods ────────────────────────────────
