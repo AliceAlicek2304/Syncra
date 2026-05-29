@@ -6,7 +6,6 @@ import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import logo from '../../assets/syncra-logo.png';
-import axios from 'axios';
 
   // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -43,6 +42,20 @@ export default function SocialAccountsSelect() {
   const state = searchParams.get('state') ?? '';
   const accountId = searchParams.get('accountId') ?? '';
   const username = searchParams.get('username') ?? '';
+  const profileId = searchParams.get('profileId') ?? '';
+  const userProfileParam = searchParams.get('userProfile') ?? '';
+
+  // Decode and parse userProfile from URL (facebook redirects double-url encode this parameter)
+  let userProfileObj: any = null;
+  if (userProfileParam) {
+    try {
+      const decodedOnce = decodeURIComponent(userProfileParam);
+      const decodedString = decodedOnce.startsWith('%') ? decodeURIComponent(decodedOnce) : decodedOnce;
+      userProfileObj = JSON.parse(decodedString);
+    } catch (e) {
+      console.error('Failed to parse userProfile', e);
+    }
+  }
 
   const isDirectConnect = !SUB_ENTITY_PLATFORMS.includes(platform.toLowerCase()) && !!accountId;
 
@@ -53,10 +66,18 @@ export default function SocialAccountsSelect() {
     if (workspaceLoading || !activeWorkspace) return;
     hasInitialized.current = true;
 
-    if (!platform || !state) {
-      setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
-      setLoadState('error');
-      return;
+    if (platform.toLowerCase() === 'facebook') {
+      if (!platform || !profileId || !tempToken) {
+        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+        setLoadState('error');
+        return;
+      }
+    } else {
+      if (!platform || !state) {
+        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+        setLoadState('error');
+        return;
+      }
     }
 
     // Direct-connect platforms (e.g. TikTok): skip select page UI, save & redirect
@@ -95,22 +116,19 @@ export default function SocialAccountsSelect() {
 
     const fetchPages = async () => {
       try {
+        let response;
         if (platform.toLowerCase() === 'facebook') {
-          const profileId = searchParams.get('profileId') ?? '';
-          const connectToken = searchParams.get('connect_token') ?? '';
-          const response = await axios.get(
-            `https://zernio.com/api/v1/connect/facebook/select-page`,
+          response = await api.get(
+            `connect/facebook/select-page`,
             {
               params: { profileId, tempToken },
               headers: {
-                'X-Connect-Token': connectToken
+                'X-Workspace-Id': activeWorkspace.id
               }
             }
           );
-          setItems(response.data.pages ?? []);
-          setLoadState('loaded');
         } else {
-          const response = await api.get<PageItem[]>(
+          response = await api.get<PageItem[]>(
             `social-accounts/${platform}/pages`,
             {
               params: { tempToken, state },
@@ -119,10 +137,10 @@ export default function SocialAccountsSelect() {
               }
             }
           );
-          const resData = response.data as any;
-          setItems(resData.options ? resData.options : resData);
-          setLoadState('loaded');
         }
+        const resData = response.data as any;
+        setItems(resData.pages ? resData.pages : (resData.options ? resData.options : resData));
+        setLoadState('loaded');
       } catch (err) {
         const msg =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -133,7 +151,7 @@ export default function SocialAccountsSelect() {
     };
 
     fetchPages();
-  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess]);
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId]);
 
   // ─ Submit selection ─────────────────────────────────────────────────────
 
@@ -143,42 +161,16 @@ export default function SocialAccountsSelect() {
     setIsSubmitting(true);
     try {
       if (platform.toLowerCase() === 'facebook') {
-        const profileId = searchParams.get('profileId') ?? '';
-        const connectToken = searchParams.get('connect_token') ?? '';
-        const userProfileStr = searchParams.get('userProfile') ?? '';
-        let userProfileObj = null;
-        try {
-          if (userProfileStr) {
-            userProfileObj = JSON.parse(decodeURIComponent(userProfileStr));
+        await api.post(`connect/facebook/select-page`, {
+          profileId,
+          pageId: selectedId,
+          tempToken,
+          userProfile: userProfileObj,
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
           }
-        } catch (e) {
-          console.error('Failed to parse userProfile', e);
-        }
-
-        const formattedProfile = userProfileObj ? {
-          id: userProfileObj.id,
-          name: userProfileObj.name || userProfileObj.displayName || userProfileObj.username || '',
-          profilePicture: userProfileObj.profilePicture || ''
-        } : null;
-
-        await axios.post(
-          `https://zernio.com/api/v1/connect/facebook/select-page`,
-          {
-            profileId,
-            pageId: selectedId,
-            tempToken,
-            userProfile: formattedProfile
-          },
-          {
-            headers: {
-              'X-Connect-Token': connectToken
-            }
-          }
-        );
-        showSuccess(`Facebook page connected successfully`);
-        setTimeout(() => {
-          navigate('/app/connections', { replace: true });
-        }, 500);
+        });
       } else {
         await api.post(`social-accounts/${platform}/select-page`, {
           selectedId: selectedId,
@@ -189,9 +181,9 @@ export default function SocialAccountsSelect() {
             'X-Workspace-Id': activeWorkspace.id
           }
         });
-        showSuccess(`${platform} account connected successfully`);
-        navigate('/app/connections', { replace: true });
       }
+      showSuccess(`${platform} account connected successfully`);
+      navigate('/app/connections', { replace: true });
     } catch (err) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||

@@ -184,6 +184,17 @@ public interface IZernioClient
         string selectedPageId,
         CancellationToken cancellationToken = default);
 
+    // ── Facebook Connect select-page methods ───────────────────
+
+    Task<ZernioFacebookConnectPagesResponseDto> GetFacebookConnectPagesAsync(
+        string profileId,
+        string tempToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioFacebookConnectSelectResponse> SelectFacebookConnectPageAsync(
+        ZernioFacebookConnectSelectRequest request,
+        CancellationToken cancellationToken = default);
+
     // ── LinkedIn Organization methods ────────────────────────────
 
     Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(

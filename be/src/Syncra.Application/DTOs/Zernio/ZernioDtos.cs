@@ -321,3 +321,46 @@ public sealed record ZernioPostListResponseDto(
     int Limit,
     int Total,
     int Pages);
+
+// ── Facebook Connect DTOs ──────────────────────────────────────────
+
+public sealed record ZernioFacebookConnectPageDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("username")] string? Username,
+    [property: JsonPropertyName("access_token")] string? AccessToken,
+    [property: JsonPropertyName("category")] string? Category,
+    [property: JsonPropertyName("tasks")] IReadOnlyList<string>? Tasks
+);
+
+public sealed record ZernioFacebookConnectPagesResponseDto(
+    [property: JsonPropertyName("pages")] IReadOnlyList<ZernioFacebookConnectPageDto> Pages
+);
+
+public sealed record ZernioFacebookConnectUserProfile(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("profilePicture")] string ProfilePicture
+);
+
+public sealed record ZernioFacebookConnectSelectRequest(
+    [property: JsonPropertyName("profileId")] string ProfileId,
+    [property: JsonPropertyName("pageId")] string PageId,
+    [property: JsonPropertyName("tempToken")] string TempToken,
+    [property: JsonPropertyName("userProfile")] ZernioFacebookConnectUserProfile UserProfile,
+    [property: JsonPropertyName("redirect_url")] string? RedirectUrl = null
+);
+
+public sealed record ZernioFacebookConnectAccountDetails(
+    [property: JsonPropertyName("accountId")] string AccountId,
+    [property: JsonPropertyName("platform")] string Platform,
+    [property: JsonPropertyName("username")] string? Username,
+    [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("profilePicture")] string? ProfilePicture
+);
+
+public sealed record ZernioFacebookConnectSelectResponse(
+    [property: JsonPropertyName("message")] string Message,
+    [property: JsonPropertyName("redirect_url")] string? RedirectUrl,
+    [property: JsonPropertyName("account")] ZernioFacebookConnectAccountDetails Account
+);

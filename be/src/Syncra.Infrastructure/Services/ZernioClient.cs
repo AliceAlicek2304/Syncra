@@ -1934,6 +1934,95 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioFacebookConnectPagesResponseDto> GetFacebookConnectPagesAsync(
+        string profileId,
+        string tempToken,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _connectApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var url = $"{baseUrl}/v1/connect/facebook/select-page?profileId={Uri.EscapeDataString(profileId)}&tempToken={Uri.EscapeDataString(tempToken)}";
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorResponse = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to get Facebook connect pages. Status: {StatusCode}, Error: {Error}",
+                    httpResponse.StatusCode, errorResponse);
+                throw new DomainException("zernio_facebook_connect_pages_error", $"Zernio get Facebook pages failed. Error: {errorResponse}");
+            }
+
+            var responseContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var result = JsonSerializer.Deserialize<ZernioFacebookConnectPagesResponseDto>(responseContent, _jsonOptions);
+
+            if (result == null)
+            {
+                throw new DomainException("zernio_facebook_connect_pages_error", "Zernio returned an empty response for Facebook connect pages.");
+            }
+
+            return result;
+        }
+        catch (Exception ex) when (ex is not DomainException)
+        {
+            _logger.LogError(ex, "Zernio API error getting Facebook connect pages for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_facebook_connect_pages_error", "Failed to get Facebook connect pages from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioFacebookConnectSelectResponse> SelectFacebookConnectPageAsync(
+        ZernioFacebookConnectSelectRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _connectApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var url = $"{baseUrl}/v1/connect/facebook/select-page";
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(request, _jsonOptions),
+                    System.Text.Encoding.UTF8,
+                    "application/json")
+            };
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorResponse = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to select Facebook connect page. Status: {StatusCode}, Error: {Error}",
+                    httpResponse.StatusCode, errorResponse);
+                throw new DomainException("zernio_facebook_connect_select_error", $"Zernio select Facebook page failed. Error: {errorResponse}");
+            }
+
+            var responseContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var result = JsonSerializer.Deserialize<ZernioFacebookConnectSelectResponse>(responseContent, _jsonOptions);
+
+            if (result == null)
+            {
+                throw new DomainException("zernio_facebook_connect_select_error", "Zernio returned an empty response for Facebook connect selection.");
+            }
+
+            return result;
+        }
+        catch (Exception ex) when (ex is not DomainException)
+        {
+            _logger.LogError(ex, "Zernio API error selecting Facebook connect page for profile {ProfileId}", request.ProfileId);
+            throw new DomainException("zernio_facebook_connect_select_error", "Failed to select Facebook connect page in Zernio", ex);
+        }
+    }
+
     // ── Private platform-specific list helpers ───────────────────────────────
 
     private async Task<IReadOnlyList<ZernioSelectOptionDto>> ListFacebookPagesAsync(
