@@ -473,8 +473,7 @@ public sealed class ZernioClient : IZernioClient
                 request.PublishNow,
                 request.IsDraft ?? false,
                 mediaItems,
-                tiktokSettings,
-                request.FacebookSettings
+                tiktokSettings
             );
 
             var config = _postsApi.Configuration;

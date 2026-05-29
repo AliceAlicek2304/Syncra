@@ -527,8 +527,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
           mediaItems,
           platformContents,
           platformSpecificData,
-          tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
-          facebookSettings: platformSpecificData.facebook
+          tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok)
         })
 
         onToast?.({ message: 'Draft saved successfully on Zernio!', type: 'success' })
@@ -767,8 +766,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
                   mediaItems,
                   platformContents,
                   platformSpecificData,
-                  tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
-                  facebookSettings: platformSpecificData.facebook
+                  tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok)
                 })
               )
             })

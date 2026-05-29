@@ -10,8 +10,7 @@ public sealed record ZernioCreatePostApiRequest(
     [property: JsonPropertyName("publishNow")] bool PublishNow = false,
     [property: JsonPropertyName("isDraft")] bool IsDraft = false,
     [property: JsonPropertyName("mediaItems")] IReadOnlyList<ZernioMediaItemRequestDto>? MediaItems = null,
-    [property: JsonPropertyName("tiktokSettings")] TikTokSettingsDto? TiktokSettings = null,
-    [property: JsonPropertyName("facebookSettings")] FacebookPlatformDataDto? FacebookSettings = null
+    [property: JsonPropertyName("tiktokSettings")] TikTokSettingsDto? TiktokSettings = null
 );
 
 public sealed record ZernioCreatePostPlatformInnerDto(
