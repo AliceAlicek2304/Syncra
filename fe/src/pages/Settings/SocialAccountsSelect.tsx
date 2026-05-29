@@ -5,6 +5,7 @@ import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import logo from '../../assets/syncra-logo.png';
 
   // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -145,50 +146,6 @@ export default function SocialAccountsSelect() {
     }
   };
 
-  // ─ Render: skeleton ─────────────────────────────────────────────────────
-
-  if (loadState === 'loading') {
-    return (
-      <div className={styles.pageRoot}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`} />
-          </div>
-          <div className={styles.list}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className={`${styles.skeletonRow} ${styles.shimmer}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─ Render: error ────────────────────────────────────────────────────────
-
-  if (loadState === 'error') {
-    return (
-      <div className={styles.pageRoot}>
-        <div className={styles.container}>
-          <div className={styles.errorState}>
-            <AlertTriangle size={32} color="#ef4444" />
-            <h2>Something went wrong</h2>
-            <p>{errorMessage}</p>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => navigate('/app/connections', { replace: true })}
-            >
-              Back to Connections
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─ Render: selection list ────────────────────────────────────────────────
-
   const platformLabel = platform
     ? platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')
     : 'Account';
@@ -196,95 +153,134 @@ export default function SocialAccountsSelect() {
   return (
     <div className={styles.pageRoot}>
       <div className={styles.container}>
-        {/* Header */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>Select {platformLabel} Account</h1>
-          <p className={styles.subtitle}>
-            Choose the page, organization, or profile you want to connect to this workspace.
-          </p>
+        {/* Centered logo */}
+        <div className={styles.logoContainer}>
+          <img src={logo} alt="Syncra" className={styles.logoImg} />
+          <span className={styles.logoText}>Syncra</span>
         </div>
 
-        {/* Page list */}
-        <div className={styles.list} role="listbox" aria-label="Available accounts">
-          {items.length === 0 ? (
-            <div className={styles.emptyList}>
-              <Building2 size={28} />
-              <p>No pages or accounts found for this connection.</p>
-            </div>
-          ) : (
-            items.map((item) => {
-              const isSelected = selectedId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  role="option"
-                  aria-selected={isSelected}
-                  className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  {/* Avatar or fallback icon */}
-                  <div className={styles.rowAvatarWrap}>
-                    {item.avatarUrl ? (
-                      <img
-                        src={item.avatarUrl}
-                        alt={item.name}
-                        className={styles.rowAvatar}
-                      />
-                    ) : (
-                      <div className={styles.rowAvatarFallback}>
-                        {item.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Name and category */}
-                  <div className={styles.rowMeta}>
-                    <span className={styles.rowName}>{item.name}</span>
-                    {item.category && (
-                      <span className={styles.rowCategory}>{item.category}</span>
-                    )}
-                  </div>
-
-                  {/* Selection indicator */}
-                  <div
-                    className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ''}`}
-                  >
-                    {isSelected && <Check size={12} strokeWidth={3} />}
-                  </div>
-                </button>
-              );
-            })
+        {/* Centered Card */}
+        <div className={styles.card}>
+          {loadState === 'loading' && (
+            <>
+              <div className={styles.header}>
+                <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                <div className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`} />
+              </div>
+              <div className={styles.list}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className={`${styles.skeletonRow} ${styles.shimmer}`} />
+                ))}
+              </div>
+            </>
           )}
-        </div>
-      </div>
 
-      {/* Fixed bottom action bar */}
-      <div className={styles.actionBar}>
-        <div className={styles.actionBarInner}>
-          <button
-            className={styles.btnGhost}
-            onClick={() => navigate('/app/connections', { replace: true })}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            className={styles.btnPrimary}
-            onClick={handleConfirm}
-            disabled={!selectedId || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={15} className={styles.spinner} />
-                Connecting...
-              </>
-            ) : (
-              <>
-                Confirm Connection
-                <ArrowRight size={15} />
-              </>
-            )}
-          </button>
+          {loadState === 'error' && (
+            <div className={styles.errorState}>
+              <AlertTriangle size={32} className={styles.errorIcon} />
+              <h2>Something went wrong</h2>
+              <p>{errorMessage}</p>
+              <button
+                className={styles.btnPrimary}
+                onClick={() => navigate('/app/connections', { replace: true })}
+              >
+                Back to Connections
+              </button>
+            </div>
+          )}
+
+          {loadState === 'loaded' && (
+            <>
+              {/* Header */}
+              <div className={styles.header}>
+                <h1 className={styles.title}>Select {platformLabel} page</h1>
+                <p className={styles.subtitle}>
+                  Choose which page to connect for posting.
+                </p>
+              </div>
+
+              {/* Page list */}
+              <div className={styles.list} role="listbox" aria-label="Available accounts">
+                {items.length === 0 ? (
+                  <div className={styles.emptyList}>
+                    <Building2 size={28} />
+                    <p>No pages or accounts found for this connection.</p>
+                  </div>
+                ) : (
+                  items.map((item) => {
+                    const isSelected = selectedId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}
+                        onClick={() => setSelectedId(item.id)}
+                      >
+                        {/* Avatar or fallback icon */}
+                        <div className={styles.rowAvatarWrap}>
+                          {item.avatarUrl ? (
+                            <img
+                              src={item.avatarUrl}
+                              alt={item.name}
+                              className={styles.rowAvatar}
+                            />
+                          ) : (
+                            <div className={styles.rowAvatarFallback}>
+                              {item.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Name and category */}
+                        <div className={styles.rowMeta}>
+                          <span className={styles.rowName}>{item.name}</span>
+                          {item.category && (
+                            <span className={styles.rowCategory}>{item.category}</span>
+                          )}
+                        </div>
+
+                        {/* Selection indicator */}
+                        <div
+                          className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ''}`}
+                        >
+                          {isSelected && <Check size={12} strokeWidth={3} />}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Actions inside card */}
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.btnGhost}
+                  onClick={() => navigate('/app/connections', { replace: true })}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={handleConfirm}
+                  disabled={!selectedId || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={15} className={styles.spinner} />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      Confirm Connection
+                      <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

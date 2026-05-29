@@ -91,7 +91,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
         <p className={styles.fieldDescription}>
           Select one or more workspaces to post to their connected accounts
         </p>
-        
+
         <div className={styles.profileSelectWrapper}>
           <button
             type="button"
@@ -100,8 +100,8 @@ export function RightPanel({ state, actions }: SidebarProps) {
           >
             {workspaceCount === 1 ? (
               <>
-                <span 
-                  className={styles.profileYellowDot} 
+                <span
+                  className={styles.profileYellowDot}
                   style={{ background: workspaces.find(w => w.id === state.selectedWorkspaceIds[0])?.color || '#f59e0b' }}
                 />
                 <span className={styles.workspaceDropdownLabel}>
@@ -114,9 +114,9 @@ export function RightPanel({ state, actions }: SidebarProps) {
                   {state.selectedWorkspaceIds.map(id => {
                     const ws = workspaces.find(w => w.id === id)
                     return (
-                      <span 
-                        key={id} 
-                        className={styles.profileYellowDot} 
+                      <span
+                        key={id}
+                        className={styles.profileYellowDot}
                         style={{ background: ws?.color || '#f59e0b' }}
                       />
                     )
@@ -186,8 +186,8 @@ export function RightPanel({ state, actions }: SidebarProps) {
                         onChange={() => toggleWorkspace(ws.id)}
                         className={styles.workspaceCheckboxInput}
                       />
-                      <span 
-                        className={styles.profileYellowDot} 
+                      <span
+                        className={styles.profileYellowDot}
                         style={{ background: ws.color || '#f59e0b', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
                       />
                       <div className={styles.workspaceMeta}>
@@ -319,14 +319,14 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       className={styles.platformAvatarFallback}
                       style={{ backgroundColor: brandColor }}
                     >
-                      <ExtendedPlatformIcon platform={account.platform} size={20} />
+                      <ExtendedPlatformIcon platform={account.platform} size={17} />
                     </div>
                   )}
                   <div
                     className={styles.platformAvatarBadge}
                     style={{ backgroundColor: brandColor }}
                   >
-                      <ExtendedPlatformIcon platform={account.platform} size={24} />
+                    <ExtendedPlatformIcon platform={account.platform} size={17} />
                   </div>
                 </div>
 
@@ -360,7 +360,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
       {/* Publishing Section */}
       <div className={styles.inputGroup}>
         <label className={styles.fieldLabel}>publishing</label>
-        
+
         <div className={styles.publishingTabs}>
           {(['schedule', 'now', 'queue', 'draft'] as const).map(tab => (
             <button
@@ -401,67 +401,67 @@ export function RightPanel({ state, actions }: SidebarProps) {
               </div>
             )}
             <div className={styles.scheduleTimeSection}>
-            <div className={styles.scheduleInputsRow}>
-              <div className={styles.scheduleField}>
-                <label className={styles.fieldSubLabel}>date & time</label>
-                <SchedulePicker
-                  value={state.scheduleTime}
-                  onChange={actions.setScheduleTime}
-                />
-              </div>
-              <div className={styles.scheduleField}>
-                <label className={styles.fieldSubLabel}>timezone</label>
-                <select
-                  className={styles.timezoneSelect}
-                  value={state.timezone}
-                  onChange={e => actions.setTimezone(e.target.value)}
-                >
-                  <option value="Bangkok">Asia/Bangkok (GMT+7) (current)</option>
-                  <option value="UTC">UTC (GMT+0)</option>
-                  <option value="New_York">America/New_York (GMT-5)</option>
-                  <option value="London">Europe/London (GMT+0)</option>
-                  <option value="Tokyo">Asia/Tokyo (GMT+9)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Overrides section */}
-            {state.selectedSocialAccountIds.length > 1 && (
-              <div className={styles.overridesSection}>
-                <div className={styles.overridesHeader}>
-                  Override schedule time for specific platforms (leave empty to use main time above):
+              <div className={styles.scheduleInputsRow}>
+                <div className={styles.scheduleField}>
+                  <label className={styles.fieldSubLabel}>date & time</label>
+                  <SchedulePicker
+                    value={state.scheduleTime}
+                    onChange={actions.setScheduleTime}
+                  />
                 </div>
-                <div className={styles.overridesList}>
-                  {state.selectedSocialAccountIds.map(id => {
-                    const acc = state.socialAccounts.find(a => a.id === id)
-                    if (!acc) return null
-                    const val = state.platformTimeOverrides[id] || ''
+                <div className={styles.scheduleField}>
+                  <label className={styles.fieldSubLabel}>timezone</label>
+                  <select
+                    className={styles.timezoneSelect}
+                    value={state.timezone}
+                    onChange={e => actions.setTimezone(e.target.value)}
+                  >
+                    <option value="Bangkok">Asia/Bangkok (GMT+7) (current)</option>
+                    <option value="UTC">UTC (GMT+0)</option>
+                    <option value="New_York">America/New_York (GMT-5)</option>
+                    <option value="London">Europe/London (GMT+0)</option>
+                    <option value="Tokyo">Asia/Tokyo (GMT+9)</option>
+                  </select>
+                </div>
+              </div>
 
-                    return (
-                      <div key={id} className={styles.overrideRow}>
-                        <div className={styles.overrideAccountInfo}>
+              {/* Overrides section */}
+              {state.selectedSocialAccountIds.length > 1 && (
+                <div className={styles.overridesSection}>
+                  <div className={styles.overridesHeader}>
+                    Override schedule time for specific platforms (leave empty to use main time above):
+                  </div>
+                  <div className={styles.overridesList}>
+                    {state.selectedSocialAccountIds.map(id => {
+                      const acc = state.socialAccounts.find(a => a.id === id)
+                      if (!acc) return null
+                      const val = state.platformTimeOverrides[id] || ''
+
+                      return (
+                        <div key={id} className={styles.overrideRow}>
+                          <div className={styles.overrideAccountInfo}>
                             <ExtendedPlatformIcon platform={acc.platform} size={13} />
-                          <span className={styles.overrideDisplayName}>
-                            @{acc.displayName}
-                          </span>
+                            <span className={styles.overrideDisplayName}>
+                              @{acc.displayName}
+                            </span>
+                          </div>
+                          <SchedulePicker
+                            value={val}
+                            onChange={v => {
+                              actions.setPlatformTimeOverrides(prev => ({
+                                ...prev,
+                                [id]: v
+                              }))
+                            }}
+                            align="end"
+                          />
                         </div>
-                        <SchedulePicker
-                          value={val}
-                          onChange={v => {
-                            actions.setPlatformTimeOverrides(prev => ({
-                              ...prev,
-                              [id]: v
-                            }))
-                          }}
-                          align="end"
-                        />
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           </>
         )}
 
