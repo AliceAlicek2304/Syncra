@@ -489,12 +489,10 @@ public sealed class ZernioClient : IZernioClient
                 );
             }
 
-            FacebookPlatformDataDto? facebookSettings = request.FacebookSettings;
-            if (facebookSettings == null && request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
-            {
-                facebookSettings = request.PlatformSpecificData?.Facebook 
-                    ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false);
-            }
+            var facebookSettings = request.PlatformSpecificData?.Facebook
+                ?? (request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase))
+                    ? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false)
+                    : null);
 
             var apiRequest = new ZernioCreatePostApiRequest(
                 request.Content,
@@ -903,7 +901,8 @@ public sealed class ZernioClient : IZernioClient
     private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
     private static object? NormalizeMetadata(object? metadata)
@@ -920,9 +919,8 @@ public sealed class ZernioClient : IZernioClient
         {
             "twitter" => request.PlatformSpecificData?.Twitter,
             "threads" => request.PlatformSpecificData?.Threads,
-            "facebook" => request.PlatformSpecificData?.Facebook is { } fb
-                ? fb with { Draft = fb.Draft ?? request.FacebookSettings?.Draft ?? request.IsDraft ?? false }
-                : (request.FacebookSettings ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false)),
+            "facebook" => request.PlatformSpecificData?.Facebook 
+                ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
             "instagram" => request.PlatformSpecificData?.Instagram 
                 ?? new InstagramPlatformDataDto(),
             "linkedin" => request.PlatformSpecificData?.LinkedIn 

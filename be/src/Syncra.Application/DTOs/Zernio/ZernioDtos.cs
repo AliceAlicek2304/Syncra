@@ -71,8 +71,7 @@ public sealed record ZernioCreatePostRequest(
     string? PostId = null,
     string? Status = null,
     AllPlatformDataDto? PlatformSpecificData = null,
-    TikTokSettingsDto? TiktokSettings = null,
-    FacebookPlatformDataDto? FacebookSettings = null);
+    TikTokSettingsDto? TiktokSettings = null);
 
 public sealed record ZernioCreatePostResult(
     string ZernioPostId,

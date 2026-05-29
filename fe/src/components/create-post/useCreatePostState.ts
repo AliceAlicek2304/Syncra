@@ -714,19 +714,19 @@ export function useCreatePostState(props: CreatePostModalProps) {
               if (!account) return
               
               const overrideTime = platformTimeOverrides[accountId]
-              const scheduledAtUtc = (publishingTab === 'schedule' || publishingTab === 'draft')
+              const perAccountScheduledAtUtc = (publishingTab === 'schedule' || publishingTab === 'draft')
                 ? (overrideTime ? getUtcString(overrideTime, timezone) : (resolvedScheduleTime ? getUtcString(resolvedScheduleTime, timezone) : undefined))
                 : undefined
 
-              const finalScheduledAtUtc = isDraft ? undefined : scheduledAtUtc
+              const groupScheduledAtUtc = isDraft ? undefined : perAccountScheduledAtUtc
               const content = getResolvedContentForPlatform(account.platform as Platform)
               
               // Build unique key for this configuration
-              const key = `${finalScheduledAtUtc ?? 'now'}_${content}`
+              const key = `${groupScheduledAtUtc ?? 'now'}_${content}`
               if (!groupsByKey[key]) {
                 groupsByKey[key] = {
                   ids: [],
-                  scheduledAtUtc: finalScheduledAtUtc,
+                  scheduledAtUtc: groupScheduledAtUtc,
                   content
                 }
               }
