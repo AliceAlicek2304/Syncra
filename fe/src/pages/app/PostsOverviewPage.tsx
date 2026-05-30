@@ -84,6 +84,8 @@ export default function PostsOverviewPage() {
   const [dateFilter, setDateFilter] = useState<string>('All dates')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
   const [searchParams, setSearchParams] = useSearchParams()
@@ -491,45 +493,58 @@ export default function PostsOverviewPage() {
     return { date: formattedDate, time: formattedTime }
   }
 
+  // ─── Calendar Navigation Handlers ───
+  const goToPrevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
+    else setCurrentMonth(m => m - 1)
+  }
+  const goToNextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
+    else setCurrentMonth(m => m + 1)
+  }
+  const goToToday = () => {
+    const now = new Date()
+    setCurrentYear(now.getFullYear())
+    setCurrentMonth(now.getMonth())
+  }
+
   // ─── Calendar Generation ───
   const renderCalendar = () => {
-    const currentMonth = 4 // May (0-indexed represents May as 4)
-    
-    // First day of May 2026
-    const firstDay = new Date(2026, currentMonth, 1)
-    // Weekday index of first day (0 = Sun, 1 = Mon, etc.)
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const prevMonth = currentMonth === 0 ? { month: 11, year: currentYear - 1 } : { month: currentMonth - 1, year: currentYear }
+    const prevMonthDays = new Date(prevMonth.year, prevMonth.month + 1, 0).getDate()
+    const nextMonth = currentMonth === 11 ? { month: 0, year: currentYear + 1 } : { month: currentMonth + 1, year: currentYear }
+    const firstDay = new Date(currentYear, currentMonth, 1)
     const startOffset = firstDay.getDay()
-    // Total days in May 2026 (31 days)
-    const totalDays = 31
 
     const calendarGrid = []
-    
-    // Padding for previous month (April has 30 days)
-    const prevMonthDays = 30
+
     for (let i = startOffset - 1; i >= 0; i--) {
       calendarGrid.push({
         dayNumber: prevMonthDays - i,
         isCurrentMonth: false,
-        dateString: `2026-04-${String(prevMonthDays - i).padStart(2, '0')}`
+        dateString: `${prevMonth.year}-${String(prevMonth.month + 1).padStart(2, '0')}-${String(prevMonthDays - i).padStart(2, '0')}`
       })
     }
 
-    // Days of current month (May 2026)
     for (let i = 1; i <= totalDays; i++) {
       calendarGrid.push({
         dayNumber: i,
         isCurrentMonth: true,
-        dateString: `2026-05-${String(i).padStart(2, '0')}`
+        dateString: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
       })
     }
 
-    // Padding for next month (June) to fill the grid (multiple of 7, usually 35 or 42 cells)
     const remainingCells = (7 - (calendarGrid.length % 7)) % 7
     for (let i = 1; i <= remainingCells; i++) {
       calendarGrid.push({
         dayNumber: i,
         isCurrentMonth: false,
-        dateString: `2026-06-${String(i).padStart(2, '0')}`
+        dateString: `${nextMonth.year}-${String(nextMonth.month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
       })
     }
 
@@ -537,8 +552,8 @@ export default function PostsOverviewPage() {
       <div className={styles.calendarContainer}>
         <div className={styles.calendarHeader}>
           <div className={styles.calendarTitleGroup}>
-            <span className={styles.calendarMonthName}>May 2026</span>
-            <button className={styles.calendarTodayBtn}>Today</button>
+            <span className={styles.calendarMonthName}>{monthNames[currentMonth]} {currentYear}</span>
+            <button className={styles.calendarTodayBtn} onClick={goToToday}>Today</button>
           </div>
           <div className={styles.calendarControls}>
             <div className={styles.calendarStartDaySelect}>
@@ -547,8 +562,8 @@ export default function PostsOverviewPage() {
               <button className={styles.calendarDayTab}>Mon</button>
             </div>
             <div className={styles.calendarArrows}>
-              <button className={styles.calendarArrowBtn}><ArrowLeft size={16} /></button>
-              <button className={styles.calendarArrowBtn}><ArrowRight size={16} /></button>
+              <button className={styles.calendarArrowBtn} onClick={goToPrevMonth}><ArrowLeft size={16} /></button>
+              <button className={styles.calendarArrowBtn} onClick={goToNextMonth}><ArrowRight size={16} /></button>
             </div>
           </div>
         </div>
@@ -565,13 +580,12 @@ export default function PostsOverviewPage() {
 
         <div className={styles.calendarGrid}>
           {calendarGrid.map((cell, index) => {
-            // Find posts scheduled for this day
             const cellPosts = sortedPosts.filter(p => {
               const pDate = p.scheduledAtUtc || p.createdAt
               return pDate.startsWith(cell.dateString)
             })
 
-            const isToday = cell.dateString === '2026-05-25' // mock today date from screenshot
+            const isToday = cell.dateString === todayStr
 
             return (
               <div 
@@ -590,7 +604,17 @@ export default function PostsOverviewPage() {
                       onClick={(e) => { e.stopPropagation(); handlePostClick(p); }}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span className={styles.calPostTitle}>{p.title}</span>
+                      <span className={styles.calBadgeTime}>
+                        {(() => {
+                          const d = new Date(p.scheduledAtUtc || p.createdAt)
+                          return `[${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}]`
+                        })()}
+                      </span>
+                      <span className={styles.calPostTitle}>{p.content || p.title}</span>
+                      <PlatformIcon 
+                        platform={(p.platforms?.[0] || p.platformTargets?.[0]?.platform || 'facebook') as any} 
+                        size={12} 
+                      />
                     </div>
                   ))}
                 </div>
@@ -1054,7 +1078,7 @@ export default function PostsOverviewPage() {
                           />
                         </td>
                         <td className={styles.tableNameCell}>
-                          <div className={styles.tableTitle}>{post.title}</div>
+                          <div className={styles.tableTitle}>{post.content || post.title}</div>
                         </td>
                         <td>
                           <div className={styles.tablePlatforms} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>

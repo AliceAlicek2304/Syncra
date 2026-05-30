@@ -12,22 +12,22 @@
   display: grid;
   gap: 8px;
   align-content: start;
-  background: linear-gradient(180deg, rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.15));
+  background: rgba(255, 254, 251, 0.85);
   border-radius: 10px;
 }
 
 .cellDragOver {
-  background: rgba(139,92,246,0.2) !important;
-  border-color: rgba(139,92,246,0.6) !important;
+  background: #EFF6FF !important;
+  border-color: #60A5FA !important;
   border-style: dashed !important;
 }
 
 .dayViewTitle {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #111827;
   padding: 16px 20px 12px;
-  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.07));
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .dayBody {
@@ -39,17 +39,17 @@
 .dayRow {
   display: grid;
   grid-template-columns: 64px 1fr;
-  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.04));
-  min-height: 60px;
+  border-bottom: 1px solid #E5E7EB;
+  min-height: 72px;
 }
 
 .dayTimeLabel {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #6B7280;
   padding: 6px 12px 0;
   text-align: right;
-  border-right: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  border-right: 1px solid #E5E7EB;
   align-self: flex-start;
 }
 
@@ -59,22 +59,22 @@
   transition: background 0.12s;
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: flex-start;
-  min-height: 60px;
+  min-height: 72px;
   position: relative;
 }
 
 .daySlot:focus {
-  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline: 2px solid #2563EB;
   outline-offset: -2px;
 }
 
-.daySlot:hover { background: rgba(255,255,255,0.025); }
+.daySlot:hover { background: #F9FAFB; }
 
 .daySlotCurrentHour {
-  background: rgba(139, 92, 246, 0.05);
+  background: #F0F5FF;
 }
 
 .currentTimeLine {

@@ -1,5 +1,6 @@
 import { SkeletonLoader } from '../SkeletonLoader'
 import { Plus } from 'lucide-react'
+import { ExtendedPlatformIcon } from '../create-post/platformIcons'
 import type { CalPost } from './CalendarConstants'
 import { DAYS_FULL, MONTHS, getPostKey } from './CalendarConstants'
 import styles from './MonthView.module.css'
@@ -91,11 +92,11 @@ export function MonthView({
                 </button>
               </div>
               <div className={styles.cellPosts}>
-                {posts.slice(0, 2).map(p => (
+                {posts.slice(0, 3).map(p => (
                   <div
                     key={p.id}
                     className={`${styles.cellPostChip} ${dragPostId === p.id ? styles.postPillDragging : ''}`}
-                    style={{ background: `${p.color}25`, borderLeft: `2px solid ${p.color}` }}
+                    style={{ background: `${p.color}18`, borderLeft: `3px solid ${p.color}` }}
                     draggable
                     onDragStart={e => {
                       e.stopPropagation()
@@ -115,15 +116,16 @@ export function MonthView({
                   >
                     <span className={styles.chipTime}>{p.time}</span>
                     <span className={styles.chipTitle}>{p.title}</span>
+                    <ExtendedPlatformIcon platform={p.platform} size={12} />
                   </div>
                 ))}
-                {posts.length > 2 && (
+                {posts.length > 3 && (
                   <button
                     className={styles.moreCount}
                     onClick={(e) => { e.stopPropagation(); onSelectDay(day) }}
-                    aria-label={`Show ${posts.length - 2} more posts`}
+                    aria-label={`Show ${posts.length - 3} more posts`}
                   >
-                    +{posts.length - 2} more
+                    +{posts.length - 3} more
                   </button>
                 )}
               </div>

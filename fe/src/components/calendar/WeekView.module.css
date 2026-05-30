@@ -12,28 +12,28 @@
   display: grid;
   gap: 8px;
   align-content: start;
-  background: linear-gradient(180deg, rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.15));
+  background: rgba(255, 254, 251, 0.85);
   border-radius: 10px;
 }
 
 .cellDragOver {
-  background: rgba(139,92,246,0.2) !important;
-  border-color: rgba(139,92,246,0.6) !important;
+  background: #EFF6FF !important;
+  border-color: #60A5FA !important;
   border-style: dashed !important;
 }
 
 .weekHeader {
   display: grid;
   grid-template-columns: 52px repeat(7, 1fr);
-  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.07));
+  border-bottom: 1px solid #E5E7EB;
   position: sticky;
   top: 0;
-  background: var(--glass-bg, rgba(15,17,35,0.97));
+  background: white;
   z-index: 2;
 }
 
 .weekTimeGutter {
-  border-right: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  border-right: 1px solid #E5E7EB;
 }
 
 .weekColHeader {
@@ -44,19 +44,19 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  border-left: 1px solid var(--border-glass, rgba(255,255,255,0.04));
+  border-left: 1px solid #E5E7EB;
   transition: background 0.15s;
 }
 
-.weekColHeader:hover { background: rgba(255,255,255,0.03); }
+.weekColHeader:hover { background: #F9FAFB; }
 
-.weekColToday { background: rgba(139,92,246,0.07); }
-.weekColSelected { background: rgba(139,92,246,0.12); }
+.weekColToday { background: #EFF6FF; }
+.weekColSelected { background: #F0F5FF; }
 
 .weekColDay {
   font-size: 10px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -64,12 +64,12 @@
 .weekColNum {
   font-size: 16px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #111827;
 }
 
 .weekColToday .weekColNum,
 .weekColSelected .weekColNum {
-  color: var(--purple-400, #a78bfa);
+  color: #2563EB;
 }
 
 .weekBody {
@@ -81,41 +81,41 @@
 .weekRow {
   display: grid;
   grid-template-columns: 52px repeat(7, 1fr);
-  border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.04));
-  min-height: 56px;
+  border-bottom: 1px solid #E5E7EB;
+  min-height: 72px;
 }
 
 .weekTimeLabel {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #6B7280;
   padding: 8px 6px 0;
   text-align: right;
-  border-right: 1px solid var(--border-glass, rgba(255,255,255,0.06));
+  border-right: 1px solid #E5E7EB;
   flex-shrink: 0;
 }
 
 .weekCell {
-  padding: 3px 3px;
-  border-left: 1px solid var(--border-glass, rgba(255,255,255,0.04));
+  padding: 4px;
+  border-left: 1px solid #E5E7EB;
   cursor: pointer;
   transition: background 0.12s;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  min-height: 60px;
+  gap: 4px;
+  min-height: 72px;
   position: relative;
 }
 
 .weekCell:focus {
-  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline: 2px solid #2563EB;
   outline-offset: -2px;
 }
 
-.weekCell:hover { background: rgba(255,255,255,0.025); }
+.weekCell:hover { background: #F9FAFB; }
 
 .weekCellCurrentHour {
-  background: rgba(139, 92, 246, 0.05);
+  background: #F0F5FF;
 }
 
 .currentTimeLine {
