@@ -9,6 +9,7 @@ export interface PlatformContent {
 
 export interface Post {
   id: string;
+  workspaceId?: string;
   title: string;
   content?: string;          // master caption
   status: 'idea' | 'draft' | 'scheduled' | 'published' | 'publishing' | 'partial' | 'failed';

@@ -666,7 +666,7 @@ function FacebookForm({ value, onChange }: {
             ? "Not supported for stories. Drafts expire after ~30 days."
             : "Creates post in Facebook Publishing Tools instead of publishing immediately. Drafts expire after ~30 days."
         }
-        disabled={value.contentType === 'story'}
+        disabled={true}
       />
 
       <div className={styles.field}>

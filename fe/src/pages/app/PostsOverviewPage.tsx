@@ -469,6 +469,22 @@ export default function PostsOverviewPage() {
     }) + ' GMT+7' // matching screenshot timezone display
   }
 
+  const formatDateAndTime = (dateStr?: string) => {
+    if (!dateStr) return { date: '—', time: '—' }
+    const date = new Date(dateStr)
+    const formattedDate = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+    const formattedTime = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }) + ' GMT+7'
+    return { date: formattedDate, time: formattedTime }
+  }
+
   // ─── Calendar Generation ───
   const renderCalendar = () => {
     const currentMonth = 4 // May (0-indexed represents May as 4)
@@ -1268,106 +1284,67 @@ export default function PostsOverviewPage() {
               )}
 
               {/* Platforms Section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-body-mid)', textTransform: 'lowercase', fontFamily: 'var(--font-body)' }}>
-                  platforms
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className={styles.detailPlatformSection}>
+                <div className={styles.detailPlatformSectionLabel}>platforms</div>
+                <div className={styles.detailPlatformList}>
                   {(() => {
+                    const renderCard = (name: string, badgeStatus: string, url: string) => {
+                      const isPub = badgeStatus === 'published' || selectedPostDetails.status === 'published';
+                      const { date: dDate, time: dTime } = formatDateAndTime(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt);
+                      return (
+                        <div key={name} className={styles.detailPlatformCard}>
+                          {/* Section 1: Icon */}
+                          <div className={styles.detailPlatformIconSquare}>
+                            <PlatformIcon platform={name} size={20} />
+                          </div>
+
+                          {/* Section 2: Platform Details Stack */}
+                          <div className={styles.detailPlatformNameStack}>
+                            <span className={styles.detailPlatformName}>{name}</span>
+                            <div className={styles.detailPlatformStatusWrapper}>
+                              <StatusBadge status={badgeStatus as any} />
+                            </div>
+                          </div>
+
+                          {/* Section 3: Date/Time Stack */}
+                          <div className={styles.detailPlatformDateStack}>
+                            <div className={styles.detailPlatformDateLine}>{dDate}</div>
+                            <div className={styles.detailPlatformTimeLine}>{dTime}</div>
+                          </div>
+
+                          {/* Section 4: External Link */}
+                          {isPub && (
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className={styles.detailPlatformLink}
+                            >
+                              View on {name.toLowerCase()}
+                            </a>
+                          )}
+                        </div>
+                      )
+                    }
+
                     const targets = selectedPostDetails.platformTargets || [];
                     if (targets.length === 0) {
-                      // Fallback when platformTargets is empty (render from platforms array)
                       const platforms = selectedPostDetails.platforms || ['facebook'];
                       return platforms.map((plat) => {
-                        const isPub = selectedPostDetails.status === 'published';
                         const fallbackUrl = plat.toLowerCase() === 'facebook' 
                           ? 'https://www.facebook.com' 
                           : `https://${plat.toLowerCase()}.com`;
-                        return (
-                          <div 
-                            key={plat} 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'space-between', 
-                              padding: '12px 16px', 
-                              background: 'var(--clr-canvas-soft)', 
-                              border: '1px solid var(--clr-border)', 
-                              borderRadius: '8px' 
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <PlatformIcon platform={plat} size={20} />
-                              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
-                                {plat}
-                              </span>
-                              <StatusBadge status={selectedPostDetails.status} />
-                              <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
-                                {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
-                              </span>
-                            </div>
-                            {isPub && (
-                              <a 
-                                href={fallbackUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', borderBottom: '1px solid transparent', paddingBottom: '2px' }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
-                              >
-                                View on {plat.toLowerCase()}
-                              </a>
-                            )}
-                          </div>
-                        );
+                        return renderCard(plat, selectedPostDetails.status, fallbackUrl)
                       });
                     }
 
                     return targets.map((target) => {
-                      const isPub = target.status === 'Published' || selectedPostDetails.status === 'published';
                       const linkPlatform = target.platform.toLowerCase();
                       const fallbackUrl = linkPlatform === 'facebook' 
                         ? 'https://www.facebook.com' 
                         : `https://${linkPlatform}.com`;
                       const destinationUrl = target.externalPostUrl || fallbackUrl;
-
-                      return (
-                        <div 
-                          key={target.id} 
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between', 
-                            padding: '12px 16px', 
-                            background: 'var(--clr-canvas-soft)', 
-                            border: '1px solid var(--clr-border)', 
-                            borderRadius: '8px' 
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <PlatformIcon platform={target.platform} size={20} />
-                            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
-                              {target.platform}
-                            </span>
-                            <StatusBadge status={target.status.toLowerCase() as any} />
-                            <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
-                              {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
-                            </span>
-                          </div>
-                          {isPub && (
-                            <a 
-                              href={destinationUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', transition: 'color 0.2s' }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
-                            >
-                              View on {target.platform.toLowerCase()}
-                            </a>
-                          )}
-                        </div>
-                      );
+                      return renderCard(target.platform, target.status.toLowerCase(), destinationUrl)
                     });
                   })()}
                 </div>
