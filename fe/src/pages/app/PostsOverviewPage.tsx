@@ -17,11 +17,7 @@ import type { SocialAccountDto } from '../../api/socialAccounts'
 import styles from './PostsOverviewPage.module.css'
 import SchedulePicker from '../../components/SchedulePicker'
 
-import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
-
-const PlatformIcon = ({ platform, size = 18 }: { platform: string; size?: number }) => {
-  return <ExtendedPlatformIcon platform={platform} size={size} />
-}
+import { PlatformIcon } from '../../components/create-post/platformIcons'
 
 // ─── Status Badge Definition ───
 const StatusBadge = ({ status }: { status: Post['status'] }) => {
@@ -684,7 +680,7 @@ export default function PostsOverviewPage() {
                     className={`${styles.dropdownItem} ${styles.platformItem} ${platformFilter === plat.name ? styles.activeDropdownItem : ''}`}
                     onClick={() => { setPlatformFilter(plat.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
-                    <PlatformIcon platform={plat.id} size={14} />
+                    <PlatformIcon platform={plat.id as any} size={14} />
                     <span>{plat.name}</span>
                   </button>
                 ))}
@@ -942,7 +938,7 @@ export default function PostsOverviewPage() {
                         <div className={styles.platformBadgeWrapper} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {displayPlatforms.map((plat, idx) => (
                             <div key={idx} className={styles.platformBadge}>
-                              <PlatformIcon platform={plat} size={16} />
+                              <PlatformIcon platform={plat as any} size={16} />
                               <span className={styles.platformBadgeDot}></span>
                             </div>
                           ))}
@@ -1050,7 +1046,7 @@ export default function PostsOverviewPage() {
                         <td>
                           <div className={styles.tablePlatforms} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {displayPlatforms.map((plat, idx) => (
-                              <PlatformIcon key={idx} platform={plat} size={16} />
+                              <PlatformIcon key={idx} platform={plat as any} size={16} />
                             ))}
                           </div>
                         </td>
@@ -1295,7 +1291,7 @@ export default function PostsOverviewPage() {
                         <div key={name} className={styles.detailPlatformCard}>
                           {/* Section 1: Icon */}
                           <div className={styles.detailPlatformIconSquare}>
-                            <PlatformIcon platform={name} size={20} />
+                            <PlatformIcon platform={name as any} size={20} />
                           </div>
 
                           {/* Section 2: Platform Details Stack */}
