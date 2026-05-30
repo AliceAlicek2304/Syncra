@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Settings, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -59,9 +59,16 @@ export default function SettingsPage() {
 
   const onWorkspaceSubmit = (data: { name: string }) => {
     if (activeWorkspace) {
-      updateWorkspace.mutate({ id: activeWorkspace.id, data })
+      const color = workspaceColor === activeWorkspace.color || workspaceColor === '#fda4af' ? undefined : workspaceColor;
+      updateWorkspace.mutate({ id: activeWorkspace.id, data: { ...data, color } })
     }
   }
+
+  const [workspaceColor, setWorkspaceColor] = useState(activeWorkspace?.color || '#fda4af');
+
+  useEffect(() => {
+    setWorkspaceColor(activeWorkspace?.color || '#fda4af');
+  }, [activeWorkspace?.color]);
 
   const [brandTone, setBrandTone] = useState({
     professional: 0.8,
@@ -135,6 +142,23 @@ export default function SettingsPage() {
                 <div className={styles.field}>
                   <label>Workspace Name</label>
                   <input {...registerWorkspace('name')} data-testid="workspace-name" className={styles.input} />
+                </div>
+                <div className={styles.field}>
+                  <label>Workspace Color</label>
+                  <div className={styles.colorPickerContainer}>
+                    <div className={styles.colorBox} style={{ backgroundColor: workspaceColor }} />
+                    <div className={styles.colorPalette}>
+                      {['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'].map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`${styles.colorPaletteBtn} ${workspaceColor === color ? styles.colorPaletteBtnActive : ''}`}
+                          style={{ backgroundColor: color }}
+                          onClick={() => setWorkspaceColor(color)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} type="submit" data-testid="settings-submit" className="btn-primary" disabled={updateWorkspace.isPending}>
                   {updateWorkspace.isPending ? 'Saving...' : 'Save Workspace'}

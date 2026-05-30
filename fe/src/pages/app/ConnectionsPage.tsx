@@ -376,7 +376,7 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
 }
 
 function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending }: {
-  workspace: { id: string; name: string };
+  workspace: { id: string; name: string; color?: string };
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
@@ -396,7 +396,9 @@ function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending 
           </div>
           <div className={styles.disconnectModalBody}>
             <p className={styles.disconnectText}>
-              Are you sure you want to delete <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
+              Are you sure you want to delete{' '}
+              <span className={styles.handleDot} style={{ backgroundColor: workspace.color || '#fdba74', display: 'inline-block', margin: '0 4px' }} />
+              <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
             </p>
           </div>
           <div className={styles.disconnectModalFooter}>
@@ -899,7 +901,7 @@ export default function ConnectionsPage() {
               onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
               title={`Filter by workspace: ${account.workspace.name}`}
             >
-              <span className={styles.handleDot} />
+              <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#fdba74' }} />
               <span className={styles.handleText}>{account.workspace.name}</span>
               <button
                 className={styles.copyBtn}

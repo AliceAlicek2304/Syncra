@@ -102,7 +102,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
               <>
                 <span
                   className={styles.profileYellowDot}
-                  style={{ background: workspaces.find(w => w.id === state.selectedWorkspaceIds[0])?.color || '#f59e0b' }}
+                  style={{ background: workspaces.find(w => w.id === state.selectedWorkspaceIds[0])?.color || '#fdba74' }}
                 />
                 <span className={styles.workspaceDropdownLabel}>
                   {selectedWorkspaceNames}
@@ -117,7 +117,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       <span
                         key={id}
                         className={styles.profileYellowDot}
-                        style={{ background: ws?.color || '#f59e0b' }}
+                        style={{ background: ws?.color || '#fdba74' }}
                       />
                     )
                   })}
@@ -188,7 +188,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       />
                       <span
                         className={styles.profileYellowDot}
-                        style={{ background: ws.color || '#f59e0b', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
+                        style={{ background: ws.color || '#fdba74', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
                       />
                       <div className={styles.workspaceMeta}>
                         <div className={styles.workspaceName}>{ws.name}</div>

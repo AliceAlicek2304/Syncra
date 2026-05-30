@@ -70,6 +70,16 @@ export default function PostsOverviewPage() {
     ? workspaces.find(w => w.name === workspaceFilter)
     : undefined
   const workspaceId = selectedWorkspace?.id || activeWorkspace?.id
+  const workspaceNameMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    workspaces.forEach(w => map.set(w.id, w.name))
+    return map
+  }, [workspaces])
+  const workspaceColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    workspaces.forEach(w => map.set(w.id, w.color || '#fdba74'))
+    return map
+  }, [workspaces])
   const [userFilter, setUserFilter] = useState<string>('All users')
   const [dateFilter, setDateFilter] = useState<string>('All dates')
   const [customStartDate, setCustomStartDate] = useState<string>('')
@@ -711,6 +721,7 @@ export default function PostsOverviewPage() {
                     className={`${styles.dropdownItem} ${workspaceFilter === w.name ? styles.activeDropdownItem : ''}`}
                     onClick={() => { setWorkspaceFilter(w.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
+                    <span className={styles.workspaceDot} style={{ background: w.color || '#fdba74' }} />
                     {w.name}
                   </button>
                 ))}
@@ -939,7 +950,7 @@ export default function PostsOverviewPage() {
                           {displayPlatforms.map((plat, idx) => (
                             <div key={idx} className={styles.platformBadge}>
                               <PlatformIcon platform={plat as any} size={16} />
-                              <span className={styles.platformBadgeDot}></span>
+                              <span className={styles.platformBadgeDot} style={{ backgroundColor: workspaceColorMap.get(post.workspaceId || '') || '#fdba74' }} />
                             </div>
                           ))}
                         </div>
@@ -1018,7 +1029,7 @@ export default function PostsOverviewPage() {
                     <th>Platforms</th>
                     <th>Date</th>
                     <th>Status</th>
-                    <th>Profile</th>
+                    <th>Workspace</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1030,6 +1041,8 @@ export default function PostsOverviewPage() {
                     ))
                     const displayPlatforms = platforms.length > 0 ? platforms : ['facebook']
                     const isChecked = selectedPostIds.includes(post.id)
+                    const wsName = workspaceNameMap.get(post.workspaceId || '') || activeWorkspace?.name || '—'
+                    const wsColor = workspaceColorMap.get(post.workspaceId || '') || '#fdba74'
                     return (
                       <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
                         <td onClick={(e) => e.stopPropagation()}>
@@ -1054,8 +1067,8 @@ export default function PostsOverviewPage() {
                         <td><StatusBadge status={post.status} /></td>
                         <td>
                           <div className={styles.tableProfile}>
-                            <span className={styles.tableProfileBullet}>o</span>
-                            <span>{user?.email?.split('@')[0] || 'nguyenhonghieutai...'}</span>
+                            <span className={styles.workspaceDot} style={{ backgroundColor: wsColor }}></span>
+                            <span>{wsName}</span>
                           </div>
                         </td>
                       </tr>
