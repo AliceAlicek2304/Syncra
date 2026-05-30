@@ -86,6 +86,15 @@ export default function PostsOverviewPage() {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [weekStartsOn, setWeekStartsOn] = useState<'sun' | 'mon'>(() => {
+    const saved = localStorage.getItem('syncra_week_starts_on')
+    return (saved === 'mon' || saved === 'sun') ? saved : 'sun'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('syncra_week_starts_on', weekStartsOn)
+  }, [weekStartsOn])
+
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
   const [searchParams, setSearchParams] = useSearchParams()
@@ -237,11 +246,13 @@ export default function PostsOverviewPage() {
         } else if (dateFilter === 'Tomorrow') {
           if (postDate < tomorrow || postDate >= dayAfterTomorrow) return false
         } else if (dateFilter === 'This week') {
-          const firstDayOfWeek = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000)
+          const dayOfWeekOffset = weekStartsOn === 'sun' ? today.getDay() : (today.getDay() + 6) % 7
+          const firstDayOfWeek = new Date(today.getTime() - dayOfWeekOffset * 24 * 60 * 60 * 1000)
           const lastDayOfWeek = new Date(firstDayOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
           if (postDate < firstDayOfWeek || postDate >= lastDayOfWeek) return false
         } else if (dateFilter === 'Next week') {
-          const startOfNextWeek = new Date(today.getTime() + (7 - today.getDay()) * 24 * 60 * 60 * 1000)
+          const dayOfWeekOffset = weekStartsOn === 'sun' ? today.getDay() : (today.getDay() + 6) % 7
+          const startOfNextWeek = new Date(today.getTime() + (7 - dayOfWeekOffset) * 24 * 60 * 60 * 1000)
           const endOfNextWeek = new Date(startOfNextWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
           if (postDate < startOfNextWeek || postDate >= endOfNextWeek) return false
         } else if (dateFilter === 'This month') {
@@ -258,7 +269,7 @@ export default function PostsOverviewPage() {
 
       return true
     })
-  }, [allMergedPosts, statusFilter, platformFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user])
+  }, [allMergedPosts, statusFilter, platformFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user, weekStartsOn])
 
   // ─── Sorting Logic ───
   const sortedPosts = React.useMemo(() => {
@@ -519,7 +530,9 @@ export default function PostsOverviewPage() {
     const prevMonthDays = new Date(prevMonth.year, prevMonth.month + 1, 0).getDate()
     const nextMonth = currentMonth === 11 ? { month: 0, year: currentYear + 1 } : { month: currentMonth + 1, year: currentYear }
     const firstDay = new Date(currentYear, currentMonth, 1)
-    const startOffset = firstDay.getDay()
+    const startOffset = weekStartsOn === 'sun' 
+      ? firstDay.getDay() 
+      : (firstDay.getDay() + 6) % 7
 
     const calendarGrid = []
 
@@ -558,8 +571,18 @@ export default function PostsOverviewPage() {
           <div className={styles.calendarControls}>
             <div className={styles.calendarStartDaySelect}>
               <span>week starts on</span>
-              <button className={`${styles.calendarDayTab} ${styles.activeTab}`}>Sun</button>
-              <button className={styles.calendarDayTab}>Mon</button>
+              <button 
+                className={`${styles.calendarDayTab} ${weekStartsOn === 'sun' ? styles.activeTab : ''}`}
+                onClick={() => setWeekStartsOn('sun')}
+              >
+                Sun
+              </button>
+              <button 
+                className={`${styles.calendarDayTab} ${weekStartsOn === 'mon' ? styles.activeTab : ''}`}
+                onClick={() => setWeekStartsOn('mon')}
+              >
+                Mon
+              </button>
             </div>
             <div className={styles.calendarArrows}>
               <button className={styles.calendarArrowBtn} onClick={goToPrevMonth}><ArrowLeft size={16} /></button>
@@ -569,13 +592,12 @@ export default function PostsOverviewPage() {
         </div>
 
         <div className={styles.calendarGridHeader}>
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
+          {(weekStartsOn === 'sun' 
+            ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          ).map(day => (
+            <div key={day}>{day}</div>
+          ))}
         </div>
 
         <div className={styles.calendarGrid}>
