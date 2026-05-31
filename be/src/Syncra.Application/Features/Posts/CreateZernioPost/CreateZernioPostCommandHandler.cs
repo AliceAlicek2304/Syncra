@@ -76,7 +76,8 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         {
             foreach (var mediaItem in request.MediaItems)
             {
-                if (!string.IsNullOrEmpty(mediaItem.Url) && 
+                // Nếu URL đã là Zernio public URL thì dùng luôn
+                if (!string.IsNullOrEmpty(mediaItem.Url) &&
                     mediaItem.Url.Contains("zernio.com", StringComparison.OrdinalIgnoreCase))
                 {
                     updatedMediaItems.Add(mediaItem);
@@ -85,30 +86,26 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
 
                 var storageKey = ExtractStorageKey(mediaItem.Url);
                 using var stream = await _storageService.OpenReadAsync(storageKey);
-                
+
                 var resolvedMimeType = GetMimeType(mediaItem.Filename ?? mediaItem.Url ?? "file", mediaItem.MimeType);
 
-                var zernioPublicUrl = await _zernioClient.UploadMediaToZernioAsync(
+                var presignResponse = await _zernioClient.GetMediaPresignedUrlAsync(
+                    mediaItem.Filename ?? "file",
+                    resolvedMimeType,
+                    cancellationToken);
+
+                // Upload stream lên Zernio presigned URL
+                await _zernioClient.UploadMediaToZernioAsync(
+                    presignResponse.UploadUrl,
                     stream,
                     resolvedMimeType,
-                    mediaItem.Filename ?? "file",
                     cancellationToken);
 
                 updatedMediaItems.Add(new PostMediaItemDto(
-                    Url: zernioPublicUrl,
+                    Url: presignResponse.PublicUrl,
                     Type: mediaItem.Type,
                     Filename: mediaItem.Filename,
                     MimeType: resolvedMimeType));
-            }
-        }
-
-        Post? post = null;
-        if (!string.IsNullOrEmpty(request.PostId))
-        {
-            post = await _postRepository.GetByZernioPostIdAsync(request.PostId);
-            if (post is null)
-            {
-                throw new DomainException("post_not_found", $"Post with Zernio ID {request.PostId} was not found.");
             }
         }
 
@@ -126,101 +123,45 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.IsDraft,
             updatedMediaItems.Count > 0 ? updatedMediaItems : request.MediaItems,
             request.PlatformContents,
-            request.PostId,
-            post?.Status.ToString().ToLowerInvariant(),
+            null,
+            null,
             request.PlatformSpecificData,
             request.TiktokSettings);
 
-        // Send to Zernio API (create or update based on request.PostId)
+        // Send to Zernio API (create only)
         var zernioResult = await _zernioClient.CreatePostAsync(zernioRequest, cancellationToken);
 
-        if (post is not null)
+        // Create Post entity using factory method
+        var post = Post.Create(
+            request.WorkspaceId,
+            request.UserId,
+            request.Title ?? string.Empty,
+            request.Content ?? string.Empty,
+            request.ScheduledAtUtc,
+            integrationId: null);
+
+        post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
+
+        // If publishing immediately, transition to Publishing status
+        if (request.PublishNow)
         {
-            if (post.Status == PostStatus.Published)
-            {
-                post.UpdatePublishedContent(request.Title ?? string.Empty, request.Content ?? string.Empty);
-            }
-            else
-            {
-                post.UpdateContent(request.Title ?? string.Empty, request.Content ?? string.Empty);
-
-                if (request.ScheduledAtUtc.HasValue)
-                {
-                    post.Schedule(request.ScheduledAtUtc.Value);
-                }
-                else if (post.Status == PostStatus.Scheduled)
-                {
-                    post.Unschedule();
-                }
-
-                if (request.PublishNow)
-                {
-                    post.MarkPublishAttempt(DateTime.UtcNow);
-                }
-                else if (request.IsDraft == true)
-                {
-                    if (post.Status == PostStatus.Scheduled)
-                    {
-                        post.Unschedule();
-                    }
-                    else if (post.Status is PostStatus.Failed or PostStatus.Partial)
-                    {
-                        post.Retry();
-                    }
-                }
-            }
-
-            post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
-
-            // Sync platform targets in post:
-            post.PlatformTargets.Clear();
-            foreach (var account in activeAccounts)
-            {
-                var target = PostPlatformTarget.Create(
-                    request.WorkspaceId,
-                    post.Id,
-                    account.Platform);
-
-                target.SetZernioAccountId(account.ExternalAccountId);
-
-                post.PlatformTargets.Add(target);
-                _postRepository.AddPlatformTarget(target);
-            }
+            post.MarkPublishAttempt(DateTime.UtcNow);
         }
-        else
+
+        // Persist the post
+        await _postRepository.AddAsync(post);
+
+        // Create PostPlatformTarget entities for each social account
+        foreach (var account in activeAccounts)
         {
-            // Create Post entity using factory method
-            post = Post.Create(
+            var target = PostPlatformTarget.Create(
                 request.WorkspaceId,
-                request.UserId,
-                request.Title ?? string.Empty,
-                request.Content ?? string.Empty,
-                request.ScheduledAtUtc,
-                integrationId: null);
+                post.Id,
+                account.Platform);
 
-            post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
+            target.SetZernioAccountId(account.ExternalAccountId);
 
-            // If publishing immediately, transition to Publishing status
-            if (request.PublishNow)
-            {
-                post.MarkPublishAttempt(DateTime.UtcNow);
-            }
-
-            // Persist the post
-            await _postRepository.AddAsync(post);
-
-            // Create PostPlatformTarget entities for each social account
-            foreach (var account in activeAccounts)
-            {
-                var target = PostPlatformTarget.Create(
-                    request.WorkspaceId,
-                    post.Id,
-                    account.Platform);
-
-                target.SetZernioAccountId(account.ExternalAccountId);
-
-                post.PlatformTargets.Add(target);
-            }
+            post.PlatformTargets.Add(target);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

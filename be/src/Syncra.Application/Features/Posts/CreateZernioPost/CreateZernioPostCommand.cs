@@ -14,7 +14,6 @@ public sealed record CreateZernioPostCommand(
     bool? IsDraft,
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     IReadOnlyList<PlatformContentDto>? PlatformContents,
-    string? PostId = null,
     Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
     Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
 ) : IRequest<PostDto>;

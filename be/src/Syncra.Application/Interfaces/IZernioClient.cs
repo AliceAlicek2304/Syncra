@@ -65,10 +65,19 @@ public interface IZernioClient
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<string> UploadMediaToZernioAsync(
-        Stream fileStream,
-        string mimeType,
+    Task<ZernioCreatePostResult> UpdatePostAsync(
+        ZernioCreatePostRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioPresignResponse> GetMediaPresignedUrlAsync(
         string fileName,
+        string mimeType,
+        CancellationToken cancellationToken = default);
+
+    Task<string> UploadMediaToZernioAsync(
+        string uploadUrl,
+        Stream content,
+        string mimeType,
         CancellationToken cancellationToken = default);
 
     Task UpdatePostAsync(
