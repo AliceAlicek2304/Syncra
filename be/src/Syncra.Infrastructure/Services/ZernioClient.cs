@@ -1018,73 +1018,59 @@ public sealed class ZernioClient : IZernioClient
         };
     }
 
-    private CreatePostRequest ToSdkCreatePostRequest(ZernioCreatePostRequest request)
+    private object ToSdkCreatePostRequest(ZernioCreatePostRequest request)
     {
         var platforms = request.Platforms.Select(p =>
         {
             var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
-            return new CreatePostRequestPlatformsInner(
-                p.Platform,
-                p.ZernioAccountId,
-                platformContent?.Caption,
-                null,
-                default,
-                null
-            );
+            return new
+            {
+                platform = p.Platform,
+                accountId = p.ZernioAccountId,
+                customContent = platformContent?.Caption,
+                platformSpecificData = MapPlatformSpecificData(p.Platform, request)
+            };
         }).ToList();
 
         var mediaItems = request.MediaItems?
-            .Select(m => new MediaItem(
-                ParseMediaTypeEnum(m.Type),
-                m.Url,
-                m.Filename,
-                m.MimeType,
-                null,
-                0,
-                null,
-                null,
-                null,
-                false
-            ))
+            .Select(m => new
+            {
+                type = m.Type.ToLowerInvariant(),
+                url = m.Url,
+                filename = m.Filename,
+                mimeType = m.MimeType
+            })
             .ToList();
 
         var tiktokSettings = BuildSdkTikTokSettings(request);
         var facebookSettings = BuildSdkFacebookSettings(request);
 
-        return new CreatePostRequest(
-            request.Title ?? string.Empty,
-            request.Content ?? string.Empty,
-            mediaItems,
-            platforms,
-            request.ScheduledForUtc ?? default,
-            request.PublishNow,
-            request.IsDraft ?? false,
-            null,
-            null,
-            null,
-            null,
-            true,
-            null,
-            tiktokSettings,
-            facebookSettings,
-            null,
-            null,
-            null
-        );
+        return new
+        {
+            title = request.Title ?? string.Empty,
+            content = request.Content ?? string.Empty,
+            mediaItems = mediaItems,
+            platforms = platforms,
+            scheduledFor = request.ScheduledForUtc,
+            publishNow = request.PublishNow,
+            isDraft = request.IsDraft ?? false,
+            tiktokSettings = tiktokSettings,
+            facebookSettings = facebookSettings
+        };
     }
 
-    private UpdatePostRequest ToSdkUpdatePostRequest(ZernioCreatePostRequest request)
+    private object ToSdkUpdatePostRequest(ZernioCreatePostRequest request)
     {
         var tiktokSettings = BuildSdkTikTokSettings(request);
         var facebookSettings = BuildSdkFacebookSettings(request);
 
-        return new UpdatePostRequest(
-            request.Content ?? string.Empty,
-            request.ScheduledForUtc ?? default,
-            tiktokSettings,
-            facebookSettings,
-            null
-        );
+        return new
+        {
+            content = request.Content ?? string.Empty,
+            scheduledFor = request.ScheduledForUtc,
+            tiktokSettings = tiktokSettings,
+            facebookSettings = facebookSettings
+        };
     }
 
     private TikTokPlatformData? BuildSdkTikTokSettings(ZernioCreatePostRequest request)

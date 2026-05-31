@@ -29,6 +29,7 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
   const isSubmitDisabled = 
     state.caption.trim() === '' || 
     state.overLimit || 
+    (state.publishingTab === 'schedule' && !state.scheduleTime) ||
     (state.publishingTab !== 'draft' &&
      state.socialAccounts && 
      state.socialAccounts.filter((acc: any) => acc.isActive).length > 0 && 

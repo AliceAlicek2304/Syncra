@@ -1,14 +1,12 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { useCalendar } from '../../context/calendarContextBase'
 import { useCreatePostMedia } from '../../hooks/useCreatePostMedia'
 import { useCreatePostAI } from '../../hooks/useCreatePostAI'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { shortId } from '../../utils/shortId'
 import { postsApi } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
-import { mediaApi } from '../../api/media'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 import type { AllPlatformData } from './PlatformSpecificForm'
 
@@ -82,41 +80,33 @@ function prepareTikTokSettings(data?: any) {
 export function useCreatePostState(props: CreatePostModalProps) {
   const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
   const { user } = useAuth()
-  const { addPost, updatePost } = useCalendar()
 
   const isEditMode = !!editPost
-
-  const { workspaces, activeWorkspace } = useWorkspace()
+  const { activeWorkspace } = useWorkspace()
   const workspaceId = activeWorkspace?.id
 
   const mediaHook = useCreatePostMedia()
   const aiHook = useCreatePostAI()
   const queryClient = useQueryClient()
 
-  /**
-   * Upload any media items that still have a local blob/data URL.
-   * Returns a copy of the media array where every item has a public URL.
-   * Throws if any upload fails.
-   */
   const uploadPendingMedia = useCallback(async (wsId: string) => {
     const resolved = await Promise.all(
       mediaHook.media.map(async (m) => {
-        // Already a public URL — nothing to do
         if (!m.file && !m.url.startsWith('blob:') && !m.url.startsWith('data:')) {
           return m
         }
-        // Upload and get back the public S3 URL
         if (!m.file) {
           throw new Error(`Media item "${m.name}" has a local URL but no File object — cannot upload.`)
         }
-        const asset = await mediaApi.uploadMedia(wsId, m.file)
-        return { ...m, url: asset.publicUrl, mimeType: asset.mimeType, file: undefined }
+        const { mediaApi } = await import('../../api/media')
+        const uploadResult = await mediaApi.uploadMedia(wsId, m.file)
+        return { ...m, url: uploadResult.publicUrl, mimeType: uploadResult.mimeType, file: undefined }
       })
     )
     return resolved
   }, [mediaHook.media])
 
-  // Multi-workspace selection state
+  // Selected workspaces state
   const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([])
 
   useEffect(() => {
@@ -125,22 +115,25 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [isOpen, activeWorkspace])
 
-  // Fetch social accounts for all selected workspaces
+  // Fetch social accounts tagged with workspaceId
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['social-accounts-multiple', selectedWorkspaceIds],
     enabled: selectedWorkspaceIds.length > 0,
     queryFn: async () => {
       const results = await Promise.all(
-        selectedWorkspaceIds.map(id => socialAccountsApi.listSocialAccounts(id))
+        selectedWorkspaceIds.map(async (id) => {
+          const accounts = await socialAccountsApi.listSocialAccounts(id)
+          return accounts.map(a => ({ ...a, workspaceId: id }))
+        })
       )
       return results.flat()
     },
   })
 
-  // Selected social accounts selection state
+  // Selected social accounts state
   const [selectedSocialAccountIds, setSelectedSocialAccountIds] = useState<string[]>([])
 
-  // On edit mode, load the accounts
+  // Load account selections in edit mode
   useEffect(() => {
     if (isOpen) {
       if (editPost && editPost.platformTargets) {
@@ -161,7 +154,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [isOpen, editPost, socialAccounts])
 
-  // On edit mode, load media
+  // Load media in edit mode
   useEffect(() => {
     const editPostMedia = editPost?.media || editPost?.mediaItems
     if (isOpen && editPostMedia && editPostMedia.length > 0) {
@@ -257,8 +250,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const [activePlatforms, setActivePlatforms] = useState<Platform[]>([])
   const [activeTab, setActiveTab] = useState<Platform>('tiktok')
-  
-  // Custom Platform settings & Overrides
+
+  // Main input fields
   const [mainContent, setMainContent] = useState('')
   const [facebookFirstComment, setFacebookFirstComment] = useState('')
   const [facebookCustomCaption, setFacebookCustomCaption] = useState('')
@@ -271,7 +264,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [platformTimeOverrides, setPlatformTimeOverrides] = useState<Record<string, string>>({})
   const [timezone, setTimezone] = useState('Bangkok')
 
-  // Per-platform advanced settings (PlatformSpecificForm)
+  // Platform specific settings data
   const [platformSpecificData, setPlatformSpecificData] = useState<AllPlatformData>({})
 
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
@@ -488,141 +481,111 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [onClose, getIsDirty, reset])
 
-  const handleDraft = async (): Promise<boolean> => {
-    if (activeWorkspace) {
-      try {
-        const wsId = activeWorkspace.id
-        const content = mainContent
-        const title = content.slice(0, 50) || 'Untitled Draft'
+  const submitPost = async (isDraft: boolean): Promise<boolean> => {
+    if (!activeWorkspace) return false
 
-        // Upload any local media to Wasabi first, then use public URLs
-        const resolvedMedia = await uploadPendingMedia(wsId)
+    try {
+      const wsId = activeWorkspace.id
 
-        const mediaItems = resolvedMedia.map(m => ({
-          url: m.url,
-          type: m.type,
-          filename: m.name,
-          mimeType: m.mimeType || m.file?.type
-        }))
+      // 1. Upload pending media
+      const resolvedMedia = await uploadPendingMedia(wsId)
+      const mediaItems = resolvedMedia.map(m => ({
+        url: m.url,
+        type: m.type,
+        filename: m.name,
+        mimeType: m.mimeType || m.file?.type
+      }))
 
-        const platformContents = selectedSocialAccountIds.map(id => {
+      // 2. Group selected accounts by workspace ID
+      const accountsByWorkspace: Record<string, string[]> = {}
+      if (selectedSocialAccountIds.length > 0) {
+        selectedSocialAccountIds.forEach(id => {
           const account = socialAccounts.find(a => a.id === id)
+          if (!account) return
+          const accountWsId = account.workspaceId || activeWorkspace.id
+          if (!accountsByWorkspace[accountWsId]) {
+            accountsByWorkspace[accountWsId] = []
+          }
+          accountsByWorkspace[accountWsId].push(id)
+        })
+      } else {
+        accountsByWorkspace[activeWorkspace.id] = []
+      }
+
+      // 3. Resolve schedule time
+      const isNow = publishingTab === 'now'
+      let resolvedScheduleTime = scheduleTime
+      if (publishingTab === 'schedule' && !resolvedScheduleTime) {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const year = tomorrow.getFullYear()
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+        const day = String(tomorrow.getDate()).padStart(2, '0')
+        resolvedScheduleTime = `${year}-${month}-${day}T09:00`
+      }
+
+      const scheduledAtUtc = (publishingTab === 'schedule' || publishingTab === 'draft') && resolvedScheduleTime
+        ? getUtcString(resolvedScheduleTime, timezone)
+        : undefined
+
+      const publishNow = isDraft ? false : (scheduledAtUtc === undefined || isNow)
+
+      // 4. Send requests for all workspaces
+      const promises = Object.entries(accountsByWorkspace).map(([wsId, accountIds]) => {
+        const content = mainContent
+        const title = content.slice(0, 50) || 'Untitled Post'
+
+        const platformContents = accountIds.map(id => {
+          const account = socialAccounts.find(a => a.id === id)
+          const platform = (account?.platform || 'facebook') as Platform
           return {
-            platform: account?.platform || 'unknown',
-            caption: getResolvedContentForPlatform((account?.platform || 'tiktok') as Platform)
+            platform,
+            caption: getResolvedContentForPlatform(platform)
           }
         })
 
-        await postsApi.createZernioPost(wsId, {
+        return postsApi.createZernioPost(wsId, {
           postId: editPost?.zernioPostId,
           status: editPost?.status,
           title,
           content,
-          socialAccountIds: selectedSocialAccountIds,
-          scheduledAtUtc: undefined,
-          publishNow: false,
-          isDraft: true,
+          socialAccountIds: accountIds,
+          scheduledAtUtc: isDraft ? undefined : scheduledAtUtc,
+          publishNow,
+          isDraft,
           mediaItems,
           platformContents,
           platformSpecificData,
           tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
           facebookSettings: platformSpecificData.facebook
         })
+      })
 
-        onToast?.({ message: 'Draft saved successfully on Zernio!', type: 'success' })
+      await Promise.all(promises)
 
-        void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
-        void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
-        void queryClient.invalidateQueries({ queryKey: ['posts'] })
+      onToast?.({
+        message: `Post ${isDraft ? 'saved as draft' : (publishNow ? 'published' : 'scheduled')} successfully!`,
+        type: 'success'
+      })
 
-        localStorage.removeItem('syncra_draft')
-        initialSnapshotRef.current = currentSnapshot
-        
-        reset()
-        onClose()
-        return true
-      } catch (err) {
-        onToast?.({ message: 'Failed to save draft. Please try again.', type: 'error' })
-        return false
-      }
-    }
+      void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['posts'] })
 
-    if (!hasPlatforms) {
-      onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
+      localStorage.removeItem('syncra_draft')
+      setShowPublishConfirmDialog(false)
+      reset()
+      if (!createAnother) onClose()
+      return true
+    } catch (err) {
+      console.error(err)
+      onToast?.({ message: 'Failed to save or schedule post. Please try again.', type: 'error' })
       return false
     }
-
-    let year: number, month: number, day: number, time: string
-
-    if (scheduleTime && scheduleMode) {
-      const scheduleDate = new Date(scheduleTime)
-      year = scheduleDate.getFullYear()
-      month = scheduleDate.getMonth()
-      day = scheduleDate.getDate()
-      time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
-    } else {
-      const today = new Date()
-      year = today.getFullYear()
-      month = today.getMonth()
-      day = today.getDate()
-      time = '09:00'
-    }
-
-    const platformColors: Record<string, string> = {
-      tiktok: '#ff0050',
-      instagram: '#e1306c',
-      facebook: '#4267B2',
-      twitter: '#1DA1F2'
-    }
-
-    const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
-    const platformsToSave = derivedActivePlatforms.length > 0 ? derivedActivePlatforms : activePlatforms
-
-    if (isEditMode && editPost) {
-      const platform = platformsToSave[0] || editPost.platform
-      const cap = getResolvedContentForPlatform(platform)
-      const hashtags = cap.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-
-      updatePost(editPost.id, {
-        title: cap.slice(0, 50) || `Draft on ${platform}`,
-        platform,
-        status: 'draft',
-        time,
-        day,
-        month,
-        year,
-        color: platformColors[platform] || editPost.color,
-        caption: cap,
-        hashtags,
-        image: firstImage || editPost.image
-      })
-      onToast?.({ message: 'Draft updated successfully.', type: 'success' })
-    } else {
-      platformsToSave.forEach(platform => {
-        const platformCaption = getResolvedContentForPlatform(platform)
-        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-
-        addPost({
-          year,
-          month,
-          day,
-          title: platformCaption.slice(0, 50) || `Draft on ${platform}`,
-          platform,
-          status: 'draft',
-          time,
-          color: platformColors[platform] || '#888888',
-          caption: platformCaption,
-          hashtags: platformHashtags,
-          image: firstImage
-        })
-      })
-      onToast?.({ message: 'Draft saved successfully.', type: 'success' })
-    }
-
-    localStorage.removeItem('syncra_draft')
-    initialSnapshotRef.current = currentSnapshot
-    return true
   }
+
+  const handleDraft = () => submitPost(true)
+  const confirmSchedule = () => submitPost(false)
 
   const handleSchedule = () => {
     if (!hasPlatforms) {
@@ -630,7 +593,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
       return
     }
 
-    // Check if any selected platform fails validation (e.g. TikTok has no media)
     const activeAccounts = socialAccounts.filter(a => a.isActive)
     const selectedAccounts = activeAccounts.filter(a => selectedSocialAccountIds.includes(a.id))
     for (const acc of selectedAccounts) {
@@ -642,229 +604,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
 
     setShowPublishConfirmDialog(true)
-  }
-
-  const confirmSchedule = async () => {
-    if (activeWorkspace) {
-      const publishNow = publishingTab === 'now'
-      const isDraft = publishingTab === 'draft'
-
-      // Group selected accounts by workspace ID
-      const accountsByWorkspace: Record<string, string[]> = {}
-      if (selectedSocialAccountIds.length > 0) {
-        selectedSocialAccountIds.forEach(id => {
-          const account = socialAccounts.find(a => a.id === id)
-          if (!account) return
-          const ws = workspaces.find(w => w.zernioProfileId === account.zernioProfileId)
-          const wsId = ws?.id || activeWorkspace.id
-          if (wsId) {
-            if (!accountsByWorkspace[wsId]) accountsByWorkspace[wsId] = []
-            accountsByWorkspace[wsId].push(id)
-          }
-        })
-      } else {
-        accountsByWorkspace[activeWorkspace.id] = []
-      }
-
-      let resolvedScheduleTime = scheduleTime
-      if (publishingTab === 'schedule' && !resolvedScheduleTime) {
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        const year = tomorrow.getFullYear()
-        const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
-        const day = String(tomorrow.getDate()).padStart(2, '0')
-        resolvedScheduleTime = `${year}-${month}-${day}T09:00`
-      }
-
-      try {
-        const promises: Promise<any>[] = []
-
-        // Upload all pending local media ONCE, then reuse the resolved URLs
-        const resolvedMedia = await uploadPendingMedia(activeWorkspace.id)
-        
-        Object.entries(accountsByWorkspace).forEach(([wsId, accountIds]) => {
-          if (accountIds.length === 0) {
-            // Draft post with no channels selected
-            const content = mainContent
-            const title = content.slice(0, 50) || 'Untitled Draft'
-            const mediaItems = resolvedMedia.map(m => ({
-              url: m.url,
-              type: m.type,
-              filename: m.name
-            }))
-            promises.push(
-              postsApi.createZernioPost(wsId, {
-                postId: editPost?.zernioPostId,
-                status: editPost?.status,
-                title,
-                content,
-                socialAccountIds: [],
-                scheduledAtUtc: undefined,
-                publishNow: false,
-                isDraft: true,
-                mediaItems
-              })
-            )
-          } else {
-            // Group accounts in this workspace by schedule time and content overrides
-            const groupsByKey: Record<string, { ids: string[]; scheduledAtUtc?: string; content: string }> = {}
-            
-            accountIds.forEach(accountId => {
-              const account = socialAccounts.find(a => a.id === accountId)
-              if (!account) return
-              
-              const overrideTime = platformTimeOverrides[accountId]
-              const perAccountScheduledAtUtc = (publishingTab === 'schedule' || publishingTab === 'draft')
-                ? (overrideTime ? getUtcString(overrideTime, timezone) : (resolvedScheduleTime ? getUtcString(resolvedScheduleTime, timezone) : undefined))
-                : undefined
-
-              const groupScheduledAtUtc = isDraft ? undefined : perAccountScheduledAtUtc
-              const content = getResolvedContentForPlatform(account.platform as Platform)
-              
-              // Build unique key for this configuration
-              const key = `${groupScheduledAtUtc ?? 'now'}_${content}`
-              if (!groupsByKey[key]) {
-                groupsByKey[key] = {
-                  ids: [],
-                  scheduledAtUtc: groupScheduledAtUtc,
-                  content
-                }
-              }
-              groupsByKey[key].ids.push(accountId)
-            })
-            
-            // Make create post requests
-            const mediaItems = resolvedMedia.map(m => ({
-              url: m.url,
-              type: m.type,
-              filename: m.name,
-              mimeType: m.mimeType || m.file?.type
-            }))
-
-            Object.values(groupsByKey).forEach(({ ids, scheduledAtUtc, content }) => {
-              const title = content.slice(0, 50) || 'Untitled Post'
-              
-              const platformContents = ids.map(id => {
-                const account = socialAccounts.find(a => a.id === id)
-                return {
-                  platform: account?.platform || 'unknown',
-                  caption: getResolvedContentForPlatform((account?.platform || 'tiktok') as Platform)
-                }
-              })
-
-              promises.push(
-                postsApi.createZernioPost(wsId, {
-                  postId: editPost?.zernioPostId,
-                  status: editPost?.status,
-                  title,
-                  content,
-                  socialAccountIds: ids,
-                  scheduledAtUtc,
-                  publishNow: isDraft ? false : (scheduledAtUtc === undefined || publishNow),
-                  isDraft,
-                  mediaItems,
-                  platformContents,
-                  platformSpecificData,
-                  tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
-                  facebookSettings: platformSpecificData.facebook
-                })
-              )
-            })
-          }
-        })
-
-        await Promise.all(promises)
-
-        onToast?.({
-          message: `Post ${isDraft ? 'saved as draft' : (publishNow ? 'published' : 'scheduled')} successfully on Zernio!`,
-          type: 'success'
-        })
-
-        void queryClient.invalidateQueries({ queryKey: ['calendar-posts'] })
-        void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
-        void queryClient.invalidateQueries({ queryKey: ['posts'] })
-
-        localStorage.removeItem('syncra_draft')
-        setShowPublishConfirmDialog(false)
-        reset()
-        if (!createAnother) onClose()
-      } catch (err) {
-        onToast?.({ message: 'Failed to create post. Please try again.', type: 'error' })
-      }
-      return
-    }
-
-    let year: number, month: number, day: number, time: string
-
-    if (scheduleTime && scheduleMode) {
-      const scheduleDate = new Date(scheduleTime)
-      year = scheduleDate.getFullYear()
-      month = scheduleDate.getMonth()
-      day = scheduleDate.getDate()
-      time = scheduleTime.split('T')[1]?.slice(0, 5) || '09:00'
-    } else {
-      const today = new Date()
-      year = today.getFullYear()
-      month = today.getMonth()
-      day = today.getDate()
-      time = '09:00'
-    }
-
-    const platformColors: Record<string, string> = {
-      tiktok: '#ff0050',
-      instagram: '#e1306c',
-      facebook: '#4267B2',
-      twitter: '#1DA1F2'
-    }
-
-    const firstImage = mediaHook.media.find(m => m.type === 'image')?.url
-
-    if (isEditMode && editPost) {
-      const platform = activePlatforms[0] || editPost.platform
-      const cap = getResolvedContentForPlatform(platform)
-      const hashtags = cap.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || editPost.hashtags
-
-      updatePost(editPost.id, {
-        title: cap.slice(0, 50) || `Post on ${platform}`,
-        platform,
-        status: 'scheduled',
-        time,
-        day,
-        month,
-        year,
-        color: platformColors[platform] || editPost.color,
-        caption: cap,
-        hashtags,
-        image: firstImage || editPost.image
-      })
-      onToast?.({ message: 'Post updated successfully!', type: 'success' })
-    } else {
-      activePlatforms.forEach(platform => {
-        const platformCaption = getResolvedContentForPlatform(platform)
-        const platformHashtags = platformCaption.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || []
-
-        addPost({
-          year,
-          month,
-          day,
-          title: platformCaption.slice(0, 50) || `Post on ${platform}`,
-          platform,
-          status: 'scheduled',
-          time,
-          color: platformColors[platform] || '#888888',
-          caption: platformCaption,
-          hashtags: platformHashtags,
-          image: firstImage
-        })
-      })
-      onToast?.({ message: `Post scheduled successfully on ${activePlatforms.join(', ')}!`, type: 'success' })
-    }
-
-    localStorage.removeItem('syncra_draft')
-    setShowPublishConfirmDialog(false)
-
-    reset()
-    if (!createAnother) onClose()
   }
 
   useEffect(() => {
