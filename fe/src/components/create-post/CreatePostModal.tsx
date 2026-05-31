@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCreatePostState } from './useCreatePostState'
 import CreatePostHeader from './CreatePostHeader'
@@ -171,6 +171,52 @@ export default function CreatePostModal(props: CreatePostModalProps) {
             })()}
 
             <CreatePostHeader state={state} refs={hookData.refs} actions={actions} />
+
+            {/* Failed / Partial Post Error Banner */}
+            {state.isEditMode && (state.editPost?.status === 'failed' || state.editPost?.status === 'partial') && (() => {
+              const failedTargets = (state.editPost?.platformTargets ?? []).filter(t => t.status === 'Failed')
+              if (failedTargets.length === 0 && state.editPost?.status === 'failed') {
+                // Fallback: whole post failed but no per-target detail
+                return (
+                  <div className={styles.failedBanner}>
+                    <div className={styles.failedBannerHeader}>
+                      <AlertCircle className={styles.failedBannerIcon} />
+                      <span className={styles.failedBannerTitle}>Publishing Failed</span>
+                    </div>
+                    <div className={styles.failedBannerBody}>
+                      <div className={styles.failedBannerItem}>
+                        <span className={styles.failedBannerItemMsg}>This post failed to publish. Please review your content and try again.</span>
+                      </div>
+                    </div>
+                    <div className={styles.failedBannerHint}>Fix any issues below and click "Retry Failed" to republish.</div>
+                  </div>
+                )
+              }
+              if (failedTargets.length === 0) return null
+              return (
+                <div className={styles.failedBanner}>
+                  <div className={styles.failedBannerHeader}>
+                    <AlertCircle className={styles.failedBannerIcon} />
+                    <span className={styles.failedBannerTitle}>
+                      {state.editPost?.status === 'partial'
+                        ? `${failedTargets.length} platform${failedTargets.length > 1 ? 's' : ''} failed to publish`
+                        : 'Publishing Failed'}
+                    </span>
+                  </div>
+                  <div className={styles.failedBannerBody}>
+                    {failedTargets.map(t => (
+                      <div key={t.id} className={styles.failedBannerItem}>
+                        <span className={styles.failedBannerItemPlatform}>{t.platform}:</span>
+                        <span className={styles.failedBannerItemMsg}>
+                          {t.errorMessage || 'Unknown error — check platform connection.'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.failedBannerHint}>Fix any issues below and click "Retry Failed" to republish.</div>
+                </div>
+              )
+            })()}
 
             <div className={styles.body}>
               <div className={styles.composer}>

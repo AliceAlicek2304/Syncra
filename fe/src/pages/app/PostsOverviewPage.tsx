@@ -175,7 +175,7 @@ export default function PostsOverviewPage() {
   const handlePostClick = (post: Post) => {
     if (post.status === 'published') {
       setSelectedPostDetails(post)
-    } else if (post.status === 'scheduled' || post.status === 'draft') {
+    } else if (post.status === 'scheduled' || post.status === 'draft' || post.status === 'failed' || post.status === 'partial') {
       const scheduledDate = new Date(post.scheduledAtUtc || post.createdAt)
       const scheduledTimeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) // e.g. "14:30"
       openEditPost({
