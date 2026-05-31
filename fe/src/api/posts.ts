@@ -142,8 +142,8 @@ export const postsApi = {
     await api.delete(`workspaces/${workspaceId}/posts/zernio/${postId}`);
   },
 
-  unpublishZernioPost: async (workspaceId: string, postId: string, deleteFromDb?: boolean): Promise<void> => {
-    await api.post(`workspaces/${workspaceId}/posts/zernio/${postId}/unpublish`, null, {
+  unpublishZernioPost: async (workspaceId: string, postId: string, platform: string, deleteFromDb?: boolean): Promise<void> => {
+    await api.post(`workspaces/${workspaceId}/posts/zernio/${postId}/unpublish`, { platform }, {
       params: deleteFromDb !== undefined ? { deleteFromDb } : undefined
     });
   },

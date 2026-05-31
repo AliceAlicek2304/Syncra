@@ -33,7 +33,7 @@ public class UnpublishZernioPostCommandHandler : IRequestHandler<UnpublishZernio
             if (post.WorkspaceId != request.WorkspaceId)
                 return false;
 
-            await UnpublishFromPlatforms(post, cancellationToken);
+            await _zernioClient.UnpublishPostAsync(post.ZernioPostId, request.Platform, cancellationToken);
 
             if (request.DeleteFromDb)
             {
@@ -42,27 +42,26 @@ public class UnpublishZernioPostCommandHandler : IRequestHandler<UnpublishZernio
             else
             {
                 var utcNow = DateTime.UtcNow;
-                post.MarkAsUnpublished(utcNow);
-                foreach (var platformTarget in post.PlatformTargets.Where(pt => pt.Status == PostPlatformStatus.Published))
+                var target = post.PlatformTargets.FirstOrDefault(t => 
+                    string.Equals(t.Platform, request.Platform, StringComparison.OrdinalIgnoreCase));
+                
+                if (target != null)
                 {
-                    platformTarget.MarkFailed("Unpublished from platform", utcNow);
+                    target.MarkFailed("Unpublished from platform", utcNow);
+                }
+
+                if (post.PlatformTargets.All(t => t.Status == PostPlatformStatus.Failed))
+                {
+                    post.MarkAsUnpublished(utcNow);
                 }
             }
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+        else
+        {
+            await _zernioClient.UnpublishPostAsync(request.ZernioPostId, request.Platform, cancellationToken);
+        }
 
         return true;
-    }
-
-    private async Task UnpublishFromPlatforms(Post post, CancellationToken cancellationToken)
-    {
-        var publishedPlatforms = post.PlatformTargets
-            .Where(pt => pt.Status == PostPlatformStatus.Published)
-            .ToList();
-
-        foreach (var platformTarget in publishedPlatforms)
-        {
-            await _zernioClient.UnpublishPostAsync(post.ZernioPostId, platformTarget.Platform, cancellationToken);
-        }
     }
 }

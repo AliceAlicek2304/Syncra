@@ -106,12 +106,19 @@ public sealed class ZernioPostsController : ControllerBase
     }
 
     [HttpPost("{zernioPostId}/unpublish")]
-    public async Task<IActionResult> UnpublishZernioPost(Guid workspaceId, string zernioPostId, [FromQuery] bool deleteFromDb = true, CancellationToken ct = default)
+    public async Task<IActionResult> UnpublishZernioPost(
+        Guid workspaceId, 
+        string zernioPostId, 
+        [FromBody] UnpublishZernioPostRequest request,
+        [FromQuery] bool deleteFromDb = true, 
+        CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new UnpublishZernioPostCommand(workspaceId, zernioPostId, deleteFromDb), ct);
+        var result = await _mediator.Send(new UnpublishZernioPostCommand(workspaceId, zernioPostId, request.Platform, deleteFromDb), ct);
         if (!result)
             return NotFound();
 
         return NoContent();
     }
 }
+
+public record UnpublishZernioPostRequest(string Platform);

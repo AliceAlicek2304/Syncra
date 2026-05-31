@@ -62,7 +62,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
         _db.PostPlatformTargets.Add(fbTarget);
         await _db.SaveChangesAsync();
 
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -76,7 +76,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_PublishedPostWithPlatforms_CallsUnpublishPerPlatform()
+    public async Task UnpublishHandler_PublishedPostWithPlatforms_CallsUnpublishForSpecifiedPlatformOnly()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -93,7 +93,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
         _db.PostPlatformTargets.AddRange(fbTarget, twTarget);
         await _db.SaveChangesAsync();
 
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -101,7 +101,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
         // Assert
         Assert.True(result);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
-        _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "twitter", It.IsAny<CancellationToken>()), Times.Once);
+        _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "twitter", It.IsAny<CancellationToken>()), Times.Never);
 
         var deletedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
         Assert.True(deletedPost.IsDeleted);
@@ -119,7 +119,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -152,7 +152,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
             .Setup(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("API Error"));
 
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _handler.Handle(cmd, CancellationToken.None));
@@ -162,18 +162,18 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_PostNotInLocalDb_ReturnsTrueWithoutCallingZernio()
+    public async Task UnpublishHandler_PostNotInLocalDb_CallsZernioApiDirectly()
     {
         // Arrange
         var zernioPostId = "z_123";
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, zernioPostId);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, zernioPostId, "facebook");
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);
 
         // Assert
         Assert.True(result);
-        _zernioClientMock.Verify(x => x.UnpublishPostAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
         _db.PostPlatformTargets.Add(fbTarget);
         await _db.SaveChangesAsync();
 
-        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, false);
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook", false);
 
         // Act
         var result = await _handler.Handle(cmd, CancellationToken.None);

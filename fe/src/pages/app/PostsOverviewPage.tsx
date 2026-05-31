@@ -379,8 +379,15 @@ export default function PostsOverviewPage() {
     if (!workspaceId) return
     try {
       if (post.zernioPostId && post.status === 'published') {
-        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId)
-        showSuccess('Post unpublished successfully')
+        const postPlatforms = Array.from(new Set(
+          post.platforms?.length 
+            ? post.platforms 
+            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+        ));
+        for (const platform of postPlatforms) {
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, true);
+        }
+        showSuccess('Post unpublished successfully');
       } else if (post.zernioPostId) {
         await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
         showSuccess('Post deleted successfully')
@@ -417,7 +424,14 @@ export default function PostsOverviewPage() {
     if (!workspaceId) return
     try {
       if (post.zernioPostId) {
-        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, false)
+        const postPlatforms = Array.from(new Set(
+          post.platforms?.length 
+            ? post.platforms 
+            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+        ));
+        for (const platform of postPlatforms) {
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
+        }
         showSuccess('Post unpublished from platforms')
       } else {
         showError('Post does not support unpublish')
@@ -434,7 +448,14 @@ export default function PostsOverviewPage() {
     if (!workspaceId) return
     try {
       if (post.zernioPostId) {
-        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, true)
+        const postPlatforms = Array.from(new Set(
+          post.platforms?.length 
+            ? post.platforms 
+            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+        ));
+        for (const platform of postPlatforms) {
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, true);
+        }
         showSuccess('Post deleted from platforms and Syncra')
       } else {
         await postsApi.deletePost(workspaceId, post.id)

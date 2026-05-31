@@ -91,10 +91,10 @@ describe('postsApi', () => {
   it('unpublishZernioPost calls POST on correct endpoint with params', async () => {
     mockedApi.post.mockResolvedValue({ data: undefined })
     const zernioPostId = 'zernio-123'
-    await postsApi.unpublishZernioPost(workspaceId, zernioPostId, false)
+    await postsApi.unpublishZernioPost(workspaceId, zernioPostId, 'facebook', false)
     expect(mockedApi.post).toHaveBeenCalledWith(
       `workspaces/${workspaceId}/posts/zernio/${zernioPostId}/unpublish`,
-      null,
+      { platform: 'facebook' },
       { params: { deleteFromDb: false } }
     )
   })

@@ -351,7 +351,7 @@ public sealed class Post : WorkspaceEntityBase
 
     public void MarkZernioPublished(DateTime utcNow)
     {
-        TransitionTo(PostStatus.Published);
+        Status = PostStatus.Published;
         PublishedAtUtc ??= utcNow;
         PublishLastAttemptAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
@@ -359,7 +359,7 @@ public sealed class Post : WorkspaceEntityBase
 
     public void MarkZernioFailed(DateTime utcNow, string? error)
     {
-        TransitionTo(PostStatus.Failed);
+        Status = PostStatus.Failed;
         PublishLastAttemptAtUtc = utcNow;
         PublishLastError = TruncateError(error);
         UpdatedAtUtc = utcNow;
