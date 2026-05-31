@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle
+  Plus, ChevronDown, ChevronUp, Check, X, Info, Copy, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, ArrowRight, Pencil, HelpCircle
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
@@ -434,6 +434,7 @@ export default function ConnectionsPage() {
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const [disconnectPreCheckLoad, setDisconnectPreCheckLoad] = useState<string | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<typeof workspaces[0] | null>(null);
+  const [expandedPlatformId, setExpandedPlatformId] = useState<string | null>(null);
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -500,27 +501,18 @@ export default function ConnectionsPage() {
     }
   }, [activeWorkspace, workspaces, isNewConnectionOpen]);
 
+  // Reset expanded platform when drawer closes or workspace changes
+  useEffect(() => {
+    setExpandedPlatformId(null);
+  }, [isNewConnectionOpen, selectedWorkspaceForConnection]);
+
   // Fetch connections for selected workspace or all workspaces
   const { data: connections = [], isLoading: isConnectionsLoading } = useQuery<
     (SocialAccountDto & { workspace: typeof workspaces[0] })[]
   >({
-    queryKey: ['connections-list', selectedWorkspaceFilter],
+    queryKey: ['connections-list'],
     queryFn: async () => {
-      if (selectedWorkspaceFilter === 'all') {
-        const promises = workspaces.map(async (ws) => {
-          try {
-            const result = await socialAccountsApi.getSocialAccounts(ws.id);
-            return result.items.map(acc => ({ ...acc, workspace: ws }));
-          } catch (err) {
-            console.error(`Error loading social accounts for workspace ${ws.name}`, err);
-            return [];
-          }
-        });
-        const results = await Promise.all(promises);
-        return results.flat();
-      } else {
-        const ws = workspaces.find(w => w.id === selectedWorkspaceFilter);
-        if (!ws) return [];
+      const promises = workspaces.map(async (ws) => {
         try {
           const result = await socialAccountsApi.getSocialAccounts(ws.id);
           return result.items.map(acc => ({ ...acc, workspace: ws }));
@@ -528,7 +520,9 @@ export default function ConnectionsPage() {
           console.error(`Error loading social accounts for workspace ${ws.name}`, err);
           return [];
         }
-      }
+      });
+      const results = await Promise.all(promises);
+      return results.flat();
     },
     staleTime: 30_000,
     enabled: workspaces.length > 0,
@@ -1446,6 +1440,78 @@ export default function ConnectionsPage() {
                             const platform = platformsById[platformId];
                             if (!platform) return null;
                             const isDisabled = !selectedWorkspaceForConnection || !platform.isSupported;
+                            
+                            const isConnected = selectedWorkspaceForConnection && connections.some(
+                              conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === platform.id
+                            );
+
+                            if (isConnected) {
+                              const isExpanded = expandedPlatformId === platform.id;
+                              const currentWorkspaceName = workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name || '';
+                              const eligibleWorkspaces = workspaces.filter(ws => 
+                                ws.id !== selectedWorkspaceForConnection && 
+                                !connections.some(conn => conn.workspace.id === ws.id && conn.platform.toLowerCase() === platform.id)
+                              );
+                              
+                              return (
+                                <div key={platform.id} className={`${styles.platformListItemContainer} ${isExpanded ? styles.expanded : ''}`}>
+                                  <button
+                                    type="button"
+                                    className={styles.platformListItemHeader}
+                                    onClick={() => setExpandedPlatformId(isExpanded ? null : platform.id)}
+                                  >
+                                    <div className={styles.platformListLeft}>
+                                      <div
+                                        className={styles.platformListIconConnected}
+                                      >
+                                        <PlatformIcon platform={platform.id} size={18} />
+                                      </div>
+                                      <span className={styles.platformListLabelConnected}>{platform.label}</span>
+                                    </div>
+                                    <div className={styles.platformListRightConnected}>
+                                      <span className={styles.connectedText}>Connected</span>
+                                      {isExpanded ? <ChevronUp size={16} className={styles.platformListChevron} /> : <ChevronDown size={16} className={styles.platformListChevron} />}
+                                    </div>
+                                  </button>
+                                  
+                                  {isExpanded && (
+                                    <div className={styles.platformListItemContent}>
+                                      <p className={styles.connectedExplanation}>
+                                        {platform.label} is connected to <strong>{currentWorkspaceName}</strong>. Each workspace holds one {platform.label} account. To add another, connect it to a different workspace:
+                                      </p>
+                                      
+                                      <div className={styles.eligibleWorkspacesList}>
+                                        {eligibleWorkspaces.map(ws => (
+                                          <button
+                                            key={ws.id}
+                                            type="button"
+                                            className={styles.eligibleWorkspaceBtn}
+                                            onClick={() => handleConnectPlatform(platform.id, ws.id)}
+                                            disabled={connectingPlatform === platform.id}
+                                          >
+                                            <div className={styles.workspaceOptRow}>
+                                              <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
+                                              <span className={styles.workspaceName}>{ws.name}</span>
+                                            </div>
+                                            <ArrowRight size={14} className={styles.eligibleWorkspaceArrow} />
+                                          </button>
+                                        ))}
+                                        
+                                        <button
+                                          type="button"
+                                          className={styles.quickCreateWorkspaceBtn}
+                                          onClick={() => setIsNewWorkspaceOpen(true)}
+                                        >
+                                          <Plus size={14} className={styles.quickCreatePlus} />
+                                          <span>New workspace...</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+
                             return (
                               <button
                                 key={platform.id}

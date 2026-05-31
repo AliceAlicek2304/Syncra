@@ -1761,3 +1761,157 @@
   color: #605d52;
   font-weight: 500;
 }
+
+/* ── Connected Accordion Platform Items ── */
+.platformListItemContainer {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #f0ece5;
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.platformListItemContainer:last-child {
+  border-bottom: none;
+}
+
+.platformListItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 4px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.12s, border-radius 0.12s;
+}
+
+.platformListItemHeader:hover {
+  background-color: #f8f4f0;
+  border-radius: 8px;
+}
+
+.platformListIconConnected {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #939084;
+  background-color: #f8f4f0;
+  border: 1px solid #e5dfd3;
+}
+
+.platformListLabelConnected {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #939084;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platformListRightConnected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.connectedText {
+  font-size: 12px;
+  font-weight: 500;
+  color: #939084;
+}
+
+.platformListItemContent {
+  padding: 12px 16px 16px;
+  background-color: #f8f4f0;
+  border-radius: 8px;
+  margin: 0 4px 10px;
+  border: 1px solid #e5dfd3;
+}
+
+.connectedExplanation {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #605d52;
+  margin: 0 0 12px 0;
+}
+
+.connectedExplanation strong {
+  color: #201515;
+  font-weight: 600;
+}
+
+.eligibleWorkspacesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eligibleWorkspaceBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border: 1px solid #e5dfd3;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.eligibleWorkspaceBtn:hover:not(:disabled) {
+  background-color: #fffefb;
+  border-color: #ff4f00;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 79, 0, 0.05);
+}
+
+.eligibleWorkspaceBtn .workspaceName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #201515;
+}
+
+.eligibleWorkspaceArrow {
+  color: #c5c0b1;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.eligibleWorkspaceBtn:hover:not(:disabled) .eligibleWorkspaceArrow {
+  color: #ff4f00;
+  transform: translateX(2px);
+}
+
+.quickCreateWorkspaceBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: transparent;
+  border: 1px dashed #c5c0b1;
+  border-radius: 8px;
+  color: #605d52;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.quickCreateWorkspaceBtn:hover {
+  border-color: #ff4f00;
+  color: #ff4f00;
+  background-color: rgba(255, 79, 0, 0.02);
+}
+
+.quickCreatePlus {
+  color: inherit;
+}
