@@ -819,7 +819,10 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             if (!PlatformMap.TryGetValue(platform, out var platformEnum))
-                platformEnum = UnpublishPostRequest.PlatformEnum.Threads;
+            {
+                _logger.LogWarning("Platform {Platform} is not supported for API unpublishing. Skipping Zernio unpublish API call.", platform);
+                return;
+            }
 
             var request = new UnpublishPostRequest(platformEnum);
             await _postsApi.UnpublishPostAsync(zernioPostId, request, cancellationToken);
