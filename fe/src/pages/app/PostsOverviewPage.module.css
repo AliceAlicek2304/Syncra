@@ -1733,3 +1733,283 @@
   pointer-events: none;
   z-index: 2;
 }
+
+/* ─── Post Card Dropdown Menu ─── */
+.moreOptionsWrapper {
+  position: relative;
+}
+
+.postMenuDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  min-width: 140px;
+  background-color: #ffffff;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(32, 21, 21, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+}
+
+.postMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-body);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.postMenuItem:hover {
+  background-color: var(--clr-canvas-soft);
+  color: var(--clr-ink);
+}
+
+.postMenuItemDanger {
+  color: #ef4444;
+}
+
+.postMenuItemDanger:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* ─── Delete Confirmation Modal ─── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.deleteConfirmModal {
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(32, 21, 21, 0.12);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.deleteConfirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #ef4444;
+}
+
+.deleteConfirmHeader h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.deleteConfirmText {
+  margin: 0 0 20px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--clr-body);
+  line-height: 1.5;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.deleteConfirmCancelBtn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border);
+  background-color: #ffffff;
+  color: var(--clr-body);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteConfirmCancelBtn:hover {
+  background-color: var(--clr-canvas-soft);
+}
+
+.deleteConfirmDeleteBtn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteConfirmDeleteBtn:hover {
+  background-color: #dc2626;
+}
+
+/* ─── Published Delete Modal Styles ─── */
+.publishedDeleteModal {
+  background-color: var(--clr-canvas);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--clr-border);
+  box-shadow: 0 20px 50px rgba(32, 21, 21, 0.15);
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.publishedDeleteHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.publishedDeleteTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ef4444;
+}
+
+.publishedDeleteIcon {
+  color: #ef4444;
+}
+
+.publishedDeleteTitleGroup h2 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.publishedDeleteSubtext {
+  margin: 0 0 20px 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--clr-body-mid);
+  line-height: 1.5;
+}
+
+.deleteOptionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deleteOptionCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md, 12px);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.deleteOptionCard:hover {
+  background-color: var(--clr-canvas-soft);
+  border-color: var(--clr-ink);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(32, 21, 21, 0.05);
+}
+
+.optionIconSquare {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.deleteOptionCard:nth-child(2) .optionIconSquare,
+.deleteOptionCard:nth-child(3) .optionIconSquare {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.optionTextStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.optionTitle {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.optionDescription {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--clr-body);
+  line-height: 1.4;
+}
+
+.unsupportedWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  color: #b45309;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.unsupportedWarning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.publishedDeleteFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--clr-border);
+}

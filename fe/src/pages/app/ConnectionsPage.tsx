@@ -1493,11 +1493,24 @@ export default function ConnectionsPage() {
                   )}
 
                   <div className={`${styles.platformsList} ${!selectedWorkspaceForConnection ? styles.platformsListBlur : ''}`}>
-                    {PLATFORM_GROUPS.map(group => (
+                    {PLATFORM_GROUPS.map(group => {
+                      const sortedIds = [...group.platformIds].sort((a, b) => {
+                        const aConnected = selectedWorkspaceForConnection && connections.some(
+                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === a
+                        );
+                        const bConnected = selectedWorkspaceForConnection && connections.some(
+                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === b
+                        );
+                        if (aConnected && !bConnected) return 1;
+                        if (!aConnected && bConnected) return -1;
+                        return 0;
+                      });
+
+                      return (
                       <div key={group.title} className={styles.platformGroup}>
                         <div className={styles.platformGroupTitle}>{group.title.toUpperCase()}</div>
                         <div className={styles.platformGroupItems}>
-                          {group.platformIds.map((platformId) => {
+                          {sortedIds.map((platformId) => {
                             const platform = platformsById[platformId];
                             if (!platform) return null;
                             const isDisabled = !selectedWorkspaceForConnection || !platform.isSupported;
@@ -1647,7 +1660,8 @@ export default function ConnectionsPage() {
                           })}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 </div>
               </div>

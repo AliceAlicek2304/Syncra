@@ -30,7 +30,7 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
             if (post.WorkspaceId != request.WorkspaceId)
                 return false;
 
-            if (post.Status is PostStatus.Scheduled or PostStatus.Draft or PostStatus.Publishing)
+            if (post.Status is PostStatus.Scheduled or PostStatus.Draft or PostStatus.Publishing or PostStatus.Published)
             {
                 if (!string.IsNullOrEmpty(post.ZernioPostId))
                 {

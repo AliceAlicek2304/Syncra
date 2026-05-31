@@ -365,6 +365,13 @@ public sealed class Post : WorkspaceEntityBase
         UpdatedAtUtc = utcNow;
     }
 
+    public void MarkAsUnpublished(DateTime utcNow)
+    {
+        Status = PostStatus.Failed;
+        PublishLastError = "Unpublished from platform";
+        UpdatedAtUtc = utcNow;
+    }
+
     private static string? TruncateError(string? error)
     {
         if (string.IsNullOrWhiteSpace(error))

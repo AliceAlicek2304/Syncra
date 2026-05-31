@@ -674,6 +674,14 @@ public sealed class ProcessZernioWebhookJob
             return;
         }
 
+        if (post.Status == PostStatus.Failed)
+        {
+            _logger.LogInformation("Post {PostId} is already in Failed state (unpublished only) — skipping deletion.", post.Id);
+            webhookEvent.MarkProcessed(DateTime.UtcNow);
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
         post.MarkAsDeleted();
 
         webhookEvent.MarkProcessed(DateTime.UtcNow);

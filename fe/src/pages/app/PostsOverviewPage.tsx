@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
   X, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
-  MoreVertical, Copy, Check, Trash2
+  MoreVertical, Copy, Check, Trash2, Pencil, Globe
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
@@ -56,11 +56,14 @@ export default function PostsOverviewPage() {
   const { workspaces, activeWorkspace } = useWorkspace()
   const { user } = useAuth()
   const { openCreatePost, openEditPost } = useCreatePostModal()
-  const { success: showSuccess } = useToast()
+  const { success: showSuccess, error: showError } = useToast()
   
   const queryClient = useQueryClient()
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
   const [selectedPostDetails, setSelectedPostDetails] = useState<Post | null>(null)
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<Post | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   
   // ─── Filter & View States ───
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
@@ -371,6 +374,90 @@ export default function PostsOverviewPage() {
       console.error(err)
     }
   }
+
+  const handleDeleteSinglePost = async (post: Post) => {
+    if (!workspaceId) return
+    try {
+      if (post.zernioPostId && post.status === 'published') {
+        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId)
+        showSuccess('Post unpublished successfully')
+      } else if (post.zernioPostId) {
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+        showSuccess('Post deleted successfully')
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+        showSuccess('Post deleted successfully')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    }
+  }
+
+  const handleDeleteSyncraOnly = async (post: Post) => {
+    if (!workspaceId) return
+    try {
+      if (post.zernioPostId) {
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+      }
+      showSuccess('Post deleted from Syncra only')
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    }
+  }
+
+  const handleDeletePlatformOnly = async (post: Post) => {
+    if (!workspaceId) return
+    try {
+      if (post.zernioPostId) {
+        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, false)
+        showSuccess('Post unpublished from platforms')
+      } else {
+        showError('Post does not support unpublish')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to unpublish post')
+    }
+  }
+
+  const handleDeletePlatformAndSyncra = async (post: Post) => {
+    if (!workspaceId) return
+    try {
+      if (post.zernioPostId) {
+        await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, true)
+        showSuccess('Post deleted from platforms and Syncra')
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+        showSuccess('Post deleted successfully')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    }
+  }
+
+  // Close post menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuPostId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // ─── Pagination ───
   const paginatedPosts = React.useMemo(() => {
@@ -1034,9 +1121,45 @@ export default function PostsOverviewPage() {
                       <div className={styles.statusBadgeWrapper}>
                         <StatusBadge status={post.status} />
                       </div>
-                      <button className={styles.moreOptionsBtn} aria-label="More options" onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical size={14} />
-                      </button>
+                      <div className={styles.moreOptionsWrapper} ref={openMenuPostId === post.id ? menuRef : undefined}>
+                        <button
+                          className={styles.moreOptionsBtn}
+                          aria-label="More options"
+                          onClick={(e) => { e.stopPropagation(); setOpenMenuPostId(openMenuPostId === post.id ? null : post.id) }}
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                        {openMenuPostId === post.id && (
+                          <div className={styles.postMenuDropdown}>
+                            {post.status !== 'published' && (
+                              <button
+                                type="button"
+                                className={styles.postMenuItem}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setOpenMenuPostId(null)
+                                  handlePostClick(post)
+                                }}
+                              >
+                                <Pencil size={14} />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenMenuPostId(null)
+                                setDeleteConfirmPost(post)
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
@@ -1423,6 +1546,211 @@ export default function PostsOverviewPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmPost && (
+        deleteConfirmPost.status === 'published' ? (
+          <div className={styles.modalBackdrop} onClick={() => setDeleteConfirmPost(null)}>
+            <div className={styles.publishedDeleteModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.publishedDeleteHeader}>
+                <div className={styles.publishedDeleteTitleGroup}>
+                  <Trash2 size={20} className={styles.publishedDeleteIcon} />
+                  <h2>Delete post</h2>
+                </div>
+                <button onClick={() => setDeleteConfirmPost(null)} className={styles.closeModalBtn}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <p className={styles.publishedDeleteSubtext}>
+                Choose how you want to delete this post.
+              </p>
+
+              <div className={styles.deleteOptionsContainer}>
+                {/* Option 1: Delete from Syncra only */}
+                <button 
+                  type="button" 
+                  className={styles.deleteOptionCard}
+                  onClick={() => handleDeleteSyncraOnly(deleteConfirmPost)}
+                >
+                  <div className={styles.optionIconSquare}>
+                    <Trash2 size={20} />
+                  </div>
+                  <div className={styles.optionTextStack}>
+                    <span className={styles.optionTitle}>Delete from Syncra only</span>
+                    <span className={styles.optionDescription}>
+                      Remove from your Syncra dashboard. The post will remain live on {(() => {
+                        const postPlatforms = Array.from(new Set(
+                          deleteConfirmPost.platforms?.length 
+                            ? deleteConfirmPost.platforms 
+                            : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                        ));
+                        const formatPlatformName = (p: string) => {
+                          if (p === 'youtube') return 'YouTube';
+                          if (p === 'linkedin') return 'LinkedIn';
+                          if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+                          return p.charAt(0).toUpperCase() + p.slice(1);
+                        };
+                        return postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
+                      })()}.
+                    </span>
+                  </div>
+                </button>
+
+                {/* Option 2: Delete from platform only */}
+                <button 
+                  type="button" 
+                  className={styles.deleteOptionCard}
+                  onClick={() => handleDeletePlatformOnly(deleteConfirmPost)}
+                >
+                  <div className={styles.optionIconSquare}>
+                    <Globe size={20} />
+                  </div>
+                  <div className={styles.optionTextStack}>
+                    <span className={styles.optionTitle}>Delete from platform only</span>
+                    <span className={styles.optionDescription}>
+                      Permanently delete from {(() => {
+                        const postPlatforms = Array.from(new Set(
+                          deleteConfirmPost.platforms?.length 
+                            ? deleteConfirmPost.platforms 
+                            : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                        ));
+                        const formatPlatformName = (p: string) => {
+                          if (p === 'youtube') return 'YouTube';
+                          if (p === 'linkedin') return 'LinkedIn';
+                          if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+                          return p.charAt(0).toUpperCase() + p.slice(1);
+                        };
+                        return postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
+                      })()}.
+                    </span>
+                    {(() => {
+                      const postPlatforms = Array.from(new Set(
+                        deleteConfirmPost.platforms?.length 
+                          ? deleteConfirmPost.platforms 
+                          : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                      ));
+                      const unsupported = postPlatforms.filter(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
+                      const formatPlatformName = (p: string) => {
+                        if (p === 'youtube') return 'YouTube';
+                        if (p === 'linkedin') return 'LinkedIn';
+                        if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+                        return p.charAt(0).toUpperCase() + p.slice(1);
+                      };
+                      if (unsupported.length > 0) {
+                        return (
+                          <div className={styles.unsupportedWarning}>
+                            <AlertCircle size={14} />
+                            <span>
+                              {unsupported.map(formatPlatformName).join(', ')} {unsupported.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </button>
+
+                {/* Option 3: Delete from platform and Syncra */}
+                <button 
+                  type="button" 
+                  className={styles.deleteOptionCard}
+                  onClick={() => handleDeletePlatformAndSyncra(deleteConfirmPost)}
+                >
+                  <div className={styles.optionIconSquare}>
+                    <Globe size={20} />
+                  </div>
+                  <div className={styles.optionTextStack}>
+                    <span className={styles.optionTitle}>Delete from platform and Syncra</span>
+                    <span className={styles.optionDescription}>
+                      Permanently delete from {(() => {
+                        const postPlatforms = Array.from(new Set(
+                          deleteConfirmPost.platforms?.length 
+                            ? deleteConfirmPost.platforms 
+                            : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                        ));
+                        const formatPlatformName = (p: string) => {
+                          if (p === 'youtube') return 'YouTube';
+                          if (p === 'linkedin') return 'LinkedIn';
+                          if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+                          return p.charAt(0).toUpperCase() + p.slice(1);
+                        };
+                        return postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
+                      })()} and remove from Syncra.
+                    </span>
+                    {(() => {
+                      const postPlatforms = Array.from(new Set(
+                        deleteConfirmPost.platforms?.length 
+                          ? deleteConfirmPost.platforms 
+                          : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                      ));
+                      const unsupported = postPlatforms.filter(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
+                      const formatPlatformName = (p: string) => {
+                        if (p === 'youtube') return 'YouTube';
+                        if (p === 'linkedin') return 'LinkedIn';
+                        if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+                        return p.charAt(0).toUpperCase() + p.slice(1);
+                      };
+                      if (unsupported.length > 0) {
+                        return (
+                          <div className={styles.unsupportedWarning}>
+                            <AlertCircle size={14} />
+                            <span>
+                              {unsupported.map(formatPlatformName).join(', ')} {unsupported.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </button>
+              </div>
+
+              {/* Footer displaying target platforms */}
+              <div className={styles.publishedDeleteFooter}>
+                {Array.from(new Set(
+                  deleteConfirmPost.platforms?.length 
+                    ? deleteConfirmPost.platforms 
+                    : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+                )).map((plat) => (
+                  <PlatformIcon key={plat} platform={plat as any} size={20} />
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.modalBackdrop} onClick={() => setDeleteConfirmPost(null)}>
+            <div className={styles.deleteConfirmModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.deleteConfirmHeader}>
+                <Trash2 size={18} />
+                <h3>Delete post</h3>
+              </div>
+              <p className={styles.deleteConfirmText}>
+                Are you sure you want to delete this post? This action cannot be undone.
+              </p>
+              <div className={styles.deleteConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.deleteConfirmCancelBtn}
+                  onClick={() => setDeleteConfirmPost(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.deleteConfirmDeleteBtn}
+                  onClick={() => handleDeleteSinglePost(deleteConfirmPost)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )
       )}
     </div>
   )

@@ -797,6 +797,49 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    private static readonly Dictionary<string, UnpublishPostRequest.PlatformEnum> PlatformMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["threads"] = UnpublishPostRequest.PlatformEnum.Threads,
+        ["facebook"] = UnpublishPostRequest.PlatformEnum.Facebook,
+        ["twitter"] = UnpublishPostRequest.PlatformEnum.Twitter,
+        ["linkedin"] = UnpublishPostRequest.PlatformEnum.Linkedin,
+        ["youtube"] = UnpublishPostRequest.PlatformEnum.Youtube,
+        ["pinterest"] = UnpublishPostRequest.PlatformEnum.Pinterest,
+        ["reddit"] = UnpublishPostRequest.PlatformEnum.Reddit,
+        ["bluesky"] = UnpublishPostRequest.PlatformEnum.Bluesky,
+        ["googlebusiness"] = UnpublishPostRequest.PlatformEnum.Googlebusiness,
+        ["telegram"] = UnpublishPostRequest.PlatformEnum.Telegram,
+    };
+
+    public async Task UnpublishPostAsync(
+        string zernioPostId,
+        string platform,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!PlatformMap.TryGetValue(platform, out var platformEnum))
+                platformEnum = UnpublishPostRequest.PlatformEnum.Threads;
+
+            var request = new UnpublishPostRequest(platformEnum);
+            await _postsApi.UnpublishPostAsync(zernioPostId, request, cancellationToken);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered unpublishing post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage posts.",
+                reason: "post_management_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error unpublishing post {PostId}", zernioPostId);
+            throw new DomainException("zernio_unpublish_post_error", "Failed to unpublish Zernio post", ex);
+        }
+    }
+
     public async Task<ZernioPostListResponseDto> ListPostsAsync(
         int? page = null,
         int? limit = null,

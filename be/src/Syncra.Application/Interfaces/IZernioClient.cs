@@ -84,6 +84,11 @@ public interface IZernioClient
         string zernioPostId,
         CancellationToken cancellationToken = default);
 
+    Task UnpublishPostAsync(
+        string zernioPostId,
+        string platform,
+        CancellationToken cancellationToken = default);
+
     Task<ZernioPostListResponseDto> ListPostsAsync(
         int? page = null,
         int? limit = null,

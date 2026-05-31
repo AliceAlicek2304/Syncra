@@ -5,6 +5,7 @@ using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Features.Posts.CreateZernioPost;
 using Syncra.Application.Features.Posts.RetryZernioPost;
 using Syncra.Application.Features.Posts.DeleteZernioPost;
+using Syncra.Application.Features.Posts.UnpublishZernioPost;
 using Syncra.Shared.Extensions;
 
 namespace Syncra.Api.Controllers;
@@ -100,7 +101,17 @@ public sealed class ZernioPostsController : ControllerBase
         var result = await _mediator.Send(new DeleteZernioPostCommand(workspaceId, zernioPostId), ct);
         if (!result)
             return NotFound();
-            
+
+        return NoContent();
+    }
+
+    [HttpPost("{zernioPostId}/unpublish")]
+    public async Task<IActionResult> UnpublishZernioPost(Guid workspaceId, string zernioPostId, [FromQuery] bool deleteFromDb = true, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new UnpublishZernioPostCommand(workspaceId, zernioPostId, deleteFromDb), ct);
+        if (!result)
+            return NotFound();
+
         return NoContent();
     }
 }
