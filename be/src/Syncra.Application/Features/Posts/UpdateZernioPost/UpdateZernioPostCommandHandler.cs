@@ -70,11 +70,10 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
             throw new DomainException("zernio_profile_missing", "No Zernio profile exists for this workspace.");
         }
 
-        // Upload media files to Wasabi if needed
+        // Upload media files to Zernio if present
         var updatedMediaItems = new List<PostMediaItemDto>();
         if (request.MediaItems != null)
         {
-            var wasabiPrefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
             foreach (var mediaItem in request.MediaItems)
             {
                 if (string.IsNullOrEmpty(mediaItem.Url))
@@ -82,7 +81,8 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
                     throw new DomainException("invalid_media", "Media item URL is required.");
                 }
 
-                if (mediaItem.Url.StartsWith(wasabiPrefix, StringComparison.OrdinalIgnoreCase))
+                // Nếu URL đã là Zernio public URL thì dùng luôn
+                if (mediaItem.Url.Contains("zernio", StringComparison.OrdinalIgnoreCase))
                 {
                     updatedMediaItems.Add(mediaItem);
                     continue;
@@ -93,13 +93,20 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
 
                 var resolvedMimeType = GetMimeType(mediaItem.Filename ?? mediaItem.Url ?? "file", mediaItem.MimeType);
 
-                var storageResult = await _storageService.SaveAsync(
-                    stream,
+                var presignResponse = await _zernioClient.GetMediaPresignedUrlAsync(
                     mediaItem.Filename ?? "file",
-                    resolvedMimeType);
+                    resolvedMimeType,
+                    cancellationToken);
+
+                // Upload stream lên Zernio presigned URL
+                await _zernioClient.UploadMediaToZernioAsync(
+                    presignResponse.UploadUrl,
+                    stream,
+                    resolvedMimeType,
+                    cancellationToken);
 
                 updatedMediaItems.Add(new PostMediaItemDto(
-                    Url: storageResult.PublicUrl,
+                    Url: presignResponse.PublicUrl,
                     Type: mediaItem.Type,
                     Filename: mediaItem.Filename,
                     MimeType: resolvedMimeType));

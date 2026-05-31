@@ -78,7 +78,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             {
                 // Nếu URL đã là Zernio public URL thì dùng luôn
                 if (!string.IsNullOrEmpty(mediaItem.Url) &&
-                    mediaItem.Url.Contains("zernio.com", StringComparison.OrdinalIgnoreCase))
+                    mediaItem.Url.Contains("zernio", StringComparison.OrdinalIgnoreCase))
                 {
                     updatedMediaItems.Add(mediaItem);
                     continue;

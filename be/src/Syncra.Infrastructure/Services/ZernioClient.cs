@@ -1061,13 +1061,40 @@ public sealed class ZernioClient : IZernioClient
 
     private object ToSdkUpdatePostRequest(ZernioCreatePostRequest request)
     {
+        var platforms = request.Platforms.Select(p =>
+        {
+            var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
+            return new
+            {
+                platform = p.Platform,
+                accountId = p.ZernioAccountId,
+                customContent = platformContent?.Caption,
+                platformSpecificData = MapPlatformSpecificData(p.Platform, request)
+            };
+        }).ToList();
+
+        var mediaItems = request.MediaItems?
+            .Select(m => new
+            {
+                type = m.Type.ToLowerInvariant(),
+                url = m.Url,
+                filename = m.Filename,
+                mimeType = m.MimeType
+            })
+            .ToList();
+
         var tiktokSettings = BuildSdkTikTokSettings(request);
         var facebookSettings = BuildSdkFacebookSettings(request);
 
         return new
         {
+            title = request.Title ?? string.Empty,
             content = request.Content ?? string.Empty,
+            mediaItems = mediaItems,
+            platforms = platforms,
             scheduledFor = request.ScheduledForUtc,
+            publishNow = request.PublishNow,
+            isDraft = request.IsDraft ?? false,
             tiktokSettings = tiktokSettings,
             facebookSettings = facebookSettings
         };
