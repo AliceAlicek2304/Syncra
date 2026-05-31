@@ -281,6 +281,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [showPublishConfirmDialog, setShowPublishConfirmDialog] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitRef = useRef(false)
@@ -483,7 +484,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const submitPost = async (isDraft: boolean): Promise<boolean> => {
     if (!activeWorkspace) return false
-
+    setIsSubmitting(true)
     try {
       const wsId = activeWorkspace.id
 
@@ -581,6 +582,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
       console.error(err)
       onToast?.({ message: 'Failed to save or schedule post. Please try again.', type: 'error' })
       return false
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -737,6 +740,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       timezone,
       mainContent,
       platformSpecificData,
+      isSubmitting,
     },
     refs,
     actions: {
@@ -744,6 +748,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setShowPreview, setShowEmoji,
       setCreateAnother, setScheduleMode, setScheduleTime, setShowUnsavedDialog,
       setShowPublishConfirmDialog,
+      setIsSubmitting,
       setPublishingTab,
       setActiveCaption, reset, handleAttemptClose, handleDraft,
       handleSchedule, confirmSchedule, togglePlatform,

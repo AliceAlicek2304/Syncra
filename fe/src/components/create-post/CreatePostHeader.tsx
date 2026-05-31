@@ -49,6 +49,7 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
               type="button" 
               className={styles.reuseBtn} 
               onClick={() => setShowReuseModal(true)}
+              disabled={state.isSubmitting}
             >
               Reuse
             </button>
@@ -57,6 +58,7 @@ export default function CreatePostHeader({ state, actions }: CreatePostHeaderPro
             type="button" 
             className={styles.closeBtn} 
             onClick={actions.handleAttemptClose}
+            disabled={state.isSubmitting}
             aria-label="Close dialog"
           >
             <X size={18} />

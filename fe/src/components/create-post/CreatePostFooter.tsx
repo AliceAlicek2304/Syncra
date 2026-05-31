@@ -64,6 +64,7 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
         type="button" 
         className={styles.cancelBtn} 
         onClick={actions.handleAttemptClose}
+        disabled={state.isSubmitting}
       >
         cancel
       </button>
@@ -72,9 +73,16 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
         type="button" 
         className={styles.submitBtn} 
         onClick={handlePrimaryAction} 
-        disabled={isSubmitDisabled}
+        disabled={isSubmitDisabled || state.isSubmitting}
       >
-        {getPrimaryButtonLabel()}
+        {state.isSubmitting ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+            <div className={styles.buttonSpinner} />
+            <span>saving...</span>
+          </div>
+        ) : (
+          getPrimaryButtonLabel()
+        )}
       </button>
     </div>
   )

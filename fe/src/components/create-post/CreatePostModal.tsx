@@ -108,6 +108,7 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                       className={styles.cancelBtn}
                       style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => actions.setShowPublishConfirmDialog(false)}
+                      disabled={state.isSubmitting}
                     >
                       Cancel
                     </button>
@@ -117,8 +118,16 @@ export default function CreatePostModal(props: CreatePostModalProps) {
                       className={styles.submitBtn}
                       style={{ fontSize: 13, padding: '8px 16px', flex: 1, borderRadius: '8px', textTransform: 'none' }}
                       onClick={() => actions.confirmSchedule()}
+                      disabled={state.isSubmitting}
                     >
-                      {state.scheduleMode ? 'Schedule' : 'Publish'}
+                      {state.isSubmitting ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                          <div className={styles.buttonSpinner} />
+                          <span>saving...</span>
+                        </div>
+                      ) : (
+                        state.scheduleMode ? 'Schedule' : 'Publish'
+                      )}
                     </motion.button>
                   </div>
                 </div>
