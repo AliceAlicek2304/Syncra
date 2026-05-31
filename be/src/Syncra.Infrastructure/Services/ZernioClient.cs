@@ -23,6 +23,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly MessagesApi _messagesApi;
     private readonly CommentsApi _commentsApi;
     private readonly ReviewsApi _reviewsApi;
+    private readonly MediaApi _mediaApi;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ZernioClient> _logger;
     private readonly ZernioOptions _options;
@@ -45,6 +46,7 @@ public sealed class ZernioClient : IZernioClient
         _messagesApi = new MessagesApi(config);
         _commentsApi = new CommentsApi(config);
         _reviewsApi = new ReviewsApi(config);
+        _mediaApi = new MediaApi(config);
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _options = options.Value;
@@ -628,37 +630,18 @@ public sealed class ZernioClient : IZernioClient
         if (string.IsNullOrWhiteSpace(mimeType)) throw new ArgumentException("Mime type cannot be null or empty.", nameof(mimeType));
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
 
-        _logger.LogInformation("Requesting presigned upload URL from Zernio for file: {FileName}, Type: {MimeType}", fileName, mimeType);
-
-        var config = _postsApi.Configuration;
-        var baseUrl = config.BasePath.TrimEnd('/');
-        var presignRequestUrl = $"{baseUrl}/v1/media/presign";
-
-        var presignPayload = new ZernioPresignRequest(fileName, mimeType);
-
-        using var presignHttpRequest = new HttpRequestMessage(HttpMethod.Post, presignRequestUrl)
+        Zernio.Model.GetMediaPresignedUrl200Response? presignResult = null;
+        try
         {
-            Content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(presignPayload, _jsonOptions),
-                System.Text.Encoding.UTF8,
-                "application/json")
-        };
-        presignHttpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
-
-        using var httpClient = _httpClientFactory.CreateClient();
-        httpClient.Timeout = TimeSpan.FromSeconds(30);
-        var presignHttpResponse = await httpClient.SendAsync(presignHttpRequest, cancellationToken);
-
-        if (!presignHttpResponse.IsSuccessStatusCode)
-        {
-            var errorResponse = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to get presigned URL from Zernio. Status: {StatusCode}, Error: {Error}",
-                presignHttpResponse.StatusCode, errorResponse);
-            throw new DomainException("zernio_presign_error", $"Zernio presign request failed. Status: {presignHttpResponse.StatusCode}. Error: {errorResponse}");
+            var contentType = MapMimeTypeToContentTypeEnum(mimeType);
+            var presignRequest = new Zernio.Model.GetMediaPresignedUrlRequest(fileName, contentType);
+            presignResult = await _mediaApi.GetMediaPresignedUrlAsync(presignRequest, cancellationToken: cancellationToken);
         }
-
-        var responseContent = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
-        var presignResult = System.Text.Json.JsonSerializer.Deserialize<ZernioPresignResponse>(responseContent, _jsonOptions);
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Failed to get presigned URL from Zernio. ErrorCode: {ErrorCode}", ex.ErrorCode);
+            throw new DomainException("zernio_presign_error", $"Zernio presign request failed. Status: {ex.ErrorCode}. Error: {ex.Message}", ex);
+        }
 
         if (presignResult == null || string.IsNullOrEmpty(presignResult.UploadUrl) || string.IsNullOrEmpty(presignResult.PublicUrl))
         {
@@ -2212,6 +2195,27 @@ public sealed class ZernioClient : IZernioClient
             response.Account.Platform.ToString(),
             response.Account.DisplayName,
             response.Account.ProfilePicture);
+    }
+
+    private static GetMediaPresignedUrlRequest.ContentTypeEnum MapMimeTypeToContentTypeEnum(string mimeType)
+    {
+        return mimeType.ToLowerInvariant() switch
+        {
+            "image/jpeg" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageJpeg,
+            "image/jpg" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageJpg,
+            "image/png" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImagePng,
+            "image/webp" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageWebp,
+            "image/gif" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageGif,
+            "video/mp4" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoMp4,
+            "video/mpeg" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoMpeg,
+            "video/quicktime" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoQuicktime,
+            "video/avi" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoAvi,
+            "video/x-msvideo" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoXMsvideo,
+            "video/webm" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoWebm,
+            "video/x-m4v" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoXM4v,
+            "application/pdf" => GetMediaPresignedUrlRequest.ContentTypeEnum.ApplicationPdf,
+            _ => throw new DomainException("unsupported_mime_type", $"MIME type '{mimeType}' is not supported by Zernio.")
+        };
     }
 
     private sealed class ZernioRawPostListResponse
