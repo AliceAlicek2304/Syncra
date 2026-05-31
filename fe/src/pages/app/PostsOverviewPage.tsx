@@ -378,17 +378,7 @@ export default function PostsOverviewPage() {
   const handleDeleteSinglePost = async (post: Post) => {
     if (!workspaceId) return
     try {
-      if (post.zernioPostId && post.status === 'published') {
-        const postPlatforms = Array.from(new Set(
-          post.platforms?.length 
-            ? post.platforms 
-            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
-        ));
-        for (const platform of postPlatforms) {
-          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, true);
-        }
-        showSuccess('Post unpublished successfully');
-      } else if (post.zernioPostId) {
+      if (post.zernioPostId) {
         await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
         showSuccess('Post deleted successfully')
       } else {
