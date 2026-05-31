@@ -435,6 +435,8 @@ export default function ConnectionsPage() {
   const [disconnectPreCheckLoad, setDisconnectPreCheckLoad] = useState<string | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<typeof workspaces[0] | null>(null);
   const [expandedPlatformId, setExpandedPlatformId] = useState<string | null>(null);
+  const [quickCreatePlatformId, setQuickCreatePlatformId] = useState<string | null>(null);
+  const [quickCreateName, setQuickCreateName] = useState<string>('');
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -501,10 +503,21 @@ export default function ConnectionsPage() {
     }
   }, [activeWorkspace, workspaces, isNewConnectionOpen]);
 
-  // Reset expanded platform when drawer closes or workspace changes
+  // Reset expanded platform and quick create input when drawer closes or workspace changes
   useEffect(() => {
     setExpandedPlatformId(null);
+    setQuickCreatePlatformId(null);
+    setQuickCreateName('');
   }, [isNewConnectionOpen, selectedWorkspaceForConnection]);
+
+  // Set workspace filter from localStorage if returning from a quick create connect redirect
+  useEffect(() => {
+    const pendingWsId = localStorage.getItem('filter_workspace_after_connect');
+    if (pendingWsId) {
+      setSelectedWorkspaceFilter(pendingWsId);
+      localStorage.removeItem('filter_workspace_after_connect');
+    }
+  }, []);
 
   // Fetch connections for selected workspace or all workspaces
   const { data: connections = [], isLoading: isConnectionsLoading } = useQuery<
@@ -526,7 +539,55 @@ export default function ConnectionsPage() {
     },
     staleTime: 30_000,
     enabled: workspaces.length > 0,
+  });  // Helper to choose a random color avoiding existing workspace colors if possible
+  const getRandomWorkspaceColor = (): string => {
+    const defaultPalette = ['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'];
+    const usedColors = new Set(workspaces.map(w => w.color?.toLowerCase()).filter(Boolean));
+    const availableColors = defaultPalette.filter(c => !usedColors.has(c.toLowerCase()));
+    const selectFrom = availableColors.length > 0 ? availableColors : defaultPalette;
+    return selectFrom[Math.floor(Math.random() * selectFrom.length)];
+  };
+
+  // Mutation for inline quick workspace creation
+  const quickCreateWorkspaceMutation = useMutation({
+    mutationFn: async (vars: { name: string; color: string; platformId: string }) => {
+      return workspacesApi.createWorkspace({
+        name: vars.name,
+        color: vars.color,
+      });
+    },
+    onSuccess: (newWorkspace, variables) => {
+      showSuccess(`Workspace "${newWorkspace.name}" created successfully`);
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      
+      // Store in localStorage to auto filter once return from redirect
+      localStorage.setItem('filter_workspace_after_connect', newWorkspace.id);
+      
+      // Reset inline inputs
+      setQuickCreatePlatformId(null);
+      setQuickCreateName('');
+      
+      // Redirect to OAuth
+      void handleConnectPlatform(variables.platformId, newWorkspace.id);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to create workspace';
+      showError(msg);
+    }
   });
+
+  const handleQuickCreateWorkspace = (platformId: string) => {
+    if (!quickCreateName.trim()) {
+      showError('Please enter a workspace name');
+      return;
+    }
+    const color = getRandomWorkspaceColor();
+    quickCreateWorkspaceMutation.mutate({
+      name: quickCreateName.trim(),
+      color,
+      platformId
+    });
+  };
 
   // Create Workspace Mutation
   const createWorkspaceMutation = useMutation({
@@ -1497,14 +1558,52 @@ export default function ConnectionsPage() {
                                           </button>
                                         ))}
                                         
-                                        <button
-                                          type="button"
-                                          className={styles.quickCreateWorkspaceBtn}
-                                          onClick={() => setIsNewWorkspaceOpen(true)}
-                                        >
-                                          <Plus size={14} className={styles.quickCreatePlus} />
-                                          <span>New workspace...</span>
-                                        </button>
+                                        {quickCreatePlatformId === platform.id ? (
+                                          <div className={styles.quickCreateInputContainer}>
+                                            <Plus size={14} className={styles.quickCreatePlusActive} />
+                                            <input
+                                              type="text"
+                                              className={styles.quickCreateInput}
+                                              placeholder="New workspace..."
+                                              value={quickCreateName}
+                                              onChange={(e) => setQuickCreateName(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                  handleQuickCreateWorkspace(platform.id);
+                                                } else if (e.key === 'Escape') {
+                                                  setQuickCreatePlatformId(null);
+                                                }
+                                              }}
+                                              autoFocus
+                                            />
+                                            {quickCreateName.trim() && (
+                                              <button
+                                                type="button"
+                                                className={styles.quickCreateSubmitBtn}
+                                                onClick={() => handleQuickCreateWorkspace(platform.id)}
+                                                disabled={quickCreateWorkspaceMutation.isPending}
+                                              >
+                                                {quickCreateWorkspaceMutation.isPending ? (
+                                                  <Loader2 size={14} className={styles.btnSpinner} />
+                                                ) : (
+                                                  <ArrowRight size={14} />
+                                                )}
+                                              </button>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            className={styles.quickCreateWorkspaceBtn}
+                                            onClick={() => {
+                                              setQuickCreatePlatformId(platform.id);
+                                              setQuickCreateName('');
+                                            }}
+                                          >
+                                            <Plus size={14} className={styles.quickCreatePlus} />
+                                            <span>New workspace...</span>
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   )}
