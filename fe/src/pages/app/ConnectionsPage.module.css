@@ -1933,12 +1933,19 @@
   flex: 1;
   border: none;
   background-color: transparent;
-  outline: none;
+  outline: none !important;
   font-size: 12px;
   font-weight: 500;
   color: #201515;
   padding: 0;
   margin: 0;
+}
+
+.quickCreateInput:focus,
+.quickCreateInput:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .quickCreateInput::placeholder {
