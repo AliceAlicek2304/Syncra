@@ -444,8 +444,9 @@ export default function PostsOverviewPage() {
             : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
         ));
         for (const platform of postPlatforms) {
-          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, true);
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
         }
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId);
         showSuccess('Post deleted from platforms and Syncra')
       } else {
         await postsApi.deletePost(workspaceId, post.id)
