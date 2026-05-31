@@ -63,6 +63,11 @@ export default function PostsOverviewPage() {
   const [selectedPostDetails, setSelectedPostDetails] = useState<Post | null>(null)
   const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
   const [deleteConfirmPost, setDeleteConfirmPost] = useState<Post | null>(null)
+  const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false)
+  const [isDeletingSingle, setIsDeletingSingle] = useState<boolean>(false)
+  const [isDeletingSyncraOnly, setIsDeletingSyncraOnly] = useState<boolean>(false)
+  const [isDeletingPlatformOnly, setIsDeletingPlatformOnly] = useState<boolean>(false)
+  const [isDeletingPlatformAndSyncra, setIsDeletingPlatformAndSyncra] = useState<boolean>(false)
   const menuRef = useRef<HTMLDivElement>(null)
   
   // ─── Filter & View States ───
@@ -323,7 +328,7 @@ export default function PostsOverviewPage() {
 
   const handleDeleteSelected = async () => {
     if (selectedPostIds.length === 0) return
-    
+    setIsDeletingSelected(true)
     try {
       const apiIds = selectedPostIds.filter(id => !id.startsWith('csv-'))
       const csvIds = selectedPostIds.filter(id => id.startsWith('csv-'))
@@ -372,11 +377,14 @@ export default function PostsOverviewPage() {
       }
     } catch (err) {
       console.error(err)
+    } finally {
+      setIsDeletingSelected(false)
     }
   }
 
   const handleDeleteSinglePost = async (post: Post) => {
     if (!workspaceId) return
+    setIsDeletingSingle(true)
     try {
       if (post.zernioPostId) {
         await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
@@ -390,11 +398,14 @@ export default function PostsOverviewPage() {
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
     } catch (err) {
       showError('Failed to delete post')
+    } finally {
+      setIsDeletingSingle(false)
     }
   }
 
   const handleDeleteSyncraOnly = async (post: Post) => {
     if (!workspaceId) return
+    setIsDeletingSyncraOnly(true)
     try {
       if (post.zernioPostId) {
         await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
@@ -407,11 +418,14 @@ export default function PostsOverviewPage() {
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
     } catch (err) {
       showError('Failed to delete post')
+    } finally {
+      setIsDeletingSyncraOnly(false)
     }
   }
 
   const handleDeletePlatformOnly = async (post: Post) => {
     if (!workspaceId) return
+    setIsDeletingPlatformOnly(true)
     try {
       if (post.zernioPostId) {
         const postPlatforms = Array.from(new Set(
@@ -431,11 +445,14 @@ export default function PostsOverviewPage() {
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
     } catch (err) {
       showError('Failed to unpublish post')
+    } finally {
+      setIsDeletingPlatformOnly(false)
     }
   }
 
   const handleDeletePlatformAndSyncra = async (post: Post) => {
     if (!workspaceId) return
+    setIsDeletingPlatformAndSyncra(true)
     try {
       if (post.zernioPostId) {
         const postPlatforms = Array.from(new Set(
@@ -457,6 +474,8 @@ export default function PostsOverviewPage() {
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
     } catch (err) {
       showError('Failed to delete post')
+    } finally {
+      setIsDeletingPlatformAndSyncra(false)
     }
   }
 
@@ -1050,9 +1069,14 @@ export default function PostsOverviewPage() {
                   type="button" 
                   className={styles.deleteSelectedBtn} 
                   onClick={handleDeleteSelected}
+                  disabled={isDeletingSelected}
                 >
-                  <Trash2 size={16} />
-                  <span>Delete</span>
+                  {isDeletingSelected ? (
+                    <div className={styles.buttonSpinner} />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                  <span>{isDeletingSelected ? 'Deleting...' : 'Delete'}</span>
                 </button>
               </div>
             </div>
@@ -1578,15 +1602,17 @@ export default function PostsOverviewPage() {
           const platformsText = postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
           const unsupportedPlatforms = postPlatforms.filter(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
 
+          const isAnyDeleting = isDeletingSyncraOnly || isDeletingPlatformOnly || isDeletingPlatformAndSyncra;
+
           return deleteConfirmPost.status === 'published' ? (
-            <div className={styles.modalBackdrop} onClick={() => setDeleteConfirmPost(null)}>
+            <div className={styles.modalBackdrop} onClick={() => !isAnyDeleting && setDeleteConfirmPost(null)}>
               <div className={styles.publishedDeleteModal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.publishedDeleteHeader}>
                   <div className={styles.publishedDeleteTitleGroup}>
                     <Trash2 size={20} className={styles.publishedDeleteIcon} />
                     <h2>Delete post</h2>
                   </div>
-                  <button onClick={() => setDeleteConfirmPost(null)} className={styles.closeModalBtn}>
+                  <button onClick={() => !isAnyDeleting && setDeleteConfirmPost(null)} disabled={isAnyDeleting} className={styles.closeModalBtn}>
                     <X size={20} />
                   </button>
                 </div>
@@ -1599,11 +1625,16 @@ export default function PostsOverviewPage() {
                   {/* Option 1: Delete from Syncra only */}
                   <button 
                     type="button" 
-                    className={styles.deleteOptionCard}
-                    onClick={() => handleDeleteSyncraOnly(deleteConfirmPost)}
+                    className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !isAnyDeleting && handleDeleteSyncraOnly(deleteConfirmPost)}
+                    disabled={isAnyDeleting}
                   >
                     <div className={styles.optionIconSquare}>
-                      <Trash2 size={20} />
+                      {isDeletingSyncraOnly ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Trash2 size={20} />
+                      )}
                     </div>
                     <div className={styles.optionTextStack}>
                       <span className={styles.optionTitle}>Delete from Syncra only</span>
@@ -1616,12 +1647,16 @@ export default function PostsOverviewPage() {
                   {/* Option 2: Delete from platform only */}
                   <button 
                     type="button" 
-                    className={`${styles.deleteOptionCard} ${hasUnsupported ? styles.deleteOptionCardDisabled : ''}`}
-                    onClick={() => !hasUnsupported && handleDeletePlatformOnly(deleteConfirmPost)}
-                    disabled={hasUnsupported}
+                    className={`${styles.deleteOptionCard} ${hasUnsupported || isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !hasUnsupported && !isAnyDeleting && handleDeletePlatformOnly(deleteConfirmPost)}
+                    disabled={hasUnsupported || isAnyDeleting}
                   >
                     <div className={styles.optionIconSquare}>
-                      <Globe size={20} />
+                      {isDeletingPlatformOnly ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Globe size={20} />
+                      )}
                     </div>
                     <div className={styles.optionTextStack}>
                       <span className={styles.optionTitle}>Delete from platform only</span>
@@ -1642,11 +1677,16 @@ export default function PostsOverviewPage() {
                   {/* Option 3: Delete from platform and Syncra */}
                   <button 
                     type="button" 
-                    className={styles.deleteOptionCard}
-                    onClick={() => handleDeletePlatformAndSyncra(deleteConfirmPost)}
+                    className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !isAnyDeleting && handleDeletePlatformAndSyncra(deleteConfirmPost)}
+                    disabled={isAnyDeleting}
                   >
                     <div className={styles.optionIconSquare}>
-                      <Globe size={20} />
+                      {isDeletingPlatformAndSyncra ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Globe size={20} />
+                      )}
                     </div>
                     <div className={styles.optionTextStack}>
                       <span className={styles.optionTitle}>Delete from platform and Syncra</span>
@@ -1674,7 +1714,7 @@ export default function PostsOverviewPage() {
               </div>
             </div>
           ) : (
-            <div className={styles.modalBackdrop} onClick={() => setDeleteConfirmPost(null)}>
+            <div className={styles.modalBackdrop} onClick={() => !isDeletingSingle && setDeleteConfirmPost(null)}>
               <div className={styles.deleteConfirmModal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.deleteConfirmHeader}>
                   <Trash2 size={18} />
@@ -1688,6 +1728,7 @@ export default function PostsOverviewPage() {
                     type="button"
                     className={styles.deleteConfirmCancelBtn}
                     onClick={() => setDeleteConfirmPost(null)}
+                    disabled={isDeletingSingle}
                   >
                     Cancel
                   </button>
@@ -1695,8 +1736,16 @@ export default function PostsOverviewPage() {
                     type="button"
                     className={styles.deleteConfirmDeleteBtn}
                     onClick={() => handleDeleteSinglePost(deleteConfirmPost)}
+                    disabled={isDeletingSingle}
                   >
-                    Delete
+                    {isDeletingSingle ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className={styles.buttonSpinner} />
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      'Delete'
+                    )}
                   </button>
                 </div>
               </div>
