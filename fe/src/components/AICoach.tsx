@@ -8,10 +8,10 @@ import { useWorkspace } from '../context/WorkspaceContext'
 
 const FALLBACK_TIPS = [{
   id: 'fallback-1',
-  title: 'AI Coach Coming Soon',
-  text: 'Your personalized content trends and recommendations will appear here once our AI has analyzed your posting patterns.',
+  title: 'AI Coach sap ra mat',
+  text: 'Go y ve xu huong va noi dung se xuat hien sau khi AI hoc du thoi quen dang bai cua ban.',
   category: 'trend' as const,
-  action: 'Generate Ideas',
+  action: 'Tao y tuong',
   ideas: [] as ApiGeneratedIdea[]
 }]
 
@@ -135,7 +135,7 @@ export default function AICoach() {
 
         {/* Expanded Panel */}
         {isOpen && (
-          <div className={`glass-card ${styles.panel}`}>
+          <div className={styles.panel}>
             <div className={styles.panelHeader}>
               <div className={styles.panelTitle}>
                 <Sparkles size={16} className={styles.zapIcon} />

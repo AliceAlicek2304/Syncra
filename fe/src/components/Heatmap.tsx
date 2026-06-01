@@ -60,8 +60,8 @@ export default function Heatmap({ slots = [] }: HeatmapProps) {
                 const intensity = maxScore > 0 ? Math.min(1, Math.max(0, score / maxScore)) : 0
                 const background =
                   intensity <= 0
-                    ? 'rgba(255,255,255,0.03)'
-                    : `rgba(139, 92, 246, ${0.12 + intensity * 0.58})`
+                    ? 'rgba(255, 241, 231, 0.45)'
+                    : `rgba(255, 79, 0, ${0.12 + intensity * 0.58})`
 
                 return (
                   <button
@@ -70,7 +70,7 @@ export default function Heatmap({ slots = [] }: HeatmapProps) {
                     className={styles.cell}
                     style={{
                       background,
-                      boxShadow: intensity >= 0.75 ? '0 0 0 1px var(--border-glow)' : 'none',
+                      boxShadow: intensity >= 0.75 ? '0 0 0 1px rgba(255, 79, 0, 0.35)' : 'none',
                     }}
                     onMouseEnter={() => setHoveredCell({ day: dayIndex, hour, score })}
                     onMouseLeave={() => setHoveredCell(null)}

@@ -15,6 +15,28 @@ vi.mock('../../hooks/useAnalyticsSummary', () => ({
   useAnalyticsSummary: vi.fn(),
 }))
 
+vi.mock('../../api/posts', () => ({
+  postsApi: {
+    getPosts: vi.fn().mockResolvedValue({
+      items: [],
+      pagination: { page: 1, pageSize: 8, totalItems: 0, totalPages: 0 },
+    }),
+  },
+}))
+
+vi.mock('../../api/analytics', () => ({
+  analyticsApi: {
+    getPostAnalytics: vi.fn().mockResolvedValue({
+      impressions: 0,
+      engagements: 0,
+      clicks: 0,
+      views: 0,
+      engagementRate: 0,
+      isSyncPending: false,
+    }),
+  },
+}))
+
 async function mockHook(overrides: Record<string, unknown>) {
   const mod = await import('../../hooks/useAnalyticsSummary')
   const fn = mod.useAnalyticsSummary as Mock

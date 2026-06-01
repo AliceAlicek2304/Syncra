@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
-import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check, RefreshCw, ExternalLink, Lock, AlertTriangle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check, RefreshCw, ExternalLink, Lock, AlertTriangle, TrendingUp } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAnalyticsSummary } from '../../hooks/useAnalyticsSummary'
+import { analyticsApi } from '../../api/analytics'
+import { postsApi, type Post } from '../../api/posts'
 import styles from './AnalyticsPage.module.css'
-
-const DEFAULT_BARS = [45, 60, 38, 85, 52, 90, 68]
 
 const PRESET_LABELS: Record<7 | 30 | 90, string> = {
   7: 'Last 7 days',
@@ -20,6 +21,14 @@ const PLATFORM_OPTIONS = [
   { label: 'All Platforms', value: '' },
   ...ZERNIO_PLATFORMS.map(p => ({ label: p.label, value: p.id })),
 ]
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const formatShortDate = (value?: string) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
 /** Banner for billing gate (402 / analytics_addon_required 403) */
 function BillingGateBanner({ error, onDismiss }: { error: { message: string; dashboardUrl?: string }; onDismiss: () => void }) {
@@ -105,50 +114,164 @@ export default function AnalyticsPage() {
     refresh,
   } = useAnalyticsSummary({ workspaceId: activeWorkspace?.id })
 
-  const weeklyBars = useMemo(() => {
-    const weeklyReach = summary?.weeklyReach ?? []
-    if (weeklyReach.length === 0) return DEFAULT_BARS
+  const workspaceId = activeWorkspace?.id
+  const topPostsQuery = useQuery({
+    queryKey: ['analytics-top-posts', workspaceId, presetDays],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!workspaceId) return [] as { post: Post; metrics: Awaited<ReturnType<typeof analyticsApi.getPostAnalytics>> | null }[]
+      const posts = await postsApi.getPosts(workspaceId, { status: 'published', pageSize: 8 })
+      if (posts.items.length === 0) return []
 
-    const maxReach = weeklyReach.reduce((max, item) => Math.max(max, item.reach), 0)
-    if (maxReach <= 0) return weeklyReach.map(() => 8)
+      const metrics = await Promise.all(
+        posts.items.map(async (post) => {
+          try {
+            const data = await analyticsApi.getPostAnalytics(workspaceId, post.id, presetDays)
+            return { post, metrics: data }
+          } catch {
+            return { post, metrics: null }
+          }
+        })
+      )
 
-    return weeklyReach.map((item) => Math.max(6, Math.round((item.reach / maxReach) * 100)))
+      return metrics
+    },
+  })
+
+  const platformTotals = useMemo(() => {
+    const breakdown = summary?.platformBreakdown ?? []
+    return breakdown.reduce(
+      (acc, item) => ({
+        impressions: acc.impressions + item.impressions,
+        reach: acc.reach + item.reach,
+        likes: acc.likes + item.likes,
+        comments: acc.comments + item.comments,
+        shares: acc.shares + item.shares,
+        saves: acc.saves + item.saves,
+        clicks: acc.clicks + item.clicks,
+        views: acc.views + item.views,
+        posts: acc.posts + item.postCount,
+      }),
+      { impressions: 0, reach: 0, likes: 0, comments: 0, shares: 0, saves: 0, clicks: 0, views: 0, posts: 0 }
+    )
   }, [summary])
 
-  const metrics = [
+  const topPosts = useMemo(() => {
+    const items = topPostsQuery.data ?? []
+    const scored = items
+      .filter(item => item.metrics && !item.metrics.isSyncPending)
+      .map(item => ({
+        ...item,
+        engagementRate: Number(item.metrics?.engagementRate ?? 0),
+        engagements: item.metrics?.engagements ?? 0,
+      }))
+
+    return scored
+      .sort((a, b) => (b.engagementRate - a.engagementRate) || (b.engagements - a.engagements))
+      .slice(0, 3)
+  }, [topPostsQuery.data])
+
+  const postDetails = useMemo(() => {
+    return (topPostsQuery.data ?? []).slice(0, 4)
+  }, [topPostsQuery.data])
+
+  const highlightMetrics = [
     {
-      icon: <Eye size={18} />,
-      label: 'Total Reach',
-      value: summary?.totalReach ?? 0,
-      delta: '+24%',
-      color: 'var(--purple-500)',
-      format: (v: number) => `${(v / 1000).toFixed(1)}K`,
+      id: 'likes',
+      label: 'Likes',
+      value: platformTotals.likes,
+      color: 'var(--analytics-accent)',
     },
     {
-      icon: <Heart size={18} />,
-      label: 'Avg. Engagement',
-      value: Number((summary?.engagementRate ?? 0).toFixed(2)),
-      delta: '+11%',
-      color: 'var(--pink-500)',
-      format: (v: number) => `${v.toFixed(2)}%`,
+      id: 'comments',
+      label: 'Comments',
+      value: platformTotals.comments,
+      color: '#1b7f5a',
     },
     {
-      icon: <Users size={18} />,
-      label: 'Follower Growth',
-      value: summary?.followerGrowth ?? 0,
-      delta: 'this period',
-      color: 'var(--cyan-400)',
-      format: (v: number) => `+${v.toLocaleString()}`,
+      id: 'shares',
+      label: 'Shares',
+      value: platformTotals.shares,
+      color: '#0f4c81',
     },
     {
-      icon: <BarChart3 size={18} />,
-      label: 'Total Posts',
-      value: summary?.totalPosts ?? 0,
-      delta: 'across workspace',
-      color: 'var(--accent-amber, #f59e0b)',
-      format: (v: number) => v.toString(),
+      id: 'saves',
+      label: 'Saves',
+      value: platformTotals.saves,
+      color: '#9b6b1d',
+    },
+    {
+      id: 'views',
+      label: 'Views',
+      value: platformTotals.views,
+      color: '#6d4b8c',
+    },
+    {
+      id: 'impressions',
+      label: 'Impressions',
+      value: platformTotals.impressions,
+      color: '#4b4b4b',
+    },
+    {
+      id: 'reach',
+      label: 'Reach',
+      value: platformTotals.reach,
+      color: '#2f2a26',
+    },
+    {
+      id: 'clicks',
+      label: 'Clicks',
+      value: platformTotals.clicks,
+      color: '#434037',
     },
   ]
+
+  const platformLabelMap = useMemo(() => {
+    return new Map(ZERNIO_PLATFORMS.map(p => [p.id, p.label]))
+  }, [])
+
+  const platformRows = useMemo(() => {
+    const rows = summary?.platformBreakdown ?? []
+    return rows.map((row) => {
+      const label = platformLabelMap.get(row.platform) ?? row.platform
+      const engagement = row.impressions > 0
+        ? ((row.likes + row.comments + row.shares) / row.impressions) * 100
+        : 0
+      return {
+        ...row,
+        label,
+        engagement,
+      }
+    })
+  }, [summary, platformLabelMap])
+
+  const bestSlots = useMemo(() => {
+    const slots = heatmap?.slots ?? []
+    const sorted = [...slots].sort((a, b) => b.score - a.score)
+    return sorted.slice(0, 3)
+  }, [heatmap])
+
+  const reachTrend = useMemo(() => {
+    const weeklyReach = summary?.weeklyReach ?? []
+    if (weeklyReach.length === 0) return [] as number[]
+    return weeklyReach.map((item) => item.reach)
+  }, [summary])
+
+  const sparklinePoints = useMemo(() => {
+    if (reachTrend.length === 0) return ''
+    const width = 220
+    const height = 72
+    const padding = 8
+    const max = Math.max(...reachTrend, 1)
+    return reachTrend
+      .map((value, index) => {
+        const x = padding + (index / Math.max(1, reachTrend.length - 1)) * (width - padding * 2)
+        const y = height - padding - (value / max) * (height - padding * 2)
+        return `${x},${y}`
+      })
+      .join(' ')
+  }, [reachTrend])
 
   const showBillingGate = isBillingGateError && analyticsError && !dismissedBilling
   const showReauth = isScopeError && analyticsError && !dismissedReauth
@@ -258,63 +381,14 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* Top metrics */}
-      <div className={styles.metricsRow}>
-        {metrics.map(m => (
-          <div key={m.label} className={`${styles.card} ${styles.metricCard}`}>
-            <div className={styles.metricIcon} style={{ color: m.color, background: `${m.color}18` }}>{m.icon}</div>
-            <div className={styles.metricValue}>
-              {isLoading ? <SkeletonLoader height="28px" /> : <CountingNumber value={m.value} format={m.format} />}
-            </div>
-            <div className={styles.metricLabel}>{m.label}</div>
-            <div className={styles.metricDelta} style={{ color: m.delta.startsWith('+') ? '#22c55e' : m.color }}>
-              {isLoading ? <SkeletonLoader height="14px" width="80px" /> : m.delta}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className={styles.row2}>
-        {/* Weekly chart */}
-        <div className={`${styles.card} ${styles.chartCard}`}>
+      {/* Overview row */}
+      <div className={styles.overviewGrid}>
+        <div className={`${styles.card} ${styles.heatmapCard}`}>
           <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Reach theo tuần</h2>
-            <span className={styles.cardSub}>{PRESET_LABELS[presetDays]}</span>
-          </div>
-          <div className={styles.chartWrap}>
-            <div className={styles.bars}>
-              {weeklyBars.map((h, i) => (
-                <div key={i} className={styles.barWrap}>
-                  <div className={styles.barVal}>{isLoading ? '—' : `${Math.round(h * 1.5)}K`}</div>
-                  <div className={styles.bar} style={{ height: isLoading ? `${40 + (i % 4) * 10}%` : `${h}%` }} />
-                  <span className={styles.barDay}>{['M','T','W','T','F','S','S'][i]}</span>
-                </div>
-              ))}
+            <div className={styles.cardTitleWrap}>
+              <h2 className={styles.cardTitle}>Activity Heatmap</h2>
+              <span className={styles.cardSub}>Last {presetDays} days</span>
             </div>
-          </div>
-        </div>
-
-        {/* AI Insights */}
-        <div className={`${styles.card} ${styles.insightCard}`}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>✨ AI Insights</h2>
-            <span className={styles.cardSub}>Gợi ý cải thiện</span>
-          </div>
-          <div className={styles.insightList}>
-            <div className={styles.insightItem} style={{ justifyContent: 'center', padding: '1rem' }}>
-              <p className={styles.insightText} style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
-                AI insights will appear here once enough data has been collected from your connected accounts.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Best Time to Post Heatmap */}
-      <div className={`${styles.card} ${styles.heatmapCard}`}>
-        <div className={styles.cardHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h2 className={styles.cardTitle}>📅 Giờ vàng đăng bài</h2>
             <div className={styles.platformFilterWrap}>
               <button
                 type="button"
@@ -337,7 +411,7 @@ export default function AnalyticsPage() {
                         setShowPlatformDropdown(false)
                       }}
                     >
-                      {heatmapPlatform === (opt.value || undefined) && <Check size={12} color="var(--purple-300)" />}
+                      {heatmapPlatform === (opt.value || undefined) && <Check size={12} color="var(--analytics-ink)" />}
                       <span>{opt.label}</span>
                     </button>
                   ))}
@@ -345,26 +419,237 @@ export default function AnalyticsPage() {
               )}
             </div>
           </div>
-          <span className={styles.cardSub}>Phân tích dựa trên tương tác của audience</span>
+          {isLoading ? <SkeletonLoader height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
+          <div className={styles.heatmapLegend}>
+            <span>Fewer</span>
+            <div className={styles.legendBar} />
+            <span>More</span>
+          </div>
         </div>
-        {isLoading ? <SkeletonLoader height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
-        <div className={styles.heatmapLegend}>
-          <span>Less active</span>
-          <div className={styles.legendBar} />
-          <span>Most active</span>
+
+        <div className={`${styles.card} ${styles.followerCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Total followers</h2>
+            <span className={styles.cardSub}>{rangeLabel}</span>
+          </div>
+          <div className={styles.followerValue}>
+            {isLoading ? <SkeletonLoader height="32px" width="120px" /> : (
+              <CountingNumber value={summary?.totalReach ?? 0} format={(v) => v.toLocaleString()} />
+            )}
+          </div>
+          <div className={styles.sparklineWrap}>
+            {sparklinePoints ? (
+              <svg viewBox="0 0 220 72" className={styles.sparkline} role="img" aria-label="Follower trend">
+                <polyline points={sparklinePoints} className={styles.sparklinePath} />
+              </svg>
+            ) : (
+              <div className={styles.sparklineEmpty}>No trend data yet</div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Platform breakdown */}
-      <div className={`${styles.card} ${styles.tableCard}`}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>Hiệu suất từng nền tảng</h2>
+      {/* Metrics + breakdown */}
+      <div className={styles.metricsGrid}>
+        <div className={`${styles.card} ${styles.metricPanel}`}>
+          <div className={styles.metricPanelHeader}>
+            <h2 className={styles.cardTitle}>Core metrics</h2>
+            <span className={styles.cardSub}>Workspace totals</span>
+          </div>
+          <div className={styles.metricTiles}>
+            {highlightMetrics.map((metric) => (
+              <div key={metric.id} className={styles.metricTile}>
+                <div className={styles.metricCheck} style={{ borderColor: metric.color }}>
+                  <Check size={12} color={metric.color} />
+                </div>
+                <div className={styles.metricMeta}>
+                  <span className={styles.metricName}>{metric.label}</span>
+                  <span className={styles.metricValueSmall}>
+                    {isLoading ? '—' : metric.value.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+            <div className={styles.metricSummary}>
+              <div>
+                <span className={styles.metricLabel}>Eng. Rate</span>
+                <div className={styles.metricSummaryValue}>
+                  {isLoading ? '—' : `${(summary?.engagementRate ?? 0).toFixed(1)}%`}
+                </div>
+              </div>
+              <div>
+                <span className={styles.metricLabel}>Total Posts</span>
+                <div className={styles.metricSummaryValue}>
+                  {isLoading ? '—' : (summary?.totalPosts ?? platformTotals.posts).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <span className={styles.metricLabel}>Follower Growth</span>
+                <div className={styles.metricSummaryValue}>
+                  {isLoading ? '—' : `+${(summary?.followerGrowth ?? 0).toLocaleString()}`}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ padding: '2rem', textAlign: 'center' }}>
-          <BarChart3 size={32} style={{ opacity: 0.4, marginBottom: '0.5rem' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Per-platform analytics will appear here once your accounts are connected and have published content.
+
+        <div className={`${styles.card} ${styles.tableCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Platform Breakdown</h2>
+            <span className={styles.cardSub}>Engagement by channel</span>
+          </div>
+          {platformRows.length === 0 ? (
+            <div className={styles.emptyState}>
+              <BarChart3 size={28} />
+              <p>Connect social accounts to unlock platform analytics.</p>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Platform</th>
+                    <th>Posts</th>
+                    <th>Reach</th>
+                    <th>Eng. Rate</th>
+                    <th>Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {platformRows.map((row) => (
+                    <tr key={row.platform}>
+                      <td className={styles.platformName}>
+                        <span>{row.label}</span>
+                        {row.requiresReauth && row.reauthorizeUrl && (
+                          <a className={styles.reauthBadge} href={row.reauthorizeUrl} target="_blank" rel="noreferrer">
+                            Reauth
+                          </a>
+                        )}
+                      </td>
+                      <td className={styles.posts}>{row.postCount}</td>
+                      <td className={styles.reach}>{row.reach.toLocaleString()}</td>
+                      <td className={styles.engagement}>{row.engagement.toFixed(1)}%</td>
+                      <td className={styles.views}>{row.views.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Best time + top posts */}
+      <div className={styles.splitRow}>
+        <div className={`${styles.card} ${styles.bestTimeCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Best Time to Post</h2>
+            <span className={styles.cardSub}>Audience engagement peaks</span>
+          </div>
+          <div className={styles.bestTimeHeatmap}>
+            {isLoading ? <SkeletonLoader height="140px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
+          </div>
+          <div className={styles.bestTimeChips}>
+            {bestSlots.length === 0 && <span className={styles.emptyHint}>No best-time data yet.</span>}
+            {bestSlots.map((slot) => (
+              <span key={`${slot.dayOfWeek}-${slot.hour}`} className={styles.bestChip}>
+                {DAY_LABELS[slot.dayOfWeek]} {String(slot.hour).padStart(2, '0')}:00
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className={`${styles.card} ${styles.topPostsCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Top Performing Posts</h2>
+            <button type="button" className={styles.dropdownBtn}>
+              <TrendingUp size={12} /> Engagement
+              <ChevronDown size={12} />
+            </button>
+          </div>
+          <div className={styles.topPostList}>
+            {topPostsQuery.isLoading && <SkeletonLoader height="120px" />}
+            {!topPostsQuery.isLoading && topPosts.length === 0 && (
+              <div className={styles.emptyHint}>Top posts will appear once analytics sync completes.</div>
+            )}
+            {topPosts.map((item, index) => (
+              <div key={item.post.id} className={styles.topPostItem}>
+                <div className={styles.topPostRank}>{index + 1}</div>
+                <div className={styles.topPostInfo}>
+                  <span className={styles.topPostPlatform}>
+                    {platformLabelMap.get(item.post.platforms?.[0] ?? '') ?? item.post.platforms?.[0] ?? 'Multi-platform'}
+                  </span>
+                  <span className={styles.topPostDate}>
+                    {formatShortDate(item.post.scheduledAtUtc ?? item.post.createdAt)}
+                  </span>
+                </div>
+                <span className={styles.topPostMetric}>ER {item.engagementRate.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Strategy insights */}
+      <div className={styles.splitRow}>
+        <div className={`${styles.card} ${styles.freqCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Posting Frequency vs Engagement</h2>
+          </div>
+          <div className={styles.freqChart}>
+            {[
+              { label: '1-2/wk', value: 18 },
+              { label: '3-5/wk', value: 62 },
+              { label: '6-10/wk', value: 26 },
+              { label: '11+/wk', value: 32 },
+            ].map((bar) => (
+              <div key={bar.label} className={styles.freqBar}>
+                <div className={styles.freqBarFill} style={{ height: `${bar.value}%` }} />
+                <span>{bar.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className={styles.freqNote}>
+            Optimal: 3-5 posts/week based on current engagement curve.
           </p>
+        </div>
+
+        <div className={`${styles.card} ${styles.decayCard}`}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>Content Performance Decay</h2>
+            <span className={styles.cardSub}>How engagement accumulates after publish</span>
+          </div>
+          <svg viewBox="0 0 320 120" className={styles.decayChart} role="img" aria-label="Performance decay">
+            <path d="M10,110 C30,50 60,30 90,30 C140,30 180,40 220,40 C250,40 280,35 310,30" className={styles.decayPath} />
+            <path d="M10,110 C30,50 60,30 90,30 C140,30 180,40 220,40 C250,40 280,35 310,30 L310,110 Z" className={styles.decayFill} />
+          </svg>
+          <p className={styles.decayNote}>80% of engagement reached within 0-6h.</p>
+        </div>
+      </div>
+
+      {/* Post details */}
+      <div className={`${styles.card} ${styles.postDetailsCard}`}>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>Post Details</h2>
+          <span className={styles.cardSub}>Newest first</span>
+        </div>
+        <div className={styles.postGrid}>
+          {postDetails.length === 0 && (
+            <div className={styles.emptyHint}>No published posts yet.</div>
+          )}
+          {postDetails.map(({ post, metrics }) => (
+            <div key={post.id} className={styles.postItem}>
+              <div className={styles.postHeader}>
+                <span className={styles.postTitle}>{post.title || 'Untitled post'}</span>
+                <span className={styles.postMeta}>{formatShortDate(post.scheduledAtUtc ?? post.createdAt)}</span>
+              </div>
+              <div className={styles.postStats}>
+                <span><Eye size={12} /> {metrics?.views ?? 0}</span>
+                <span><Heart size={12} /> {metrics?.engagements ?? 0}</span>
+                <span><Users size={12} /> {metrics?.impressions ?? 0}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

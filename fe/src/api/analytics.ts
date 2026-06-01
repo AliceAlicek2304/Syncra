@@ -7,12 +7,28 @@ export interface WeeklyReachDto {
   reach: number;
 }
 
+export interface PlatformBreakdownDto {
+  platform: string;
+  postCount: number;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  views: number;
+  requiresReauth?: boolean;
+  reauthorizeUrl?: string | null;
+}
+
 export interface WorkspaceAnalyticsSummaryDto {
   totalReach: number;
   engagementRate: number;
   followerGrowth: number;
   totalPosts: number;
   weeklyReach: WeeklyReachDto[];
+  platformBreakdown?: PlatformBreakdownDto[] | null;
 }
 
 export interface HeatmapSlotDto {
@@ -33,6 +49,15 @@ export interface AnalyticsError {
   reauthorizeUrl?: string;
   dashboardUrl?: string;
   status: number;
+}
+
+export interface PostMetricsDto {
+  impressions: number;
+  engagements: number;
+  clicks: number;
+  views: number;
+  engagementRate: number;
+  isSyncPending?: boolean;
 }
 
 export const analyticsApi = {
@@ -56,6 +81,19 @@ export const analyticsApi = {
     const response = await api.get<HeatmapDto>(
       `workspaces/${workspaceId}/analytics/heatmap`,
       { params: { date: dateDays, ...(platform ? { platform } : {}) } }
+    );
+
+    return response.data;
+  },
+
+  getPostAnalytics: async (
+    workspaceId: string,
+    postId: string,
+    dateDays: AnalyticsPresetDays
+  ): Promise<PostMetricsDto> => {
+    const response = await api.get<PostMetricsDto>(
+      `workspaces/${workspaceId}/analytics/post/${postId}`,
+      { params: { date: dateDays } }
     );
 
     return response.data;

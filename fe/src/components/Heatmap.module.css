@@ -15,7 +15,7 @@
 .axisLabel {
   font-size: 10px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--analytics-body, #605d52);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -52,7 +52,7 @@
 }
 
 .cell:hover {
-  outline: 1px solid var(--border-glow);
+  outline: 1px solid rgba(255, 79, 0, 0.35);
 }
 
 .xAxis {
@@ -66,9 +66,9 @@
   left: 12px;
   bottom: -36px;
   font-size: 12px;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-glass);
-  background: rgba(13, 17, 28, 0.92);
+  color: #201515;
+  border: 1px solid rgba(229, 223, 211, 0.9);
+  background: #fffefb;
   border-radius: 8px;
   padding: 8px 12px;
   pointer-events: none;
