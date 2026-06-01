@@ -9,9 +9,9 @@ using Syncra.Domain.Enums;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 
-namespace Syncra.Application.Features.Posts.CreateZernioPost;
+namespace Syncra.Application.Features.Posts.UpdateZernioPost;
 
-public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZernioPostCommand, PostDto>
+public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZernioPostCommand, PostDto>
 {
     private readonly IZernioClient _zernioClient;
     private readonly ISocialAccountRepository _socialAccountRepository;
@@ -21,7 +21,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
     private readonly IStorageService _storageService;
     private readonly WasabiOptions _wasabiOptions;
 
-    public CreateZernioPostCommandHandler(
+    public UpdateZernioPostCommandHandler(
         IZernioClient zernioClient,
         ISocialAccountRepository socialAccountRepository,
         IZernioProfileRepository zernioProfileRepository,
@@ -39,7 +39,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         _wasabiOptions = wasabiOptions.Value;
     }
 
-    public async Task<PostDto> Handle(CreateZernioPostCommand request, CancellationToken cancellationToken)
+    public async Task<PostDto> Handle(UpdateZernioPostCommand request, CancellationToken cancellationToken)
     {
         var socialAccountIds = request.SocialAccountIds ?? Array.Empty<Guid>();
         if (socialAccountIds.Count == 0)
@@ -76,9 +76,13 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         {
             foreach (var mediaItem in request.MediaItems)
             {
+                if (string.IsNullOrEmpty(mediaItem.Url))
+                {
+                    throw new DomainException("invalid_media", "Media item URL is required.");
+                }
+
                 // Nếu URL đã là Zernio public URL thì dùng luôn
-                if (!string.IsNullOrEmpty(mediaItem.Url) &&
-                    mediaItem.Url.Contains("zernio", StringComparison.OrdinalIgnoreCase))
+                if (mediaItem.Url.Contains("zernio", StringComparison.OrdinalIgnoreCase))
                 {
                     updatedMediaItems.Add(mediaItem);
                     continue;
@@ -109,6 +113,12 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             }
         }
 
+        var post = await _postRepository.GetByZernioPostIdAsync(request.PostId);
+        if (post is null)
+        {
+            throw new DomainException("post_not_found", $"Post with Zernio ID {request.PostId} was not found.");
+        }
+
         // Build the Zernio API request
         var platforms = activeAccounts
             .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
@@ -123,35 +133,51 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.IsDraft,
             updatedMediaItems.Count > 0 ? updatedMediaItems : request.MediaItems,
             request.PlatformContents,
-            null,
-            null,
+            request.PostId,
+            post.Status.ToString().ToLowerInvariant(),
             request.PlatformSpecificData,
             request.TiktokSettings);
 
-        // Send to Zernio API (create only)
-        var zernioResult = await _zernioClient.CreatePostAsync(zernioRequest, cancellationToken);
+        var zernioResult = await _zernioClient.UpdatePostAsync(zernioRequest, cancellationToken);
 
-        // Create Post entity using factory method
-        var post = Post.Create(
-            request.WorkspaceId,
-            request.UserId,
-            request.Title ?? string.Empty,
-            request.Content ?? string.Empty,
-            request.ScheduledAtUtc,
-            integrationId: null);
+        if (post.Status == PostStatus.Published)
+        {
+            post.UpdatePublishedContent(request.Title ?? string.Empty, request.Content ?? string.Empty);
+        }
+        else
+        {
+            post.UpdateContent(request.Title ?? string.Empty, request.Content ?? string.Empty);
+
+            if (request.ScheduledAtUtc.HasValue)
+            {
+                post.Schedule(request.ScheduledAtUtc.Value);
+            }
+            else if (post.Status == PostStatus.Scheduled)
+            {
+                post.Unschedule();
+            }
+
+            if (request.PublishNow)
+            {
+                post.MarkPublishAttempt(DateTime.UtcNow);
+            }
+            else if (request.IsDraft == true)
+            {
+                if (post.Status == PostStatus.Scheduled)
+                {
+                    post.Unschedule();
+                }
+                else if (post.Status is PostStatus.Failed or PostStatus.Partial)
+                {
+                    post.Retry();
+                }
+            }
+        }
 
         post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
 
-        // If publishing immediately, transition to Publishing status
-        if (request.PublishNow)
-        {
-            post.MarkPublishAttempt(DateTime.UtcNow);
-        }
-
-        // Persist the post
-        await _postRepository.AddAsync(post);
-
-        // Create PostPlatformTarget entities for each social account
+        // Sync platform targets in post:
+        post.PlatformTargets.Clear();
         foreach (var account in activeAccounts)
         {
             var target = PostPlatformTarget.Create(
@@ -162,6 +188,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             target.SetZernioAccountId(account.ExternalAccountId);
 
             post.PlatformTargets.Add(target);
+            _postRepository.AddPlatformTarget(target);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -180,7 +207,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
 
     private static string GetMimeType(string filename, string? providedMimeType)
     {
-        if (!string.IsNullOrWhiteSpace(providedMimeType) && 
+        if (!string.IsNullOrWhiteSpace(providedMimeType) &&
             providedMimeType != "application/octet-stream")
         {
             return providedMimeType;

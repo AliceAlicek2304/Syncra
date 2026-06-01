@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Syncra.Application.DTOs.Posts;
 using Syncra.Application.Features.Posts.CreateZernioPost;
+using Syncra.Application.Features.Posts.UpdateZernioPost;
 using Syncra.Application.Features.Posts.RetryZernioPost;
 using Syncra.Application.Features.Posts.DeleteZernioPost;
+using Syncra.Application.Features.Posts.UnpublishZernioPost;
 using Syncra.Shared.Extensions;
 
 namespace Syncra.Api.Controllers;
@@ -41,7 +43,6 @@ public sealed class ZernioPostsController : ControllerBase
             dto.IsDraft,
             dto.MediaItems,
             dto.PlatformContents,
-            dto.PostId,
             dto.PlatformSpecificData,
             dto.TiktokSettings);
 
@@ -58,13 +59,13 @@ public sealed class ZernioPostsController : ControllerBase
     public async Task<IActionResult> UpdateZernioPost(
         Guid workspaceId,
         string postId,
-        [FromBody] CreateZernioPostDto dto,
+        [FromBody] UpdateZernioPostDto dto,
         CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
-        var command = new CreateZernioPostCommand(
+        var command = new UpdateZernioPostCommand(
             workspaceId,
             userId.Value,
             dto.Title,
@@ -100,7 +101,24 @@ public sealed class ZernioPostsController : ControllerBase
         var result = await _mediator.Send(new DeleteZernioPostCommand(workspaceId, zernioPostId), ct);
         if (!result)
             return NotFound();
-            
+
+        return NoContent();
+    }
+
+    [HttpPost("{zernioPostId}/unpublish")]
+    public async Task<IActionResult> UnpublishZernioPost(
+        Guid workspaceId, 
+        string zernioPostId, 
+        [FromBody] UnpublishZernioPostRequest request,
+        [FromQuery] bool deleteFromDb = true, 
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new UnpublishZernioPostCommand(workspaceId, zernioPostId, request.Platform, deleteFromDb), ct);
+        if (!result)
+            return NotFound();
+
         return NoContent();
     }
 }
+
+public record UnpublishZernioPostRequest(string Platform);

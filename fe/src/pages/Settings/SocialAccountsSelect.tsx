@@ -5,6 +5,7 @@ import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import logo from '../../assets/syncra-logo.png';
 
   // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -17,8 +18,8 @@ interface PageItem {
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
-// Platforms that connect directly without page/board selection step
-const DIRECT_CONNECT_PLATFORMS = ['tiktok'];
+// Platforms that require page/board/location/profile/phone selection step
+const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -41,8 +42,22 @@ export default function SocialAccountsSelect() {
   const state = searchParams.get('state') ?? '';
   const accountId = searchParams.get('accountId') ?? '';
   const username = searchParams.get('username') ?? '';
+  const profileId = searchParams.get('profileId') ?? '';
+  const userProfileParam = searchParams.get('userProfile') ?? '';
 
-  const isDirectConnect = DIRECT_CONNECT_PLATFORMS.includes(platform) && !!accountId;
+  // Decode and parse userProfile from URL (facebook redirects double-url encode this parameter)
+  let userProfileObj: any = null;
+  if (userProfileParam) {
+    try {
+      const decodedOnce = decodeURIComponent(userProfileParam);
+      const decodedString = decodedOnce.startsWith('%') ? decodeURIComponent(decodedOnce) : decodedOnce;
+      userProfileObj = JSON.parse(decodedString);
+    } catch (e) {
+      console.error('Failed to parse userProfile', e);
+    }
+  }
+
+  const isDirectConnect = !SUB_ENTITY_PLATFORMS.includes(platform.toLowerCase()) && !!accountId;
 
   // ─ Handle direct connect or fetch pages ──────────────────────────────
 
@@ -51,10 +66,18 @@ export default function SocialAccountsSelect() {
     if (workspaceLoading || !activeWorkspace) return;
     hasInitialized.current = true;
 
-    if (!platform || !state) {
-      setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
-      setLoadState('error');
-      return;
+    if (platform.toLowerCase() === 'facebook') {
+      if (!platform || !profileId || !tempToken) {
+        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+        setLoadState('error');
+        return;
+      }
+    } else {
+      if (!platform || !state) {
+        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+        setLoadState('error');
+        return;
+      }
     }
 
     // Direct-connect platforms (e.g. TikTok): skip select page UI, save & redirect
@@ -93,17 +116,34 @@ export default function SocialAccountsSelect() {
 
     const fetchPages = async () => {
       try {
-        const response = await api.get<PageItem[]>(
-          `social-accounts/${platform}/pages`,
-          {
-            params: { tempToken, state },
-            headers: {
-              'X-Workspace-Id': activeWorkspace.id
+        let response;
+        if (platform.toLowerCase() === 'facebook') {
+          response = await api.get(
+            `connect/facebook/select-page`,
+            {
+              params: { profileId, tempToken },
+              headers: {
+                'X-Workspace-Id': activeWorkspace.id
+              }
             }
-          }
-        );
+          );
+        } else {
+          response = await api.get<PageItem[]>(
+            `social-accounts/${platform}/pages`,
+            {
+              params: { tempToken, state },
+              headers: {
+                'X-Workspace-Id': activeWorkspace.id
+              }
+            }
+          );
+        }
         const resData = response.data as any;
-        setItems(resData.options ? resData.options : resData);
+        const rawItems: any[] = resData.pages ? resData.pages : (resData.options ? resData.options : resData);
+        setItems(rawItems.map((item: any) => ({
+          ...item,
+          avatarUrl: item.picture?.data?.url || item.avatarUrl,
+        })));
         setLoadState('loaded');
       } catch (err) {
         const msg =
@@ -115,7 +155,7 @@ export default function SocialAccountsSelect() {
     };
 
     fetchPages();
-  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess]);
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId]);
 
   // ─ Submit selection ─────────────────────────────────────────────────────
 
@@ -124,15 +164,31 @@ export default function SocialAccountsSelect() {
 
     setIsSubmitting(true);
     try {
-      await api.post(`social-accounts/${platform}/select-page`, {
-        selectedId: selectedId,
-        tempToken,
-        state,
-      }, {
-        headers: {
-          'X-Workspace-Id': activeWorkspace.id
-        }
-      });
+      if (platform.toLowerCase() === 'facebook') {
+        await api.post(`connect/facebook/select-page`, {
+          profileId,
+          pageId: selectedId,
+          tempToken,
+          userProfile: {
+            ...(userProfileObj || {}),
+            name: userProfileObj?.name || userProfileObj?.displayName || userProfileObj?.username || '',
+          },
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        });
+      } else {
+        await api.post(`social-accounts/${platform}/select-page`, {
+          selectedId: selectedId,
+          tempToken,
+          state,
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        });
+      }
       showSuccess(`${platform} account connected successfully`);
       navigate('/app/connections', { replace: true });
     } catch (err) {
@@ -145,50 +201,6 @@ export default function SocialAccountsSelect() {
     }
   };
 
-  // ─ Render: skeleton ─────────────────────────────────────────────────────
-
-  if (loadState === 'loading') {
-    return (
-      <div className={styles.pageRoot}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`} />
-          </div>
-          <div className={styles.list}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className={`${styles.skeletonRow} ${styles.shimmer}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─ Render: error ────────────────────────────────────────────────────────
-
-  if (loadState === 'error') {
-    return (
-      <div className={styles.pageRoot}>
-        <div className={styles.container}>
-          <div className={styles.errorState}>
-            <AlertTriangle size={32} color="#ef4444" />
-            <h2>Something went wrong</h2>
-            <p>{errorMessage}</p>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => navigate('/app/connections', { replace: true })}
-            >
-              Back to Connections
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─ Render: selection list ────────────────────────────────────────────────
-
   const platformLabel = platform
     ? platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')
     : 'Account';
@@ -196,95 +208,134 @@ export default function SocialAccountsSelect() {
   return (
     <div className={styles.pageRoot}>
       <div className={styles.container}>
-        {/* Header */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>Select {platformLabel} Account</h1>
-          <p className={styles.subtitle}>
-            Choose the page, organization, or profile you want to connect to this workspace.
-          </p>
+        {/* Centered logo */}
+        <div className={styles.logoContainer}>
+          <img src={logo} alt="Syncra" className={styles.logoImg} />
+          <span className={styles.logoText}>Syncra</span>
         </div>
 
-        {/* Page list */}
-        <div className={styles.list} role="listbox" aria-label="Available accounts">
-          {items.length === 0 ? (
-            <div className={styles.emptyList}>
-              <Building2 size={28} />
-              <p>No pages or accounts found for this connection.</p>
-            </div>
-          ) : (
-            items.map((item) => {
-              const isSelected = selectedId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  role="option"
-                  aria-selected={isSelected}
-                  className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  {/* Avatar or fallback icon */}
-                  <div className={styles.rowAvatarWrap}>
-                    {item.avatarUrl ? (
-                      <img
-                        src={item.avatarUrl}
-                        alt={item.name}
-                        className={styles.rowAvatar}
-                      />
-                    ) : (
-                      <div className={styles.rowAvatarFallback}>
-                        {item.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Name and category */}
-                  <div className={styles.rowMeta}>
-                    <span className={styles.rowName}>{item.name}</span>
-                    {item.category && (
-                      <span className={styles.rowCategory}>{item.category}</span>
-                    )}
-                  </div>
-
-                  {/* Selection indicator */}
-                  <div
-                    className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ''}`}
-                  >
-                    {isSelected && <Check size={12} strokeWidth={3} />}
-                  </div>
-                </button>
-              );
-            })
+        {/* Centered Card */}
+        <div className={styles.card}>
+          {loadState === 'loading' && (
+            <>
+              <div className={styles.header}>
+                <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                <div className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`} />
+              </div>
+              <div className={styles.list}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className={`${styles.skeletonRow} ${styles.shimmer}`} />
+                ))}
+              </div>
+            </>
           )}
-        </div>
-      </div>
 
-      {/* Fixed bottom action bar */}
-      <div className={styles.actionBar}>
-        <div className={styles.actionBarInner}>
-          <button
-            className={styles.btnGhost}
-            onClick={() => navigate('/app/connections', { replace: true })}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            className={styles.btnPrimary}
-            onClick={handleConfirm}
-            disabled={!selectedId || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={15} className={styles.spinner} />
-                Connecting...
-              </>
-            ) : (
-              <>
-                Confirm Connection
-                <ArrowRight size={15} />
-              </>
-            )}
-          </button>
+          {loadState === 'error' && (
+            <div className={styles.errorState}>
+              <AlertTriangle size={32} className={styles.errorIcon} />
+              <h2>Something went wrong</h2>
+              <p>{errorMessage}</p>
+              <button
+                className={styles.btnPrimary}
+                onClick={() => navigate('/app/connections', { replace: true })}
+              >
+                Back to Connections
+              </button>
+            </div>
+          )}
+
+          {loadState === 'loaded' && (
+            <>
+              {/* Header */}
+              <div className={styles.header}>
+                <h1 className={styles.title}>Select {platformLabel} page</h1>
+                <p className={styles.subtitle}>
+                  Choose which page to connect for posting.
+                </p>
+              </div>
+
+              {/* Page list */}
+              <div className={styles.list} role="listbox" aria-label="Available accounts">
+                {items.length === 0 ? (
+                  <div className={styles.emptyList}>
+                    <Building2 size={28} />
+                    <p>No pages or accounts found for this connection.</p>
+                  </div>
+                ) : (
+                  items.map((item) => {
+                    const isSelected = selectedId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}
+                        onClick={() => setSelectedId(item.id)}
+                      >
+                        {/* Avatar or fallback icon */}
+                        <div className={styles.rowAvatarWrap}>
+                          {item.avatarUrl ? (
+                            <img
+                              src={item.avatarUrl}
+                              alt={item.name}
+                              className={styles.rowAvatar}
+                            />
+                          ) : (
+                            <div className={styles.rowAvatarFallback}>
+                              {item.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Name and category */}
+                        <div className={styles.rowMeta}>
+                          <span className={styles.rowName}>{item.name}</span>
+                          {item.category && (
+                            <span className={styles.rowCategory}>{item.category}</span>
+                          )}
+                        </div>
+
+                        {/* Selection indicator */}
+                        <div
+                          className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ''}`}
+                        >
+                          {isSelected && <Check size={12} strokeWidth={3} />}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Actions inside card */}
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.btnGhost}
+                  onClick={() => navigate('/app/connections', { replace: true })}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={handleConfirm}
+                  disabled={!selectedId || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={15} className={styles.spinner} />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      Confirm Connection
+                      <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

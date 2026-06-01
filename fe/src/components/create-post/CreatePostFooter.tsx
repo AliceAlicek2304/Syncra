@@ -29,6 +29,7 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
   const isSubmitDisabled = 
     state.caption.trim() === '' || 
     state.overLimit || 
+    (state.publishingTab === 'schedule' && !state.scheduleTime) ||
     (state.publishingTab !== 'draft' &&
      state.socialAccounts && 
      state.socialAccounts.filter((acc: any) => acc.isActive).length > 0 && 
@@ -63,6 +64,7 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
         type="button" 
         className={styles.cancelBtn} 
         onClick={actions.handleAttemptClose}
+        disabled={state.isSubmitting}
       >
         cancel
       </button>
@@ -71,9 +73,16 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
         type="button" 
         className={styles.submitBtn} 
         onClick={handlePrimaryAction} 
-        disabled={isSubmitDisabled}
+        disabled={isSubmitDisabled || state.isSubmitting}
       >
-        {getPrimaryButtonLabel()}
+        {state.isSubmitting ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+            <div className={styles.buttonSpinner} />
+            <span>saving...</span>
+          </div>
+        ) : (
+          getPrimaryButtonLabel()
+        )}
       </button>
     </div>
   )

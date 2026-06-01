@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
+using System.Net.Http.Headers;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
@@ -21,6 +23,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly MessagesApi _messagesApi;
     private readonly CommentsApi _commentsApi;
     private readonly ReviewsApi _reviewsApi;
+    private readonly MediaApi _mediaApi;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ZernioClient> _logger;
     private readonly ZernioOptions _options;
@@ -43,6 +46,7 @@ public sealed class ZernioClient : IZernioClient
         _messagesApi = new MessagesApi(config);
         _commentsApi = new CommentsApi(config);
         _reviewsApi = new ReviewsApi(config);
+        _mediaApi = new MediaApi(config);
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _options = options.Value;
@@ -82,28 +86,50 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
+    public async Task<ZernioListAccountsResponseDto> ListAccountsAsync(
         string profileId,
+        string? platform = null,
+        bool? includeOverLimit = true,
+        int? page = null,
+        int? limit = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var response = await _accountsApi.ListAccountsAsync(
                 profileId,
-                platform: null,
-                includeOverLimit: null,
-                page: null,
-                limit: null,
+                platform: platform,
+                includeOverLimit: includeOverLimit,
+                page: page,
+                limit: limit,
                 cancellationToken);
 
-            return response.Accounts
+            var accounts = response.Accounts
                 .Select(a => new ZernioAccountDto(
                     a.Id,
                     a.Platform.ToString(),
                     a.DisplayName,
                     a.IsActive,
-                    a.ProfilePicture))
+                    a.ProfilePicture,
+                    a.ProfileUrl,
+                    a.Username,
+                    NormalizeMetadata(a.Metadata),
+                    a.ProfileId?.ToString(),
+                    (long?)a.FollowersCount,
+                    a.FollowersLastUpdated,
+                    a.ParentAccountId,
+                    a.Enabled))
                 .ToList();
+
+            ZernioListAccountsPaginationDto? pagination = response.Pagination != null
+                ? new ZernioListAccountsPaginationDto(
+                    response.Pagination.Page,
+                    response.Pagination.Limit,
+                    response.Pagination.Total,
+                    response.Pagination.Pages)
+                : null;
+
+            return new ZernioListAccountsResponseDto(accounts, response.HasAnalyticsAccess, pagination);
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
         {
@@ -427,119 +453,40 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    // ── CreatePostAsync: Raw HTTP request to bypass SDK oneOf deserialization ──────
     public async Task<ZernioCreatePostResult> CreatePostAsync(
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrEmpty(request.PostId))
+        {
+            throw new DomainException("invalid_create_post_request", "PostId is set. Use UpdatePostAsync to update existing posts.");
+        }
+
         try
         {
-            var platforms = request.Platforms.Select(p =>
-            {
-                var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
-                return new ZernioCreatePostPlatformInnerDto(
-                    p.Platform,
-                    p.ZernioAccountId,
-                    platformContent?.Caption,
-                    MapPlatformSpecificData(p.Platform, request)
-                );
-            }).ToList();
-
-            var mediaItems = request.MediaItems?.Select(m => new ZernioMediaItemRequestDto(
-                m.Url,
-                m.Type,
-                m.Filename,
-                m.MimeType
-            )).ToList();
-
-            TikTokSettingsDto? tiktokSettings = request.TiktokSettings;
-            if (tiktokSettings == null && request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
-            {
-                tiktokSettings = new TikTokSettingsDto(
-                    Draft: request.IsDraft ?? false,
-                    PrivacyLevel: "PUBLIC_TO_EVERYONE",
-                    AllowComment: true,
-                    AllowDuet: true,
-                    AllowStitch: true,
-                    ContentPreviewConfirmed: true,
-                    ExpressConsentGiven: true
-                );
-            }
-
-            var apiRequest = new ZernioCreatePostApiRequest(
-                request.Content,
-                platforms,
-                request.Title,
-                request.PublishNow ? null : request.ScheduledForUtc,
-                request.PublishNow,
-                request.IsDraft ?? false,
-                mediaItems,
-                tiktokSettings
-            );
-
+            var sdkRequest = ToSdkCreatePostRequest(request);
             var config = _postsApi.Configuration;
             var baseUrl = config.BasePath.TrimEnd('/');
-            HttpRequestMessage httpRequest;
 
-            if (!string.IsNullOrEmpty(request.PostId))
-            {
-                var normalizedStatus = request.Status?.ToLowerInvariant() ?? "draft";
-                if (normalizedStatus == "published")
-                {
-                    if (request.Platforms.Count != 1 || !string.Equals(request.Platforms[0].Platform, "twitter", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new DomainException("invalid_edit_platform", "Only published posts on Twitter/X can be edited.");
-                    }
-
-                    var editRequest = new
-                    {
-                        platform = "twitter",
-                        content = request.Content
-                    };
-
-                    _logger.LogInformation("Sending EditPublishedPostRequest to Zernio API for post {PostId}", request.PostId);
-
-                    httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts/{request.PostId}/edit")
-                    {
-                        Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(editRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
-                    };
-                }
-                else if (normalizedStatus == "draft" || normalizedStatus == "scheduled" || normalizedStatus == "failed" || normalizedStatus == "partial")
-                {
-                    _logger.LogInformation("Sending UpdatePostRequest to Zernio API for post {PostId}", request.PostId);
-
-                    httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/v1/posts/{request.PostId}")
-                    {
-                        Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
-                    };
-                }
-                else
-                {
-                    throw new DomainException("invalid_edit_status", $"Cannot edit post in '{request.Status}' status.");
-                }
-            }
-            else
-            {
-                _logger.LogInformation("Sending CreatePostRequest to Zernio API: {Request}", System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions));
-
-                httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts")
-                {
-                    Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(apiRequest, _jsonOptions), System.Text.Encoding.UTF8, "application/json")
-                };
-            }
-
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts");
             httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            var jsonBody = System.Text.Json.JsonSerializer.Serialize(sdkRequest, _jsonOptions);
+            httpRequest.Content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
 
             using var httpClient = _httpClientFactory.CreateClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);
             var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
 
-            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
             if (!httpResponse.IsSuccessStatusCode)
             {
-                _logger.LogError("Zernio API error saving post. Status: {StatusCode}, Content: {Content}", httpResponse.StatusCode, json);
+                var errorContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                var errorCode = (int)httpResponse.StatusCode;
 
-                if (httpResponse.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+                if (errorCode == 402)
                 {
+                    _logger.LogWarning("Zernio billing gate triggered saving post. Content: {Content}", errorContent);
                     throw new ZernioBillingRequiredException(
                         "A paid Zernio plan is required to save posts.",
                         reason: "post_limit_reached",
@@ -547,31 +494,17 @@ public sealed class ZernioClient : IZernioClient
                         details: new { platforms = request.Platforms.Count });
                 }
 
-                throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post. Error: {json}");
+                _logger.LogError("Zernio API error saving post. Status: {StatusCode}, Error: {Error}", httpResponse.StatusCode, errorContent);
+                throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post. Status: {httpResponse.StatusCode}. Error: {errorContent}");
             }
 
-            using var document = System.Text.Json.JsonDocument.Parse(json);
-            string postId = request.PostId ?? string.Empty;
-            string status = request.Status ?? "scheduled";
+            var responseJson = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var rawResponse = System.Text.Json.JsonSerializer.Deserialize<ZernioRawCreatePostResponse>(responseJson, _jsonOptions);
 
-            if (document.RootElement.TryGetProperty("post", out var postElement))
-            {
-                postId = postElement.TryGetProperty("_id", out var idEl) ? idEl.GetString() ?? postId : postId;
-                status = postElement.TryGetProperty("status", out var statusEl) ? statusEl.GetString() ?? status : status;
-            }
-            else if (document.RootElement.TryGetProperty("id", out var idEl))
-            {
-                postId = idEl.GetString() ?? postId;
-            }
-            else if (document.RootElement.TryGetProperty("_id", out var idEl2))
-            {
-                postId = idEl2.GetString() ?? postId;
-            }
+            var resultId = rawResponse?.Post?._Id ?? request.PostId ?? string.Empty;
+            var resultStatus = rawResponse?.Post?.Status ?? request.Status ?? "scheduled";
 
-            return new ZernioCreatePostResult(
-                postId,
-                status,
-                request.Platforms.Count);
+            return new ZernioCreatePostResult(resultId, resultStatus, request.Platforms.Count);
         }
         catch (ZernioBillingRequiredException)
         {
@@ -583,104 +516,94 @@ public sealed class ZernioClient : IZernioClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Zernio API error saving post: {Message}", ex.Message);
-            throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post. Error: {ex.Message}", ex);
+            _logger.LogError(ex, "Zernio API error saving post");
+            throw new DomainException("zernio_save_post_error", $"Failed to save Zernio post", ex);
         }
     }
 
-    public async Task<string> UploadMediaToZernioAsync(
-        Stream fileStream,
-        string mimeType,
-        string fileName,
+    // ── UpdatePostAsync: Raw HTTP request to bypass SDK oneOf deserialization ──────
+    public async Task<ZernioCreatePostResult> UpdatePostAsync(
+        ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
-        if (string.IsNullOrWhiteSpace(mimeType)) throw new ArgumentException("Mime type cannot be null or empty.", nameof(mimeType));
-        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
-
-        _logger.LogInformation("Requesting presigned upload URL from Zernio for file: {FileName}, Type: {MimeType}", fileName, mimeType);
-
-        var config = _postsApi.Configuration;
-        var baseUrl = config.BasePath.TrimEnd('/');
-        var presignRequestUrl = $"{baseUrl}/v1/media/presign";
-
-        var presignPayload = new ZernioPresignRequest(fileName, mimeType);
-
-        using var presignHttpRequest = new HttpRequestMessage(HttpMethod.Post, presignRequestUrl)
+        if (string.IsNullOrWhiteSpace(request.PostId))
         {
-            Content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(presignPayload, _jsonOptions),
-                System.Text.Encoding.UTF8,
-                "application/json")
-        };
-        presignHttpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
-
-        using var httpClient = _httpClientFactory.CreateClient();
-        httpClient.Timeout = TimeSpan.FromSeconds(30);
-        var presignHttpResponse = await httpClient.SendAsync(presignHttpRequest, cancellationToken);
-
-        if (!presignHttpResponse.IsSuccessStatusCode)
-        {
-            var errorResponse = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to get presigned URL from Zernio. Status: {StatusCode}, Error: {Error}",
-                presignHttpResponse.StatusCode, errorResponse);
-            throw new DomainException("zernio_presign_error", $"Zernio presign request failed. Status: {presignHttpResponse.StatusCode}. Error: {errorResponse}");
+            throw new DomainException("invalid_update_post_request", "PostId is required to update an existing post.");
         }
 
-        var responseContent = await presignHttpResponse.Content.ReadAsStringAsync(cancellationToken);
-        var presignResult = System.Text.Json.JsonSerializer.Deserialize<ZernioPresignResponse>(responseContent, _jsonOptions);
+        var normalizedStatus = request.Status?.ToLowerInvariant() ?? "draft";
 
-        if (presignResult == null || string.IsNullOrEmpty(presignResult.UploadUrl) || string.IsNullOrEmpty(presignResult.PublicUrl))
+        try
         {
-            throw new DomainException("zernio_presign_error", "Zernio returned an invalid presign response.");
+            if (normalizedStatus == "published")
+            {
+                if (request.Platforms.Count != 1 || !string.Equals(request.Platforms[0].Platform, "twitter", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new DomainException("invalid_edit_platform", "Only published posts on Twitter/X can be edited.");
+                }
+
+                var editRequest = new EditPostRequest(EditPostRequest.PlatformEnum.Twitter, request.Content ?? string.Empty);
+                await _postsApi.EditPostAsync(request.PostId, editRequest, cancellationToken);
+                return new ZernioCreatePostResult(request.PostId, "published", request.Platforms.Count);
+            }
+
+            var sdkRequest = ToSdkUpdatePostRequest(request);
+            var config = _postsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/v1/posts/{request.PostId}");
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            var jsonBody = System.Text.Json.JsonSerializer.Serialize(sdkRequest, _jsonOptions);
+            httpRequest.Content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                var errorCode = (int)httpResponse.StatusCode;
+
+                if (errorCode == 402)
+                {
+                    _logger.LogWarning("Zernio billing gate triggered updating post {PostId}. Content: {Content}", request.PostId, errorContent);
+                    throw new ZernioBillingRequiredException(
+                        "A paid Zernio plan is required to update posts.",
+                        reason: "post_management_restricted",
+                        dashboardUrl: "https://zernio.com/dashboard/billing",
+                        details: new { zernioPostId = request.PostId });
+                }
+
+                _logger.LogError("Zernio API error updating post {PostId}. Status: {StatusCode}, Error: {Error}", request.PostId, httpResponse.StatusCode, errorContent);
+                throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post. Status: {httpResponse.StatusCode}. Error: {errorContent}");
+            }
+
+            var responseJson = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var rawResponse = System.Text.Json.JsonSerializer.Deserialize<ZernioRawCreatePostResponse>(responseJson, _jsonOptions);
+
+            var resultId = rawResponse?.Post?._Id ?? request.PostId ?? string.Empty;
+            var resultStatus = rawResponse?.Post?.Status ?? request.Status ?? "scheduled";
+
+            return new ZernioCreatePostResult(resultId, resultStatus, request.Platforms.Count);
         }
-
-        _logger.LogInformation("Received upload URL. Streaming file content to Zernio storage...");
-
-        Stream contentStream = fileStream;
-        long? contentLength = null;
-
-        if (fileStream.CanSeek)
+        catch (ZernioBillingRequiredException)
         {
-            contentLength = fileStream.Length;
+            throw;
         }
-        else
+        catch (DomainException)
         {
-            var ms = new System.IO.MemoryStream();
-            await fileStream.CopyToAsync(ms, cancellationToken);
-            ms.Position = 0;
-            contentStream = ms;
-            contentLength = ms.Length;
+            throw;
         }
-
-        using var uploadHttpRequest = new HttpRequestMessage(HttpMethod.Put, presignResult.UploadUrl);
-        
-        var streamContent = new StreamContent(contentStream);
-        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
-        if (contentLength.HasValue)
+        catch (Exception ex)
         {
-            streamContent.Headers.ContentLength = contentLength.Value;
+            _logger.LogError(ex, "Zernio API error updating post {PostId}", request.PostId);
+            throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post", ex);
         }
-        uploadHttpRequest.Content = streamContent;
-
-        using var uploadHttpClient = _httpClientFactory.CreateClient();
-        uploadHttpClient.Timeout = TimeSpan.FromMinutes(30);
-
-        var uploadHttpResponse = await uploadHttpClient.SendAsync(uploadHttpRequest, cancellationToken);
-
-        if (!uploadHttpResponse.IsSuccessStatusCode)
-        {
-            var errorResponse = await uploadHttpResponse.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to upload file stream to Zernio storage. Status: {StatusCode}, Error: {Error}",
-                uploadHttpResponse.StatusCode, errorResponse);
-            throw new DomainException("zernio_upload_error", $"Failed to upload media to Zernio. Status: {uploadHttpResponse.StatusCode}. Error: {errorResponse}");
-        }
-
-        _logger.LogInformation("Successfully uploaded media to Zernio. Public URL: {PublicUrl}", presignResult.PublicUrl);
-
-        return presignResult.PublicUrl;
     }
 
+    // Simple update for ZernioUpdatePostRequestDto - Raw HTTP request to bypass SDK oneOf deserialization
     public async Task UpdatePostAsync(
         string zernioPostId,
         Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto request,
@@ -698,25 +621,136 @@ public sealed class ZernioClient : IZernioClient
                 sdkRequest.ScheduledFor = request.ScheduledForUtc.Value;
             }
 
-            await _postsApi.UpdatePostAsync(zernioPostId, sdkRequest, cancellationToken: cancellationToken);
+            var config = _postsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/v1/posts/{zernioPostId}");
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            var jsonBody = System.Text.Json.JsonSerializer.Serialize(sdkRequest, _jsonOptions);
+            httpRequest.Content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                var errorCode = (int)httpResponse.StatusCode;
+
+                if (errorCode == 402)
+                {
+                    _logger.LogWarning("Zernio billing gate triggered for post update {PostId}. Content: {Content}", zernioPostId, errorContent);
+                    throw new ZernioBillingRequiredException(
+                        "A paid Zernio plan is required to update posts.",
+                        reason: "post_management_restricted",
+                        dashboardUrl: "https://zernio.com/dashboard/billing",
+                        details: new { zernioPostId });
+                }
+
+                _logger.LogError("Zernio API error updating post {PostId}. Status: {StatusCode}, Content: {Content}", zernioPostId, httpResponse.StatusCode, errorContent);
+                throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post. Error: {errorContent}");
+            }
         }
-        catch (ApiException ex) when (ex.ErrorCode == 402)
+        catch (ZernioBillingRequiredException)
         {
-            _logger.LogWarning(ex, "Zernio billing gate triggered for post update {PostId}", zernioPostId);
-            throw new ZernioBillingRequiredException(
-                "A paid Zernio plan is required to update posts.",
-                reason: "post_management_restricted",
-                dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { zernioPostId });
+            throw;
+        }
+        catch (DomainException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error updating post {PostId}", zernioPostId);
+            throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post", ex);
+        }
+    }
+
+    public async Task<ZernioPresignResponse> GetMediaPresignedUrlAsync(
+        string fileName,
+        string mimeType,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(mimeType)) throw new ArgumentException("Mime type cannot be null or empty.", nameof(mimeType));
+        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
+
+        Zernio.Model.GetMediaPresignedUrl200Response? presignResult = null;
+        try
+        {
+            var contentType = MapMimeTypeToContentTypeEnum(mimeType);
+            var presignRequest = new Zernio.Model.GetMediaPresignedUrlRequest(fileName, contentType);
+            presignResult = await _mediaApi.GetMediaPresignedUrlAsync(presignRequest, cancellationToken: cancellationToken);
         }
         catch (ApiException ex)
         {
-            var errorContent = ex.GetType().GetProperty("Response")?.GetValue(ex) as string ?? 
-                               ex.GetType().GetProperty("Content")?.GetValue(ex) as string ?? 
-                               ex.Message;
-            _logger.LogError(ex, "Zernio API error updating post {PostId}. ErrorCode: {ErrorCode}, Content: {Content}", zernioPostId, ex.ErrorCode, errorContent);
-            throw new DomainException("zernio_update_post_error", $"Failed to update Zernio post. Error: {errorContent}", ex);
+            _logger.LogError(ex, "Failed to get presigned URL from Zernio. ErrorCode: {ErrorCode}", ex.ErrorCode);
+            throw new DomainException("zernio_presign_error", $"Zernio presign request failed. Status: {ex.ErrorCode}. Error: {ex.Message}", ex);
         }
+
+        if (presignResult == null || string.IsNullOrEmpty(presignResult.UploadUrl) || string.IsNullOrEmpty(presignResult.PublicUrl))
+        {
+            throw new DomainException("zernio_presign_error", "Zernio returned an invalid presign response.");
+        }
+
+        return new ZernioPresignResponse(
+            presignResult.UploadUrl,
+            presignResult.PublicUrl);
+    }
+
+    public async Task<string> UploadMediaToZernioAsync(
+        string uploadUrl,
+        Stream content,
+        string mimeType,
+        CancellationToken cancellationToken = default)
+    {
+        if (content == null) throw new ArgumentNullException(nameof(content));
+        if (string.IsNullOrWhiteSpace(uploadUrl)) throw new ArgumentException("Upload URL cannot be null or empty.", nameof(uploadUrl));
+        if (string.IsNullOrWhiteSpace(mimeType)) throw new ArgumentException("Mime type cannot be null or empty.", nameof(mimeType));
+
+        // Buffer stream nếu không thể seek
+        Stream uploadStream = content;
+        long? contentLength = null;
+        if (content.CanSeek)
+        {
+            contentLength = content.Length;
+        }
+        else
+        {
+            var memoryStream = new MemoryStream();
+            await content.CopyToAsync(memoryStream, cancellationToken);
+            memoryStream.Position = 0;
+            uploadStream = memoryStream;
+            contentLength = memoryStream.Length;
+        }
+
+        using var uploadRequest = new HttpRequestMessage(HttpMethod.Put, uploadUrl);
+        var streamContent = new StreamContent(uploadStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
+        if (contentLength.HasValue)
+        {
+            streamContent.Headers.ContentLength = contentLength.Value;
+        }
+        uploadRequest.Content = streamContent;
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.Timeout = TimeSpan.FromMinutes(30);
+        var response = await httpClient.SendAsync(uploadRequest, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Failed to upload media to Zernio. Status: {StatusCode}, Error: {Error}", 
+                response.StatusCode, errorContent);
+            throw new DomainException("zernio_upload_error", $"Failed to upload media to Zernio. Status: {response.StatusCode}. Error: {errorContent}");
+        }
+
+        _logger.LogInformation("Successfully uploaded media stream to Zernio presigned URL.");
+        
+        // Extract public URL từ response hoặc trả về empty (response có thể không có body)
+        // Presigned upload thường không trả về body, publicUrl đã có từ GetMediaPresignedUrlAsync
+        return string.Empty;
     }
 
     public async Task RetryPostAsync(
@@ -725,18 +759,44 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            await _postsApi.RetryPostAsync(zernioPostId, cancellationToken);
+            var config = _postsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/posts/{zernioPostId}/retry");
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                var errorCode = (int)httpResponse.StatusCode;
+
+                if (errorCode == 402)
+                {
+                    _logger.LogWarning("Zernio billing gate triggered retrying post {PostId}. Content: {Content}", zernioPostId, errorContent);
+                    throw new ZernioBillingRequiredException(
+                        "A paid Zernio plan is required to retry posts.",
+                        reason: "post_management_restricted",
+                        dashboardUrl: "https://zernio.com/dashboard/billing",
+                        details: new { zernioPostId });
+                }
+
+                _logger.LogError("Zernio API error retrying post {PostId}. Status: {StatusCode}, Error: {Error}", zernioPostId, httpResponse.StatusCode, errorContent);
+                throw new DomainException("zernio_retry_post_error", $"Failed to retry Zernio post. Status: {httpResponse.StatusCode}. Error: {errorContent}");
+            }
         }
-        catch (ApiException ex) when (ex.ErrorCode == 402)
+        catch (ZernioBillingRequiredException)
         {
-            _logger.LogWarning(ex, "Zernio billing gate triggered retrying post {PostId}", zernioPostId);
-            throw new ZernioBillingRequiredException(
-                "A paid Zernio plan is required to retry posts.",
-                reason: "post_management_restricted",
-                dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { zernioPostId });
+            throw;
         }
-        catch (ApiException ex)
+        catch (DomainException)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Zernio API error retrying post {PostId}", zernioPostId);
             throw new DomainException("zernio_retry_post_error", "Failed to retry Zernio post", ex);
@@ -764,6 +824,52 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error deleting post {PostId}", zernioPostId);
             throw new DomainException("zernio_delete_post_error", "Failed to delete Zernio post", ex);
+        }
+    }
+
+    private static readonly Dictionary<string, UnpublishPostRequest.PlatformEnum> PlatformMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["threads"] = UnpublishPostRequest.PlatformEnum.Threads,
+        ["facebook"] = UnpublishPostRequest.PlatformEnum.Facebook,
+        ["twitter"] = UnpublishPostRequest.PlatformEnum.Twitter,
+        ["linkedin"] = UnpublishPostRequest.PlatformEnum.Linkedin,
+        ["youtube"] = UnpublishPostRequest.PlatformEnum.Youtube,
+        ["pinterest"] = UnpublishPostRequest.PlatformEnum.Pinterest,
+        ["reddit"] = UnpublishPostRequest.PlatformEnum.Reddit,
+        ["bluesky"] = UnpublishPostRequest.PlatformEnum.Bluesky,
+        ["googlebusiness"] = UnpublishPostRequest.PlatformEnum.Googlebusiness,
+        ["telegram"] = UnpublishPostRequest.PlatformEnum.Telegram,
+    };
+
+    public async Task UnpublishPostAsync(
+        string zernioPostId,
+        string platform,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!PlatformMap.TryGetValue(platform, out var platformEnum))
+            {
+                _logger.LogWarning("Platform {Platform} is not supported for API unpublishing. Skipping Zernio unpublish API call.", platform);
+                return;
+            }
+
+            var request = new UnpublishPostRequest(platformEnum);
+            await _postsApi.UnpublishPostAsync(zernioPostId, request, cancellationToken);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered unpublishing post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage posts.",
+                reason: "post_management_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error unpublishing post {PostId}", zernioPostId);
+            throw new DomainException("zernio_unpublish_post_error", "Failed to unpublish Zernio post", ex);
         }
     }
 
@@ -871,8 +977,15 @@ public sealed class ZernioClient : IZernioClient
     private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
+
+    private static object? NormalizeMetadata(object? metadata)
+    {
+        if (metadata is null) return null;
+        return System.Text.Json.JsonSerializer.Deserialize<object>(metadata.ToString());
+    }
 
     private static object? MapPlatformSpecificData(string platform, ZernioCreatePostRequest request)
     {
@@ -903,6 +1016,182 @@ public sealed class ZernioClient : IZernioClient
             "tiktok" => null,
             _ => null
         };
+    }
+
+    private object ToSdkCreatePostRequest(ZernioCreatePostRequest request)
+    {
+        var platforms = request.Platforms.Select(p =>
+        {
+            var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
+            return new
+            {
+                platform = p.Platform,
+                accountId = p.ZernioAccountId,
+                customContent = platformContent?.Caption,
+                platformSpecificData = MapPlatformSpecificData(p.Platform, request)
+            };
+        }).ToList();
+
+        var mediaItems = request.MediaItems?
+            .Select(m => new
+            {
+                type = m.Type.ToLowerInvariant(),
+                url = m.Url,
+                filename = m.Filename,
+                mimeType = m.MimeType
+            })
+            .ToList();
+
+        var tiktokSettings = BuildSdkTikTokSettings(request);
+        var facebookSettings = BuildSdkFacebookSettings(request);
+
+        return new
+        {
+            title = request.Title ?? string.Empty,
+            content = request.Content ?? string.Empty,
+            mediaItems = mediaItems,
+            platforms = platforms,
+            scheduledFor = request.ScheduledForUtc,
+            publishNow = request.PublishNow,
+            isDraft = request.IsDraft ?? false,
+            tiktokSettings = tiktokSettings,
+            facebookSettings = facebookSettings
+        };
+    }
+
+    private object ToSdkUpdatePostRequest(ZernioCreatePostRequest request)
+    {
+        var platforms = request.Platforms.Select(p =>
+        {
+            var platformContent = request.PlatformContents?.FirstOrDefault(c => c.Platform == p.Platform);
+            return new
+            {
+                platform = p.Platform,
+                accountId = p.ZernioAccountId,
+                customContent = platformContent?.Caption,
+                platformSpecificData = MapPlatformSpecificData(p.Platform, request)
+            };
+        }).ToList();
+
+        var mediaItems = request.MediaItems?
+            .Select(m => new
+            {
+                type = m.Type.ToLowerInvariant(),
+                url = m.Url,
+                filename = m.Filename,
+                mimeType = m.MimeType
+            })
+            .ToList();
+
+        var tiktokSettings = BuildSdkTikTokSettings(request);
+        var facebookSettings = BuildSdkFacebookSettings(request);
+
+        return new
+        {
+            title = request.Title ?? string.Empty,
+            content = request.Content ?? string.Empty,
+            mediaItems = mediaItems,
+            platforms = platforms,
+            scheduledFor = request.ScheduledForUtc,
+            publishNow = request.PublishNow,
+            isDraft = request.IsDraft ?? false,
+            tiktokSettings = tiktokSettings,
+            facebookSettings = facebookSettings
+        };
+    }
+
+    private TikTokPlatformData? BuildSdkTikTokSettings(ZernioCreatePostRequest request)
+    {
+        var settings = request.TiktokSettings;
+        if (settings == null && request.Platforms.Any(p => string.Equals(p.Platform, "tiktok", StringComparison.OrdinalIgnoreCase)))
+        {
+            return new TikTokPlatformData(
+                request.IsDraft ?? false,
+                "PUBLIC_TO_EVERYONE",
+                true,
+                true,
+                true,
+                null,
+                false,
+                false,
+                true,
+                true,
+                null,
+                0,
+                null,
+                0,
+                false,
+                false,
+                null
+            );
+        }
+
+        if (settings == null) return null;
+
+        return new TikTokPlatformData(
+            settings.Draft ?? false,
+            settings.PrivacyLevel ?? "PUBLIC_TO_EVERYONE",
+            settings.AllowComment ?? true,
+            settings.AllowDuet ?? true,
+            settings.AllowStitch ?? true,
+            ParseEnum<TikTokPlatformData.CommercialContentTypeEnum>(settings.CommercialContentType),
+            settings.BrandPartnerPromote ?? false,
+            settings.IsBrandOrganicPost ?? false,
+            settings.ContentPreviewConfirmed ?? true,
+            settings.ExpressConsentGiven ?? true,
+            ParseEnum<TikTokPlatformData.MediaTypeEnum>(settings.MediaType),
+            settings.VideoCoverTimestampMs ?? 0,
+            settings.VideoCoverImageUrl,
+            settings.PhotoCoverIndex ?? 0,
+            settings.AutoAddMusic ?? false,
+            settings.VideoMadeWithAi ?? false,
+            settings.Description
+        );
+    }
+
+    private FacebookPlatformData? BuildSdkFacebookSettings(ZernioCreatePostRequest request)
+    {
+        var fbData = request.PlatformSpecificData?.Facebook;
+        if (fbData == null && !request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
+            return null;
+
+        return new FacebookPlatformData(
+            fbData?.Draft ?? request.IsDraft ?? false,
+            ParseEnum<FacebookPlatformData.ContentTypeEnum>(fbData?.ContentType),
+            fbData?.Title,
+            fbData?.FirstComment,
+            fbData?.PageId,
+            null,
+            null,
+            fbData?.CarouselLink
+        );
+    }
+
+    private static MediaItem.TypeEnum? ParseMediaTypeEnum(string? type)
+    {
+        return type?.ToLowerInvariant() switch
+        {
+            "image" => MediaItem.TypeEnum.Image,
+            "video" => MediaItem.TypeEnum.Video,
+            "gif" => MediaItem.TypeEnum.Gif,
+            "document" => MediaItem.TypeEnum.Document,
+            _ => null
+        };
+    }
+
+    private static TEnum? ParseEnum<TEnum>(string? value) where TEnum : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (Enum.TryParse<TEnum>(value, ignoreCase: true, out var result)) return result;
+        return null;
+    }
+
+    private static ZernioCreatePostResult MapSdkPostToResult(Zernio.Model.Post? post, ZernioCreatePostRequest request, string? fallbackPostId = null)
+    {
+        return new ZernioCreatePostResult(
+            post?.Id ?? fallbackPostId ?? request.PostId ?? string.Empty,
+            post?.Status?.ToString() ?? request.Status ?? "scheduled",
+            request.Platforms.Count);
     }
 
     // ── Analytics methods ────────────────────────────────────────────────────
@@ -1139,6 +1428,8 @@ public sealed class ZernioClient : IZernioClient
                     p.FanCount))
                 .ToList();
 
+            await EnrichFacebookPagesWithAvatarsAsync(pages, accountId, cancellationToken);
+
             return new ZernioFacebookPagesResponseDto(
                 pages,
                 response.SelectedPageId,
@@ -1160,7 +1451,59 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task UpdateFacebookPageAsync(
+    private async Task EnrichFacebookPagesWithAvatarsAsync(
+        List<ZernioFacebookPageDto> pages,
+        string accountId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var response = await client.GetAsync($"/v1/accounts/{accountId}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var metadata = root.TryGetProperty("account", out var accountEl)
+                ? accountEl.TryGetProperty("metadata", out var metaEl) ? metaEl : default
+                : root.TryGetProperty("metadata", out var m) ? m : default;
+
+            if (metadata.ValueKind != JsonValueKind.Object) return;
+
+            if (!metadata.TryGetProperty("availablePages", out var aPagesEl)) return;
+            if (aPagesEl.ValueKind != JsonValueKind.Array) return;
+
+            var pictureMap = new Dictionary<string, string?>(StringComparer.Ordinal);
+            foreach (var pageEl in aPagesEl.EnumerateArray())
+            {
+                var id = pageEl.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                var pictureUrl = pageEl.TryGetProperty("picture", out var picEl)
+                    && picEl.TryGetProperty("data", out var dataEl)
+                    && dataEl.TryGetProperty("url", out var urlEl)
+                    ? urlEl.GetString() : null;
+                if (id is not null)
+                    pictureMap[id] = pictureUrl;
+            }
+
+            if (pictureMap.Count == 0) return;
+
+            for (var i = 0; i < pages.Count; i++)
+            {
+                var p = pages[i];
+                if (pictureMap.TryGetValue(p.Id, out var pic) && pic is not null)
+                {
+                    pages[i] = new ZernioFacebookPageDto(p.Id, p.Name, p.Username, p.Category, p.FanCount, pic);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enrich Facebook pages with avatars for account {AccountId}. Continuing without avatars.", accountId);
+        }
+    }
+
+    public async Task<ZernioFacebookPageDto?> UpdateFacebookPageAsync(
         string accountId,
         string selectedPageId,
         CancellationToken cancellationToken = default)
@@ -1168,7 +1511,15 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var request = new UpdateFacebookPageRequest(selectedPageId);
-            await _connectApi.UpdateFacebookPageAsync(accountId, request, cancellationToken);
+            var response = await _connectApi.UpdateFacebookPageAsync(accountId, request, cancellationToken);
+            if (response?.SelectedPage is not null)
+            {
+                return new ZernioFacebookPageDto(
+                    response.SelectedPage.Id,
+                    response.SelectedPage.Name,
+                    null, null, null);
+            }
+            return null;
         }
         catch (ApiException ex) when (ex.ErrorCode == 402)
         {
@@ -1184,6 +1535,116 @@ public sealed class ZernioClient : IZernioClient
             _logger.LogError(ex, "Zernio API error switching Facebook page for account {AccountId}", accountId);
             throw new DomainException("zernio_facebook_page_switch_error", "Failed to switch Facebook page", ex);
         }
+    }
+
+    public async Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var url = $"/v1/accounts/{accountId}/linkedin-organizations";
+            if (refresh == true) url += "?refresh=true";
+
+            var response = await client.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationsResponse>(json, _jsonOptions);
+
+            var organizations = (result?.Organizations ?? [])
+                .Select(o => new ZernioLinkedInOrganizationDto(
+                    o.Id ?? string.Empty,
+                    o.Name ?? string.Empty,
+                    o.VanityName,
+                    o.LogoUrl))
+                .ToList();
+
+            return new ZernioLinkedInOrganizationsResponseDto(
+                organizations,
+                result?.SelectedOrganizationUrn,
+                result?.Cached ?? false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing LinkedIn organizations for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage LinkedIn organizations.",
+                reason: "linkedin_organizations_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing LinkedIn organizations for account {AccountId}", accountId);
+            throw new DomainException("zernio_linkedin_organizations_error", "Failed to list LinkedIn organizations", ex);
+        }
+    }
+
+    public async Task<ZernioLinkedInOrganizationDto?> UpdateLinkedInOrganizationAsync(
+        string accountId,
+        string selectedOrganizationUrn,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("Zernio");
+            var url = $"/v1/accounts/{accountId}/linkedin-organization";
+
+            var request = new { organizationUrn = selectedOrganizationUrn };
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(request, _jsonOptions),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PutAsync(url, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationItem>(json, _jsonOptions);
+            if (result is not null)
+            {
+                return new ZernioLinkedInOrganizationDto(
+                    result.Id ?? string.Empty,
+                    result.Name ?? string.Empty,
+                    result.VanityName,
+                    result.LogoUrl);
+            }
+            return null;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered switching LinkedIn organization for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to switch LinkedIn organizations.",
+                reason: "linkedin_organization_switch_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error switching LinkedIn organization for account {AccountId}", accountId);
+            throw new DomainException("zernio_linkedin_organization_switch_error", "Failed to switch LinkedIn organization", ex);
+        }
+    }
+
+    // ── LinkedIn Organization response models ────────────────────────────────
+
+    private sealed class LinkedInOrganizationsResponse
+    {
+        public List<LinkedInOrganizationItem>? Organizations { get; set; }
+        public string? SelectedOrganizationUrn { get; set; }
+        public bool Cached { get; set; }
+    }
+
+    private sealed class LinkedInOrganizationItem
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? VanityName { get; set; }
+        public string? LogoUrl { get; set; }
     }
 
     // ── Inbox DM methods ────────────────────────────────────────────────────
@@ -1732,6 +2193,95 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioFacebookConnectPagesResponseDto> GetFacebookConnectPagesAsync(
+        string profileId,
+        string tempToken,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _connectApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var url = $"{baseUrl}/v1/connect/facebook/select-page?profileId={Uri.EscapeDataString(profileId)}&tempToken={Uri.EscapeDataString(tempToken)}";
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorResponse = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to get Facebook connect pages. Status: {StatusCode}, Error: {Error}",
+                    httpResponse.StatusCode, errorResponse);
+                throw new DomainException("zernio_facebook_connect_pages_error", $"Zernio get Facebook pages failed. Error: {errorResponse}");
+            }
+
+            var responseContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var result = JsonSerializer.Deserialize<ZernioFacebookConnectPagesResponseDto>(responseContent, _jsonOptions);
+
+            if (result == null)
+            {
+                throw new DomainException("zernio_facebook_connect_pages_error", "Zernio returned an empty response for Facebook connect pages.");
+            }
+
+            return result;
+        }
+        catch (Exception ex) when (ex is not DomainException)
+        {
+            _logger.LogError(ex, "Zernio API error getting Facebook connect pages for profile {ProfileId}", profileId);
+            throw new DomainException("zernio_facebook_connect_pages_error", "Failed to get Facebook connect pages from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioFacebookConnectSelectResponse> SelectFacebookConnectPageAsync(
+        ZernioFacebookConnectSelectRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _connectApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+            var url = $"{baseUrl}/v1/connect/facebook/select-page";
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(request, _jsonOptions),
+                    System.Text.Encoding.UTF8,
+                    "application/json")
+            };
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorResponse = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to select Facebook connect page. Status: {StatusCode}, Error: {Error}",
+                    httpResponse.StatusCode, errorResponse);
+                throw new DomainException("zernio_facebook_connect_select_error", $"Zernio select Facebook page failed. Error: {errorResponse}");
+            }
+
+            var responseContent = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var result = JsonSerializer.Deserialize<ZernioFacebookConnectSelectResponse>(responseContent, _jsonOptions);
+
+            if (result == null)
+            {
+                throw new DomainException("zernio_facebook_connect_select_error", "Zernio returned an empty response for Facebook connect selection.");
+            }
+
+            return result;
+        }
+        catch (Exception ex) when (ex is not DomainException)
+        {
+            _logger.LogError(ex, "Zernio API error selecting Facebook connect page for profile {ProfileId}", request.ProfileId);
+            throw new DomainException("zernio_facebook_connect_select_error", "Failed to select Facebook connect page in Zernio", ex);
+        }
+    }
+
     // ── Private platform-specific list helpers ───────────────────────────────
 
     private async Task<IReadOnlyList<ZernioSelectOptionDto>> ListFacebookPagesAsync(
@@ -1870,10 +2420,37 @@ public sealed class ZernioClient : IZernioClient
             response.Account.ProfilePicture);
     }
 
+    private static GetMediaPresignedUrlRequest.ContentTypeEnum MapMimeTypeToContentTypeEnum(string mimeType)
+    {
+        return mimeType.ToLowerInvariant() switch
+        {
+            "image/jpeg" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageJpeg,
+            "image/jpg" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageJpg,
+            "image/png" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImagePng,
+            "image/webp" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageWebp,
+            "image/gif" => GetMediaPresignedUrlRequest.ContentTypeEnum.ImageGif,
+            "video/mp4" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoMp4,
+            "video/mpeg" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoMpeg,
+            "video/quicktime" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoQuicktime,
+            "video/avi" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoAvi,
+            "video/x-msvideo" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoXMsvideo,
+            "video/webm" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoWebm,
+            "video/x-m4v" => GetMediaPresignedUrlRequest.ContentTypeEnum.VideoXM4v,
+            "application/pdf" => GetMediaPresignedUrlRequest.ContentTypeEnum.ApplicationPdf,
+            _ => throw new DomainException("unsupported_mime_type", $"MIME type '{mimeType}' is not supported by Zernio.")
+        };
+    }
+
     private sealed class ZernioRawPostListResponse
     {
         public List<ZernioRawPost>? Posts { get; set; }
         public ZernioRawPagination? Pagination { get; set; }
+    }
+
+    private sealed class ZernioRawCreatePostResponse
+    {
+        public string? Message { get; set; }
+        public ZernioRawPost? Post { get; set; }
     }
 
     private sealed class ZernioRawPost

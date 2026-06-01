@@ -217,6 +217,12 @@
   margin-top: 2px;
 }
 
+.switchDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ── SubForm (object / nested) ── */
 .subFormBox {
   border: 1px solid var(--clr-border);

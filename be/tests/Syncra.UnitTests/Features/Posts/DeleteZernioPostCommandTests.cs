@@ -70,7 +70,7 @@ public class DeleteZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteHandler_PublishedPost_SkipsZernioCallAndSoftDeletes()
+    public async Task DeleteHandler_PublishedPost_CallsZernioDeleteThenSoftDeletes()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -87,14 +87,14 @@ public class DeleteZernioPostCommandTests : IDisposable
 
         // Assert
         Assert.True(result);
-        _zernioClientMock.Verify(x => x.DeletePostAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
 
         var deletedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
         Assert.True(deletedPost.IsDeleted);
     }
 
     [Fact]
-    public async Task DeleteHandler_PartialPost_SkipsZernioCallAndSoftDeletes()
+    public async Task DeleteHandler_PartialPost_CallsZernioDeleteThenSoftDeletes()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -110,7 +110,7 @@ public class DeleteZernioPostCommandTests : IDisposable
 
         // Assert
         Assert.True(result);
-        _zernioClientMock.Verify(x => x.DeletePostAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
 
         var deletedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
         Assert.True(deletedPost.IsDeleted);

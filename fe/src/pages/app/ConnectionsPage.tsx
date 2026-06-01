@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, Check, X, Info, Copy, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle
+  Plus, ChevronDown, ChevronUp, Check, X, Info, Copy, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, ArrowRight, Pencil, HelpCircle
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
 import { socialAccountsApi } from '../../api/socialAccounts';
+import { getSocialAvatarUrl, getFbPageAvatarUrl } from '../../utils/social';
 import { postsApi } from '../../api/posts';
 import api from '../../lib/axios';
 import styles from './ConnectionsPage.module.css';
@@ -44,6 +45,48 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'xads', label: 'X Ads', color: '#201515', isSupported: false },
   { id: 'snapchat', label: 'Snapchat', color: '#fffc00', isSupported: true },
 ];
+
+const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
+
+const getManageButtonLabel = (platform: string): string => {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return 'Manage Pages';
+    case 'linkedin':
+      return 'Manage Orgs';
+    case 'pinterest':
+      return 'Manage Boards';
+    case 'googlebusiness':
+      return 'Manage Locations';
+    case 'whatsapp':
+      return 'Manage Phones';
+    case 'snapchat':
+      return 'Manage Profiles';
+    default:
+      return 'Manage Pages';
+  }
+};
+
+const getSubEntityName = (platform: string): string => {
+  const p = platform.toLowerCase();
+  switch (p) {
+    case 'facebook':
+      return 'page';
+    case 'linkedin':
+      return 'organization';
+    case 'pinterest':
+      return 'board';
+    case 'googlebusiness':
+      return 'location';
+    case 'whatsapp':
+      return 'phone number';
+    case 'snapchat':
+      return 'profile';
+    default:
+      return 'page';
+  }
+};
 
 const PLATFORM_GROUPS: { title: string; platformIds: string[] }[] = [
   {
@@ -333,7 +376,7 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
 }
 
 function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending }: {
-  workspace: { id: string; name: string };
+  workspace: { id: string; name: string; color?: string };
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
@@ -353,7 +396,9 @@ function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending 
           </div>
           <div className={styles.disconnectModalBody}>
             <p className={styles.disconnectText}>
-              Are you sure you want to delete <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
+              Are you sure you want to delete{' '}
+              <span className={styles.handleDot} style={{ backgroundColor: workspace.color || '#fdba74', display: 'inline-block', margin: '0 4px' }} />
+              <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
             </p>
           </div>
           <div className={styles.disconnectModalFooter}>
@@ -389,6 +434,9 @@ export default function ConnectionsPage() {
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const [disconnectPreCheckLoad, setDisconnectPreCheckLoad] = useState<string | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<typeof workspaces[0] | null>(null);
+  const [expandedPlatformId, setExpandedPlatformId] = useState<string | null>(null);
+  const [quickCreatePlatformId, setQuickCreatePlatformId] = useState<string | null>(null);
+  const [quickCreateName, setQuickCreateName] = useState<string>('');
 
   // Drawers open state
   const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
@@ -455,27 +503,29 @@ export default function ConnectionsPage() {
     }
   }, [activeWorkspace, workspaces, isNewConnectionOpen]);
 
+  // Reset expanded platform and quick create input when drawer closes or workspace changes
+  useEffect(() => {
+    setExpandedPlatformId(null);
+    setQuickCreatePlatformId(null);
+    setQuickCreateName('');
+  }, [isNewConnectionOpen, selectedWorkspaceForConnection]);
+
+  // Set workspace filter from localStorage if returning from a quick create connect redirect
+  useEffect(() => {
+    const pendingWsId = localStorage.getItem('filter_workspace_after_connect');
+    if (pendingWsId) {
+      setSelectedWorkspaceFilter(pendingWsId);
+      localStorage.removeItem('filter_workspace_after_connect');
+    }
+  }, []);
+
   // Fetch connections for selected workspace or all workspaces
   const { data: connections = [], isLoading: isConnectionsLoading } = useQuery<
     (SocialAccountDto & { workspace: typeof workspaces[0] })[]
   >({
-    queryKey: ['connections-list', selectedWorkspaceFilter, workspaces.map(w => w.id).join(',')],
+    queryKey: ['connections-list'],
     queryFn: async () => {
-      if (selectedWorkspaceFilter === 'all') {
-        const promises = workspaces.map(async (ws) => {
-          try {
-            const result = await socialAccountsApi.getSocialAccounts(ws.id);
-            return result.items.map(acc => ({ ...acc, workspace: ws }));
-          } catch (err) {
-            console.error(`Error loading social accounts for workspace ${ws.name}`, err);
-            return [];
-          }
-        });
-        const results = await Promise.all(promises);
-        return results.flat();
-      } else {
-        const ws = workspaces.find(w => w.id === selectedWorkspaceFilter);
-        if (!ws) return [];
+      const promises = workspaces.map(async (ws) => {
         try {
           const result = await socialAccountsApi.getSocialAccounts(ws.id);
           return result.items.map(acc => ({ ...acc, workspace: ws }));
@@ -483,10 +533,61 @@ export default function ConnectionsPage() {
           console.error(`Error loading social accounts for workspace ${ws.name}`, err);
           return [];
         }
-      }
+      });
+      const results = await Promise.all(promises);
+      return results.flat();
     },
+    staleTime: 30_000,
     enabled: workspaces.length > 0,
+  });  // Helper to choose a random color avoiding existing workspace colors if possible
+  const getRandomWorkspaceColor = (): string => {
+    const defaultPalette = ['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'];
+    const usedColors = new Set(workspaces.map(w => w.color?.toLowerCase()).filter(Boolean));
+    const availableColors = defaultPalette.filter(c => !usedColors.has(c.toLowerCase()));
+    const selectFrom = availableColors.length > 0 ? availableColors : defaultPalette;
+    return selectFrom[Math.floor(Math.random() * selectFrom.length)];
+  };
+
+  // Mutation for inline quick workspace creation
+  const quickCreateWorkspaceMutation = useMutation({
+    mutationFn: async (vars: { name: string; color: string; platformId: string }) => {
+      return workspacesApi.createWorkspace({
+        name: vars.name,
+        color: vars.color,
+      });
+    },
+    onSuccess: (newWorkspace, variables) => {
+      showSuccess(`Workspace "${newWorkspace.name}" created successfully`);
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      
+      // Store in localStorage to auto filter once return from redirect
+      localStorage.setItem('filter_workspace_after_connect', newWorkspace.id);
+      
+      // Reset inline inputs
+      setQuickCreatePlatformId(null);
+      setQuickCreateName('');
+      
+      // Redirect to OAuth
+      void handleConnectPlatform(variables.platformId, newWorkspace.id);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to create workspace';
+      showError(msg);
+    }
   });
+
+  const handleQuickCreateWorkspace = (platformId: string) => {
+    if (!quickCreateName.trim()) {
+      showError('Please enter a workspace name');
+      return;
+    }
+    const color = getRandomWorkspaceColor();
+    quickCreateWorkspaceMutation.mutate({
+      name: quickCreateName.trim(),
+      color,
+      platformId
+    });
+  };
 
   // Create Workspace Mutation
   const createWorkspaceMutation = useMutation({
@@ -608,6 +709,36 @@ export default function ConnectionsPage() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to switch Facebook page';
+      showError(msg);
+    }
+  });
+
+  // LinkedIn organizations query (only for LinkedIn accounts in manage pages drawer)
+  const liAccountId = selectedManagePagesAccount?.platform?.toLowerCase() === 'linkedin'
+    ? selectedManagePagesAccount.id
+    : null;
+
+  const { data: liOrgsData, isLoading: isLiOrgsLoading } = useQuery({
+    queryKey: ['linkedin-organizations', liAccountId],
+    queryFn: () => socialAccountsApi.getLinkedInOrganizations(
+      selectedManagePagesAccount!.workspace.id,
+      liAccountId!
+    ),
+    enabled: liAccountId !== null,
+  });
+
+  // Switch LinkedIn organization mutation
+  const switchLiOrgMutation = useMutation({
+    mutationFn: async ({ accountId, workspaceId, selectedOrgUrn }: { accountId: string; workspaceId: string; selectedOrgUrn: string }) => {
+      await socialAccountsApi.updateLinkedInOrganization(workspaceId, accountId, selectedOrgUrn);
+    },
+    onSuccess: () => {
+      showSuccess('LinkedIn organization switched successfully');
+      setSelectedManagePagesAccount(null);
+      void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to switch LinkedIn organization';
       showError(msg);
     }
   });
@@ -769,10 +900,10 @@ export default function ConnectionsPage() {
           <div className={styles.cardHeader}>
             <div className={styles.cardHeaderLeft}>
               <div className={styles.cardAvatarWrap}>
-                {account.avatarUrl ? (
+                {getSocialAvatarUrl(account) ? (
                   <>
                     <img
-                      src={account.avatarUrl}
+                      src={getSocialAvatarUrl(account)}
                       alt=""
                       className={styles.cardAvatar}
                     />
@@ -825,7 +956,7 @@ export default function ConnectionsPage() {
               onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
               title={`Filter by workspace: ${account.workspace.name}`}
             >
-              <span className={styles.handleDot} />
+              <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#fdba74' }} />
               <span className={styles.handleText}>{account.workspace.name}</span>
               <button
                 className={styles.copyBtn}
@@ -840,13 +971,15 @@ export default function ConnectionsPage() {
             </div>
           </div>
 
-          <div className={styles.cardActions}>
-            <button
-              className={styles.managePagesBtn}
-              onClick={() => setSelectedManagePagesAccount(account)}
-            >
-              Manage Pages
-            </button>
+          <div className={styles.cardActions} style={SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase()) ? {} : { gridTemplateColumns: '1fr' }}>
+            {SUB_ENTITY_PLATFORMS.includes(account.platform.toLowerCase()) && (
+              <button
+                className={styles.managePagesBtn}
+                onClick={() => setSelectedManagePagesAccount(account)}
+              >
+                {getManageButtonLabel(account.platform)}
+              </button>
+            )}
             <button
               className={styles.disconnectBtn}
               onClick={() => handleDisconnectInit(account)}
@@ -1360,14 +1493,137 @@ export default function ConnectionsPage() {
                   )}
 
                   <div className={`${styles.platformsList} ${!selectedWorkspaceForConnection ? styles.platformsListBlur : ''}`}>
-                    {PLATFORM_GROUPS.map(group => (
+                    {PLATFORM_GROUPS.map(group => {
+                      const sortedIds = [...group.platformIds].sort((a, b) => {
+                        const aConnected = selectedWorkspaceForConnection && connections.some(
+                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === a
+                        );
+                        const bConnected = selectedWorkspaceForConnection && connections.some(
+                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === b
+                        );
+                        if (aConnected && !bConnected) return 1;
+                        if (!aConnected && bConnected) return -1;
+                        return 0;
+                      });
+
+                      return (
                       <div key={group.title} className={styles.platformGroup}>
                         <div className={styles.platformGroupTitle}>{group.title.toUpperCase()}</div>
                         <div className={styles.platformGroupItems}>
-                          {group.platformIds.map((platformId) => {
+                          {sortedIds.map((platformId) => {
                             const platform = platformsById[platformId];
                             if (!platform) return null;
                             const isDisabled = !selectedWorkspaceForConnection || !platform.isSupported;
+                            
+                            const isConnected = selectedWorkspaceForConnection && connections.some(
+                              conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === platform.id
+                            );
+
+                            if (isConnected) {
+                              const isExpanded = expandedPlatformId === platform.id;
+                              const currentWorkspaceName = workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name || '';
+                              const eligibleWorkspaces = workspaces.filter(ws => 
+                                ws.id !== selectedWorkspaceForConnection && 
+                                !connections.some(conn => conn.workspace.id === ws.id && conn.platform.toLowerCase() === platform.id)
+                              );
+                              
+                              return (
+                                <div key={platform.id} className={`${styles.platformListItemContainer} ${isExpanded ? styles.expanded : ''}`}>
+                                  <button
+                                    type="button"
+                                    className={styles.platformListItemHeader}
+                                    onClick={() => setExpandedPlatformId(isExpanded ? null : platform.id)}
+                                  >
+                                    <div className={styles.platformListLeft}>
+                                      <div
+                                        className={styles.platformListIconConnected}
+                                      >
+                                        <PlatformIcon platform={platform.id} size={18} />
+                                      </div>
+                                      <span className={styles.platformListLabelConnected}>{platform.label}</span>
+                                    </div>
+                                    <div className={styles.platformListRightConnected}>
+                                      <span className={styles.connectedText}>Connected</span>
+                                      {isExpanded ? <ChevronUp size={16} className={styles.platformListChevron} /> : <ChevronDown size={16} className={styles.platformListChevron} />}
+                                    </div>
+                                  </button>
+                                  
+                                  {isExpanded && (
+                                    <div className={styles.platformListItemContent}>
+                                      <p className={styles.connectedExplanation}>
+                                        {platform.label} is connected to <strong>{currentWorkspaceName}</strong>. Each workspace holds one {platform.label} account. To add another, connect it to a different workspace:
+                                      </p>
+                                      
+                                      <div className={styles.eligibleWorkspacesList}>
+                                        {eligibleWorkspaces.map(ws => (
+                                          <button
+                                            key={ws.id}
+                                            type="button"
+                                            className={styles.eligibleWorkspaceBtn}
+                                            onClick={() => handleConnectPlatform(platform.id, ws.id)}
+                                            disabled={connectingPlatform === platform.id}
+                                          >
+                                            <div className={styles.workspaceOptRow}>
+                                              <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
+                                              <span className={styles.workspaceName}>{ws.name}</span>
+                                            </div>
+                                            <ArrowRight size={14} className={styles.eligibleWorkspaceArrow} />
+                                          </button>
+                                        ))}
+                                        
+                                        {quickCreatePlatformId === platform.id ? (
+                                          <div className={styles.quickCreateInputContainer}>
+                                            <Plus size={14} className={styles.quickCreatePlusActive} />
+                                            <input
+                                              type="text"
+                                              className={styles.quickCreateInput}
+                                              placeholder="New workspace..."
+                                              value={quickCreateName}
+                                              onChange={(e) => setQuickCreateName(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                  handleQuickCreateWorkspace(platform.id);
+                                                } else if (e.key === 'Escape') {
+                                                  setQuickCreatePlatformId(null);
+                                                }
+                                              }}
+                                              autoFocus
+                                            />
+                                            {quickCreateName.trim() && (
+                                              <button
+                                                type="button"
+                                                className={styles.quickCreateSubmitBtn}
+                                                onClick={() => handleQuickCreateWorkspace(platform.id)}
+                                                disabled={quickCreateWorkspaceMutation.isPending}
+                                              >
+                                                {quickCreateWorkspaceMutation.isPending ? (
+                                                  <Loader2 size={14} className={styles.btnSpinner} />
+                                                ) : (
+                                                  <ArrowRight size={14} />
+                                                )}
+                                              </button>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            className={styles.quickCreateWorkspaceBtn}
+                                            onClick={() => {
+                                              setQuickCreatePlatformId(platform.id);
+                                              setQuickCreateName('');
+                                            }}
+                                          >
+                                            <Plus size={14} className={styles.quickCreatePlus} />
+                                            <span>New workspace...</span>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+
                             return (
                               <button
                                 key={platform.id}
@@ -1404,7 +1660,8 @@ export default function ConnectionsPage() {
                           })}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 </div>
               </div>
@@ -1427,9 +1684,9 @@ export default function ConnectionsPage() {
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>
-                  Switch {selectedManagePagesAccount.platform.charAt(0).toUpperCase() + selectedManagePagesAccount.platform.slice(1)} {selectedManagePagesAccount.platform.toLowerCase() === 'youtube' ? 'channel' : selectedManagePagesAccount.platform.toLowerCase() === 'instagram' ? 'account' : 'page'}
+                  Switch {selectedManagePagesAccount.platform.charAt(0).toUpperCase() + selectedManagePagesAccount.platform.slice(1)} {getSubEntityName(selectedManagePagesAccount.platform)}
                 </h2>
-                <p className={styles.drawerSubtitle}>Pick a different page to publish from.</p>
+                <p className={styles.drawerSubtitle}>Pick a different {getSubEntityName(selectedManagePagesAccount.platform)} to publish from.</p>
               </div>
               <button className={styles.drawerCloseBtn} onClick={() => setSelectedManagePagesAccount(null)}>
                 <X size={18} />
@@ -1469,9 +1726,9 @@ export default function ConnectionsPage() {
                           ) : (
                             <>
                               <div className={styles.pageAvatarWrap}>
-                                {selectedManagePagesAccount.avatarUrl ? (
+                                {getFbPageAvatarUrl(selectedManagePagesAccount, page.id) ? (
                               <img
-                                src={selectedManagePagesAccount.avatarUrl}
+                                src={getFbPageAvatarUrl(selectedManagePagesAccount, page.id)}
                                 alt={page.name}
                                 className={styles.pageAvatar}
                               />
@@ -1501,8 +1758,73 @@ export default function ConnectionsPage() {
                   ) : (
                     <p className={styles.pagesEmpty}>No pages found for this account.</p>
                   )
+                ) : selectedManagePagesAccount.platform.toLowerCase() === 'linkedin' ? (
+                  isLiOrgsLoading ? (
+                    <div className={styles.pagesLoading}>
+                      <Loader2 size={20} className={styles.spinner} />
+                      <span>Loading organizations...</span>
+                    </div>
+                  ) : liOrgsData?.organizations && liOrgsData.organizations.length > 0 ? (
+                    liOrgsData.organizations.map((org) => {
+                      const isCurrent = org.urn === liOrgsData.selectedOrganizationUrn;
+                      return (
+                        <button
+                          key={org.urn}
+                          type="button"
+                          className={styles.pageSelectorBtn}
+                          disabled={isCurrent || switchLiOrgMutation.isPending}
+                          onClick={() => {
+                            switchLiOrgMutation.mutate({
+                              accountId: selectedManagePagesAccount.id,
+                              workspaceId: selectedManagePagesAccount.workspace.id,
+                              selectedOrgUrn: org.urn,
+                            });
+                          }}
+                        >
+                          {switchLiOrgMutation.isPending && switchLiOrgMutation.variables?.selectedOrgUrn === org.urn ? (
+                            <div className={styles.pageLoadingWrap}>
+                              <Loader2 size={18} className={styles.btnSpinner} />
+                              <span>Switching...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className={styles.pageAvatarWrap}>
+                                {org.logoUrl ? (
+                                  <img
+                                    src={org.logoUrl}
+                                    alt={org.name}
+                                    className={styles.pageAvatar}
+                                  />
+                                ) : (
+                                  <div
+                                    className={styles.pagePlatformFallback}
+                                    style={{
+                                      color: ALL_PLATFORMS.find(p => p.id === 'linkedin')?.color || '#0a66c2'
+                                    }}
+                                  >
+                                    <PlatformIcon platform="linkedin" size={18} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className={styles.pageInfo}>
+                                <div className={styles.pageNameRow}>
+                                  <span className={styles.pageName}>{org.name}</span>
+                                  {isCurrent && <span className={styles.currentBadge}>Current</span>}
+                                </div>
+                                <p className={styles.pageCategory}>LinkedIn Organization</p>
+                              </div>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.pagesEmpty}>No organizations found for this account.</p>
+                  )
                 ) : (
-                  <p className={styles.pagesEmpty}>Page switching is not available for this platform yet.</p>
+                  <p className={styles.pagesEmpty}>
+                    Selecting options for {selectedManagePagesAccount.platform} is done during the connection setup. To change it, please reconnect the account.
+                  </p>
                 )}
               </div>
             </div>

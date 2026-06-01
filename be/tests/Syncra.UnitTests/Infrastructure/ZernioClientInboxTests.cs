@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
 using Xunit;

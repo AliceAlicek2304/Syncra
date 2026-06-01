@@ -13,18 +13,10 @@ import BillingGateOverlay from '../../components/BillingGateOverlay';
 import styles from './SocialAccounts.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons';
+import { getSocialAvatarUrl } from '../../utils/social';
+import type { SocialAccountDto } from '../../api/socialAccounts';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-
-interface SocialAccountDto {
-  id: string;
-  platform: string;
-  displayName: string;
-  handle?: string;
-  avatarUrl?: string;
-  isActive: boolean;
-  connectedAtUtc: string;
-}
 
 interface BillingErrorBody {
   reason: string;
@@ -258,9 +250,9 @@ export default function SocialAccounts() {
                     const isDisconnecting = disconnecting === account.id;
                     return (
                       <div key={account.id} className={styles.accountRow}>
-                        {account.avatarUrl ? (
+                        {getSocialAvatarUrl(account) ? (
                           <img
-                            src={account.avatarUrl}
+                            src={getSocialAvatarUrl(account)}
                             alt={account.displayName}
                             className={styles.avatar}
                           />

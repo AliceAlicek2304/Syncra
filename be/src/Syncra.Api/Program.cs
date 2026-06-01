@@ -78,6 +78,12 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/api/v1/hubs/notifications");
 app.MapHealthChecks("/health");
 
+// Register recurring jobs
+RecurringJob.AddOrUpdate<ZernioSyncJob>(
+    "zernio-sync-job",
+    job => job.ExecuteAsync(CancellationToken.None),
+    "*/15 * * * *");
+
 // Program entry point
 app.Run();
 public partial class Program { }

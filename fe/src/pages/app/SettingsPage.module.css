@@ -205,6 +205,50 @@
   border-color: #fff;
 }
 
+/* ── Color Picker ── */
+.colorPickerContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #f8f4f0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5dfd3;
+}
+
+.colorBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.colorPalette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  flex: 1;
+}
+
+.colorPaletteBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.colorPaletteBtn:hover {
+  transform: scale(1.1);
+}
+
+.colorPaletteBtnActive {
+  border-color: #ff4f00;
+  transform: scale(1.1);
+}
+
 @media (max-width: 640px) {
   .radarLayout { gap: 24px; }
   .radarWrap { min-width: 100%; }

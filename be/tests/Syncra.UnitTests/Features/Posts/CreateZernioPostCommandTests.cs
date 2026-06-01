@@ -348,7 +348,11 @@ public class CreateZernioPostCommandTests : IDisposable
             .ReturnsAsync(new ZernioCreatePostResult("zernio_post_media", "scheduled", 1));
 
         _zernioClientMock
-            .Setup(x => x.UploadMediaToZernioAsync(It.IsAny<System.IO.Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMediaPresignedUrlAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ZernioPresignResponse("https://presigned.url/upload", "https://zernio.com/public/media.png"));
+
+        _zernioClientMock
+            .Setup(x => x.UploadMediaToZernioAsync(It.IsAny<string>(), It.IsAny<System.IO.Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("https://zernio.com/public/media.png");
 
         var mediaItem = new PostMediaItemDto(
@@ -376,9 +380,9 @@ public class CreateZernioPostCommandTests : IDisposable
         // Assert
         Assert.NotNull(result);
         _zernioClientMock.Verify(x => x.UploadMediaToZernioAsync(
+            It.IsAny<string>(),
             It.IsAny<System.IO.Stream>(),
             "image/png", // Should be resolved from "media.png" extension
-            "media.png",
             It.IsAny<CancellationToken>()
         ), Times.Once);
     }
@@ -421,110 +425,17 @@ public class CreateZernioPostCommandTests : IDisposable
         
         // Verify that UploadMediaToZernioAsync is NEVER called because the file is already on Zernio
         _zernioClientMock.Verify(x => x.UploadMediaToZernioAsync(
+            It.IsAny<string>(),
             It.IsAny<System.IO.Stream>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()
+        ), Times.Never);
+        _zernioClientMock.Verify(x => x.GetMediaPresignedUrlAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
             It.IsAny<CancellationToken>()
         ), Times.Never);
     }
 
-    [Fact]
-    public async Task Handler_WithPostIdAndDraftStatus_UpdatesPostAndCallsPut()
-    {
-        // Arrange
-        var account1 = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_twitter_1");
-
-        // Seed existing post in DB
-        var existingPost = Post.Create(
-            _workspaceId,
-            _userId,
-            "Old Title",
-            "Old Content",
-            null,
-            null);
-        existingPost.AssignZernioPost("zernio_old_id", 1);
-        _db.Posts.Add(existingPost);
-        await _db.SaveChangesAsync();
-
-        _zernioClientMock
-            .Setup(x => x.CreatePostAsync(It.Is<ZernioCreatePostRequest>(r => r.PostId == "zernio_old_id" && r.Status == "draft"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ZernioCreatePostResult("zernio_old_id", "draft", 1));
-
-        var command = new CreateZernioPostCommand(
-            _workspaceId,
-            _userId,
-            "New Title",
-            "New Content",
-            new List<Guid> { account1.Id },
-            ScheduledAtUtc: null,
-            PublishNow: false,
-            IsDraft: true,
-            MediaItems: null,
-            PlatformContents: null,
-            PostId: "zernio_old_id");
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("zernio_old_id", result.ZernioPostId);
-        
-        // Verify post content updated in database
-        var updatedPost = await _db.Posts.FirstOrDefaultAsync(p => p.ZernioPostId == "zernio_old_id");
-        Assert.NotNull(updatedPost);
-        Assert.Equal("New Title", updatedPost!.Title.Value);
-        Assert.Equal("New Content", updatedPost!.Content.Value);
-    }
-
-    [Fact]
-    public async Task Handler_WithPostIdAndPublishedStatusAndTwitterOnly_UpdatesPostAndCallsEditPost()
-    {
-        // Arrange
-        var account1 = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_twitter_1");
-
-        // Seed existing published post in DB
-        var existingPost = Post.Create(
-            _workspaceId,
-            _userId,
-            "Old Title",
-            "Old Content",
-            null,
-            Guid.NewGuid());
-        existingPost.AssignZernioPost("zernio_published_id", 1);
-        existingPost.MarkPublishAttempt(DateTime.UtcNow);
-        existingPost.MarkPublishSuccess(DateTime.UtcNow, "ext_123", "http://twitter.com/123");
-        _db.Posts.Add(existingPost);
-        await _db.SaveChangesAsync();
-
-        _zernioClientMock
-            .Setup(x => x.CreatePostAsync(It.Is<ZernioCreatePostRequest>(r => r.PostId == "zernio_published_id" && r.Status == "published"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ZernioCreatePostResult("zernio_published_id", "published", 1));
-
-        var command = new CreateZernioPostCommand(
-            _workspaceId,
-            _userId,
-            "New Title",
-            "New Content",
-            new List<Guid> { account1.Id },
-            ScheduledAtUtc: null,
-            PublishNow: false,
-            IsDraft: false,
-            MediaItems: null,
-            PlatformContents: null,
-            PostId: "zernio_published_id");
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.NotNull(result);
-        
-        // Verify post content updated in database
-        var updatedPost = await _db.Posts.FirstOrDefaultAsync(p => p.ZernioPostId == "zernio_published_id");
-        Assert.NotNull(updatedPost);
-        Assert.Equal("New Title", updatedPost!.Title.Value);
-        Assert.Equal("New Content", updatedPost!.Content.Value);
-    }
 }
 

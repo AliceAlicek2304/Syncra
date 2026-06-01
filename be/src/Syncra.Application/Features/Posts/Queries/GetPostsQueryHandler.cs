@@ -40,7 +40,7 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             dateTo: request.ScheduledToUtc,
             cancellationToken: cancellationToken);
 
-        var items = result.Posts.Select(MapToDto).ToList();
+        var items = result.Posts.Select(p => MapToDto(p, request.WorkspaceId)).ToList();
 
         return new PaginatedResult<PostDto>(
             Items: items,
@@ -50,11 +50,11 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             TotalPages: result.Pages);
     }
 
-    private static PostDto MapToDto(ZernioPostListItemDto zp)
+    private static PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId)
     {
         return new PostDto(
             Id: ObjectIdToGuid(zp.Id),
-            WorkspaceId: Guid.Empty,
+            WorkspaceId: workspaceId,
             UserId: Guid.Empty,
             Title: zp.Title ?? string.Empty,
             Content: zp.Content,

@@ -12,8 +12,12 @@ public interface IZernioClient
         bool? headless = null,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ZernioAccountDto>> ListAccountsAsync(
+    Task<ZernioListAccountsResponseDto> ListAccountsAsync(
         string profileId,
+        string? platform = null,
+        bool? includeOverLimit = null,
+        int? page = null,
+        int? limit = null,
         CancellationToken cancellationToken = default);
 
     Task DisconnectAccountAsync(
@@ -61,10 +65,19 @@ public interface IZernioClient
         ZernioCreatePostRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<string> UploadMediaToZernioAsync(
-        Stream fileStream,
-        string mimeType,
+    Task<ZernioCreatePostResult> UpdatePostAsync(
+        ZernioCreatePostRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioPresignResponse> GetMediaPresignedUrlAsync(
         string fileName,
+        string mimeType,
+        CancellationToken cancellationToken = default);
+
+    Task<string> UploadMediaToZernioAsync(
+        string uploadUrl,
+        Stream content,
+        string mimeType,
         CancellationToken cancellationToken = default);
 
     Task UpdatePostAsync(
@@ -78,6 +91,11 @@ public interface IZernioClient
 
     Task DeletePostAsync(
         string zernioPostId,
+        CancellationToken cancellationToken = default);
+
+    Task UnpublishPostAsync(
+        string zernioPostId,
+        string platform,
         CancellationToken cancellationToken = default);
 
     Task<ZernioPostListResponseDto> ListPostsAsync(
@@ -175,9 +193,32 @@ public interface IZernioClient
         bool? refresh = null,
         CancellationToken cancellationToken = default);
 
-    Task UpdateFacebookPageAsync(
+    Task<ZernioFacebookPageDto?> UpdateFacebookPageAsync(
         string accountId,
         string selectedPageId,
+        CancellationToken cancellationToken = default);
+
+    // ── Facebook Connect select-page methods ───────────────────
+
+    Task<ZernioFacebookConnectPagesResponseDto> GetFacebookConnectPagesAsync(
+        string profileId,
+        string tempToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioFacebookConnectSelectResponse> SelectFacebookConnectPageAsync(
+        ZernioFacebookConnectSelectRequest request,
+        CancellationToken cancellationToken = default);
+
+    // ── LinkedIn Organization methods ────────────────────────────
+
+    Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(
+        string accountId,
+        bool? refresh = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioLinkedInOrganizationDto?> UpdateLinkedInOrganizationAsync(
+        string accountId,
+        string selectedOrganizationUrn,
         CancellationToken cancellationToken = default);
 
     // ── Follower Stats methods ────────────────────────────────

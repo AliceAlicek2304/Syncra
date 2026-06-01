@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, Upload, Grid, List, Calendar, ChevronDown, 
   X, ArrowLeft, ArrowRight, AlertCircle, FileSpreadsheet,
-  MoreVertical, Copy, Check, Trash2
+  MoreVertical, Copy, Check, Trash2, Pencil, Globe
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
@@ -17,11 +17,7 @@ import type { SocialAccountDto } from '../../api/socialAccounts'
 import styles from './PostsOverviewPage.module.css'
 import SchedulePicker from '../../components/SchedulePicker'
 
-import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
-
-const PlatformIcon = ({ platform, size = 18 }: { platform: string; size?: number }) => {
-  return <ExtendedPlatformIcon platform={platform} size={size} />
-}
+import { PlatformIcon } from '../../components/create-post/platformIcons'
 
 // ─── Status Badge Definition ───
 const StatusBadge = ({ status }: { status: Post['status'] }) => {
@@ -60,11 +56,19 @@ export default function PostsOverviewPage() {
   const { workspaces, activeWorkspace } = useWorkspace()
   const { user } = useAuth()
   const { openCreatePost, openEditPost } = useCreatePostModal()
-  const { success: showSuccess } = useToast()
+  const { success: showSuccess, error: showError } = useToast()
   
   const queryClient = useQueryClient()
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
   const [selectedPostDetails, setSelectedPostDetails] = useState<Post | null>(null)
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<Post | null>(null)
+  const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false)
+  const [isDeletingSingle, setIsDeletingSingle] = useState<boolean>(false)
+  const [isDeletingSyncraOnly, setIsDeletingSyncraOnly] = useState<boolean>(false)
+  const [isDeletingPlatformOnly, setIsDeletingPlatformOnly] = useState<boolean>(false)
+  const [isDeletingPlatformAndSyncra, setIsDeletingPlatformAndSyncra] = useState<boolean>(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   
   // ─── Filter & View States ───
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
@@ -74,10 +78,31 @@ export default function PostsOverviewPage() {
     ? workspaces.find(w => w.name === workspaceFilter)
     : undefined
   const workspaceId = selectedWorkspace?.id || activeWorkspace?.id
+  const workspaceNameMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    workspaces.forEach(w => map.set(w.id, w.name))
+    return map
+  }, [workspaces])
+  const workspaceColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    workspaces.forEach(w => map.set(w.id, w.color || '#fdba74'))
+    return map
+  }, [workspaces])
   const [userFilter, setUserFilter] = useState<string>('All users')
   const [dateFilter, setDateFilter] = useState<string>('All dates')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [weekStartsOn, setWeekStartsOn] = useState<'sun' | 'mon'>(() => {
+    const saved = localStorage.getItem('syncra_week_starts_on')
+    return (saved === 'mon' || saved === 'sun') ? saved : 'sun'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('syncra_week_starts_on', weekStartsOn)
+  }, [weekStartsOn])
+
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
   const [searchParams, setSearchParams] = useSearchParams()
@@ -150,7 +175,7 @@ export default function PostsOverviewPage() {
   const handlePostClick = (post: Post) => {
     if (post.status === 'published') {
       setSelectedPostDetails(post)
-    } else if (post.status === 'scheduled' || post.status === 'draft') {
+    } else if (post.status === 'scheduled' || post.status === 'draft' || post.status === 'failed' || post.status === 'partial') {
       const scheduledDate = new Date(post.scheduledAtUtc || post.createdAt)
       const scheduledTimeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) // e.g. "14:30"
       openEditPost({
@@ -229,11 +254,13 @@ export default function PostsOverviewPage() {
         } else if (dateFilter === 'Tomorrow') {
           if (postDate < tomorrow || postDate >= dayAfterTomorrow) return false
         } else if (dateFilter === 'This week') {
-          const firstDayOfWeek = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000)
+          const dayOfWeekOffset = weekStartsOn === 'sun' ? today.getDay() : (today.getDay() + 6) % 7
+          const firstDayOfWeek = new Date(today.getTime() - dayOfWeekOffset * 24 * 60 * 60 * 1000)
           const lastDayOfWeek = new Date(firstDayOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
           if (postDate < firstDayOfWeek || postDate >= lastDayOfWeek) return false
         } else if (dateFilter === 'Next week') {
-          const startOfNextWeek = new Date(today.getTime() + (7 - today.getDay()) * 24 * 60 * 60 * 1000)
+          const dayOfWeekOffset = weekStartsOn === 'sun' ? today.getDay() : (today.getDay() + 6) % 7
+          const startOfNextWeek = new Date(today.getTime() + (7 - dayOfWeekOffset) * 24 * 60 * 60 * 1000)
           const endOfNextWeek = new Date(startOfNextWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
           if (postDate < startOfNextWeek || postDate >= endOfNextWeek) return false
         } else if (dateFilter === 'This month') {
@@ -250,7 +277,7 @@ export default function PostsOverviewPage() {
 
       return true
     })
-  }, [allMergedPosts, statusFilter, platformFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user])
+  }, [allMergedPosts, statusFilter, platformFilter, userFilter, dateFilter, customStartDate, customEndDate, socialAccounts, user, weekStartsOn])
 
   // ─── Sorting Logic ───
   const sortedPosts = React.useMemo(() => {
@@ -301,7 +328,7 @@ export default function PostsOverviewPage() {
 
   const handleDeleteSelected = async () => {
     if (selectedPostIds.length === 0) return
-    
+    setIsDeletingSelected(true)
     try {
       const apiIds = selectedPostIds.filter(id => !id.startsWith('csv-'))
       const csvIds = selectedPostIds.filter(id => id.startsWith('csv-'))
@@ -350,8 +377,118 @@ export default function PostsOverviewPage() {
       }
     } catch (err) {
       console.error(err)
+    } finally {
+      setIsDeletingSelected(false)
     }
   }
+
+  const handleDeleteSinglePost = async (post: Post) => {
+    if (!workspaceId) return
+    setIsDeletingSingle(true)
+    try {
+      if (post.zernioPostId) {
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+        showSuccess('Post deleted successfully')
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+        showSuccess('Post deleted successfully')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    } finally {
+      setIsDeletingSingle(false)
+    }
+  }
+
+  const handleDeleteSyncraOnly = async (post: Post) => {
+    if (!workspaceId) return
+    setIsDeletingSyncraOnly(true)
+    try {
+      if (post.zernioPostId) {
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId)
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+      }
+      showSuccess('Post deleted from Syncra only')
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    } finally {
+      setIsDeletingSyncraOnly(false)
+    }
+  }
+
+  const handleDeletePlatformOnly = async (post: Post) => {
+    if (!workspaceId) return
+    setIsDeletingPlatformOnly(true)
+    try {
+      if (post.zernioPostId) {
+        const postPlatforms = Array.from(new Set(
+          post.platforms?.length 
+            ? post.platforms 
+            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+        ));
+        for (const platform of postPlatforms) {
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
+        }
+        showSuccess('Post unpublished from platforms')
+      } else {
+        showError('Post does not support unpublish')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to unpublish post')
+    } finally {
+      setIsDeletingPlatformOnly(false)
+    }
+  }
+
+  const handleDeletePlatformAndSyncra = async (post: Post) => {
+    if (!workspaceId) return
+    setIsDeletingPlatformAndSyncra(true)
+    try {
+      if (post.zernioPostId) {
+        const postPlatforms = Array.from(new Set(
+          post.platforms?.length 
+            ? post.platforms 
+            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+        ));
+        for (const platform of postPlatforms) {
+          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
+        }
+        await postsApi.deleteZernioPost(workspaceId, post.zernioPostId);
+        showSuccess('Post deleted from platforms and Syncra')
+      } else {
+        await postsApi.deletePost(workspaceId, post.id)
+        showSuccess('Post deleted successfully')
+      }
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
+    } catch (err) {
+      showError('Failed to delete post')
+    } finally {
+      setIsDeletingPlatformAndSyncra(false)
+    }
+  }
+
+  // Close post menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuPostId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // ─── Pagination ───
   const paginatedPosts = React.useMemo(() => {
@@ -469,45 +606,76 @@ export default function PostsOverviewPage() {
     }) + ' GMT+7' // matching screenshot timezone display
   }
 
+  const formatDateAndTime = (dateStr?: string) => {
+    if (!dateStr) return { date: '—', time: '—' }
+    const date = new Date(dateStr)
+    const formattedDate = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+    const formattedTime = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }) + ' GMT+7'
+    return { date: formattedDate, time: formattedTime }
+  }
+
+  // ─── Calendar Navigation Handlers ───
+  const goToPrevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
+    else setCurrentMonth(m => m - 1)
+  }
+  const goToNextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
+    else setCurrentMonth(m => m + 1)
+  }
+  const goToToday = () => {
+    const now = new Date()
+    setCurrentYear(now.getFullYear())
+    setCurrentMonth(now.getMonth())
+  }
+
   // ─── Calendar Generation ───
   const renderCalendar = () => {
-    const currentMonth = 4 // May (0-indexed represents May as 4)
-    
-    // First day of May 2026
-    const firstDay = new Date(2026, currentMonth, 1)
-    // Weekday index of first day (0 = Sun, 1 = Mon, etc.)
-    const startOffset = firstDay.getDay()
-    // Total days in May 2026 (31 days)
-    const totalDays = 31
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const prevMonth = currentMonth === 0 ? { month: 11, year: currentYear - 1 } : { month: currentMonth - 1, year: currentYear }
+    const prevMonthDays = new Date(prevMonth.year, prevMonth.month + 1, 0).getDate()
+    const nextMonth = currentMonth === 11 ? { month: 0, year: currentYear + 1 } : { month: currentMonth + 1, year: currentYear }
+    const firstDay = new Date(currentYear, currentMonth, 1)
+    const startOffset = weekStartsOn === 'sun' 
+      ? firstDay.getDay() 
+      : (firstDay.getDay() + 6) % 7
 
     const calendarGrid = []
-    
-    // Padding for previous month (April has 30 days)
-    const prevMonthDays = 30
+
     for (let i = startOffset - 1; i >= 0; i--) {
       calendarGrid.push({
         dayNumber: prevMonthDays - i,
         isCurrentMonth: false,
-        dateString: `2026-04-${String(prevMonthDays - i).padStart(2, '0')}`
+        dateString: `${prevMonth.year}-${String(prevMonth.month + 1).padStart(2, '0')}-${String(prevMonthDays - i).padStart(2, '0')}`
       })
     }
 
-    // Days of current month (May 2026)
     for (let i = 1; i <= totalDays; i++) {
       calendarGrid.push({
         dayNumber: i,
         isCurrentMonth: true,
-        dateString: `2026-05-${String(i).padStart(2, '0')}`
+        dateString: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
       })
     }
 
-    // Padding for next month (June) to fill the grid (multiple of 7, usually 35 or 42 cells)
     const remainingCells = (7 - (calendarGrid.length % 7)) % 7
     for (let i = 1; i <= remainingCells; i++) {
       calendarGrid.push({
         dayNumber: i,
         isCurrentMonth: false,
-        dateString: `2026-06-${String(i).padStart(2, '0')}`
+        dateString: `${nextMonth.year}-${String(nextMonth.month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
       })
     }
 
@@ -515,41 +683,49 @@ export default function PostsOverviewPage() {
       <div className={styles.calendarContainer}>
         <div className={styles.calendarHeader}>
           <div className={styles.calendarTitleGroup}>
-            <span className={styles.calendarMonthName}>May 2026</span>
-            <button className={styles.calendarTodayBtn}>Today</button>
+            <span className={styles.calendarMonthName}>{monthNames[currentMonth]} {currentYear}</span>
+            <button className={styles.calendarTodayBtn} onClick={goToToday}>Today</button>
           </div>
           <div className={styles.calendarControls}>
             <div className={styles.calendarStartDaySelect}>
               <span>week starts on</span>
-              <button className={`${styles.calendarDayTab} ${styles.activeTab}`}>Sun</button>
-              <button className={styles.calendarDayTab}>Mon</button>
+              <button 
+                className={`${styles.calendarDayTab} ${weekStartsOn === 'sun' ? styles.activeTab : ''}`}
+                onClick={() => setWeekStartsOn('sun')}
+              >
+                Sun
+              </button>
+              <button 
+                className={`${styles.calendarDayTab} ${weekStartsOn === 'mon' ? styles.activeTab : ''}`}
+                onClick={() => setWeekStartsOn('mon')}
+              >
+                Mon
+              </button>
             </div>
             <div className={styles.calendarArrows}>
-              <button className={styles.calendarArrowBtn}><ArrowLeft size={16} /></button>
-              <button className={styles.calendarArrowBtn}><ArrowRight size={16} /></button>
+              <button className={styles.calendarArrowBtn} onClick={goToPrevMonth}><ArrowLeft size={16} /></button>
+              <button className={styles.calendarArrowBtn} onClick={goToNextMonth}><ArrowRight size={16} /></button>
             </div>
           </div>
         </div>
 
         <div className={styles.calendarGridHeader}>
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
+          {(weekStartsOn === 'sun' 
+            ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          ).map(day => (
+            <div key={day}>{day}</div>
+          ))}
         </div>
 
         <div className={styles.calendarGrid}>
           {calendarGrid.map((cell, index) => {
-            // Find posts scheduled for this day
             const cellPosts = sortedPosts.filter(p => {
               const pDate = p.scheduledAtUtc || p.createdAt
               return pDate.startsWith(cell.dateString)
             })
 
-            const isToday = cell.dateString === '2026-05-25' // mock today date from screenshot
+            const isToday = cell.dateString === todayStr
 
             return (
               <div 
@@ -568,7 +744,17 @@ export default function PostsOverviewPage() {
                       onClick={(e) => { e.stopPropagation(); handlePostClick(p); }}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span className={styles.calPostTitle}>{p.title}</span>
+                      <span className={styles.calBadgeTime}>
+                        {(() => {
+                          const d = new Date(p.scheduledAtUtc || p.createdAt)
+                          return `[${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}]`
+                        })()}
+                      </span>
+                      <span className={styles.calPostTitle}>{p.content || p.title}</span>
+                      <PlatformIcon 
+                        platform={(p.platforms?.[0] || p.platformTargets?.[0]?.platform || 'facebook') as any} 
+                        size={12} 
+                      />
                     </div>
                   ))}
                 </div>
@@ -668,7 +854,7 @@ export default function PostsOverviewPage() {
                     className={`${styles.dropdownItem} ${styles.platformItem} ${platformFilter === plat.name ? styles.activeDropdownItem : ''}`}
                     onClick={() => { setPlatformFilter(plat.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
-                    <PlatformIcon platform={plat.id} size={14} />
+                    <PlatformIcon platform={plat.id as any} size={14} />
                     <span>{plat.name}</span>
                   </button>
                 ))}
@@ -699,6 +885,7 @@ export default function PostsOverviewPage() {
                     className={`${styles.dropdownItem} ${workspaceFilter === w.name ? styles.activeDropdownItem : ''}`}
                     onClick={() => { setWorkspaceFilter(w.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
+                    <span className={styles.workspaceDot} style={{ background: w.color || '#fdba74' }} />
                     {w.name}
                   </button>
                 ))}
@@ -882,9 +1069,14 @@ export default function PostsOverviewPage() {
                   type="button" 
                   className={styles.deleteSelectedBtn} 
                   onClick={handleDeleteSelected}
+                  disabled={isDeletingSelected}
                 >
-                  <Trash2 size={16} />
-                  <span>Delete</span>
+                  {isDeletingSelected ? (
+                    <div className={styles.buttonSpinner} />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                  <span>{isDeletingSelected ? 'Deleting...' : 'Delete'}</span>
                 </button>
               </div>
             </div>
@@ -926,8 +1118,8 @@ export default function PostsOverviewPage() {
                         <div className={styles.platformBadgeWrapper} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {displayPlatforms.map((plat, idx) => (
                             <div key={idx} className={styles.platformBadge}>
-                              <PlatformIcon platform={plat} size={16} />
-                              <span className={styles.platformBadgeDot}></span>
+                              <PlatformIcon platform={plat as any} size={16} />
+                              <span className={styles.platformBadgeDot} style={{ backgroundColor: workspaceColorMap.get(post.workspaceId || '') || '#fdba74' }} />
                             </div>
                           ))}
                         </div>
@@ -965,9 +1157,45 @@ export default function PostsOverviewPage() {
                       <div className={styles.statusBadgeWrapper}>
                         <StatusBadge status={post.status} />
                       </div>
-                      <button className={styles.moreOptionsBtn} aria-label="More options" onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical size={14} />
-                      </button>
+                      <div className={styles.moreOptionsWrapper} ref={openMenuPostId === post.id ? menuRef : undefined}>
+                        <button
+                          className={styles.moreOptionsBtn}
+                          aria-label="More options"
+                          onClick={(e) => { e.stopPropagation(); setOpenMenuPostId(openMenuPostId === post.id ? null : post.id) }}
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                        {openMenuPostId === post.id && (
+                          <div className={styles.postMenuDropdown}>
+                            {post.status !== 'published' && (
+                              <button
+                                type="button"
+                                className={styles.postMenuItem}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setOpenMenuPostId(null)
+                                  handlePostClick(post)
+                                }}
+                              >
+                                <Pencil size={14} />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenMenuPostId(null)
+                                setDeleteConfirmPost(post)
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
@@ -1006,7 +1234,7 @@ export default function PostsOverviewPage() {
                     <th>Platforms</th>
                     <th>Date</th>
                     <th>Status</th>
-                    <th>Profile</th>
+                    <th>Workspace</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1018,6 +1246,8 @@ export default function PostsOverviewPage() {
                     ))
                     const displayPlatforms = platforms.length > 0 ? platforms : ['facebook']
                     const isChecked = selectedPostIds.includes(post.id)
+                    const wsName = workspaceNameMap.get(post.workspaceId || '') || activeWorkspace?.name || '—'
+                    const wsColor = workspaceColorMap.get(post.workspaceId || '') || '#fdba74'
                     return (
                       <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
                         <td onClick={(e) => e.stopPropagation()}>
@@ -1029,12 +1259,12 @@ export default function PostsOverviewPage() {
                           />
                         </td>
                         <td className={styles.tableNameCell}>
-                          <div className={styles.tableTitle}>{post.title}</div>
+                          <div className={styles.tableTitle}>{post.content || post.title}</div>
                         </td>
                         <td>
                           <div className={styles.tablePlatforms} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {displayPlatforms.map((plat, idx) => (
-                              <PlatformIcon key={idx} platform={plat} size={16} />
+                              <PlatformIcon key={idx} platform={plat as any} size={16} />
                             ))}
                           </div>
                         </td>
@@ -1042,8 +1272,8 @@ export default function PostsOverviewPage() {
                         <td><StatusBadge status={post.status} /></td>
                         <td>
                           <div className={styles.tableProfile}>
-                            <span className={styles.tableProfileBullet}>o</span>
-                            <span>{user?.email?.split('@')[0] || 'nguyenhonghieutai...'}</span>
+                            <span className={styles.workspaceDot} style={{ backgroundColor: wsColor }}></span>
+                            <span>{wsName}</span>
                           </div>
                         </td>
                       </tr>
@@ -1268,106 +1498,67 @@ export default function PostsOverviewPage() {
               )}
 
               {/* Platforms Section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-body-mid)', textTransform: 'lowercase', fontFamily: 'var(--font-body)' }}>
-                  platforms
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className={styles.detailPlatformSection}>
+                <div className={styles.detailPlatformSectionLabel}>platforms</div>
+                <div className={styles.detailPlatformList}>
                   {(() => {
+                    const renderCard = (name: string, badgeStatus: string, url: string) => {
+                      const isPub = badgeStatus === 'published' || selectedPostDetails.status === 'published';
+                      const { date: dDate, time: dTime } = formatDateAndTime(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt);
+                      return (
+                        <div key={name} className={styles.detailPlatformCard}>
+                          {/* Section 1: Icon */}
+                          <div className={styles.detailPlatformIconSquare}>
+                            <PlatformIcon platform={name as any} size={20} />
+                          </div>
+
+                          {/* Section 2: Platform Details Stack */}
+                          <div className={styles.detailPlatformNameStack}>
+                            <span className={styles.detailPlatformName}>{name}</span>
+                            <div className={styles.detailPlatformStatusWrapper}>
+                              <StatusBadge status={badgeStatus as any} />
+                            </div>
+                          </div>
+
+                          {/* Section 3: Date/Time Stack */}
+                          <div className={styles.detailPlatformDateStack}>
+                            <div className={styles.detailPlatformDateLine}>{dDate}</div>
+                            <div className={styles.detailPlatformTimeLine}>{dTime}</div>
+                          </div>
+
+                          {/* Section 4: External Link */}
+                          {isPub && (
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className={styles.detailPlatformLink}
+                            >
+                              View on {name.toLowerCase()}
+                            </a>
+                          )}
+                        </div>
+                      )
+                    }
+
                     const targets = selectedPostDetails.platformTargets || [];
                     if (targets.length === 0) {
-                      // Fallback when platformTargets is empty (render from platforms array)
                       const platforms = selectedPostDetails.platforms || ['facebook'];
                       return platforms.map((plat) => {
-                        const isPub = selectedPostDetails.status === 'published';
                         const fallbackUrl = plat.toLowerCase() === 'facebook' 
                           ? 'https://www.facebook.com' 
                           : `https://${plat.toLowerCase()}.com`;
-                        return (
-                          <div 
-                            key={plat} 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'space-between', 
-                              padding: '12px 16px', 
-                              background: 'var(--clr-canvas-soft)', 
-                              border: '1px solid var(--clr-border)', 
-                              borderRadius: '8px' 
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <PlatformIcon platform={plat} size={20} />
-                              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
-                                {plat}
-                              </span>
-                              <StatusBadge status={selectedPostDetails.status} />
-                              <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
-                                {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
-                              </span>
-                            </div>
-                            {isPub && (
-                              <a 
-                                href={fallbackUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', borderBottom: '1px solid transparent', paddingBottom: '2px' }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
-                              >
-                                View on {plat.toLowerCase()}
-                              </a>
-                            )}
-                          </div>
-                        );
+                        return renderCard(plat, selectedPostDetails.status, fallbackUrl)
                       });
                     }
 
                     return targets.map((target) => {
-                      const isPub = target.status === 'Published' || selectedPostDetails.status === 'published';
                       const linkPlatform = target.platform.toLowerCase();
                       const fallbackUrl = linkPlatform === 'facebook' 
                         ? 'https://www.facebook.com' 
                         : `https://${linkPlatform}.com`;
                       const destinationUrl = target.externalPostUrl || fallbackUrl;
-
-                      return (
-                        <div 
-                          key={target.id} 
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between', 
-                            padding: '12px 16px', 
-                            background: 'var(--clr-canvas-soft)', 
-                            border: '1px solid var(--clr-border)', 
-                            borderRadius: '8px' 
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <PlatformIcon platform={target.platform} size={20} />
-                            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-ink)', textTransform: 'capitalize' }}>
-                              {target.platform}
-                            </span>
-                            <StatusBadge status={target.status.toLowerCase() as any} />
-                            <span style={{ fontSize: 13, color: 'var(--clr-body-mid)' }}>
-                              {new Date(selectedPostDetails.scheduledAtUtc || selectedPostDetails.createdAt).toLocaleString('en-US')}
-                            </span>
-                          </div>
-                          {isPub && (
-                            <a 
-                              href={destinationUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-body)', textDecoration: 'none', transition: 'color 0.2s' }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-primary)'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-body)'}
-                            >
-                              View on {target.platform.toLowerCase()}
-                            </a>
-                          )}
-                        </div>
-                      );
+                      return renderCard(target.platform, target.status.toLowerCase(), destinationUrl)
                     });
                   })()}
                 </div>
@@ -1391,6 +1582,176 @@ export default function PostsOverviewPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmPost && (
+        (() => {
+          const postPlatforms = Array.from(new Set(
+            deleteConfirmPost.platforms?.length 
+              ? deleteConfirmPost.platforms 
+              : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
+          ));
+          const hasUnsupported = postPlatforms.some(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
+          const formatPlatformName = (p: string) => {
+            if (p === 'youtube') return 'YouTube';
+            if (p === 'linkedin') return 'LinkedIn';
+            if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+            return p.charAt(0).toUpperCase() + p.slice(1);
+          };
+          const platformsText = postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
+          const unsupportedPlatforms = postPlatforms.filter(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
+
+          const isAnyDeleting = isDeletingSyncraOnly || isDeletingPlatformOnly || isDeletingPlatformAndSyncra;
+
+          return deleteConfirmPost.status === 'published' ? (
+            <div className={styles.modalBackdrop} onClick={() => !isAnyDeleting && setDeleteConfirmPost(null)}>
+              <div className={styles.publishedDeleteModal} onClick={(e) => e.stopPropagation()}>
+                <div className={styles.publishedDeleteHeader}>
+                  <div className={styles.publishedDeleteTitleGroup}>
+                    <Trash2 size={20} className={styles.publishedDeleteIcon} />
+                    <h2>Delete post</h2>
+                  </div>
+                  <button onClick={() => !isAnyDeleting && setDeleteConfirmPost(null)} disabled={isAnyDeleting} className={styles.closeModalBtn}>
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <p className={styles.publishedDeleteSubtext}>
+                  Choose how you want to delete this post.
+                </p>
+
+                <div className={styles.deleteOptionsContainer}>
+                  {/* Option 1: Delete from Syncra only */}
+                  <button 
+                    type="button" 
+                    className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !isAnyDeleting && handleDeleteSyncraOnly(deleteConfirmPost)}
+                    disabled={isAnyDeleting}
+                  >
+                    <div className={styles.optionIconSquare}>
+                      {isDeletingSyncraOnly ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Trash2 size={20} />
+                      )}
+                    </div>
+                    <div className={styles.optionTextStack}>
+                      <span className={styles.optionTitle}>Delete from Syncra only</span>
+                      <span className={styles.optionDescription}>
+                        Remove from your Syncra dashboard. The post will remain live on {platformsText}.
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Option 2: Delete from platform only */}
+                  <button 
+                    type="button" 
+                    className={`${styles.deleteOptionCard} ${hasUnsupported || isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !hasUnsupported && !isAnyDeleting && handleDeletePlatformOnly(deleteConfirmPost)}
+                    disabled={hasUnsupported || isAnyDeleting}
+                  >
+                    <div className={styles.optionIconSquare}>
+                      {isDeletingPlatformOnly ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Globe size={20} />
+                      )}
+                    </div>
+                    <div className={styles.optionTextStack}>
+                      <span className={styles.optionTitle}>Delete from platform only</span>
+                      <span className={styles.optionDescription}>
+                        Permanently delete from {platformsText}. The post will remain on your Syncra dashboard.
+                      </span>
+                      {unsupportedPlatforms.length > 0 && (
+                        <div className={styles.unsupportedWarning}>
+                          <AlertCircle size={14} />
+                          <span>
+                            {unsupportedPlatforms.map(formatPlatformName).join(', ')} {unsupportedPlatforms.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Option 3: Delete from platform and Syncra */}
+                  <button 
+                    type="button" 
+                    className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                    onClick={() => !isAnyDeleting && handleDeletePlatformAndSyncra(deleteConfirmPost)}
+                    disabled={isAnyDeleting}
+                  >
+                    <div className={styles.optionIconSquare}>
+                      {isDeletingPlatformAndSyncra ? (
+                        <div className={styles.optionSpinner} />
+                      ) : (
+                        <Globe size={20} />
+                      )}
+                    </div>
+                    <div className={styles.optionTextStack}>
+                      <span className={styles.optionTitle}>Delete from platform and Syncra</span>
+                      <span className={styles.optionDescription}>
+                        Permanently delete from {platformsText} and remove from Syncra.
+                      </span>
+                      {unsupportedPlatforms.length > 0 && (
+                        <div className={styles.unsupportedWarning}>
+                          <AlertCircle size={14} />
+                          <span>
+                            {unsupportedPlatforms.map(formatPlatformName).join(', ')} {unsupportedPlatforms.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+
+                {/* Footer displaying target platforms */}
+                <div className={styles.publishedDeleteFooter}>
+                  {postPlatforms.map((plat) => (
+                    <PlatformIcon key={plat} platform={plat as any} size={20} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.modalBackdrop} onClick={() => !isDeletingSingle && setDeleteConfirmPost(null)}>
+              <div className={styles.deleteConfirmModal} onClick={(e) => e.stopPropagation()}>
+                <div className={styles.deleteConfirmHeader}>
+                  <Trash2 size={18} />
+                  <h3>Delete post</h3>
+                </div>
+                <p className={styles.deleteConfirmText}>
+                  Are you sure you want to delete this post? This action cannot be undone.
+                </p>
+                <div className={styles.deleteConfirmActions}>
+                  <button
+                    type="button"
+                    className={styles.deleteConfirmCancelBtn}
+                    onClick={() => setDeleteConfirmPost(null)}
+                    disabled={isDeletingSingle}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.deleteConfirmDeleteBtn}
+                    onClick={() => handleDeleteSinglePost(deleteConfirmPost)}
+                    disabled={isDeletingSingle}
+                  >
+                    {isDeletingSingle ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className={styles.buttonSpinner} />
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      'Delete'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       )}
     </div>
   )

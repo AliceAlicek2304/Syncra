@@ -10,6 +10,8 @@ export interface SocialAccountDto {
   connectedAtUtc: string;
   externalAccountId: string;
   zernioProfileId: string;
+  metadata?: Record<string, unknown>;
+  handle?: string;
 }
 
 export interface FacebookPageDto {
@@ -92,5 +94,43 @@ export const socialAccountsApi = {
       }
     });
     return response.data;
+  },
+  getLinkedInOrganizations: async (
+    workspaceId: string,
+    accountId: string,
+    refresh?: boolean
+  ): Promise<LinkedInOrganizationsResponseDto> => {
+    const params: Record<string, string> = {};
+    if (refresh) params.refresh = 'true';
+    const response = await api.get<LinkedInOrganizationsResponseDto>(
+      `social-accounts/${accountId}/linkedin-organization`,
+      {
+        headers: { 'X-Workspace-Id': workspaceId },
+        params,
+      }
+    );
+    return response.data;
+  },
+  updateLinkedInOrganization: async (
+    workspaceId: string,
+    accountId: string,
+    selectedOrganizationUrn: string
+  ): Promise<void> => {
+    await api.put(
+      `social-accounts/${accountId}/linkedin-organization`,
+      { selectedOrganizationUrn },
+      { headers: { 'X-Workspace-Id': workspaceId } }
+    );
   }
 };
+
+export interface LinkedInOrganizationDto {
+  urn: string;
+  name: string;
+  logoUrl?: string;
+}
+
+export interface LinkedInOrganizationsResponseDto {
+  organizations: LinkedInOrganizationDto[];
+  selectedOrganizationUrn: string | null;
+}

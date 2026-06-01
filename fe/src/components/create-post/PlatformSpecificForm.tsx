@@ -272,17 +272,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Primitive UI helpers ──────────────────────────────────────────────────────
 
-function Switch({ on, onChange, label, desc }: {
-  on: boolean; onChange: (v: boolean) => void; label: string; desc?: string
+function Switch({ on, onChange, label, desc, disabled }: {
+  on: boolean; onChange: (v: boolean) => void; label: string; desc?: string; disabled?: boolean
 }) {
   return (
-    <div className={styles.switchRow}>
+    <div className={`${styles.switchRow} ${disabled ? styles.switchDisabled : ''}`}>
       <button
         type="button"
         role="switch"
         aria-checked={on}
+        disabled={disabled}
         className={`${styles.switchTrack} ${on ? styles.switchOn : ''}`}
-        onClick={() => onChange(!on)}
+        onClick={() => !disabled && onChange(!on)}
       >
         <span className={styles.switchKnob} />
       </button>
@@ -660,7 +661,12 @@ function FacebookForm({ value, onChange }: {
         on={value.draft ?? false}
         onChange={v => set('draft', v)}
         label="Save as draft"
-        desc="Creates post in Facebook Publishing Tools instead of publishing immediately"
+        desc={
+          value.contentType === 'story'
+            ? "Not supported for stories. Drafts expire after ~30 days."
+            : "Creates post in Facebook Publishing Tools instead of publishing immediately. Drafts expire after ~30 days."
+        }
+        disabled={true}
       />
 
       <div className={styles.field}>
@@ -674,7 +680,14 @@ function FacebookForm({ value, onChange }: {
                 (ct === 'feed' && !value.contentType) || value.contentType === ct
                   ? styles.tabBtnActive : ''
               }`}
-              onClick={() => set('contentType', ct === 'feed' ? undefined : ct)}
+              onClick={() => {
+                const nextType = ct === 'feed' ? undefined : ct
+                if (nextType === 'story') {
+                  onChange({ ...value, contentType: nextType, draft: false })
+                } else {
+                  set('contentType', nextType)
+                }
+              }}
             >
               {ct.charAt(0).toUpperCase() + ct.slice(1)}
             </button>
@@ -703,8 +716,9 @@ function FacebookForm({ value, onChange }: {
             placeholder="Optional first comment after publishing..."
             value={value.firstComment ?? ''}
             onChange={e => set('firstComment', e.target.value || undefined)}
+            disabled={value.draft}
           />
-          {value.draft && <p className={styles.hint}>⚠ Skipped when draft is enabled</p>}
+          {value.draft && <p className={styles.hint}>Skipped when draft is enabled</p>}
         </div>
       )}
 

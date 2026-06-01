@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useInboxBackfill } from '../../hooks/useInboxBackfill';
 import { socialAccountsApi } from '../../api/socialAccounts';
+import { getSocialAvatarUrl } from '../../utils/social';
 import DmTab from './DmTab';
 import CommentsTab from './CommentsTab';
 import ReviewsTab from './ReviewsTab';
@@ -259,8 +260,8 @@ export default function InboxPage() {
                     className={`${styles.accountItem} ${accountFilter === acc.id ? styles.accountItemActive : ''}`}
                     onClick={() => setAccountFilter(acc.id)}
                   >
-                    {acc.avatarUrl ? (
-                      <img src={acc.avatarUrl} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />
+                    {getSocialAvatarUrl(acc) ? (
+                      <img src={getSocialAvatarUrl(acc)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                       <User size={12} style={{ color: 'var(--text-muted)' }} />
                     )}

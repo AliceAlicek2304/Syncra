@@ -11,7 +11,19 @@ public record CreateZernioPostDto(
     bool? IsDraft,
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     IReadOnlyList<PlatformContentDto>? PlatformContents,
-    string? PostId = null,
+    Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
+    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
+);
+
+public record UpdateZernioPostDto(
+    [MaxLength(200)] string? Title,
+    string? Content,
+    IReadOnlyList<Guid>? SocialAccountIds,
+    DateTime? ScheduledAtUtc,
+    bool PublishNow,
+    bool? IsDraft,
+    IReadOnlyList<PostMediaItemDto>? MediaItems,
+    IReadOnlyList<PlatformContentDto>? PlatformContents,
     Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
     Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
 );

@@ -21,9 +21,10 @@ describe('VisualCard', () => {
     expect(screen.getByText('Test Post Title')).toBeDefined()
   })
 
-  it('renders post platform badge', () => {
-    render(<VisualCard post={mockPost} onClick={vi.fn()} isDragging={false} onDragStart={vi.fn()} onDragEnd={vi.fn()} />)
-    expect(screen.getByText('Instagram')).toBeDefined()
+  it('renders platform icon', () => {
+    const { container } = render(<VisualCard post={mockPost} onClick={vi.fn()} isDragging={false} onDragStart={vi.fn()} onDragEnd={vi.fn()} />)
+    const headers = container.querySelectorAll('[class*="cardHeader"]')
+    expect(headers.length).toBe(1)
   })
 
   it('renders scheduled time', () => {
@@ -36,15 +37,14 @@ describe('VisualCard', () => {
     expect(container.querySelector('[draggable="true"]')).toBeDefined()
   })
 
-  it('shows fallback when no image', () => {
+  it('shows title when no image', () => {
     const postNoImage = { ...mockPost, image: undefined }
     render(<VisualCard post={postNoImage} onClick={vi.fn()} isDragging={false} onDragStart={vi.fn()} onDragEnd={vi.fn()} />)
     expect(screen.getByText('Test Post Title')).toBeDefined()
   })
 
-  it('renders placeholder when no image provided', () => {
-    const postNoImage = { ...mockPost, image: undefined }
-    const { container } = render(<VisualCard post={postNoImage} onClick={vi.fn()} isDragging={false} onDragStart={vi.fn()} onDragEnd={vi.fn()} />)
-    expect(container.querySelector('[class*="cardPlaceholder"]')).toBeDefined()
+  it('renders thumbnail when image provided', () => {
+    const { container } = render(<VisualCard post={mockPost} onClick={vi.fn()} isDragging={false} onDragStart={vi.fn()} onDragEnd={vi.fn()} />)
+    expect(container.querySelector('img[src="https://example.com/image.jpg"]')).toBeDefined()
   })
 })

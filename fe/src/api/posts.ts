@@ -9,6 +9,7 @@ export interface PlatformContent {
 
 export interface Post {
   id: string;
+  workspaceId?: string;
   title: string;
   content?: string;          // master caption
   status: 'idea' | 'draft' | 'scheduled' | 'published' | 'publishing' | 'partial' | 'failed';
@@ -86,6 +87,7 @@ export interface CreateZernioPostRequest {
   platformContents?: PlatformContent[];
   platformSpecificData?: any;
   tiktokSettings?: any;
+  facebookSettings?: any;
 }
 
 export interface ScheduledPostsCountResponse {
@@ -138,6 +140,12 @@ export const postsApi = {
 
   deleteZernioPost: async (workspaceId: string, postId: string): Promise<void> => {
     await api.delete(`workspaces/${workspaceId}/posts/zernio/${postId}`);
+  },
+
+  unpublishZernioPost: async (workspaceId: string, postId: string, platform: string, deleteFromDb?: boolean): Promise<void> => {
+    await api.post(`workspaces/${workspaceId}/posts/zernio/${postId}/unpublish`, { platform }, {
+      params: deleteFromDb !== undefined ? { deleteFromDb } : undefined
+    });
   },
 
   getScheduledPostsCount: async (

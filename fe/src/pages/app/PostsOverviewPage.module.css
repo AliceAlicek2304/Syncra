@@ -505,8 +505,6 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #fbbf24;
-  /* bg-amber-400 */
   border: 1.5px solid #ffffff;
 }
 
@@ -699,11 +697,12 @@
 
 /* ─── Table View Layout ─── */
 .tableContainer {
-  background-color: var(--clr-canvas);
+  background-color: #ffffff;
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-top: 12px;
+  padding: 0;
 }
 
 .table {
@@ -712,23 +711,62 @@
   text-align: left;
 }
 
-.table th {
-  background-color: var(--clr-canvas-soft);
-  padding: 14px 18px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--clr-body-mid);
-  letter-spacing: 0.5px;
+.table thead {
   border-bottom: 1px solid var(--clr-border);
 }
 
+/* ── Table Header ── */
+.table th {
+  background-color: #ffffff;
+  padding: 14px 16px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-body-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid #e5e5e5;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.thCheckbox {
+  width: 44px;
+  text-align: center;
+}
+
+.thContent {
+  min-width: 200px;
+}
+
+.thPlatforms {
+  width: 120px;
+}
+
+.thWorkspace {
+  width: 150px;
+}
+
+.thDate {
+  width: 150px;
+}
+
+.thStatus {
+  width: 100px;
+}
+
+.table th:not(:first-child):not(:last-child) {
+  border-right: none;
+}
+
+/* ── Table Body ── */
 .table td {
-  padding: 14px 18px;
+  padding: 14px 16px;
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--clr-ink);
-  border-bottom: 1px solid var(--clr-border);
+  border-bottom: 1px solid #e5e5e5;
+  background-color: #ffffff;
   vertical-align: middle;
 }
 
@@ -736,44 +774,274 @@
   border-bottom: none;
 }
 
-.table tr:hover td {
-  background-color: var(--clr-canvas-soft);
+.tableRow {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tableRow:hover td {
+  background-color: #f5f5f5;
+}
+
+/* ── Checkbox Cell ── */
+.tdCheckbox {
+  width: 44px;
+  text-align: center;
 }
 
 .checkbox {
+  appearance: none;
+  -webkit-appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1px solid var(--clr-border);
+  border: 1.5px solid #d4d4d4;
+  background-color: #ffffff;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+}
+
+.checkbox:hover {
+  border-color: var(--clr-primary);
+}
+
+.checkbox:checked {
+  background-color: var(--clr-primary);
+  border-color: var(--clr-primary);
+}
+
+.checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ── Content Cell ── */
+.tdContent {
+  padding-right: 24px;
+}
+
+.tableContentCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tableThumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f3f4f6;
+}
+
+.tableThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tableContentTitle {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--clr-ink);
+  margin: 0;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+/* ── Platform Cell ── */
+.tdPlatforms {
+  white-space: nowrap;
+}
+
+.tablePlatformIcons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.platformLink {
+  position: relative;
+  display: inline-flex;
+  line-height: 0;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.tableTitle {
-  font-weight: 600;
-  color: var(--clr-ink);
+.platformLinkArrow {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  color: var(--clr-body-mid, #6b7280);
+  opacity: 0.7;
+  transition: transform 0.2s ease;
 }
 
-.tablePlatforms {
+.platformLink:hover .platformLinkArrow {
+  transform: translate(2px, -2px);
+}
+
+/* ── Post Details Platform Cards ── */
+.detailPlatformSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailPlatformSectionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-body-mid);
+  text-transform: lowercase;
+  font-family: var(--font-body);
+}
+
+.detailPlatformList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detailPlatformCard {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  padding: 12px 16px;
+  background: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  gap: 16px;
 }
 
-.tableDate {
-  color: var(--clr-body);
+.detailPlatformIconSquare {
+  width: 44px;
+  height: 44px;
+  background: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.detailPlatformNameStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.detailPlatformName {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--clr-ink);
+  text-transform: capitalize;
+  line-height: 1.2;
+}
+
+.detailPlatformStatusWrapper {
+  display: flex;
+}
+
+.detailPlatformDateStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 24px;
+  flex-shrink: 0;
+}
+
+.detailPlatformDateLine,
+.detailPlatformTimeLine {
+  font-size: 12px;
+  color: var(--clr-body-mid);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.detailPlatformLink {
+  margin-left: auto;
   font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-body-mid);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.detailPlatformLink:hover {
+  color: var(--clr-primary);
+}
+
+/* ── Workspace Cell (renamed Profile) ── */
+.tdWorkspace {
+  white-space: nowrap;
+}
+
+.tableWorkspaceCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspaceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .tableProfile {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--clr-body);
-  font-size: 13px;
 }
 
-.tableProfileBullet {
-  color: var(--clr-primary);
-  font-weight: bold;
+.tableWorkspaceName {
+  font-size: 13px;
+  color: var(--clr-ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* ── Date Cell ── */
+.tdDate {
+  white-space: nowrap;
+}
+
+.tableDateValue {
+  font-size: 13px;
+  color: var(--clr-ink);
+  font-weight: 500;
+}
+
+/* ── Status Cell ── */
+.tdStatus {
+  white-space: nowrap;
+}
+
+/* ── Selected Row ── */
+.selectedRow td {
+  background-color: #f5f5f5 !important;
 }
 
 /* ─── Pagination Controls ─── */
@@ -939,7 +1207,7 @@
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: minmax(90px, auto);
+  grid-auto-rows: minmax(140px, auto);
 }
 
 .calendarCell {
@@ -950,7 +1218,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 90px;
+  min-height: 140px;
 }
 
 .calendarCell:nth-child(7n) {
@@ -993,20 +1261,28 @@
   gap: 3px;
   flex: 1;
   overflow-y: auto;
-  max-height: 64px;
+  max-height: 110px;
 }
 
 .calendarPostBadge {
-  padding: 2px 6px;
+  padding: 8px 10px;
   border-radius: 6px;
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
   transition: transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.calBadgeTime {
+  font-weight: 700;
+  font-size: 10px;
+  opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .calendarPostBadge:hover {
@@ -1027,6 +1303,10 @@
 
 .calPostTitle {
   font-weight: 700;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ─── Loading & Error States ─── */
@@ -1434,10 +1714,6 @@
   box-shadow: 0 4px 6px -1px rgba(32, 21, 21, 0.15), 0 2px 4px -1px rgba(32, 21, 21, 0.1) !important;
 }
 
-.selectedRow td {
-  background-color: rgba(255, 79, 0, 0.04) !important;
-}
-
 .mediaCountBadge {
   position: absolute;
   left: 6px;
@@ -1456,4 +1732,324 @@
   box-sizing: border-box;
   pointer-events: none;
   z-index: 2;
+}
+
+/* ─── Post Card Dropdown Menu ─── */
+.moreOptionsWrapper {
+  position: relative;
+}
+
+.postMenuDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  min-width: 140px;
+  background-color: #ffffff;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(32, 21, 21, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+}
+
+.postMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-body);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.postMenuItem:hover {
+  background-color: var(--clr-canvas-soft);
+  color: var(--clr-ink);
+}
+
+.postMenuItemDanger {
+  color: #ef4444;
+}
+
+.postMenuItemDanger:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* ─── Delete Confirmation Modal ─── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.deleteConfirmModal {
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(32, 21, 21, 0.12);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.deleteConfirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #ef4444;
+}
+
+.deleteConfirmHeader h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--clr-ink);
+}
+
+.deleteConfirmText {
+  margin: 0 0 20px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--clr-body);
+  line-height: 1.5;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.deleteConfirmCancelBtn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border);
+  background-color: #ffffff;
+  color: var(--clr-body);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteConfirmCancelBtn:hover {
+  background-color: var(--clr-canvas-soft);
+}
+
+.deleteConfirmDeleteBtn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteConfirmDeleteBtn:hover {
+  background-color: #dc2626;
+}
+
+/* ─── Published Delete Modal Styles ─── */
+.publishedDeleteModal {
+  background-color: var(--clr-canvas);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--clr-border);
+  box-shadow: 0 20px 50px rgba(32, 21, 21, 0.15);
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.publishedDeleteHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.publishedDeleteTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ef4444;
+}
+
+.publishedDeleteIcon {
+  color: #ef4444;
+}
+
+.publishedDeleteTitleGroup h2 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.publishedDeleteSubtext {
+  margin: 0 0 20px 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--clr-body-mid);
+  line-height: 1.5;
+}
+
+.deleteOptionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deleteOptionCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--clr-canvas);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md, 12px);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.deleteOptionCard:hover {
+  background-color: var(--clr-canvas-soft);
+  border-color: var(--clr-ink);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(32, 21, 21, 0.05);
+}
+
+.optionIconSquare {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.deleteOptionCard:nth-child(2) .optionIconSquare,
+.deleteOptionCard:nth-child(3) .optionIconSquare {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.optionTextStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.optionTitle {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.optionDescription {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--clr-body);
+  line-height: 1.4;
+}
+
+.unsupportedWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  color: #b45309;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.unsupportedWarning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.publishedDeleteFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--clr-border);
+}
+
+.deleteOptionCardDisabled,
+.deleteOptionCardDisabled:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--clr-canvas) !important;
+  border-color: var(--clr-border) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.buttonSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.optionSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 0, 0, 0.05);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.deleteSelectedBtn:disabled,
+.deleteConfirmDeleteBtn:disabled,
+.deleteConfirmCancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }

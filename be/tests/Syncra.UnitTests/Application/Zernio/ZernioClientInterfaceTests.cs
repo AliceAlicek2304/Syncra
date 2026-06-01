@@ -64,9 +64,9 @@ public class ZernioClientInterfaceTests
         Assert.Equal(typeof(Task<string>), method!.ReturnType);
 
         var parameters = method.GetParameters();
-        Assert.Contains(parameters, p => p.Name == "fileStream" && p.ParameterType == typeof(System.IO.Stream));
+        Assert.Contains(parameters, p => p.Name == "uploadUrl" && p.ParameterType == typeof(string));
+        Assert.Contains(parameters, p => p.Name == "content" && p.ParameterType == typeof(System.IO.Stream));
         Assert.Contains(parameters, p => p.Name == "mimeType" && p.ParameterType == typeof(string));
-        Assert.Contains(parameters, p => p.Name == "fileName" && p.ParameterType == typeof(string));
         Assert.Contains(parameters, p => p.Name == "cancellationToken" && p.ParameterType == typeof(CancellationToken));
     }
 }

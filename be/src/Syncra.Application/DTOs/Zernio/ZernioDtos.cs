@@ -19,7 +19,26 @@ public sealed record ZernioAccountDto(
     string Platform,
     string DisplayName,
     bool IsConnected,
-    string? ProfilePicture = null);
+    string? ProfilePicture = null,
+    string? ProfileUrl = null,
+    string? Username = null,
+    object? Metadata = null,
+    string? ProfileId = null,
+    long? FollowersCount = null,
+    DateTime? FollowersLastUpdated = null,
+    string? ParentAccountId = null,
+    bool? Enabled = null);
+
+public sealed record ZernioListAccountsResponseDto(
+    IReadOnlyList<ZernioAccountDto> Accounts,
+    bool HasAnalyticsAccess,
+    ZernioListAccountsPaginationDto? Pagination);
+
+public sealed record ZernioListAccountsPaginationDto(
+    int? Page,
+    int? Limit,
+    int? Total,
+    int? Pages);
 
 public sealed record ZernioProfileDto(
     string Id,
@@ -169,11 +188,25 @@ public sealed record ZernioFacebookPageDto(
     string Name,
     string? Username,
     string? Category,
-    int? FanCount);
+    int? FanCount,
+    string? PictureUrl = null);
 
 public sealed record ZernioFacebookPagesResponseDto(
     IReadOnlyList<ZernioFacebookPageDto> Pages,
     string? SelectedPageId,
+    bool Cached);
+
+// ── LinkedIn Organization DTOs ─────────────────────────────────────
+
+public sealed record ZernioLinkedInOrganizationDto(
+    string Id,
+    string Name,
+    string? VanityName,
+    string? LogoUrl);
+
+public sealed record ZernioLinkedInOrganizationsResponseDto(
+    IReadOnlyList<ZernioLinkedInOrganizationDto> Organizations,
+    string? SelectedOrganizationUrn,
     bool Cached);
 
 // ── Follower Stats DTOs ───────────────────────────────────────────
@@ -288,3 +321,59 @@ public sealed record ZernioPostListResponseDto(
     int Limit,
     int Total,
     int Pages);
+
+// ── Facebook Connect DTOs ──────────────────────────────────────────
+
+public sealed record ZernioFacebookConnectPageDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("username")] string? Username,
+    [property: JsonPropertyName("access_token")] string? AccessToken,
+    [property: JsonPropertyName("category")] string? Category,
+    [property: JsonPropertyName("tasks")] IReadOnlyList<string>? Tasks,
+    [property: JsonPropertyName("fan_count")] long? FanCount,
+    [property: JsonPropertyName("picture")] ZernioFacebookPagePicture? Picture
+);
+
+public sealed record ZernioFacebookPagePicture(
+    [property: JsonPropertyName("data")] ZernioFacebookPagePictureData Data
+);
+
+public sealed record ZernioFacebookPagePictureData(
+    [property: JsonPropertyName("height")] int Height,
+    [property: JsonPropertyName("is_silhouette")] bool IsSilhouette,
+    [property: JsonPropertyName("url")] string Url,
+    [property: JsonPropertyName("width")] int Width
+);
+
+public sealed record ZernioFacebookConnectPagesResponseDto(
+    [property: JsonPropertyName("pages")] IReadOnlyList<ZernioFacebookConnectPageDto> Pages
+);
+
+public sealed record ZernioFacebookConnectUserProfile(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("profilePicture")] string ProfilePicture
+);
+
+public sealed record ZernioFacebookConnectSelectRequest(
+    [property: JsonPropertyName("profileId")] string ProfileId,
+    [property: JsonPropertyName("pageId")] string PageId,
+    [property: JsonPropertyName("tempToken")] string TempToken,
+    [property: JsonPropertyName("userProfile")] ZernioFacebookConnectUserProfile UserProfile,
+    [property: JsonPropertyName("redirect_url")] string? RedirectUrl = null
+);
+
+public sealed record ZernioFacebookConnectAccountDetails(
+    [property: JsonPropertyName("accountId")] string AccountId,
+    [property: JsonPropertyName("platform")] string Platform,
+    [property: JsonPropertyName("username")] string? Username,
+    [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("profilePicture")] string? ProfilePicture
+);
+
+public sealed record ZernioFacebookConnectSelectResponse(
+    [property: JsonPropertyName("message")] string Message,
+    [property: JsonPropertyName("redirect_url")] string? RedirectUrl,
+    [property: JsonPropertyName("account")] ZernioFacebookConnectAccountDetails Account
+);
