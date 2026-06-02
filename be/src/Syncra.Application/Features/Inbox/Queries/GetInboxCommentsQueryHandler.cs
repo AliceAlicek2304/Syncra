@@ -39,6 +39,8 @@ public sealed class GetInboxCommentsQueryHandler
             c.ZernioAccountId,
             c.PostPreviewCaption,
             c.PostPreviewThumbnailUrl,
+            c.CommentCount,
+            c.ZernioTopCommentId,
             c.IsRead,
             c.ReceivedAtUtc,
             c.CreatedAtUtc

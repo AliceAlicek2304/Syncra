@@ -51,12 +51,6 @@ export default function DmTab({ workspaceId, filters }: DmTabProps) {
           c.lastMessage?.toLowerCase().includes(q)
       );
     }
-    
-    // Assignee mock filter
-    if (filters.assigneeId === 'me') {
-       // list = list.filter(...) // mock logic
-    }
-
     return list;
   }, [conversations.data, filters]);
 

@@ -258,6 +258,8 @@ public sealed class InboxBackfillService : IInboxBackfillService
             item.Content,
             zernioPostId: item.Id,
             postPreviewCaption: previewCaption,
+            commentCount: item.CommentCount,
+            zernioTopCommentId: item.Cid,
             receivedAtUtc: item.CreatedTime);
 
         await _inboxRepository.AddCommentAsync(comment);

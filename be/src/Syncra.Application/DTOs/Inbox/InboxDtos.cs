@@ -106,6 +106,8 @@ public sealed record InboxCommentDto(
     string? ZernioAccountId,
     string? PostPreviewCaption,
     string? PostPreviewThumbnailUrl,
+    int CommentCount,
+    string? ZernioTopCommentId,
     bool IsRead,
     DateTime ReceivedAtUtc,
     DateTime CreatedAtUtc);

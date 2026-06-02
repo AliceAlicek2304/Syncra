@@ -429,24 +429,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  background: var(--clr-canvas);
   border: 1.5px solid var(--clr-canvas);
-  font-size: 10px;
-  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(32, 21, 21, 0.12);
+  overflow: hidden;
 }
 
-/* Platform Colors for Badges */
-.bgFacebook { background: #1877f2; }
-.bgInstagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-.bgTwitter { background: #1da1f2; }
-.bgBluesky { background: #0085ff; }
-.bgReddit { background: #ff4500; }
-.bgTelegram { background: #0088cc; }
-.bgWhatsapp { background: #25d366; }
-.bgYoutube { background: #ff0000; }
-.bgLinkedin { background: #0a66c2; }
-.bgThreads { background: #000000; }
-.bgGoogle { background: #ea4335; }
+.platformBadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .itemBody {
   flex: 1;
@@ -1352,4 +1345,49 @@
 .modalConfirm {
   background: var(--clr-primary);
   color: var(--clr-on-primary);
+}
+
+/* Post preview styles for Master-Detail comments grouping view */
+.postPreviewCard {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--clr-canvas-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  border: 1px solid var(--clr-border);
+}
+
+.postThumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.postCaption {
+  font-size: 13px;
+  color: var(--clr-body);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.postStatsRow {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--clr-body-mid);
+}
+
+.postStatItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

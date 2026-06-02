@@ -7,8 +7,11 @@ namespace Syncra.Infrastructure.Repositories;
 
 public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepository
 {
-    public InboxRepository(AppDbContext context) : base(context)
+    private readonly IUnitOfWork _unitOfWork;
+
+    public InboxRepository(AppDbContext context, IUnitOfWork unitOfWork) : base(context)
     {
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IReadOnlyList<InboxConversation>> GetConversationsAsync(
@@ -82,11 +85,13 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
     public async Task AddConversationAsync(InboxConversation conversation)
     {
         await _context.InboxConversations.AddAsync(conversation);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task AddMessageAsync(InboxMessage message)
     {
         await _context.InboxMessages.AddAsync(message);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<int> GetUnreadTotalAsync(
@@ -153,6 +158,7 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
     public async Task AddCommentAsync(InboxComment comment)
     {
         await _context.InboxComments.AddAsync(comment);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     // ── Reviews ────────────────────────────────────────────────────────────
@@ -210,5 +216,6 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
     public async Task AddReviewAsync(InboxReview review)
     {
         await _context.InboxReviews.AddAsync(review);
+        await _unitOfWork.SaveChangesAsync();
     }
 }

@@ -1,13 +1,14 @@
 
 import { Search, Inbox, Filter, User, Loader2 } from 'lucide-react';
 import { getSocialAvatarUrl } from '../../../utils/social';
+import { ExtendedPlatformIcon } from '../../../components/create-post/platformIcons';
+import { mapPlatformToIconKey } from '../utils';
 import styles from '../InboxPage.module.css';
 import type { InboxFilters } from '../types';
 
 interface PlatformDef {
   key: string;
   label: string;
-  bgClass: string;
 }
 
 export interface InboxSidebarProps {
@@ -38,9 +39,6 @@ export default function InboxSidebar({
     onChange({ ...filters, status });
   };
 
-  const handleAssigneeChange = (assigneeId: string | null) => {
-    onChange({ ...filters, assigneeId });
-  };
 
   const handleSearchChange = (search: string) => {
     onChange({ ...filters, search });
@@ -104,9 +102,7 @@ export default function InboxSidebar({
               onClick={() => handlePlatformChange(plat.key)}
               title={plat.label}
             >
-              <span className={`${styles.platformBadge} ${plat.bgClass}`} style={{ position: 'relative', border: 'none', bottom: 0, right: 0, width: 16, height: 16, fontSize: 8 }}>
-                {plat.label[0]}
-              </span>
+              <ExtendedPlatformIcon platform={mapPlatformToIconKey(plat.key)} size={20} />
             </button>
           ))}
         </div>
@@ -151,35 +147,6 @@ export default function InboxSidebar({
         )}
       </div>
 
-      {/* Assignee Filter (Mocked for now based on Open Questions) */}
-      <div className={styles.filterSection}>
-        <span className={styles.filterLabel}>Assignee</span>
-        <div className={styles.accountList}>
-          <button
-            className={`${styles.accountItem} ${!filters.assigneeId ? styles.accountItemActive : ''}`}
-            onClick={() => handleAssigneeChange(null)}
-          >
-            All Assignees
-          </button>
-          <button
-            className={`${styles.accountItem} ${filters.assigneeId === 'me' ? styles.accountItemActive : ''}`}
-            onClick={() => handleAssigneeChange('me')}
-          >
-            <User size={12} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-              Me
-            </span>
-          </button>
-          <button
-            className={`${styles.accountItem} ${filters.assigneeId === 'unassigned' ? styles.accountItemActive : ''}`}
-            onClick={() => handleAssigneeChange('unassigned')}
-          >
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-              Unassigned
-            </span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

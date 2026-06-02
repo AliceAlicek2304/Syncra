@@ -44,3 +44,10 @@ export function stringToColor(str: string): string {
   ];
   return colors[Math.abs(hash) % colors.length];
 }
+
+export function mapPlatformToIconKey(platform: string): string {
+  switch (platform) {
+    case 'google': return 'googlebusiness';
+    default: return platform;
+  }
+}

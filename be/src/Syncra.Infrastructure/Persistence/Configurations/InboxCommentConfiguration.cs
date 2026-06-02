@@ -23,6 +23,8 @@ public class InboxCommentConfiguration : BaseWorkspaceEntityConfiguration<InboxC
         builder.Property(e => e.PostPreviewCaption).HasMaxLength(InboxComment.PostPreviewCaptionMaxLength).HasColumnName("post_preview_caption");
         builder.Property(e => e.PostPreviewThumbnailUrl).HasMaxLength(InboxComment.PostPreviewThumbnailUrlMaxLength).HasColumnName("post_preview_thumbnail_url");
         builder.Property(e => e.ParentCommentId).HasMaxLength(InboxComment.ParentCommentIdMaxLength).HasColumnName("parent_comment_id");
+        builder.Property(e => e.CommentCount).HasDefaultValue(0).HasColumnName("comment_count");
+        builder.Property(e => e.ZernioTopCommentId).HasMaxLength(InboxComment.ZernioTopCommentIdMaxLength).HasColumnName("zernio_top_comment_id");
         builder.Property(e => e.IsReply).HasDefaultValue(false).HasColumnName("is_reply");
         builder.Property(e => e.IsRead).HasDefaultValue(false).HasColumnName("is_read");
         builder.Property(e => e.ReceivedAtUtc).IsRequired().HasColumnName("received_at_utc");

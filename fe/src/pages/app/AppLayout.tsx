@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb,
   BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
-  FileText, ChevronDown, ChevronUp, Layers
+  FileText, ChevronDown, ChevronUp, Layers, MessageSquare, MessageCircle
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -19,7 +19,6 @@ import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS = [
   { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
-  { to: '/app/inbox', icon: <Inbox size={18} />, label: 'Inbox' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
@@ -35,12 +34,13 @@ export default function AppLayout() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [postsOpen, setPostsOpen] = useState(true)
+  const [inboxOpen, setInboxOpen] = useState(true)
   const { unreadCount } = useInboxBadge()
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 
-  const isLightTheme = location.pathname.endsWith('/connections') || 
-                        location.pathname.includes('/posts') || 
+  const isLightTheme = location.pathname.endsWith('/connections') ||
+                        location.pathname.includes('/posts') ||
                         location.pathname.includes('/posts-all') ||
                         location.pathname.includes('/inbox') ||
                         location.pathname.includes('/ideas') ||
@@ -60,6 +60,14 @@ export default function AppLayout() {
       navigate('/app/posts-all')
     } else {
       setPostsOpen(prev => !prev)
+    }
+  }
+
+  const handleInboxHeaderClick = () => {
+    if (collapsed) {
+      navigate('/app/inbox-messages')
+    } else {
+      setInboxOpen(prev => !prev)
     }
   }
 
@@ -152,6 +160,78 @@ export default function AppLayout() {
             )}
           </div>
 
+          {/* Collapsible Inbox Section */}
+          <div className={styles.subMenuContainer}>
+            <div
+              onClick={handleInboxHeaderClick}
+              className={`${styles.navItem} ${styles.subMenuBar} ${
+                location.pathname.includes('/inbox')
+                  ? styles.subMenuActiveHeader
+                  : ''
+              }`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleInboxHeaderClick()
+                }
+              }}
+            >
+              <span className={styles.navIcon}><Inbox size={18} /></span>
+              {!collapsed && (
+                <>
+                  <span className={styles.navLabel}>Inbox</span>
+                  {unreadCount > 0 && (
+                    <span className={styles.navBadge} style={{ marginRight: '8px' }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                  <span className={styles.subChevron}>
+                    {inboxOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </span>
+                </>
+              )}
+              {collapsed && unreadCount > 0 && (
+                <span className={styles.navBadge} style={{ position: 'absolute', top: '2px', right: '2px' }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+
+            {/* Submenu items */}
+            {inboxOpen && !collapsed && (
+              <div className={styles.subItems}>
+                <NavLink
+                  to="/app/inbox-messages"
+                  className={({ isActive }) =>
+                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
+                  }
+                >
+                  <span className={styles.subMenuIcon}>
+                    <MessageSquare size={14} />
+                  </span>
+                  <span className={styles.navLabel}>Messages</span>
+                  {unreadCount > 0 && (
+                    <span className={styles.navBadge} style={{ marginLeft: 'auto' }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </NavLink>
+                <NavLink
+                  to="/app/inbox-comments"
+                  className={({ isActive }) =>
+                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
+                  }
+                >
+                  <span className={styles.subMenuIcon}>
+                    <MessageCircle size={14} />
+                  </span>
+                  <span className={styles.navLabel}>Comments</span>
+                </NavLink>
+              </div>
+            )}
+          </div>
+
           {/* Remaining NAV_ITEMS (excluding Connections) */}
           {NAV_ITEMS.filter(item => item.to !== '/app/connections').map(item => (
             <NavLink
@@ -166,7 +246,7 @@ export default function AppLayout() {
                 <>
                   <span className={styles.navLabel}>{item.label}</span>
                   {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                  {item.to === '/app/inbox' && unreadCount > 0 && (
+                  {item.to === '/app/inbox-messages' && unreadCount > 0 && (
                     <span className={styles.navBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
                   )}
                 </>

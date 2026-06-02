@@ -1,6 +1,7 @@
 
 import { MessageSquare } from 'lucide-react';
-import { formatTime, getInitials, stringToColor } from '../utils';
+import { formatTime, getInitials, stringToColor, mapPlatformToIconKey } from '../utils';
+import { ExtendedPlatformIcon } from '../../../components/create-post/platformIcons';
 import styles from '../InboxPage.module.css';
 import type { Conversation } from '../types';
 
@@ -9,32 +10,6 @@ export interface ConversationListProps {
   selectedId: string | null;
   onSelect: (conv: Conversation) => void;
   isLoading?: boolean;
-}
-
-function getPlatformIcon(platform: string): string {
-  switch (platform) {
-    case 'facebook': return 'f';
-    case 'instagram': return 'i';
-    case 'twitter': return 'x';
-    case 'bluesky': return 'b';
-    case 'reddit': return 'r';
-    case 'telegram': return 't';
-    case 'whatsapp': return 'w';
-    default: return platform[0] || '?';
-  }
-}
-
-function getPlatformClass(platform: string): string {
-  switch (platform) {
-    case 'facebook': return styles.bgFacebook;
-    case 'instagram': return styles.bgInstagram;
-    case 'twitter': return styles.bgTwitter;
-    case 'bluesky': return styles.bgBluesky;
-    case 'reddit': return styles.bgReddit;
-    case 'telegram': return styles.bgTelegram;
-    case 'whatsapp': return styles.bgWhatsapp;
-    default: return '';
-  }
 }
 
 export default function ConversationList({
@@ -76,8 +51,8 @@ export default function ConversationList({
                     {getInitials(conv.customerName)}
                   </div>
                 )}
-                <span className={`${styles.platformBadge} ${getPlatformClass(conv.platform)}`}>
-                  {getPlatformIcon(conv.platform)}
+                <span className={styles.platformBadge}>
+                  <ExtendedPlatformIcon platform={mapPlatformToIconKey(conv.platform)} size={14} />
                 </span>
               </div>
               <div className={styles.itemBody}>

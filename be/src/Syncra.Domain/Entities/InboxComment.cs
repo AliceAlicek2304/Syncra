@@ -13,6 +13,7 @@ public sealed class InboxComment : WorkspaceEntityBase
     public const int PostPreviewCaptionMaxLength = 500;
     public const int PostPreviewThumbnailUrlMaxLength = 500;
     public const int ParentCommentIdMaxLength = 200;
+    public const int ZernioTopCommentIdMaxLength = 200;
 
     public string ZernioCommentId { get; private set; } = string.Empty;
     public Guid? SocialAccountId { get; private set; }
@@ -26,6 +27,8 @@ public sealed class InboxComment : WorkspaceEntityBase
     public string? PostPreviewCaption { get; private set; }
     public string? PostPreviewThumbnailUrl { get; private set; }
     public string? ParentCommentId { get; private set; }
+    public int CommentCount { get; private set; }
+    public string? ZernioTopCommentId { get; private set; }
     public bool IsReply { get; private set; }
     public bool IsRead { get; private set; }
     public DateTime ReceivedAtUtc { get; private set; }
@@ -49,6 +52,8 @@ public sealed class InboxComment : WorkspaceEntityBase
         string? postPreviewCaption = null,
         string? postPreviewThumbnailUrl = null,
         string? parentCommentId = null,
+        int commentCount = 0,
+        string? zernioTopCommentId = null,
         bool isReply = false,
         DateTime? receivedAtUtc = null)
     {
@@ -69,6 +74,8 @@ public sealed class InboxComment : WorkspaceEntityBase
             PostPreviewCaption = postPreviewCaption,
             PostPreviewThumbnailUrl = postPreviewThumbnailUrl,
             ParentCommentId = parentCommentId,
+            CommentCount = commentCount,
+            ZernioTopCommentId = zernioTopCommentId,
             IsReply = isReply,
             IsRead = false,
             ReceivedAtUtc = receivedAtUtc ?? now,

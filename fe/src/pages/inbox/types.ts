@@ -26,5 +26,4 @@ export interface InboxFilters {
   status: 'open' | 'resolved' | 'unread' | 'all' | null;
   search: string;
   accountId?: string | null;
-  assigneeId?: string | null;
 }

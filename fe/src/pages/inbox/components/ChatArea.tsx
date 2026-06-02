@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { ArrowLeft, Loader2, BellOff, CheckCircle } from 'lucide-react';
-import { getInitials, stringToColor } from '../utils';
+import { getInitials, stringToColor, mapPlatformToIconKey } from '../utils';
+import { ExtendedPlatformIcon } from '../../../components/create-post/platformIcons';
 import MessageInput from './MessageInput';
 import styles from '../InboxPage.module.css';
 import type { Conversation, Message } from '../types';
@@ -13,32 +14,6 @@ export interface ChatAreaProps {
   onBack: () => void;
   onResolve?: () => void;
   onMute?: () => void;
-}
-
-function getPlatformIcon(platform: string): string {
-  switch (platform) {
-    case 'facebook': return 'f';
-    case 'instagram': return 'i';
-    case 'twitter': return 'x';
-    case 'bluesky': return 'b';
-    case 'reddit': return 'r';
-    case 'telegram': return 't';
-    case 'whatsapp': return 'w';
-    default: return platform[0] || '?';
-  }
-}
-
-function getPlatformClass(platform: string): string {
-  switch (platform) {
-    case 'facebook': return styles.bgFacebook;
-    case 'instagram': return styles.bgInstagram;
-    case 'twitter': return styles.bgTwitter;
-    case 'bluesky': return styles.bgBluesky;
-    case 'reddit': return styles.bgReddit;
-    case 'telegram': return styles.bgTelegram;
-    case 'whatsapp': return styles.bgWhatsapp;
-    default: return '';
-  }
 }
 
 export default function ChatArea({
@@ -87,8 +62,8 @@ export default function ChatArea({
                 {getInitials(conversation.customerName)}
               </div>
             )}
-            <span className={`${styles.platformBadge} ${getPlatformClass(conversation.platform)}`} style={{ width: 14, height: 14, fontSize: 8 }}>
-              {getPlatformIcon(conversation.platform)}
+            <span className={styles.platformBadge} style={{ width: 14, height: 14 }}>
+              <ExtendedPlatformIcon platform={mapPlatformToIconKey(conversation.platform)} size={10} />
             </span>
           </div>
           <div className={styles.headerMeta}>
@@ -148,14 +123,22 @@ export default function ChatArea({
                     </div>
                     {msg.content}
                     
-                    <div className={styles.bubbleMeta}>
-                      <span>Status: {msg.status === 'read' ? 'Read' : msg.status === 'sent' ? 'Sent' : 'Sending'}</span>
+                    <div className={styles.bubbleMeta} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span>
                         {new Date(msg.createdAt).toLocaleTimeString(undefined, {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </span>
+                      {isAdmin && (
+                        msg.status === 'read' ? (
+                          <CheckCircle size={12} style={{ fill: 'var(--clr-primary)', color: 'var(--clr-primary)' }} />
+                        ) : msg.status === 'sent' ? (
+                          <CheckCircle size={12} style={{ color: 'var(--clr-body-mid)' }} />
+                        ) : (
+                          <span style={{ fontSize: '9px', fontStyle: 'italic' }}>sending...</span>
+                        )
+                      )}
                     </div>
                   </div>
                 </div>

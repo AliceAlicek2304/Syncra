@@ -46,6 +46,8 @@ export interface InboxCommentDto {
   zernioAccountId: string | null;
   postPreviewCaption: string | null;
   postPreviewThumbnailUrl: string | null;
+  commentCount: number;
+  zernioTopCommentId: string | null;
   isRead: boolean;
   receivedAtUtc: string;
   createdAtUtc: string;
@@ -80,11 +82,6 @@ export interface InboxCursorPage<T> {
 
 export interface InboxSummaryDto {
   unreadTotal: number;
-}
-
-export interface InboxSyncStatusDto {
-  isSyncing: boolean;
-  lastSyncedAtUtc: string | null;
 }
 
 export interface SendMessageResponse {
@@ -304,23 +301,6 @@ export const inboxApi = {
   ): Promise<InboxSummaryDto> => {
     const response = await api.get<InboxSummaryDto>(
       `workspaces/${workspaceId}/inbox/unread-summary`,
-    );
-    return response.data;
-  },
-
-  // ── Sync / Backfill ────────────────────────────────────────────────────
-
-  triggerInboxSync: async (
-    workspaceId: string,
-  ): Promise<void> => {
-    await api.post(`workspaces/${workspaceId}/inbox/sync`);
-  },
-
-  getInboxSyncStatus: async (
-    workspaceId: string,
-  ): Promise<InboxSyncStatusDto> => {
-    const response = await api.get<InboxSyncStatusDto>(
-      `workspaces/${workspaceId}/inbox/sync-status`,
     );
     return response.data;
   },

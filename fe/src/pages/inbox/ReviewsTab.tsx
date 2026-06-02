@@ -2,7 +2,8 @@ import { useState, useCallback, useMemo } from 'react';
 import { Star, ArrowLeft, Loader2, Send, Trash2, Smile } from 'lucide-react';
 import { useInbox } from '../../hooks/useInbox';
 import type { InboxReviewDto } from '../../api/inbox';
-import { formatDateTime, getInitials, stringToColor } from './utils';
+import { formatDateTime, getInitials, stringToColor, mapPlatformToIconKey } from './utils';
+import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons';
 import styles from './InboxPage.module.css';
 
 interface ReviewsTabProps {
@@ -11,22 +12,6 @@ interface ReviewsTabProps {
   accountId?: string;
   search?: string;
   unreadOnly?: boolean;
-}
-
-function getPlatformIcon(platform: string): string {
-  switch (platform) {
-    case 'facebook': return 'f';
-    case 'google': return 'g';
-    default: return platform[0];
-  }
-}
-
-function getPlatformClass(platform: string): string {
-  switch (platform) {
-    case 'facebook': return styles.bgFacebook;
-    case 'google': return styles.bgGoogle;
-    default: return '';
-  }
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -69,8 +54,8 @@ function ReviewListItem({
             {getInitials(review.reviewerName)}
           </div>
         )}
-        <span className={`${styles.platformBadge} ${getPlatformClass(review.platform)}`}>
-          {getPlatformIcon(review.platform)}
+        <span className={styles.platformBadge}>
+          <ExtendedPlatformIcon platform={mapPlatformToIconKey(review.platform)} size={14} />
         </span>
       </div>
       <div className={styles.itemBody}>
@@ -147,8 +132,8 @@ function ReviewDetail({
                 {getInitials(review.reviewerName)}
               </div>
             )}
-            <span className={`${styles.platformBadge} ${getPlatformClass(review.platform)}`} style={{ width: 14, height: 14, fontSize: 8 }}>
-              {getPlatformIcon(review.platform)}
+            <span className={styles.platformBadge} style={{ width: 14, height: 14 }}>
+              <ExtendedPlatformIcon platform={mapPlatformToIconKey(review.platform)} size={10} />
             </span>
           </div>
           <div className={styles.headerMeta}>

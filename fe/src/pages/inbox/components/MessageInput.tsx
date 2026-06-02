@@ -14,6 +14,12 @@ const CANNED_RESPONSES = [
   "Sure, let me send that.",
 ];
 
+const QUICK_SUGGESTIONS = [
+  { label: '📦 Check Order', text: 'Hi! Could you please provide your order ID so I can check the status for you?' },
+  { label: '📍 Store Address', text: 'Our store is located at 123 Syncra Street. We are open from 9 AM to 9 PM daily!' },
+  { label: '💳 Payment Method', text: 'We accept credit/debit cards, PayPal, bank transfers, and Cash on Delivery.' },
+];
+
 export default function MessageInput({ onSend, disabled, placeholder = 'Type your message...' }: MessageInputProps) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -160,6 +166,32 @@ export default function MessageInput({ onSend, disabled, placeholder = 'Type you
         >
           {sending ? <Loader2 size={16} className={styles.spinner} /> : 'Send'}
         </button>
+      </div>
+
+      {/* Quick Suggestions - Matching Stitch mockup */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+        {QUICK_SUGGESTIONS.map((item, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setDraft(item.text)}
+            style={{
+              padding: '6px 12px',
+              background: 'var(--clr-canvas-soft)',
+              border: '1px solid var(--clr-border)',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              color: 'var(--clr-ink-soft)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'background 0.15s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'var(--clr-border)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'var(--clr-canvas-soft)'}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
     </div>
   );
