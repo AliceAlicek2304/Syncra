@@ -29,8 +29,7 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
             request.UserId,
             request.Title,
             request.Content,
-            request.ScheduledAtUtc,
-            request.IntegrationId);
+            request.ScheduledAtUtc);
 
         // Attach media using domain behavior
         if (request.MediaIds != null && request.MediaIds.Count > 0)

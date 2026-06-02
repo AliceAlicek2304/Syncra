@@ -34,8 +34,6 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         builder.Property(e => e.UserId).HasColumnName("user_id");
         builder.Property(e => e.PublishedAtUtc).HasColumnName("published_at_utc");
         builder.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
-        builder.Property(e => e.IntegrationId).HasColumnName("integration_id");
-
         // Publishing result properties
         builder.Property(e => e.PublishExternalId).HasMaxLength(200).HasColumnName("publish_external_id");
         builder.Property(e => e.PublishExternalUrl).HasMaxLength(2000).HasColumnName("publish_external_url");
@@ -54,11 +52,6 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(e => new { e.WorkspaceId, e.Status, e.PublishedAtUtc });
-
-        builder.HasOne(e => e.Integration)
-            .WithMany(i => i.Posts)
-            .HasForeignKey(e => e.IntegrationId)
-            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(e => e.Media)
             .WithOne(m => m.Post)

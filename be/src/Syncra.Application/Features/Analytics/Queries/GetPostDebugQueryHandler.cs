@@ -25,12 +25,6 @@ public sealed class GetPostDebugQueryHandler : IRequestHandler<GetPostDebugQuery
             post.WorkspaceId == request.WorkspaceId,
             post.Status.ToString(),
             post.PublishExternalId,
-            post.PublishExternalUrl,
-            post.IntegrationId,
-            post.Integration?.Platform,
-            post.Integration?.ExternalAccountId,
-            !string.IsNullOrEmpty(post.Integration?.AccessToken),
-            post.Integration?.ExpiresAtUtc,
-            post.Integration?.IsActive);
+            post.PublishExternalUrl);
     }
 }

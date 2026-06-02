@@ -137,8 +137,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.UserId,
             request.Title ?? string.Empty,
             request.Content ?? string.Empty,
-            request.ScheduledAtUtc,
-            integrationId: null);
+            request.ScheduledAtUtc);
 
         post.AssignZernioPost(zernioResult.ZernioPostId, socialAccountIds.Count);
 

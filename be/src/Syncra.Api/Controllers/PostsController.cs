@@ -35,7 +35,6 @@ public class PostsController : ControllerBase
             dto.Title,
             dto.Content,
             dto.ScheduledAtUtc,
-            dto.IntegrationId,
             dto.MediaIds);
 
         var result = await _mediator.Send(command, cancellationToken);
@@ -115,7 +114,6 @@ public class PostsController : ControllerBase
             dto.Content,
             dto.ScheduledAtUtc,
             dto.Status,
-            dto.IntegrationId,
             dto.MediaIds);
 
         var result = await _mediator.Send(command, cancellationToken);

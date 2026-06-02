@@ -11,9 +11,11 @@
  *   BlueskyPlatformData, DiscordPlatformData
  */
 
-import { useState, type KeyboardEvent } from 'react'
-import { ChevronDown, Plus, X } from 'lucide-react'
+import { useState, useRef, type KeyboardEvent } from 'react'
+import { ChevronDown, Plus, X, Image } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
+import { shortId } from '../../utils/shortId'
+import type { MediaFile } from './types'
 import styles from './PlatformSpecificForm.module.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,7 +51,7 @@ export interface FacebookPlatformData {
   firstComment?: string
   pageId?: string
   geoRestriction?: GeoRestriction
-  carouselCards?: Array<{ link: string; name?: string; description?: string }>
+  carouselCards?: Array<{ link?: string; name?: string; description?: string; media?: MediaFile }>
   carouselLink?: string
 }
 
@@ -640,8 +642,11 @@ function FacebookForm({ value, onChange }: {
 
   const carouselCards = value.carouselCards ?? []
 
+  const carouselFileInputRef = useRef<HTMLInputElement>(null)
+  const carouselMediaTargetRef = useRef<number | null>(null)
+
   const addCard = () => {
-    if (carouselCards.length < 5) set('carouselCards', [...carouselCards, { link: '' }])
+    if (carouselCards.length < 5) set('carouselCards', [...carouselCards, {}])
   }
 
   const updateCard = (i: number, patch: Partial<(typeof carouselCards)[0]>) => {
@@ -651,8 +656,42 @@ function FacebookForm({ value, onChange }: {
   }
 
   const removeCard = (i: number) => {
+    const card = carouselCards[i]
+    if (card.media) URL.revokeObjectURL(card.media.url)
     const next = carouselCards.filter((_, idx) => idx !== i)
     set('carouselCards', next.length ? next : undefined)
+  }
+
+  const handleAddCardMedia = (cardIndex: number) => {
+    carouselMediaTargetRef.current = cardIndex
+    carouselFileInputRef.current?.click()
+  }
+
+  const handleCardMediaSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const targetIdx = carouselMediaTargetRef.current
+    if (!file || targetIdx === null) return
+
+    const type = file.type.startsWith('video') ? 'video' : 'image'
+    const localUrl = URL.createObjectURL(file)
+
+    const mediaFile: MediaFile = {
+      id: shortId(),
+      url: localUrl,
+      type,
+      name: file.name,
+      file,
+    }
+
+    updateCard(targetIdx, { media: mediaFile })
+    e.target.value = ''
+    carouselMediaTargetRef.current = null
+  }
+
+  const removeCardMedia = (cardIndex: number) => {
+    const card = carouselCards[cardIndex]
+    if (card.media) URL.revokeObjectURL(card.media.url)
+    updateCard(cardIndex, { media: undefined })
   }
 
   return (
@@ -736,7 +775,7 @@ function FacebookForm({ value, onChange }: {
               )}
             </div>
 
-            <p className={styles.hint}>Each card links to a different URL. Requires matching mediaItems.</p>
+            <p className={styles.hint}>Each card has its own image. Requires matching total mediaItems count.</p>
 
             <div className={styles.arrayItems}>
               {carouselCards.map((card, i) => (
@@ -744,13 +783,30 @@ function FacebookForm({ value, onChange }: {
                   <span className={styles.arrayItemIndex}>#{i + 1}</span>
                   <div className={styles.arrayItemBody}>
                     <div className={styles.field}>
-                      <FieldLabel required>link</FieldLabel>
-                      <input
-                        className={styles.input}
-                        placeholder="https://example.com/page"
-                        value={card.link}
-                        onChange={e => updateCard(i, { link: e.target.value })}
-                      />
+                      <FieldLabel required>image</FieldLabel>
+                      {card.media ? (
+                        <div className={styles.carouselMediaPreview}>
+                          {card.media.type === 'image'
+                            ? <img src={card.media.url} alt={card.media.name} className={styles.carouselMediaThumb} />
+                            : <div className={styles.carouselMediaVideo}>🎬 Video</div>
+                          }
+                          <button type="button" className={styles.carouselMediaRemove} onClick={() => removeCardMedia(i)}>
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ) : card.link ? (
+                        <div className={styles.carouselMediaPreview}>
+                          <img src={card.link} alt="" className={styles.carouselMediaThumb} />
+                          <button type="button" className={styles.carouselMediaRemove} onClick={() => removeCardMedia(i)}>
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={styles.carouselMediaZone} onClick={() => handleAddCardMedia(i)}>
+                          <Image size={14} />
+                          <span>Add media</span>
+                        </div>
+                      )}
                     </div>
                     <div className={styles.fieldRow}>
                       <div className={styles.field}>
@@ -796,6 +852,14 @@ function FacebookForm({ value, onChange }: {
           </div>
         </>
       )}
+
+      <input
+        ref={carouselFileInputRef}
+        type="file"
+        accept="image/*,video/*"
+        style={{ display: 'none' }}
+        onChange={handleCardMediaSelected}
+      />
     </>
   )
 }

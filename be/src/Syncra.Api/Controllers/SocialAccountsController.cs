@@ -220,7 +220,8 @@ public sealed class SocialAccountsController : ControllerBase
             stateToken, workspaceId.Value, platform);
 
         // 3. Build redirect URL with state parameter
-        var redirectWithState = $"{redirectUrl}?state={stateToken}&platform={platform.ToLowerInvariant()}";
+        var separator = redirectUrl.Contains('?') ? '&' : '?';
+        var redirectWithState = $"{redirectUrl}{separator}state={stateToken}";
 
         // 4. Get headless connect URL from Zernio
         var connectUrlResult = await _zernioClient.GetConnectUrlAsync(

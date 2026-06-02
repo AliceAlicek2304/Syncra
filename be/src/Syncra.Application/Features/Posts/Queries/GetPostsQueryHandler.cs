@@ -61,7 +61,6 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             Status: zp.Status,
             ScheduledAtUtc: zp.ScheduledFor,
             PublishedAtUtc: zp.PublishedAt,
-            IntegrationId: null,
             MediaIds: (zp.ZernioMediaItems ?? []).Select(m => ObjectIdToGuid(m.Id)).ToList(),
             MediaItems: (zp.ZernioMediaItems ?? []).Select(m => new PostMediaItemDto(
                 Url: m.Url,

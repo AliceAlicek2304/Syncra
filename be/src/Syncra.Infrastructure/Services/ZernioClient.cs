@@ -1155,15 +1155,19 @@ public sealed class ZernioClient : IZernioClient
         if (fbData == null && !request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
             return null;
 
+        var cards = fbData.CarouselCards?
+            .Select(c => new FacebookPlatformDataCarouselCardsInner(c.Link, c.Name, c.Description))
+            .ToList();
+
         return new FacebookPlatformData(
-            fbData?.Draft ?? request.IsDraft ?? false,
-            ParseEnum<FacebookPlatformData.ContentTypeEnum>(fbData?.ContentType),
-            fbData?.Title,
-            fbData?.FirstComment,
-            fbData?.PageId,
+            fbData.Draft ?? request.IsDraft ?? false,
+            ParseEnum<FacebookPlatformData.ContentTypeEnum>(fbData.ContentType),
+            fbData.Title,
+            fbData.FirstComment,
+            fbData.PageId,
             null,
-            null,
-            fbData?.CarouselLink
+            cards,
+            fbData.CarouselLink
         );
     }
 

@@ -9,7 +9,6 @@ public record PostDto(
     string Status,
     DateTime? ScheduledAtUtc,
     DateTime? PublishedAtUtc,
-    Guid? IntegrationId,
     IReadOnlyCollection<Guid> MediaIds,
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     string? ZernioPostId,

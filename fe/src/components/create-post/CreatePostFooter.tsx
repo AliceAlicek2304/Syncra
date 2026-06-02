@@ -4,10 +4,6 @@ import styles from '../CreatePostModal.module.css'
 type CreatePostFooterProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
 export default function CreatePostFooter({ state, actions }: CreatePostFooterProps) {
-  const isZernioPost = !!state.editPost?.zernioPostId
-  const canRetry = state.editPost?.status === 'failed' || state.editPost?.status === 'partial'
-  const a = actions as any
-
   const getPrimaryButtonLabel = () => {
     if (state.isEditMode) {
       return state.publishingTab === 'draft' ? 'Save Changes' : 'Update Schedule'
@@ -37,27 +33,6 @@ export default function CreatePostFooter({ state, actions }: CreatePostFooterPro
 
   return (
     <div className={styles.footer}>
-      {/* Retrying failed posts / Deleting if applicable */}
-      {isZernioPost && canRetry && (
-        <button 
-          className={styles.retryBtn} 
-          onClick={a.retryZernioPost}
-          disabled={a.isRetryingZernio}
-        >
-          {a.isRetryingZernio ? 'Retrying...' : 'Retry Failed'}
-        </button>
-      )}
-
-      {isZernioPost && (
-        <button 
-          className={styles.deletePostBtn} 
-          onClick={a.deleteZernioPost}
-          disabled={a.isDeletingZernio}
-        >
-          {a.isDeletingZernio ? 'Deleting...' : 'Delete Post'}
-        </button>
-      )}
-
       <div className={styles.footerSpacer} />
 
       <button 

@@ -454,6 +454,76 @@
   cursor: pointer;
 }
 
+/* ── Carousel Card Media Upload ── */
+.carouselMediaZone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed var(--clr-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--clr-body-mid);
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.carouselMediaZone:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+.carouselMediaPreview {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.carouselMediaThumb {
+  width: 100%;
+  max-height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+}
+
+.carouselMediaVideo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 60px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  background: var(--clr-canvas-soft);
+  color: var(--clr-body-mid);
+}
+
+.carouselMediaRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.carouselMediaRemove:hover {
+  background: #ef4444;
+}
+
 /* ── Datetime pair (GBP event) ── */
 .dateTimePair {
   display: grid;

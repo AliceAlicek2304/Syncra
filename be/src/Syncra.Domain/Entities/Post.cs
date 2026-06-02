@@ -18,8 +18,6 @@ public sealed class Post : WorkspaceEntityBase
     public DateTime? PublishedAtUtc { get; private set; }
     public PostStatus Status { get; private set; } = PostStatus.Draft;
 
-    public Guid? IntegrationId { get; private set; }
-
     // Publishing result
     public string? PublishExternalId { get; private set; }
     public string? PublishExternalUrl { get; private set; }
@@ -34,7 +32,6 @@ public sealed class Post : WorkspaceEntityBase
     // Navigation properties
     public Workspace Workspace { get; set; } = null!;
     public User User { get; set; } = null!;
-    public Integration? Integration { get; set; }
     public ICollection<Media> Media { get; set; } = new List<Media>();
     public ICollection<PostPlatformTarget> PlatformTargets { get; set; } = new List<PostPlatformTarget>();
 
@@ -47,8 +44,7 @@ public sealed class Post : WorkspaceEntityBase
         Guid userId,
         string title,
         string content,
-        DateTime? scheduledAtUtc = null,
-        Guid? integrationId = null)
+        DateTime? scheduledAtUtc = null)
     {
         var now = DateTime.UtcNow;
         var scheduledTime = ScheduledTime.Create(scheduledAtUtc);
@@ -65,7 +61,6 @@ public sealed class Post : WorkspaceEntityBase
             Content = PostContent.Create(content),
             ScheduledAt = scheduledTime,
             Status = status,
-            IntegrationId = integrationId,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
@@ -129,19 +124,6 @@ public sealed class Post : WorkspaceEntityBase
 
         ScheduledAt = ScheduledTime.None;
         Status = PostStatus.Draft;
-        UpdatedAtUtc = DateTime.UtcNow;
-    }
-
-    public void SetIntegration(Guid? integrationId)
-    {
-        if (Status == PostStatus.Published)
-        {
-            throw new DomainException(
-                "invalid_state",
-                "Cannot change integration of a published post.");
-        }
-
-        IntegrationId = integrationId;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
@@ -209,7 +191,6 @@ public sealed class Post : WorkspaceEntityBase
     public bool CanBePublished()
     {
         return Status is PostStatus.Draft or PostStatus.Scheduled or PostStatus.Publishing
-            && IntegrationId.HasValue
             && !ScheduledAt.IsInFuture;
     }
 
@@ -291,13 +272,6 @@ public sealed class Post : WorkspaceEntityBase
             throw new DomainException(
                 "invalid_state",
                 "Only failed or partial posts can be retried.");
-        }
-
-        if (!IntegrationId.HasValue)
-        {
-            throw new DomainException(
-                "missing_integration",
-                "Cannot retry a post without an integration.");
         }
 
         Status = PostStatus.Draft;

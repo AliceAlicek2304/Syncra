@@ -6,10 +6,4 @@ public record PostDebugDto(
     bool WorkspaceMatch,
     string Status,
     string? PublishExternalId,
-    string? PublishExternalUrl,
-    Guid? IntegrationId,
-    string? IntegrationPlatform,
-    string? IntegrationExternalAccountId,
-    bool IntegrationHasToken,
-    DateTime? IntegrationTokenExpiresAt,
-    bool? IntegrationIsActive);
+    string? PublishExternalUrl);

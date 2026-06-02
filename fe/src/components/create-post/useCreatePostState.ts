@@ -497,6 +497,32 @@ export function useCreatePostState(props: CreatePostModalProps) {
         mimeType: m.mimeType || m.file?.type
       }))
 
+      // Resolve carousel card media (upload any pending files, set link to the uploaded URL)
+      const { mediaApi } = await import('../../api/media')
+      let resolvedPlatformData = platformSpecificData
+      const fbCards = platformSpecificData.facebook?.carouselCards
+      if (fbCards && fbCards.length > 0) {
+        const resolvedCards = await Promise.all(
+          fbCards.map(async (card) => {
+            if (card.media?.file) {
+              const uploadResult = await mediaApi.uploadMedia(wsId, card.media.file)
+              return { link: uploadResult.publicUrl, name: card.name, description: card.description }
+            }
+            if (card.link) {
+              return { link: card.link, name: card.name, description: card.description }
+            }
+            return { link: '', name: card.name, description: card.description }
+          })
+        )
+        resolvedPlatformData = {
+          ...platformSpecificData,
+          facebook: {
+            ...platformSpecificData.facebook,
+            carouselCards: resolvedCards,
+          }
+        }
+      }
+
       // 2. Group selected accounts by workspace ID
       const accountsByWorkspace: Record<string, string[]> = {}
       if (selectedSocialAccountIds.length > 0) {
@@ -556,9 +582,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
           isDraft,
           mediaItems,
           platformContents,
-          platformSpecificData,
-          tiktokSettings: prepareTikTokSettings(platformSpecificData.tiktok),
-          facebookSettings: platformSpecificData.facebook
+          platformSpecificData: resolvedPlatformData,
+          tiktokSettings: prepareTikTokSettings(resolvedPlatformData.tiktok),
+          facebookSettings: resolvedPlatformData.facebook
         })
       })
 

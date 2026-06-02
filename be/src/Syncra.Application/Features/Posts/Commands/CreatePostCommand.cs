@@ -9,6 +9,5 @@ public record CreatePostCommand(
     string Title,
     string Content,
     DateTime? ScheduledAtUtc,
-    Guid? IntegrationId,
     IReadOnlyCollection<Guid>? MediaIds
 ) : IRequest<PostDto>;

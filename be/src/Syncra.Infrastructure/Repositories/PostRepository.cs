@@ -16,7 +16,6 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         return await _dbSet
             .Include(p => p.Media)
-            .Include(p => p.Integration)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -125,7 +124,6 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         return await _dbSet
             .Include(p => p.Media)
-            .Include(p => p.Integration)
             .Include(p => p.PlatformTargets)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
@@ -134,7 +132,6 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         return await _dbSet
             .Include(p => p.Media)
-            .Include(p => p.Integration)
             .Include(p => p.PlatformTargets)
             .FirstOrDefaultAsync(p => p.ZernioPostId == zernioPostId);
     }
@@ -169,7 +166,6 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         return await _dbSet
             .AsNoTracking()
-            .Include(p => p.Integration)
             .Where(p => p.WorkspaceId == workspaceId
                      && p.Status == PostStatus.Published
                      && p.PublishedAtUtc.HasValue
@@ -183,7 +179,7 @@ public class PostRepository : Repository<Post>, IPostRepository
                     ? p.Content.Value.Substring(0, Math.Min(p.Content.Value.Length, 150))
                     : null,
                 p.PublishedAtUtc!.Value,
-                p.Integration != null ? p.Integration.Platform : "unknown",
+                "zernio",
                 p.Status.ToString()))
             .ToListAsync(cancellationToken);
     }

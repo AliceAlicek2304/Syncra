@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, Loader2, AlertTriangle, Building2 } from 'lucide-react';
+import {
+  Check, ArrowRight, Loader2, AlertTriangle, Building2, Info, XCircle, Clock,
+} from 'lucide-react';
 import api from '../../lib/axios';
 import { useToast } from '../../context/ToastContext';
 import styles from './SocialAccountsSelect.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import logo from '../../assets/syncra-logo.png';
 
-  // ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface PageItem {
   id: string;
@@ -16,10 +18,35 @@ interface PageItem {
   avatarUrl?: string;
 }
 
+interface ErrorInfo {
+  title: string;
+  message: string;
+  suggestion?: string;
+  icon: 'alert' | 'info' | 'denied' | 'expired';
+}
+
 type LoadState = 'loading' | 'loaded' | 'error';
 
 // Platforms that require page/board/location/profile/phone selection step
 const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
+
+const ZERNIO_ERROR_MESSAGES: Record<string, string> = {
+  no_facebook_pages: 'No Facebook Pages found for this account. You need at least one Facebook Page to post through Syncra.',
+  access_denied: 'You declined the authorization request on the provider\'s website.',
+  user_unauthorized: 'Authorization could not be completed. The provider did not grant access.',
+};
+
+const ZERNIO_ERROR_SUGGESTIONS: Record<string, string> = {
+  no_facebook_pages: 'Create a Facebook Page at facebook.com/pages/create, then try connecting again.',
+  access_denied: 'No action needed. Go back to Connections when you\'re ready to try again.',
+  user_unauthorized: 'Return to Connections and try connecting your account again.',
+};
+
+const ZERNIO_ERROR_ICONS: Record<string, ErrorInfo['icon']> = {
+  no_facebook_pages: 'info',
+  access_denied: 'denied',
+  user_unauthorized: 'alert',
+};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -34,7 +61,7 @@ export default function SocialAccountsSelect() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
 
   // Extract query params — accept both Zernio headless names and direct-connect names
   const platform = searchParams.get('platform') ?? searchParams.get('connected') ?? '';
@@ -58,6 +85,20 @@ export default function SocialAccountsSelect() {
   }
 
   const isDirectConnect = !SUB_ENTITY_PLATFORMS.includes(platform.toLowerCase()) && !!accountId;
+  const zernioError = searchParams.get('error') ?? '';
+
+  const handleRetry = () => {
+    hasInitialized.current = false;
+    setLoadState('loading');
+    setErrorInfo(null);
+  };
+
+  const errorIconMap: Record<ErrorInfo['icon'], React.ReactNode> = {
+    alert: <AlertTriangle size={32} />,
+    info: <Info size={32} />,
+    denied: <XCircle size={32} />,
+    expired: <Clock size={32} />,
+  };
 
   // ─ Handle direct connect or fetch pages ──────────────────────────────
 
@@ -66,15 +107,53 @@ export default function SocialAccountsSelect() {
     if (workspaceLoading || !activeWorkspace) return;
     hasInitialized.current = true;
 
+    // Zernio error param (provider-level error, e.g. no_facebook_pages)
+    if (zernioError) {
+      setErrorInfo({
+        title: 'Connection couldn\'t be completed',
+        message: ZERNIO_ERROR_MESSAGES[zernioError]
+          || `The provider returned: ${zernioError.replace(/_/g, ' ')}`,
+        suggestion: ZERNIO_ERROR_SUGGESTIONS[zernioError]
+          || 'Return to Connections and try again.',
+        icon: ZERNIO_ERROR_ICONS[zernioError] || 'alert',
+      });
+      setLoadState('error');
+      return;
+    }
+
+    // Missing platform param
+    if (!platform) {
+      setErrorInfo({
+        title: 'No platform specified',
+        message: 'The callback didn\'t include which platform to connect. This may be a temporary issue with the provider.',
+        suggestion: 'Return to Connections and try again.',
+        icon: 'expired',
+      });
+      setLoadState('error');
+      return;
+    }
+
+    // Missing state token (expired session)
+    if (!state) {
+      setErrorInfo({
+        title: 'Connection session expired',
+        message: 'This OAuth session expired or the state parameter is missing. Connections must be completed within 15 minutes.',
+        suggestion: 'Return to Connections and start a fresh connection.',
+        icon: 'expired',
+      });
+      setLoadState('error');
+      return;
+    }
+
+    // Facebook-specific: profileId + tempToken
     if (platform.toLowerCase() === 'facebook') {
-      if (!platform || !profileId || !tempToken) {
-        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
-        setLoadState('error');
-        return;
-      }
-    } else {
-      if (!platform || !state) {
-        setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+      if (!profileId || !tempToken) {
+        setErrorInfo({
+          title: 'Facebook data incomplete',
+          message: 'The Facebook callback was missing required data (profile ID or temporary token).',
+          suggestion: 'Return to Connections and try connecting Facebook again.',
+          icon: 'alert',
+        });
         setLoadState('error');
         return;
       }
@@ -96,10 +175,13 @@ export default function SocialAccountsSelect() {
           showSuccess(`${platform} account connected successfully`);
           navigate('/app/connections', { replace: true });
         } catch (err) {
-          const msg =
-            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-            'Failed to complete connection. Please try again.';
-          setErrorMessage(msg);
+          const respErr = err as { response?: { data?: { message?: string } } };
+          setErrorInfo({
+            title: 'Connection failed',
+            message: respErr?.response?.data?.message || 'The provider did not complete the connection.',
+            suggestion: 'Return to Connections and try again.',
+            icon: 'alert',
+          });
           setLoadState('error');
         }
       };
@@ -107,9 +189,14 @@ export default function SocialAccountsSelect() {
       return;
     }
 
-    // Page-select platforms (Facebook, LinkedIn, etc.)
+    // Sub-entity platforms: tempToken required
     if (!tempToken) {
-      setErrorMessage('Invalid callback parameters. Please try connecting your account again.');
+      setErrorInfo({
+        title: 'Connection data missing',
+        message: 'The callback was missing the temporary access token needed to load account options.',
+        suggestion: 'Return to Connections and try again.',
+        icon: 'expired',
+      });
       setLoadState('error');
       return;
     }
@@ -122,9 +209,7 @@ export default function SocialAccountsSelect() {
             `connect/facebook/select-page`,
             {
               params: { profileId, tempToken },
-              headers: {
-                'X-Workspace-Id': activeWorkspace.id
-              }
+              headers: { 'X-Workspace-Id': activeWorkspace.id }
             }
           );
         } else {
@@ -132,9 +217,7 @@ export default function SocialAccountsSelect() {
             `social-accounts/${platform}/pages`,
             {
               params: { tempToken, state },
-              headers: {
-                'X-Workspace-Id': activeWorkspace.id
-              }
+              headers: { 'X-Workspace-Id': activeWorkspace.id }
             }
           );
         }
@@ -146,16 +229,19 @@ export default function SocialAccountsSelect() {
         })));
         setLoadState('loaded');
       } catch (err) {
-        const msg =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to load account options. Please try again.';
-        setErrorMessage(msg);
+        const respErr = err as { response?: { data?: { message?: string } } };
+        setErrorInfo({
+          title: 'Failed to load options',
+          message: respErr?.response?.data?.message || `Could not load available accounts for ${platform}.`,
+          suggestion: 'This may be a temporary issue. Return to Connections and try again.',
+          icon: 'alert',
+        });
         setLoadState('error');
       }
     };
 
     fetchPages();
-  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId]);
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId, zernioError]);
 
   // ─ Submit selection ─────────────────────────────────────────────────────
 
@@ -192,9 +278,8 @@ export default function SocialAccountsSelect() {
       showSuccess(`${platform} account connected successfully`);
       navigate('/app/connections', { replace: true });
     } catch (err) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Failed to complete connection. Please try again.';
+      const respErr = err as { response?: { data?: { message?: string } } };
+      const msg = respErr?.response?.data?.message || 'Failed to complete the connection.';
       showError(msg);
     } finally {
       setIsSubmitting(false);
@@ -230,17 +315,32 @@ export default function SocialAccountsSelect() {
             </>
           )}
 
-          {loadState === 'error' && (
+          {loadState === 'error' && errorInfo && (
             <div className={styles.errorState}>
-              <AlertTriangle size={32} className={styles.errorIcon} />
-              <h2>Something went wrong</h2>
-              <p>{errorMessage}</p>
-              <button
-                className={styles.btnPrimary}
-                onClick={() => navigate('/app/connections', { replace: true })}
-              >
-                Back to Connections
-              </button>
+              <div className={`${styles.errorIconWrap} ${styles[`errorIcon_${errorInfo.icon}`]}`}>
+                {errorIconMap[errorInfo.icon]}
+              </div>
+              <h2 className={styles.errorTitle}>{errorInfo.title}</h2>
+              <p className={styles.errorMessage}>{errorInfo.message}</p>
+              {errorInfo.suggestion && (
+                <p className={styles.errorSuggestion}>{errorInfo.suggestion}</p>
+              )}
+              <div className={styles.errorActions}>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={() => navigate('/app/connections', { replace: true })}
+                >
+                  Back to Connections
+                </button>
+                {zernioError && (
+                  <button
+                    className={styles.btnGhost}
+                    onClick={handleRetry}
+                  >
+                    Try Again
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

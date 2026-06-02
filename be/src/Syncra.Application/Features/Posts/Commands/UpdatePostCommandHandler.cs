@@ -46,9 +46,6 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
             post.Unschedule();
         }
 
-        // Handle integration change
-        post.SetIntegration(request.IntegrationId);
-
         // Handle status transition
         if (!string.IsNullOrWhiteSpace(request.Status) &&
             Enum.TryParse<PostStatus>(request.Status, ignoreCase: true, out var newStatus))
