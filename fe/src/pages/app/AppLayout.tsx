@@ -1,8 +1,8 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb,
-  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Inbox, Plug,
-  FileText, ChevronDown, ChevronUp, Layers, MessageSquare, MessageCircle
+  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Plug,
+  FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -13,7 +13,6 @@ import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
 import NotificationBell from '../../components/NotificationBell'
-import { useInboxBadge } from '../../hooks/useInboxBadge'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
@@ -35,20 +34,19 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [postsOpen, setPostsOpen] = useState(true)
   const [inboxOpen, setInboxOpen] = useState(true)
-  const { unreadCount } = useInboxBadge()
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 
   const isLightTheme = location.pathname.endsWith('/connections') ||
                         location.pathname.includes('/posts') ||
                         location.pathname.includes('/posts-all') ||
-                        location.pathname.includes('/inbox') ||
                         location.pathname.includes('/ideas') ||
                         location.pathname.includes('/repurpose') ||
                         location.pathname.includes('/media') ||
                         location.pathname.includes('/trends') ||
                         location.pathname.includes('/help') ||
-                        location.pathname.includes('/analytics')
+                        location.pathname.includes('/analytics') ||
+                        location.pathname.includes('/inbox')
 
   const handleLogout = () => {
     logout()
@@ -65,7 +63,7 @@ export default function AppLayout() {
 
   const handleInboxHeaderClick = () => {
     if (collapsed) {
-      navigate('/app/inbox-messages')
+      navigate('/app/inbox/messages')
     } else {
       setInboxOpen(prev => !prev)
     }
@@ -181,20 +179,10 @@ export default function AppLayout() {
               {!collapsed && (
                 <>
                   <span className={styles.navLabel}>Inbox</span>
-                  {unreadCount > 0 && (
-                    <span className={styles.navBadge} style={{ marginRight: '8px' }}>
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
                   <span className={styles.subChevron}>
                     {inboxOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </span>
                 </>
-              )}
-              {collapsed && unreadCount > 0 && (
-                <span className={styles.navBadge} style={{ position: 'absolute', top: '2px', right: '2px' }}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
               )}
             </div>
 
@@ -202,7 +190,7 @@ export default function AppLayout() {
             {inboxOpen && !collapsed && (
               <div className={styles.subItems}>
                 <NavLink
-                  to="/app/inbox-messages"
+                  to="/app/inbox/messages"
                   className={({ isActive }) =>
                     `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
                   }
@@ -211,14 +199,9 @@ export default function AppLayout() {
                     <MessageSquare size={14} />
                   </span>
                   <span className={styles.navLabel}>Messages</span>
-                  {unreadCount > 0 && (
-                    <span className={styles.navBadge} style={{ marginLeft: 'auto' }}>
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
                 </NavLink>
                 <NavLink
-                  to="/app/inbox-comments"
+                  to="/app/inbox/comments"
                   className={({ isActive }) =>
                     `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
                   }
@@ -246,9 +229,6 @@ export default function AppLayout() {
                 <>
                   <span className={styles.navLabel}>{item.label}</span>
                   {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                  {item.to === '/app/inbox-messages' && unreadCount > 0 && (
-                    <span className={styles.navBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
-                  )}
                 </>
               )}
             </NavLink>

@@ -30,10 +30,6 @@ import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
-import InboxMessagesPage from './pages/inbox/InboxMessagesPage'
-import InboxCommentsPage from './pages/inbox/InboxCommentsPage'
-import InboxReviewsPage from './pages/inbox/InboxReviewsPage'
-
 import { useNavigate } from 'react-router-dom'
 import LoginModal from './components/auth/LoginModal'
 import SignupModal from './components/auth/SignupModal'
@@ -47,6 +43,8 @@ import SocialAccountsSelect from './pages/Settings/SocialAccountsSelect'
 import ConnectionsPage from './pages/app/ConnectionsPage'
 import PostsOverviewPage from './pages/app/PostsOverviewPage'
 import PostsQueuesPage from './pages/app/PostsQueuesPage'
+import MessagesPage from './pages/app/MessagesPage'
+import CommentsPage from './pages/app/CommentsPage'
 
 
 function Homepage() {
@@ -141,11 +139,9 @@ function AnimatedRoutes() {
           <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
           <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
-          <Route path="inbox" element={<Navigate to="inbox-messages" replace />} />
-          <Route path="inbox-messages" element={<PageWrapper><InboxMessagesPage /></PageWrapper>} />
-          <Route path="inbox-comments" element={<PageWrapper><InboxCommentsPage /></PageWrapper>} />
-          <Route path="inbox-reviews" element={<PageWrapper><InboxReviewsPage /></PageWrapper>} />
           <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
+          <Route path="inbox/messages" element={<PageWrapper><MessagesPage /></PageWrapper>} />
+          <Route path="inbox/comments" element={<PageWrapper><CommentsPage /></PageWrapper>} />
         </Route>
         
         <Route path="*" element={<Navigate to="/" replace />} />
