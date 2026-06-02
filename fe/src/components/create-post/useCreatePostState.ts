@@ -523,6 +523,19 @@ export function useCreatePostState(props: CreatePostModalProps) {
         }
       }
 
+      // Resolve TikTok video cover media
+      if (resolvedPlatformData.tiktok?.videoCoverMedia?.file) {
+        const uploadResult = await mediaApi.uploadMedia(wsId, resolvedPlatformData.tiktok.videoCoverMedia.file)
+        resolvedPlatformData = {
+          ...resolvedPlatformData,
+          tiktok: {
+            ...resolvedPlatformData.tiktok,
+            videoCoverImageUrl: uploadResult.publicUrl,
+            videoCoverMedia: undefined
+          }
+        }
+      }
+
       // 2. Group selected accounts by workspace ID
       const accountsByWorkspace: Record<string, string[]> = {}
       if (selectedSocialAccountIds.length > 0) {
@@ -733,6 +746,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
     }
   }, [workspaceId, mediaHook, onToast])
 
+  const tiktokAccountId = useMemo(() => {
+    return selectedSocialAccountIds.find(id => {
+      const account = socialAccounts.find(a => a.id === id)
+      return account?.platform === 'tiktok'
+    })
+  }, [selectedSocialAccountIds, socialAccounts])
+
   return {
     state: {
       activePlatforms: derivedActivePlatforms, activeTab, captionsByPlatform, touched,
@@ -767,6 +787,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       mainContent,
       platformSpecificData,
       isSubmitting,
+      tiktokAccountId,
     },
     refs,
     actions: {

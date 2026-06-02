@@ -748,6 +748,41 @@ public sealed class SocialAccountsController : ControllerBase
         return Ok(new { message = "LinkedIn organization switched successfully." });
     }
 
+    // ── GET /api/v1/social-accounts/{accountId}/tiktok-creator-info ──────
+
+    /// <summary>
+    /// Returns TikTok creator info the connected account has access to.
+    /// </summary>
+    [HttpGet("{accountId:guid}/tiktok-creator-info")]
+    public async Task<IActionResult> GetTikTokCreatorInfo(
+        Guid accountId,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var info = await _zernioClient.GetTikTokCreatorInfoAsync(
+            accountId: account.ExternalAccountId,
+            mediaType: null,
+            cancellationToken: cancellationToken);
+
+        return Ok(info);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private async Task<ZernioProfile> GetOrProvisionZernioProfileAsync(

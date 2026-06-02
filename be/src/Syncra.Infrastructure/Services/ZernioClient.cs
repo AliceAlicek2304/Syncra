@@ -453,6 +453,42 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    public async Task<ZernioTikTokCreatorInfoDto> GetTikTokCreatorInfoAsync(
+        string accountId,
+        string? mediaType = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _accountsApi.GetTikTokCreatorInfoAsync(accountId, mediaType, cancellationToken);
+
+            return new ZernioTikTokCreatorInfoDto(
+                CreatorInfo: new ZernioTikTokCreatorInfoDetails(
+                    PrivacyLevelOptions: response.PrivacyLevels?.Select(x => x.Value ?? x.Label).ToList(),
+                    CommentDisabled: null,
+                    DuetDisabled: null,
+                    StitchDisabled: null,
+                    MaxVideoPostDurationSec: response.PostingLimits?.MaxVideoDurationSec,
+                    CommercialContentTypeOptions: response.CommercialContentTypes?.Select(x => x.Value ?? x.Label).ToList()
+                )
+            );
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered fetching TikTok creator info for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to fetch TikTok creator info.",
+                reason: "api_limit_reached",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching TikTok creator info for account {AccountId}", accountId);
+            throw new DomainException("zernio_tiktok_creator_info_error", $"Failed to fetch TikTok creator info", ex);
+        }
+    }
+
     // ── CreatePostAsync: Raw HTTP request to bypass SDK oneOf deserialization ──────
     public async Task<ZernioCreatePostResult> CreatePostAsync(
         ZernioCreatePostRequest request,

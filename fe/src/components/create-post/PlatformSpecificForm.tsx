@@ -11,11 +11,14 @@
  *   BlueskyPlatformData, DiscordPlatformData
  */
 
-import { useState, useRef, type KeyboardEvent } from 'react'
-import { ChevronDown, Plus, X, Image } from 'lucide-react'
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
+import { ChevronDown, Plus, X, Image, Music, Folder } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
 import { shortId } from '../../utils/shortId'
 import type { MediaFile } from './types'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { socialAccountsApi } from '../../api/socialAccounts'
+import { useQuery } from '@tanstack/react-query'
 import styles from './PlatformSpecificForm.module.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -143,6 +146,7 @@ export interface TikTokPlatformData {
   autoAddMusic?: boolean
   videoMadeWithAi?: boolean
   description?: string
+  videoCoverMedia?: MediaFile
 }
 
 // Telegram
@@ -234,6 +238,8 @@ interface PlatformSpecificFormProps {
   activePlatforms: string[]
   value: AllPlatformData
   onChange: (next: AllPlatformData) => void
+  tiktokAccountId?: string
+  media?: MediaFile[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1504,134 +1510,241 @@ function GoogleBusinessForm({ value, onChange }: {
 }
 
 // TikTok
-function TikTokForm({ value, onChange }: {
+function TikTokForm({ value, onChange, tiktokAccountId, media }: {
   value: TikTokPlatformData
   onChange: (v: TikTokPlatformData) => void
+  tiktokAccountId?: string
+  media?: MediaFile[]
 }) {
   const set = <K extends keyof TikTokPlatformData>(k: K, v: TikTokPlatformData[K]) =>
     onChange({ ...value, [k]: v })
 
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const { data: creatorInfo } = useQuery({
+    queryKey: ['tiktok-creator-info', workspaceId, tiktokAccountId],
+    queryFn: async () => {
+      if (!workspaceId || !tiktokAccountId) return null
+      return socialAccountsApi.getTikTokCreatorInfo(workspaceId, tiktokAccountId)
+    },
+    enabled: !!workspaceId && !!tiktokAccountId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const handleCoverMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    set('videoCoverMedia', { id: shortId(), name: file.name, file, url, type: 'image' })
+    set('videoCoverImageUrl', undefined)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeCoverMedia = () => {
+    set('videoCoverMedia', undefined)
+    set('videoCoverImageUrl', undefined)
+  }
+
+  const privacyOptions = creatorInfo?.creator_info?.privacy_level_options ?? []
+  const commercialOptions = creatorInfo?.creator_info?.commercial_content_type_options ?? []
+
+  // Derive mediaType
+  const hasVideo = media?.some(m => m.type === 'video') || false
+  const isVideo = hasVideo || (!media || media.length === 0)
+
+  // Force hidden fields
+  useEffect(() => {
+    let changed = false
+    const next = { ...value }
+    if (next.contentPreviewConfirmed !== true) { next.contentPreviewConfirmed = true; changed = true }
+    if (next.expressConsentGiven !== true) { next.expressConsentGiven = true; changed = true }
+    const derivedMediaType = isVideo ? 'video' : 'photo'
+    if (next.mediaType !== derivedMediaType) { next.mediaType = derivedMediaType; changed = true }
+    
+    if (changed) {
+      onChange(next)
+    }
+  }, [isVideo, value.contentPreviewConfirmed, value.expressConsentGiven, value.mediaType, onChange, value])
+
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Switch
         on={value.draft ?? false}
         onChange={v => set('draft', v)}
         label="Send to TikTok Creator Inbox (draft)"
-        desc="Creator receives inbox notification to complete posting. Requires video.upload scope."
+        desc="Send post as a draft to complete in TikTok editing flow."
       />
 
       <div className={styles.fieldRow}>
         <div className={styles.field}>
-          <FieldLabel>media type</FieldLabel>
-          <select
-            className={styles.select}
-            value={value.mediaType ?? ''}
-            onChange={e => set('mediaType', (e.target.value || undefined) as any)}
-          >
-            <option value="">Auto-detect</option>
-            <option value="video">Video</option>
-            <option value="photo">Photo carousel</option>
-          </select>
-        </div>
-        <div className={styles.field}>
-          <FieldLabel>commercial content</FieldLabel>
+          <FieldLabel>Commercial content (from GetTikTokCreatorInfoAsync)</FieldLabel>
           <select
             className={styles.select}
             value={value.commercialContentType ?? 'none'}
             onChange={e => set('commercialContentType', e.target.value as any)}
           >
             <option value="none">None</option>
-            <option value="brand_organic">Brand organic</option>
-            <option value="brand_content">Brand content (paid partnership)</option>
+            {commercialOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+            {commercialOptions.length === 0 && (
+              <>
+                <option value="brand_organic">Brand organic</option>
+                <option value="brand_content">Brand content (paid partnership)</option>
+              </>
+            )}
           </select>
         </div>
-      </div>
-
-      {/* Privacy Level */}
-      <div className={styles.field}>
-        <FieldLabel>privacy level</FieldLabel>
-        <input
-          className={styles.input}
-          placeholder="e.g. PUBLIC_TO_EVERYONE (from creator info API)"
-          value={value.privacyLevel ?? ''}
-          onChange={e => set('privacyLevel', e.target.value || undefined)}
-        />
-        <p className={styles.hint}>Must match values returned by TikTok creator info API for this account</p>
-      </div>
-
-      {/* Engagement */}
-      <div className={styles.subFormBox}>
-        <div className={styles.subFormTitle}>Engagement settings (video)</div>
-        <Switch on={value.allowComment ?? true} onChange={v => set('allowComment', v)} label="Allow comments" />
-        <Switch on={value.allowDuet ?? true} onChange={v => set('allowDuet', v)} label="Allow duets" desc="Required for video posts" />
-        <Switch on={value.allowStitch ?? true} onChange={v => set('allowStitch', v)} label="Allow stitches" desc="Required for video posts" />
-        <Switch on={value.autoAddMusic ?? false} onChange={v => set('autoAddMusic', v)} label="Auto-add music (photos only)" />
-      </div>
-
-      {/* Disclosure */}
-      <div className={styles.subFormBox}>
-        <div className={styles.subFormTitle}>Content disclosure</div>
-        <Switch on={value.brandPartnerPromote ?? false} onChange={v => set('brandPartnerPromote', v)} label="Promotes brand partner" />
-        <Switch on={value.isBrandOrganicPost ?? false} onChange={v => set('isBrandOrganicPost', v)} label="Brand organic post" />
-        <Switch on={value.videoMadeWithAi ?? false} onChange={v => set('videoMadeWithAi', v)} label="Made with AI (synthetic content)" />
-        <Switch on={value.contentPreviewConfirmed ?? false} onChange={v => set('contentPreviewConfirmed', v)} label="Content preview confirmed" />
-        <Switch on={value.expressConsentGiven ?? false} onChange={v => set('expressConsentGiven', v)} label="Express consent given" />
-      </div>
-
-      {/* Video cover */}
-      <div className={styles.subFormBox}>
-        <div className={styles.subFormTitle}>Video cover</div>
         <div className={styles.field}>
-          <FieldLabel>cover image URL</FieldLabel>
-          <input
-            className={styles.input}
-            placeholder="https://... (JPG, PNG, WebP, max 20MB)"
-            value={value.videoCoverImageUrl ?? ''}
-            onChange={e => set('videoCoverImageUrl', e.target.value || undefined)}
-          />
-        </div>
-        <div className={styles.field}>
-          <FieldLabel>cover timestamp (ms)</FieldLabel>
-          <input
-            type="number"
-            className={styles.input}
-            min={0}
-            placeholder="1000"
-            value={value.videoCoverTimestampMs ?? ''}
-            onChange={e => set('videoCoverTimestampMs', e.target.value ? Number(e.target.value) : undefined)}
-          />
-          <p className={styles.hint}>Ignored when cover image URL is provided</p>
+          <FieldLabel>Privacy level (from GetTikTokCreatorInfoAsync)</FieldLabel>
+          {privacyOptions.length > 0 ? (
+            <select
+              className={styles.select}
+              value={value.privacyLevel ?? ''}
+              onChange={e => set('privacyLevel', e.target.value || undefined)}
+            >
+              <option value="">Select privacy level...</option>
+              {privacyOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              className={styles.input}
+              placeholder="e.g. PUBLIC_TO_EVERYONE"
+              value={value.privacyLevel ?? ''}
+              onChange={e => set('privacyLevel', e.target.value || undefined)}
+            />
+          )}
         </div>
       </div>
 
-      {/* Photo */}
-      <div className={styles.subFormBox}>
-        <div className={styles.subFormTitle}>Photo carousel</div>
-        <div className={styles.field}>
-          <FieldLabel>cover photo index</FieldLabel>
-          <input
-            type="number"
-            className={styles.input}
-            min={0}
-            placeholder="0 (first image)"
-            value={value.photoCoverIndex ?? ''}
-            onChange={e => set('photoCoverIndex', e.target.value ? Number(e.target.value) : undefined)}
-          />
+      <div style={{ display: 'flex', gap: 24, alignItems: 'stretch', flexWrap: 'wrap' }}>
+        {/* Engagement Container */}
+        <div style={{ 
+          background: 'var(--clr-canvas-soft)', 
+          padding: 16, 
+          borderRadius: 'var(--rounded-md)', 
+          flex: '1 1 250px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-ink)', letterSpacing: 1, textTransform: 'uppercase' }}>
+            ENGAGEMENT
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Switch on={value.allowComment ?? true} onChange={v => set('allowComment', v)} label="Allow comments" />
+            
+            {isVideo && (
+              <>
+                <Switch on={value.allowDuet ?? true} onChange={v => set('allowDuet', v)} label="Allow duets" desc="Required for video posts" />
+                <Switch on={value.allowStitch ?? true} onChange={v => set('allowStitch', v)} label="Allow stitches" desc="Required for video posts" />
+              </>
+            )}
+
+            <Switch on={value.videoMadeWithAi ?? false} onChange={v => set('videoMadeWithAi', v)} label="Made with AI (synthetic content)" />
+          </div>
         </div>
-        <div className={styles.field}>
-          <FieldLabel>long description (photos)</FieldLabel>
-          <textarea
-            className={styles.textarea}
-            rows={3}
-            maxLength={4000}
-            placeholder="Long-form description for photo posts (max 4000 chars)"
-            value={value.description ?? ''}
-            onChange={e => set('description', e.target.value || undefined)}
-          />
-          <p className={styles.hint}>Recommended when main content exceeds 90 chars (photo titles are auto-truncated)</p>
+
+        {/* Media Specific Container */}
+        <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Music Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #FF0050 0%, #00F2FE 100%)',
+            padding: '16px 20px',
+            borderRadius: 'var(--rounded-md)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            opacity: isVideo ? 0.6 : 1,
+            position: 'relative'
+          }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>Boost your post with TikTok<br/>recommended music</div>
+              <Music size={28} />
+            </div>
+            <div title={isVideo ? 'This feature is for photo carousel posts only.' : ''}>
+              <Switch 
+                label="Auto-add music"
+                on={value.autoAddMusic ?? false} 
+                onChange={v => !isVideo && set('autoAddMusic', v)} 
+                disabled={isVideo}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{isVideo ? 'Video Cover' : 'Photo Cover'}</div>
+            
+            <div className={styles.field}>
+              <FieldLabel>Upload Custom Cover</FieldLabel>
+              {value.videoCoverMedia || value.videoCoverImageUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <img 
+                    src={value.videoCoverMedia?.url || value.videoCoverImageUrl} 
+                    alt="Cover" 
+                    style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6 }} 
+                  />
+                  <button type="button" onClick={removeCoverMedia} className={styles.buttonText} style={{ color: 'var(--clr-danger)' }}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', 
+                    background: 'var(--clr-canvas)', border: '1px dashed var(--clr-mute)', 
+                    borderRadius: 'var(--rounded-md)', cursor: 'pointer', color: 'var(--clr-ink)',
+                    width: '100%', justifyContent: 'flex-start'
+                  }}
+                >
+                  <Folder size={16} /> Upload custom cover image
+                </button>
+              )}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept="image/jpeg, image/png, image/webp" 
+                onChange={handleCoverMediaChange} 
+              />
+            </div>
+
+            {isVideo ? (
+              <div className={styles.field}>
+                <FieldLabel>Cover timestamp (ms)</FieldLabel>
+                <input
+                  className={styles.input}
+                  type="number"
+                  placeholder="Feature coming soon"
+                  disabled
+                  style={{ backgroundColor: 'var(--clr-canvas-soft)', color: 'var(--clr-mute)', cursor: 'not-allowed' }}
+                />
+              </div>
+            ) : (
+              <div className={styles.field}>
+                <FieldLabel>description</FieldLabel>
+                <textarea
+                  className={styles.textarea}
+                  rows={2}
+                  placeholder="Add a description for your photo carousel..."
+                  value={value.description ?? ''}
+                  onChange={e => set('description', e.target.value || undefined)}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </>
+
+    </div>
   )
 }
 
@@ -2162,11 +2275,8 @@ function hasConfiguredValues(data: Record<string, any>): boolean {
   })
 }
 
-export default function PlatformSpecificForm({
-  activePlatforms,
-  value,
-  onChange,
-}: PlatformSpecificFormProps) {
+export default function PlatformSpecificForm(props: PlatformSpecificFormProps) {
+  const { activePlatforms, value, onChange } = props
   const visiblePlatforms = activePlatforms.filter(isSupportedPlatform)
 
   if (visiblePlatforms.length === 0) return null
@@ -2241,6 +2351,8 @@ export default function PlatformSpecificForm({
           <TikTokForm
             value={value.tiktok ?? {}}
             onChange={d => updatePlatform('tiktok', d)}
+            tiktokAccountId={props.tiktokAccountId}
+            media={props.media}
           />
         )
       case 'telegram':

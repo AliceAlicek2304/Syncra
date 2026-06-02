@@ -284,6 +284,8 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
             activePlatforms={state.activePlatforms}
             value={state.platformSpecificData}
             onChange={actions.setPlatformSpecificData}
+            tiktokAccountId={state.tiktokAccountId}
+            media={state.media}
           />
         </div>
       )}

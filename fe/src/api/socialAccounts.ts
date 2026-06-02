@@ -52,6 +52,17 @@ export interface AccountHealthDto {
   recommendations: string[];
 }
 
+export interface TikTokCreatorInfoDto {
+  creator_info?: {
+    privacy_level_options?: string[];
+    comment_disabled?: boolean;
+    duet_disabled?: boolean;
+    stitch_disabled?: boolean;
+    max_video_post_duration_sec?: number;
+    commercial_content_type_options?: string[];
+  };
+}
+
 export const socialAccountsApi = {
   getFacebookPages: async (workspaceId: string, accountId: string, refresh?: boolean): Promise<FacebookPagesResponseDto> => {
     const params: Record<string, string> = {};
@@ -108,6 +119,16 @@ export const socialAccountsApi = {
         headers: { 'X-Workspace-Id': workspaceId },
         params,
       }
+    );
+    return response.data;
+  },
+  getTikTokCreatorInfo: async (
+    workspaceId: string,
+    accountId: string
+  ): Promise<TikTokCreatorInfoDto> => {
+    const response = await api.get<TikTokCreatorInfoDto>(
+      `social-accounts/${accountId}/tiktok-creator-info`,
+      { headers: { 'X-Workspace-Id': workspaceId } }
     );
     return response.data;
   },

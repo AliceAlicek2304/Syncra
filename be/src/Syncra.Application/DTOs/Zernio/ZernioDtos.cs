@@ -377,3 +377,18 @@ public sealed record ZernioFacebookConnectSelectResponse(
     [property: JsonPropertyName("redirect_url")] string? RedirectUrl,
     [property: JsonPropertyName("account")] ZernioFacebookConnectAccountDetails Account
 );
+
+// ── TikTok Creator Info DTOs ──────────────────────────────────────────
+
+public sealed record ZernioTikTokCreatorInfoDto(
+    [property: JsonPropertyName("creator_info")] ZernioTikTokCreatorInfoDetails? CreatorInfo
+);
+
+public sealed record ZernioTikTokCreatorInfoDetails(
+    [property: JsonPropertyName("privacy_level_options")] IReadOnlyList<string>? PrivacyLevelOptions,
+    [property: JsonPropertyName("comment_disabled")] bool? CommentDisabled,
+    [property: JsonPropertyName("duet_disabled")] bool? DuetDisabled,
+    [property: JsonPropertyName("stitch_disabled")] bool? StitchDisabled,
+    [property: JsonPropertyName("max_video_post_duration_sec")] int? MaxVideoPostDurationSec,
+    [property: JsonPropertyName("commercial_content_type_options")] IReadOnlyList<string>? CommercialContentTypeOptions
+);

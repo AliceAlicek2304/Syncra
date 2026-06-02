@@ -53,6 +53,11 @@ public interface IZernioClient
         string tempToken,
         CancellationToken cancellationToken = default);
 
+    Task<ZernioTikTokCreatorInfoDto> GetTikTokCreatorInfoAsync(
+        string accountId,
+        string? mediaType = null,
+        CancellationToken cancellationToken = default);
+
     Task<ZernioSelectResultDto> SelectOptionAsync(
         string profileId,
         string platform,
