@@ -1244,7 +1244,7 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var response = await _analyticsApi.GetBestTimeToPostAsync(
-                platform: platform,
+                platform: platform, 
                 profileId: profileId,
                 accountId: null,
                 source: null,
@@ -1892,9 +1892,13 @@ public sealed class ZernioClient : IZernioClient
                 sdkRequest,
                 cancellationToken);
 
+            var sentAt = (response.Data?.SentAt == null || response.Data.SentAt == default(DateTime))
+                ? DateTime.UtcNow
+                : response.Data.SentAt;
+
             return new ZernioSendMessageResponseDto(
                 response.Data?.MessageId ?? string.Empty,
-                response.Data?.SentAt ?? DateTime.UtcNow);
+                sentAt);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {

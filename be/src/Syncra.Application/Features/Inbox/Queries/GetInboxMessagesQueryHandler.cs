@@ -81,7 +81,7 @@ public sealed class GetInboxMessagesQueryHandler
                     item.Id,
                     direction,
                     item.Text,
-                    item.SentAt ?? DateTime.UtcNow,
+                    (item.SentAt == null || item.SentAt == default(DateTime)) ? DateTime.UtcNow : item.SentAt.Value,
                     conversation.SocialAccount?.ExternalAccountId
                 );
                 await _inboxRepository.AddMessageAsync(localMessage);

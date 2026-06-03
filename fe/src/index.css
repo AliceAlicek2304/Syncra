@@ -82,6 +82,14 @@
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-pill: 9999px;
+
+  /* GitHub-style contribution heatmap levels */
+  --gh-level-0: #ebedf0;
+  --gh-level-1: #9be9a8;
+  --gh-level-2: #40c463;
+  --gh-level-3: #30a14e;
+  --gh-level-4: #216e39;
+  --gh-level-5: #144d27;
 }
 
 /* ─── Global Utility Classes ─── */

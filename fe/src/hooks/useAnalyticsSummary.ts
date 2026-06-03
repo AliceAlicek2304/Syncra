@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi } from '../api/analytics';
-import type { AnalyticsError, AnalyticsPresetDays, HeatmapDto, WorkspaceAnalyticsSummaryDto } from '../api/analytics';
+import type { AnalyticsError, AnalyticsPresetDays, HeatmapDto, WorkspaceAnalyticsSummaryDto, ZernioDailyMetricsDto } from '../api/analytics';
 import { AxiosError } from 'axios';
 
 interface UseAnalyticsSummaryArgs {
@@ -64,6 +64,18 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
     },
   });
 
+  const dailyMetricsQuery = useQuery({
+    queryKey: ['analytics-daily-metrics', workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: async (): Promise<ZernioDailyMetricsDto | null> => {
+      if (!workspaceId) return null;
+      const fromDate = new Date()
+      fromDate.setDate(fromDate.getDate() - 365)
+      return analyticsApi.getDailyMetrics(fromDate.toISOString().split('T')[0]);
+    },
+    staleTime: 300_000,
+  });
+
   // Structured error info
   const analyticsError: AnalyticsError | null = useMemo(() => {
     return toAnalyticsError(summaryQuery.error) ?? toAnalyticsError(heatmapQuery.error) ?? null;
@@ -77,7 +89,8 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
   const refresh = useCallback(() => {
     summaryQuery.refetch();
     heatmapQuery.refetch();
-  }, [summaryQuery.refetch, heatmapQuery.refetch]);
+    dailyMetricsQuery.refetch();
+  }, [summaryQuery.refetch, heatmapQuery.refetch, dailyMetricsQuery.refetch]);
 
   const isBillingGateError = analyticsError?.status === 402
     || (analyticsError?.status === 403 && analyticsError?.code === 'analytics_addon_required');
@@ -94,8 +107,9 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
     setHeatmapPlatform,
     summary: summaryQuery.data,
     heatmap: heatmapQuery.data,
+    dailyMetrics: dailyMetricsQuery.data,
     isLoading: summaryQuery.isLoading || heatmapQuery.isLoading,
-    isFetching: summaryQuery.isFetching || heatmapQuery.isFetching,
+    isFetching: summaryQuery.isFetching || heatmapQuery.isFetching || dailyMetricsQuery.isFetching,
     isError: summaryQuery.isError || heatmapQuery.isError,
     analyticsError,
     isBillingGateError,

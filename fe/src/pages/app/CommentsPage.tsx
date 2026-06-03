@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Search, MoreVertical, Send, CheckCircle2,
+  Search, Send, CheckCircle2,
   ThumbsUp, EyeOff, MessageSquare, Trash2, Loader2
 } from 'lucide-react'
 import styles from './CommentsPage.module.css'
@@ -52,18 +52,20 @@ export default function CommentsPage() {
   
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
   const [isLoadingLive, setIsLoadingLive] = useState(false)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filterPlatform, setFilterPlatform] = useState('all')
-  const [filterWorkspace, setFilterWorkspace] = useState('all') // mock
-  const [filterAccount, setFilterAccount] = useState('all') // mock
-  const [sortBy, setSortBy] = useState('newest')
-  
+  const [isReplying, setIsReplying] = useState(false)
+  const [isPrivateReplying, setIsPrivateReplying] = useState(false)
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null)
   
   const [toastMessage, setToastMessage] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPlatform, setFilterPlatform] = useState('all')
+  const [filterWorkspace, setFilterWorkspace] = useState('all')
+  const [filterAccount, setFilterAccount] = useState('all')
+  const [sortBy, setSortBy] = useState('newest')
 
   const activePost = posts.find(p => p.id === selectedPostId)
 
@@ -159,7 +161,7 @@ export default function CommentsPage() {
   const handleLikeComment = async (commentId: string, isCurrentlyLiked: boolean, cid?: string) => {
     if (!workspaceId) return;
     
-    // Optimistic UI
+    setActionLoadingId(commentId);
     setLiveComments(prev => prev.map(c => {
       if (c.id === commentId) {
         return {
@@ -179,13 +181,15 @@ export default function CommentsPage() {
       }
     } catch (err) {
       triggerToast('Failed to update like status')
-      // Revert omitted for brevity
+    } finally {
+      setActionLoadingId(null);
     }
   }
 
   const handleHideComment = async (commentId: string, isCurrentlyHidden: boolean) => {
     if (!workspaceId) return;
 
+    setActionLoadingId(commentId);
     setLiveComments(prev => prev.map(c => {
       if (c.id === commentId) return { ...c, isHidden: !isCurrentlyHidden }
       return c
@@ -201,12 +205,15 @@ export default function CommentsPage() {
       }
     } catch (err) {
       triggerToast('Failed to hide/unhide comment')
+    } finally {
+      setActionLoadingId(null);
     }
   }
 
   const handleDeleteComment = async (commentId: string) => {
     if (!workspaceId) return;
     
+    setActionLoadingId(commentId);
     setLiveComments(prev => prev.filter(c => c.id !== commentId))
     
     try {
@@ -214,6 +221,8 @@ export default function CommentsPage() {
       triggerToast('Comment deleted')
     } catch (err) {
       triggerToast('Failed to delete comment')
+    } finally {
+      setActionLoadingId(null);
     }
   }
 
@@ -226,33 +235,35 @@ export default function CommentsPage() {
       return;
     }
 
+    setIsReplying(true);
     try {
-      // Optimistically add to UI? It's complex because we don't have the full DTO yet. Just refetch later.
-      triggerToast('Sending reply...')
       await inboxApi.replyToComment(workspaceId, targetCommentId, replyText)
       triggerToast('Reply sent successfully!')
       setReplyText('')
       setReplyingToCommentId(null)
       
-      // Refresh live comments
       const response = await inboxApi.getPostComments(workspaceId, activePost.id, activePost.zernioAccountId, { limit: 100 })
       setLiveComments(response.comments || [])
     } catch (err) {
       triggerToast('Failed to send reply')
+    } finally {
+      setIsReplying(false);
     }
   }
 
   const handlePrivateReply = async (commentId: string) => {
-    // Just a stub for private reply, ideally we'd show a modal
     if (!workspaceId) return;
     const msg = prompt("Enter private message:");
     if (!msg) return;
 
+    setIsPrivateReplying(true);
     try {
       await inboxApi.sendPrivateReplyToComment(workspaceId, commentId, msg);
       triggerToast('Private message sent');
     } catch (err) {
       triggerToast('Failed to send private message');
+    } finally {
+      setIsPrivateReplying(false);
     }
   }
 
@@ -407,14 +418,15 @@ export default function CommentsPage() {
                               <button
                                 onClick={() => handleLikeComment(c.id, c.isLiked, c.likeUri)}
                                 className={c.isLiked ? styles.likedAction : ''}
+                                disabled={actionLoadingId === c.id}
                               >
-                                <ThumbsUp size={14} />
+                                {actionLoadingId === c.id ? <Loader2 size={14} className={styles.spinner} /> : <ThumbsUp size={14} />}
                                 <span>{c.likeCount > 0 ? c.likeCount : 'Like'}</span>
                               </button>
                               
                               {c.canHide && (
-                                <button onClick={() => handleHideComment(c.id, c.isHidden)}>
-                                  <EyeOff size={14} />
+                                <button onClick={() => handleHideComment(c.id, c.isHidden)} disabled={actionLoadingId === c.id}>
+                                  {actionLoadingId === c.id ? <Loader2 size={14} className={styles.spinner} /> : <EyeOff size={14} />}
                                   <span>{c.isHidden ? 'Unhide' : 'Hide'}</span>
                                 </button>
                               )}
@@ -427,14 +439,14 @@ export default function CommentsPage() {
                                 <span>Reply</span>
                               </button>
 
-                              <button onClick={() => handlePrivateReply(c.id)}>
-                                <MessageSquare size={14} />
+                              <button onClick={() => handlePrivateReply(c.id)} disabled={isPrivateReplying}>
+                                {isPrivateReplying ? <Loader2 size={14} className={styles.spinner} /> : <MessageSquare size={14} />}
                                 <span>Private MSG</span>
                               </button>
 
                               {c.canDelete && (
-                                <button onClick={() => handleDeleteComment(c.id)} className={styles.deleteAction}>
-                                  <Trash2 size={14} />
+                                <button onClick={() => handleDeleteComment(c.id)} className={styles.deleteAction} disabled={actionLoadingId === c.id}>
+                                  {actionLoadingId === c.id ? <Loader2 size={14} className={styles.spinner} /> : <Trash2 size={14} />}
                                 </button>
                               )}
                             </div>
@@ -464,8 +476,8 @@ export default function CommentsPage() {
                       onChange={(e) => setReplyText(e.target.value)}
                       rows={1}
                     />
-                    <button className={styles.replySendBtn} onClick={handleSendReply} title="Send Reply">
-                      <Send size={16} />
+                    <button className={styles.replySendBtn} onClick={handleSendReply} title="Send Reply" disabled={isReplying || !replyText.trim()}>
+                      {isReplying ? <Loader2 size={16} className={styles.spinner} /> : <Send size={16} />}
                     </button>
                   </div>
                 </div>

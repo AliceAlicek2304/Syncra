@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Users, Eye, Heart, Calendar, ChevronDown, Check, RefreshCw, ExternalLink, Lock, AlertTriangle, TrendingUp } from 'lucide-react'
 import CountingNumber from '../../components/CountingNumber'
 import Heatmap from '../../components/Heatmap'
+import ActivityHeatmap from '../../components/ActivityHeatmap'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -111,6 +112,7 @@ export default function AnalyticsPage() {
     analyticsError,
     heatmapPlatform,
     setHeatmapPlatform,
+    dailyMetrics,
     refresh,
   } = useAnalyticsSummary({ workspaceId: activeWorkspace?.id })
 
@@ -419,12 +421,7 @@ export default function AnalyticsPage() {
               )}
             </div>
           </div>
-          {isLoading ? <SkeletonLoader height="210px" /> : <Heatmap slots={heatmap?.slots ?? []} />}
-          <div className={styles.heatmapLegend}>
-            <span>Fewer</span>
-            <div className={styles.legendBar} />
-            <span>More</span>
-          </div>
+          {isLoading ? <SkeletonLoader height="140px" /> : <ActivityHeatmap dataPoints={dailyMetrics?.dailyData ?? []} />}
         </div>
 
         <div className={`${styles.card} ${styles.followerCard}`}>

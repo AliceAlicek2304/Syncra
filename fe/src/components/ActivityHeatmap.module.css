@@ -1,0 +1,170 @@
+.wrapper {
+  position: relative;
+  padding: 16px 0 8px;
+  user-select: none;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  color: var(--analytics-body, #605d52);
+  font-size: 13px;
+}
+
+.monthRow {
+  display: flex;
+  margin-bottom: 4px;
+  padding-left: 32px;
+}
+
+.monthSpacer {
+  width: 0;
+}
+
+.monthLabels {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 14px;
+  gap: 3px;
+}
+
+.monthLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--analytics-body, #605d52);
+  text-align: left;
+}
+
+.body {
+  display: flex;
+  gap: 6px;
+}
+
+.dayLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 0;
+}
+
+.dayLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--analytics-body, #605d52);
+  height: 14px;
+  line-height: 14px;
+  text-align: right;
+  width: 26px;
+}
+
+.grid {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.weekCol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cell:hover {
+  outline: 1.5px solid var(--analytics-ink, #201515);
+  outline-offset: -1px;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--analytics-accent, #ff4f00);
+  outline-offset: 1px;
+}
+
+.level0 {
+  background: var(--gh-level-0, #ebedf0);
+}
+
+.level1 {
+  background: var(--gh-level-1, #9be9a8);
+}
+
+.level2 {
+  background: var(--gh-level-2, #40c463);
+}
+
+.level3 {
+  background: var(--gh-level-3, #30a14e);
+}
+
+.level4 {
+  background: var(--gh-level-4, #216e39);
+}
+
+.level5 {
+  background: var(--gh-level-5, #144d27);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-right: 4px;
+}
+
+.legendLabel {
+  font-size: 10px;
+  color: var(--analytics-body, #605d52);
+}
+
+.tooltip {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #1b1f23;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip strong {
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .monthLabels {
+    grid-auto-columns: 12px;
+  }
+
+  .cell {
+    width: 12px;
+    height: 12px;
+  }
+
+  .dayLabel {
+    width: 22px;
+    font-size: 9px;
+  }
+}

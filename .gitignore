@@ -106,6 +106,7 @@ GEMINI.md
 specs/
 fe/test-results
 fe/playwright-report
+.understand-anything
 
 # knowns (ignore entire folder)
 .knowns/

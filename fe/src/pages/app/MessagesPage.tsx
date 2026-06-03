@@ -160,6 +160,12 @@ export default function MessagesPage() {
   const [socialAccounts, setSocialAccounts] = useState<SocialAccountDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const [isCreatingConvo, setIsCreatingConvo] = useState(false);
 
   // Search & Filter
   const [filterPlatform, setFilterPlatform] = useState('all');
@@ -179,7 +185,7 @@ export default function MessagesPage() {
   const [showReactionPickerId, setShowReactionPickerId] = useState<string | null>(null);
 
   // Typing state
-  const lastTypingSentRef = useRef<number>(0);
+
 
   // New Chat Modal
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -191,7 +197,6 @@ export default function MessagesPage() {
   // Refs
   const messageEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const activeChat = conversations.find(c => c.id === selectedId);
   const activeSocialAccount = socialAccounts.find(sa => sa.id === activeChat?.socialAccountId);
   const activeZernioAccountId = activeSocialAccount?.externalAccountId || '';
@@ -286,41 +291,18 @@ export default function MessagesPage() {
           }
         }
       } catch (err) {
-        console.error('Error polling inbox updates', err);
+        console.error('Failed to poll updates', err);
       }
     }, 8000);
 
     return () => clearInterval(interval);
   }, [workspaceId, selectedId, socialAccounts]);
 
-  // Scroll to bottom
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // ── Input & Typing Actions ──────────────────────────────────────────────
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-
-    // Typing indicator throttling (send at most every 5 seconds)
-    if (workspaceId && selectedId && activeZernioAccountId) {
-      const now = Date.now();
-      if (now - lastTypingSentRef.current > 5000) {
-        lastTypingSentRef.current = now;
-        inboxApi.sendTypingIndicator(workspaceId, selectedId, activeZernioAccountId)
-          .catch(err => console.warn('Failed to send typing indicator', err));
-      }
-    }
-  };
-
   const handleSend = async () => {
     if (!workspaceId || !selectedId || !activeZernioAccountId) return;
     if (!inputText.trim() && !pendingFile) return;
 
+    setIsSending(true);
     try {
       let attachmentPublicUrl = '';
       let attachmentMimeType: string | undefined;
@@ -359,15 +341,23 @@ export default function MessagesPage() {
         textareaRef.current.style.height = 'auto';
       }
 
-      // Re-fetch messages immediately
       const refreshedMsgs = await inboxApi.getMessages(workspaceId, selectedId);
       setMessages(refreshedMsgs);
 
-      // Re-fetch conversations to update last message
       const refreshedConvs = await inboxApi.getConversations(workspaceId);
       setConversations(refreshedConvs);
     } catch (err) {
       console.error('Failed to send message', err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   };
 
@@ -378,27 +368,26 @@ export default function MessagesPage() {
     }
   };
 
-
-
   // ── Conversation status toggle (Archive/Unarchive) ──────────────────────
   const handleToggleArchive = async () => {
     if (!workspaceId || !selectedId || !activeZernioAccountId || !conversationDetails) return;
 
     const nextStatus = conversationDetails.status === 'archived' ? 'active' : 'archived';
+    setIsArchiving(true);
     try {
       await inboxApi.updateConversationStatus(workspaceId, selectedId, {
         accountId: activeZernioAccountId,
         status: nextStatus
       });
 
-      // Update local details state
       setConversationDetails(prev => prev ? { ...prev, status: nextStatus } : null);
 
-      // Refresh list
       const refreshedConvs = await inboxApi.getConversations(workspaceId);
       setConversations(refreshedConvs);
     } catch (err) {
       console.error('Failed to toggle conversation status', err);
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -411,6 +400,7 @@ export default function MessagesPage() {
   const handleSaveEdit = async (messageId: string) => {
     if (!workspaceId || !selectedId || !activeZernioAccountId || !editingText.trim()) return;
 
+    setIsEditing(messageId);
     try {
       await inboxApi.editMessage(workspaceId, selectedId, messageId, {
         accountId: activeZernioAccountId,
@@ -420,11 +410,12 @@ export default function MessagesPage() {
       setEditingMessageId(null);
       setEditingText('');
 
-      // Refresh messages
       const refreshed = await inboxApi.getMessages(workspaceId, selectedId);
       setMessages(refreshed);
     } catch (err) {
       console.error('Failed to edit message', err);
+    } finally {
+      setIsEditing(null);
     }
   };
 
@@ -433,6 +424,7 @@ export default function MessagesPage() {
     if (!workspaceId || !selectedId || !activeZernioAccountId) return;
     if (!confirm('Are you sure you want to delete this message?')) return;
 
+    setIsDeleting(messageId);
     try {
       await inboxApi.deleteMessage(workspaceId, selectedId, messageId, activeZernioAccountId);
 
@@ -441,6 +433,8 @@ export default function MessagesPage() {
       setMessages(refreshed);
     } catch (err) {
       console.error('Failed to delete message', err);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -455,7 +449,6 @@ export default function MessagesPage() {
       });
       setShowReactionPickerId(null);
 
-      // Refresh messages
       const refreshed = await inboxApi.getMessages(workspaceId, selectedId);
       setMessages(refreshed);
     } catch (err) {
@@ -467,6 +460,7 @@ export default function MessagesPage() {
   const handleCreateConvo = async () => {
     if (!workspaceId || !newChatAccount || !newChatRecipient || !newChatMessage.trim()) return;
 
+    setIsCreatingConvo(true);
     try {
       const selectedSa = socialAccounts.find(sa => sa.id === newChatAccount);
       if (!selectedSa) return;
@@ -484,22 +478,21 @@ export default function MessagesPage() {
 
       const result = await inboxApi.createConversation(workspaceId, payload);
       
-      // Reset Modal
       setIsNewChatOpen(false);
       setNewChatRecipient('');
       setNewChatMessage('');
 
-      // Refresh conversations list and select new convo
       const refreshed = await inboxApi.getConversations(workspaceId);
       setConversations(refreshed);
       
-      // Locate the created conversation in local DB by returned platform ID
       const matchingConvo = refreshed.find(c => c.zernioConversationId === result.conversationId);
       if (matchingConvo) {
         setSelectedId(matchingConvo.id);
       }
     } catch (err) {
       console.error('Failed to initiate conversation', err);
+    } finally {
+      setIsCreatingConvo(false);
     }
   };
 
@@ -588,7 +581,7 @@ export default function MessagesPage() {
 
           <div className={styles.conversationsList}>
             {isLoading ? (
-              <div className={styles.emptyState}>Loading conversations...</div>
+              <div className={styles.emptyState}><Loader2 size={24} className={styles.spinner} /> Loading conversations...</div>
             ) : sortedConversations.length === 0 ? (
               <div className={styles.emptyState}>No conversations found</div>
             ) : (
@@ -642,7 +635,7 @@ export default function MessagesPage() {
         <section className={styles.chatWindow}>
           {isLoadingMessages ? (
             <div className={styles.noChatSelected}>
-              <MessageSquare size={48} />
+              <Loader2 size={48} className={styles.spinner} />
               <p>Loading messages...</p>
             </div>
           ) : activeChat ? (
@@ -677,10 +670,11 @@ export default function MessagesPage() {
                   {conversationDetails && (
                     <button
                       onClick={handleToggleArchive}
+                      disabled={isArchiving}
                       title={conversationDetails.status === 'archived' ? 'Unarchive Convo' : 'Archive Convo'}
                       style={{ color: conversationDetails.status === 'archived' ? 'var(--clr-primary)' : 'inherit' }}
                     >
-                      <Archive size={18} />
+                      {isArchiving ? <Loader2 size={18} className={styles.spinner} /> : <Archive size={18} />}
                     </button>
                   )}
                   <button title="Open in External Link" onClick={() => {}}><ExternalLink size={18} /></button>
@@ -693,17 +687,26 @@ export default function MessagesPage() {
                   <div className={styles.emptyState}>No messages yet. Send a message to start!</div>
                 ) : (
                   (() => {
-                    const sorted = [...messages].sort((a, b) =>
-                      new Date(a.sentAtUtc).getTime() - new Date(b.sentAtUtc).getTime()
-                    );
+                    const sorted = [...messages].sort((a, b) => {
+                      const timeA = !a.sentAtUtc || a.sentAtUtc.startsWith('0001')
+                        ? new Date(a.createdAtUtc).getTime()
+                        : new Date(a.sentAtUtc).getTime();
+                      const timeB = !b.sentAtUtc || b.sentAtUtc.startsWith('0001')
+                        ? new Date(b.createdAtUtc).getTime()
+                        : new Date(b.sentAtUtc).getTime();
+                      return timeA - timeB;
+                    });
                     let lastDateKey = '';
                     let lastMsgTime = 0;
                     return sorted.map((m) => {
                       const isMe = m.direction === 'Outbound';
-                      const timeStr = formatHanoiTime(m.sentAtUtc);
-                      const sentMs = new Date(m.sentAtUtc).getTime();
-                      const currentDateKey = getHanoiDateKey(m.sentAtUtc);
-                      const currentDateLabel = getHanoiDateLabel(m.sentAtUtc);
+                      const effectiveSentAt = !m.sentAtUtc || m.sentAtUtc.startsWith('0001')
+                        ? m.createdAtUtc
+                        : m.sentAtUtc;
+                      const timeStr = formatHanoiTime(effectiveSentAt);
+                      const sentMs = new Date(effectiveSentAt).getTime();
+                      const currentDateKey = getHanoiDateKey(effectiveSentAt);
+                      const currentDateLabel = getHanoiDateLabel(effectiveSentAt);
 
                       const showDateSep = currentDateKey && currentDateKey !== lastDateKey;
                       if (showDateSep) { lastDateKey = currentDateKey; }
@@ -736,9 +739,12 @@ export default function MessagesPage() {
                                       value={editingText}
                                       onChange={(e) => setEditingText(e.target.value)}
                                       autoFocus
+                                      disabled={isEditing === m.zernioMessageId}
                                     />
-                                    <button className={styles.editBtnSave} onClick={() => handleSaveEdit(m.zernioMessageId)}>Save</button>
-                                    <button className={styles.editBtnCancel} onClick={() => setEditingMessageId(null)}>Cancel</button>
+                                    <button className={styles.editBtnSave} onClick={() => handleSaveEdit(m.zernioMessageId)} disabled={!!isEditing}>
+                                      {isEditing ? <Loader2 size={14} className={styles.spinner} /> : 'Save'}
+                                    </button>
+                                    <button className={styles.editBtnCancel} onClick={() => setEditingMessageId(null)} disabled={!!isEditing}>Cancel</button>
                                   </div>
                                 ) : (
                                   <div className={styles.bubble}>
@@ -770,8 +776,9 @@ export default function MessagesPage() {
                                       className={styles.actionBtn}
                                       onClick={() => handleDeleteMessage(m.zernioMessageId)}
                                       title="Delete message"
+                                      disabled={isDeleting === m.zernioMessageId}
                                     >
-                                      <Trash2 size={14} />
+                                      {isDeleting === m.zernioMessageId ? <Loader2 size={14} className={styles.spinner} /> : <Trash2 size={14} />}
                                     </button>
                                   </div>
                                 )}
@@ -855,9 +862,9 @@ export default function MessagesPage() {
                       className={styles.sendIconBtn}
                       onClick={handleSend}
                       title="Send Message"
-                      disabled={isUploading || (!inputText.trim() && !pendingFile)}
+                      disabled={isSending || isUploading || (!inputText.trim() && !pendingFile)}
                     >
-                      {isUploading ? <Loader2 size={16} /> : <Send size={16} />}
+                      {isSending || isUploading ? <Loader2 size={16} className={styles.spinner} /> : <Send size={16} />}
                     </button>
                   </div>
                 </div>
@@ -965,7 +972,9 @@ export default function MessagesPage() {
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setIsNewChatOpen(false)}>Cancel</button>
-              <button className={styles.btnSubmit} onClick={handleCreateConvo}>Send Message</button>
+              <button className={styles.btnSubmit} onClick={handleCreateConvo} disabled={isCreatingConvo}>
+                {isCreatingConvo ? <><Loader2 size={16} className={styles.spinner} /> Sending...</> : 'Send Message'}
+              </button>
             </div>
           </div>
         </div>

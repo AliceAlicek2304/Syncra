@@ -51,6 +51,37 @@ export interface AnalyticsError {
   status: number;
 }
 
+export interface ZernioDailyDataPointDto {
+  date: string;
+  postCount: number;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  views: number;
+}
+
+export interface ZernioPlatformBreakdownDto {
+  platform: string;
+  postCount: number;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  views: number;
+}
+
+export interface ZernioDailyMetricsDto {
+  dailyData: ZernioDailyDataPointDto[];
+  platformBreakdown: ZernioPlatformBreakdownDto[] | null;
+}
+
 export interface PostMetricsDto {
   impressions: number;
   engagements: number;
@@ -83,6 +114,16 @@ export const analyticsApi = {
       { params: { date: dateDays, ...(platform ? { platform } : {}) } }
     );
 
+    return response.data;
+  },
+
+  getDailyMetrics: async (
+    fromDate?: string
+  ): Promise<ZernioDailyMetricsDto> => {
+    const response = await api.get<ZernioDailyMetricsDto>(
+      'analytics/daily-metrics',
+      { params: { fromDate } }
+    );
     return response.data;
   },
 
