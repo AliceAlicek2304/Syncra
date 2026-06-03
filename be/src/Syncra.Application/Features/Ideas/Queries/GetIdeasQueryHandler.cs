@@ -32,6 +32,7 @@ public sealed class GetIdeasQueryHandler : IRequestHandler<GetIdeasQuery, Pagina
             i.Title,
             i.Description,
             i.Status,
+            i.Position,
             i.CreatedAtUtc,
             i.UpdatedAtUtc
         )).ToList();

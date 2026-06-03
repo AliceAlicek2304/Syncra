@@ -28,6 +28,7 @@ public sealed class GetIdeaByIdQueryHandler : IRequestHandler<GetIdeaByIdQuery, 
             idea.Title,
             idea.Description,
             idea.Status,
+            idea.Position,
             idea.CreatedAtUtc,
             idea.UpdatedAtUtc
         );

@@ -71,11 +71,137 @@ public class InboxController : ControllerBase
         var command = new SendInboxMessageCommand(
             workspaceId,
             conversationId,
-            request.Text,
-            request.AccountId);
+            request);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets conversation details from local DB and Zernio API.
+    /// </summary>
+    [HttpGet("conversations/{conversationId:guid}")]
+    public async Task<IActionResult> GetConversation(
+        Guid workspaceId,
+        Guid conversationId,
+        [FromQuery] string accountId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetInboxConversationQuery(workspaceId, conversationId, accountId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a new conversation and sends an optional initial message.
+    /// </summary>
+    [HttpPost("conversations")]
+    public async Task<IActionResult> CreateConversation(
+        Guid workspaceId,
+        [FromBody] CreateInboxConversationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new CreateInboxConversationCommand(workspaceId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Updates the conversation status (active/archived).
+    /// </summary>
+    [HttpPut("conversations/{conversationId:guid}")]
+    public async Task<IActionResult> UpdateConversation(
+        Guid workspaceId,
+        Guid conversationId,
+        [FromBody] UpdateInboxConversationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateInboxConversationCommand(workspaceId, conversationId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Edits a previously sent message. Only supported on select platforms.
+    /// </summary>
+    [HttpPatch("conversations/{conversationId:guid}/messages/{messageId}")]
+    public async Task<IActionResult> EditMessage(
+        Guid workspaceId,
+        Guid conversationId,
+        string messageId,
+        [FromBody] EditInboxMessageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new EditInboxMessageCommand(workspaceId, conversationId, messageId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Deletes a message from a conversation.
+    /// </summary>
+    [HttpDelete("conversations/{conversationId:guid}/messages/{messageId}")]
+    public async Task<IActionResult> DeleteMessage(
+        Guid workspaceId,
+        Guid conversationId,
+        string messageId,
+        [FromQuery] string accountId,
+        CancellationToken cancellationToken)
+    {
+        var command = new DeleteInboxMessageCommand(workspaceId, conversationId, messageId, accountId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to delete message." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Adds an emoji reaction to a message.
+    /// </summary>
+    [HttpPost("conversations/{conversationId:guid}/messages/{messageId}/reactions")]
+    public async Task<IActionResult> AddReaction(
+        Guid workspaceId,
+        Guid conversationId,
+        string messageId,
+        [FromBody] AddMessageReactionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AddMessageReactionCommand(workspaceId, conversationId, messageId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to add reaction." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Removes an emoji reaction from a message.
+    /// </summary>
+    [HttpDelete("conversations/{conversationId:guid}/messages/{messageId}/reactions")]
+    public async Task<IActionResult> RemoveReaction(
+        Guid workspaceId,
+        Guid conversationId,
+        string messageId,
+        [FromQuery] string accountId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveMessageReactionCommand(workspaceId, conversationId, messageId, accountId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to remove reaction." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Sends a typing indicator to a conversation.
+    /// </summary>
+    [HttpPost("conversations/{conversationId:guid}/typing")]
+    public async Task<IActionResult> SendTypingIndicator(
+        Guid workspaceId,
+        Guid conversationId,
+        [FromBody] SendTypingIndicatorRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new SendTypingIndicatorCommand(workspaceId, conversationId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to send typing indicator." });
+        return Ok(new { success = true });
     }
 
     /// <summary>
@@ -166,6 +292,126 @@ public class InboxController : ControllerBase
             return NotFound();
 
         return NoContent();
+    }
+
+    // ── Additional Comment API routes ───────────────────────────────────────
+
+    /// <summary>
+    /// Gets comments for a specific post from Zernio API.
+    /// </summary>
+    [HttpGet("posts/{postId}/comments")]
+    public async Task<IActionResult> GetPostComments(
+        Guid workspaceId,
+        string postId,
+        [FromQuery] string? accountId = null,
+        [FromQuery] string? subreddit = null,
+        [FromQuery] int? limit = null,
+        [FromQuery] string? cursor = null,
+        [FromQuery] string? commentId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            // Return empty list if accountId is missing, because Zernio API requires it
+            return Ok(new ZernioPostCommentsResponseDto(new List<ZernioPostCommentItemDto>(), false, null, ""));
+        }
+
+        var query = new GetInboxPostCommentsQuery(workspaceId, postId, accountId, subreddit, limit, cursor, commentId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Deletes a comment.
+    /// </summary>
+    [HttpDelete("comments/{commentId:guid}")]
+    public async Task<IActionResult> DeleteComment(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new DeleteInboxCommentCommand(workspaceId, commentId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to delete comment." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Hides a comment.
+    /// </summary>
+    [HttpPost("comments/{commentId:guid}/hide")]
+    public async Task<IActionResult> HideComment(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new HideInboxCommentCommand(workspaceId, commentId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to hide comment." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Unhides a comment.
+    /// </summary>
+    [HttpDelete("comments/{commentId:guid}/hide")]
+    public async Task<IActionResult> UnhideComment(
+        Guid workspaceId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new UnhideInboxCommentCommand(workspaceId, commentId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to unhide comment." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Likes a comment.
+    /// </summary>
+    [HttpPost("comments/{commentId:guid}/like")]
+    public async Task<IActionResult> LikeComment(
+        Guid workspaceId,
+        Guid commentId,
+        [FromBody] LikeInboxCommentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new LikeInboxCommentCommand(workspaceId, commentId, request.Cid);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to like comment." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Unlikes a comment.
+    /// </summary>
+    [HttpDelete("comments/{commentId:guid}/like")]
+    public async Task<IActionResult> UnlikeComment(
+        Guid workspaceId,
+        Guid commentId,
+        [FromQuery] string? likeUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new UnlikeInboxCommentCommand(workspaceId, commentId, likeUri);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to unlike comment." });
+        return Ok(new { success = true });
+    }
+
+    /// <summary>
+    /// Sends a private reply to a comment.
+    /// </summary>
+    [HttpPost("comments/{commentId:guid}/private-reply")]
+    public async Task<IActionResult> SendPrivateReplyToComment(
+        Guid workspaceId,
+        Guid commentId,
+        [FromBody] SendPrivateReplyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new SendPrivateReplyToCommentCommand(workspaceId, commentId, request.Message);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (!result) return BadRequest(new { error = "Failed to send private reply." });
+        return Ok(new { success = true });
     }
 
     // ── Review routes ───────────────────────────────────────────────────────

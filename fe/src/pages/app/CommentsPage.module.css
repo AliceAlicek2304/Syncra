@@ -619,3 +619,76 @@
 .toastIcon {
   color: #10b981;
 }
+
+/* ── New Additions for Real Data Integration ── */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.postThumbPlaceholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background-color: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+}
+
+.commentAvatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--clr-canvas-soft);
+  border: 1px solid var(--clr-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--clr-body-mid);
+}
+
+.adminAvatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--clr-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.deleteAction:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.replyingToIndicator {
+  font-size: 11px;
+  color: var(--clr-primary);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.replyingToIndicator button {
+  background: transparent;
+  border: none;
+  color: var(--clr-body-mid);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.replyingToIndicator button:hover {
+  color: var(--clr-ink);
+}

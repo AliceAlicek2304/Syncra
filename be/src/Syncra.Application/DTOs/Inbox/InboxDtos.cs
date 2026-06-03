@@ -1,4 +1,4 @@
-﻿namespace Syncra.Application.DTOs.Inbox;
+namespace Syncra.Application.DTOs.Inbox;
 
 public sealed record InboxConversationDto(
     Guid Id,
@@ -24,8 +24,18 @@ public sealed record InboxMessageDto(
     DateTime CreatedAtUtc);
 
 public sealed record InboxSendMessageRequest(
-    string Text,
-    string AccountId);
+    string? Text,
+    string AccountId,
+    string? AttachmentUrl = null,
+    string? AttachmentType = null,
+    List<InboxQuickReplyDto>? QuickReplies = null,
+    List<InboxButtonDto>? Buttons = null,
+    InboxTemplateDto? Template = null,
+    object? Interactive = null,
+    InboxTelegramReplyMarkupDto? ReplyMarkup = null,
+    string? ReplyTo = null,
+    string? MessagingType = null,
+    string? MessageTag = null);
 
 public sealed record SendInboxMessageResponse(
     string ZernioMessageId,
@@ -47,7 +57,9 @@ public sealed record ZernioInboxConversationItemDto(
     string? ParticipantPicture,
     string? LastMessageText,
     DateTime? LastMessageAt,
-    string? Status);
+    string? Status,
+    string? AccountId = null,
+    int? UnreadCount = null);
 
 public sealed record ZernioInboxMessageItemDto(
     string Id,
@@ -119,6 +131,43 @@ public sealed record InboxSendCommentReplyResponse(
     string CommentId,
     string? Cid);
 
+// ── Additional Comment API DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioPostCommentItemDto(
+    string Id,
+    string Message,
+    DateTime CreatedTime,
+    string? FromId,
+    string? FromName,
+    string? FromUsername,
+    string? FromPicture,
+    bool FromIsOwner,
+    int LikeCount,
+    int ReplyCount,
+    string Platform,
+    string? Url,
+    bool CanReply,
+    bool CanDelete,
+    bool CanHide,
+    bool CanLike,
+    bool IsHidden,
+    bool IsLiked,
+    string? LikeUri,
+    string? Cid,
+    string? ParentId);
+
+public sealed record ZernioPostCommentsResponseDto(
+    IReadOnlyList<ZernioPostCommentItemDto> Comments,
+    bool HasMore,
+    string? Cursor,
+    string Platform);
+
+public sealed record LikeInboxCommentRequest(
+    string? Cid = null);
+
+public sealed record SendPrivateReplyRequest(
+    string Message);
+
 // ── Review DTOs ─────────────────────────────────────────────────────────────
 
 public sealed record ZernioInboxReviewItemDto(
@@ -173,3 +222,106 @@ public sealed record InboxSendReviewReplyResponse(
 public sealed record InboxSyncStatusDto(
     bool IsSyncing,
     DateTime? LastSyncedAtUtc);
+
+// ── Extended Inbox DTOs and wrapper models ─────────────────────────────────
+
+public sealed record InboxQuickReplyDto(
+    string Title,
+    string Payload,
+    string? ImageUrl = null);
+
+public sealed record InboxButtonDto(
+    string Type,
+    string Title,
+    string? Url = null,
+    string? Payload = null,
+    string? Phone = null);
+
+public sealed record InboxTemplateDto(
+    string Type,
+    List<InboxTemplateElementDto> Elements);
+
+public sealed record InboxTemplateElementDto(
+    string Title,
+    string? Subtitle = null,
+    string? ImageUrl = null,
+    List<InboxButtonDto>? Buttons = null);
+
+public sealed record InboxTelegramReplyMarkupDto(
+    string Type,
+    List<List<InboxTelegramButtonDto>> Keyboard,
+    bool? OneTime = null);
+
+public sealed record InboxTelegramButtonDto(
+    string Text,
+    string? CallbackData = null,
+    string? Url = null);
+
+public sealed record InboxParticipantDto(
+    string Id,
+    string Name);
+
+public sealed record InboxInstagramProfileDto(
+    bool? IsFollower,
+    bool? IsFollowing,
+    int? FollowerCount,
+    bool? IsVerified,
+    DateTime? FetchedAt);
+
+public sealed record InboxConversationDetailsDto(
+    string Id,
+    string AccountId,
+    string AccountUsername,
+    string Platform,
+    string Status,
+    string ParticipantName,
+    string ParticipantId,
+    string? ParticipantVerifiedType,
+    string LastMessage,
+    DateTime LastMessageAt,
+    DateTime UpdatedTime,
+    List<InboxParticipantDto> Participants,
+    InboxInstagramProfileDto? InstagramProfile);
+
+public sealed record InboxCreateConversationResponseDto(
+    string MessageId,
+    string ConversationId,
+    string ParticipantId,
+    string? ParticipantName,
+    string? ParticipantUsername);
+
+public sealed record InboxUpdateConversationResponseDto(
+    string Status,
+    string Id,
+    string AccountId,
+    string Platform,
+    DateTime UpdatedAt);
+
+public sealed record InboxEditMessageResponseDto(
+    int MessageId);
+
+public sealed record CreateInboxConversationRequest(
+    string AccountId,
+    string? ParticipantId = null,
+    string? ParticipantUsername = null,
+    string? Message = null,
+    bool? SkipDmCheck = null,
+    string? TemplateName = null,
+    string? TemplateLanguage = null,
+    List<string>? TemplateParams = null);
+
+public sealed record UpdateInboxConversationRequest(
+    string AccountId,
+    string Status);
+
+public sealed record EditInboxMessageRequest(
+    string AccountId,
+    string Text,
+    InboxTelegramReplyMarkupDto? ReplyMarkup = null);
+
+public sealed record AddMessageReactionRequest(
+    string AccountId,
+    string Emoji);
+
+public sealed record SendTypingIndicatorRequest(
+    string AccountId);

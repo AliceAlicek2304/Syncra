@@ -36,6 +36,7 @@ public class ZernioClientInboxTests
 
         var parameters = method.GetParameters();
         Assert.Contains(parameters, p => p.Name == "conversationId" && p.ParameterType == typeof(string));
+        Assert.Contains(parameters, p => p.Name == "accountId" && p.ParameterType == typeof(string));
         Assert.Contains(parameters, p => p.Name == "cursor" && p.ParameterType == typeof(string));
     }
 
@@ -53,8 +54,7 @@ public class ZernioClientInboxTests
         var parameters = method.GetParameters();
         Assert.Contains(parameters, p => p.Name == "profileId" && p.ParameterType == typeof(string));
         Assert.Contains(parameters, p => p.Name == "conversationId" && p.ParameterType == typeof(string));
-        Assert.Contains(parameters, p => p.Name == "accountId" && p.ParameterType == typeof(string));
-        Assert.Contains(parameters, p => p.Name == "text" && p.ParameterType == typeof(string));
+        Assert.Contains(parameters, p => p.Name == "request" && p.ParameterType == typeof(InboxSendMessageRequest));
     }
 
     [Fact]
@@ -91,5 +91,77 @@ public class ZernioClientInboxTests
         Assert.Contains(parameters, p => p.Name == "accountId" && p.ParameterType == typeof(string));
         Assert.Contains(parameters, p => p.Name == "message" && p.ParameterType == typeof(string));
         Assert.Contains(parameters, p => p.Name == "commentId" && p.ParameterType == typeof(string));
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareGetInboxConversationAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("GetInboxConversationAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(InboxConversationDetailsDto), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareCreateInboxConversationAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("CreateInboxConversationAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(InboxCreateConversationResponseDto), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareUpdateInboxConversationAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("UpdateInboxConversationAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(InboxUpdateConversationResponseDto), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareMarkConversationReadAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("MarkConversationReadAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(bool), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareEditInboxMessageAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("EditInboxMessageAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(InboxEditMessageResponseDto), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareDeleteInboxMessageAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("DeleteInboxMessageAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(bool), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareAddMessageReactionAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("AddMessageReactionAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(bool), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareRemoveMessageReactionAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("RemoveMessageReactionAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(bool), method!.ReturnType.GenericTypeArguments[0]);
+    }
+
+    [Fact]
+    public void IZernioClient_ShouldDeclareSendTypingIndicatorAsync()
+    {
+        var method = typeof(IZernioClient).GetMethod("SendTypingIndicatorAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(bool), method!.ReturnType.GenericTypeArguments[0]);
     }
 }

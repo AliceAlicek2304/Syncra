@@ -42,4 +42,10 @@ public sealed class InboxMessage : WorkspaceEntityBase
             UpdatedAtUtc = now
         };
     }
+
+    public void UpdateBodyText(string text)
+    {
+        BodyText = text;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }

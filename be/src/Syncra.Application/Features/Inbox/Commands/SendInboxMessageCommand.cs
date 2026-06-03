@@ -6,6 +6,5 @@ namespace Syncra.Application.Features.Inbox.Commands;
 public record SendInboxMessageCommand(
     Guid WorkspaceId,
     Guid ConversationId,
-    string Text,
-    string AccountId
+    InboxSendMessageRequest Request
 ) : IRequest<SendInboxMessageResponse>;

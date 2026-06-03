@@ -33,6 +33,7 @@ public sealed class CreateIdeaCommandHandler : IRequestHandler<CreateIdeaCommand
             idea.Title,
             idea.Description,
             idea.Status,
+            idea.Position,
             idea.CreatedAtUtc,
             idea.UpdatedAtUtc
         );

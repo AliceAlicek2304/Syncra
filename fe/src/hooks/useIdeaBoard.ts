@@ -56,7 +56,7 @@ export function useIdeaBoard(workspaceId?: string): UseIdeaBoardReturn {
 
     const createIdeaMutation = useMutation({
         mutationFn: (data: { groupId: string; title: string; description?: string }) =>
-            ideasApi.createIdea(workspaceId!, { ...data, status: 'idea' }),
+            ideasApi.createIdea(workspaceId!, { ...data }),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ideas', workspaceId] }),
     })
 

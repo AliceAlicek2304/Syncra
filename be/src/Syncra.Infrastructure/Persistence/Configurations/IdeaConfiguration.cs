@@ -25,6 +25,10 @@ public class IdeaConfiguration : BaseWorkspaceEntityConfiguration<Idea>
             .HasMaxLength(Idea.StatusMaxLength)
             .HasColumnName("status");
 
+        builder.Property(e => e.Position)
+            .HasColumnName("position")
+            .HasDefaultValue(0);
+
         builder.HasOne(e => e.Workspace)
             .WithMany(w => w.Ideas)
             .HasForeignKey(e => e.WorkspaceId)

@@ -96,4 +96,10 @@ public sealed class InboxComment : WorkspaceEntityBase
         PostPreviewThumbnailUrl = thumbnailUrl;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    public void SetZernioAccountId(string? accountId)
+    {
+        ZernioAccountId = accountId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }

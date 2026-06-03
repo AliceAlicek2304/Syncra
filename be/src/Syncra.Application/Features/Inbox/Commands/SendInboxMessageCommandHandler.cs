@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
@@ -59,9 +59,10 @@ public sealed class SendInboxMessageCommandHandler
         var zernioResult = await _zernioClient.SendInboxMessageAsync(
             profile.ZernioProfileId,
             conversation.ZernioConversationId,
-            request.AccountId,
-            request.Text,
+            request.Request,
             cancellationToken);
+
+        var bodyText = request.Request.Text ?? request.Request.AttachmentUrl ?? "[Media/Interactive]";
 
         // Persist to local DB
         var message = InboxMessage.Create(
@@ -69,13 +70,14 @@ public sealed class SendInboxMessageCommandHandler
             request.ConversationId,
             zernioResult.MessageId,
             "Outbound",
-            request.Text,
-            zernioResult.SentAtUtc);
+            bodyText,
+            zernioResult.SentAtUtc,
+            request.Request.AccountId);
 
         await _inboxRepository.AddMessageAsync(message);
 
         // Update conversation last message
-        conversation.UpdateLastMessage(request.Text, zernioResult.SentAtUtc);
+        conversation.UpdateLastMessage(bodyText, zernioResult.SentAtUtc);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

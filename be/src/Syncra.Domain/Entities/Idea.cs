@@ -10,6 +10,7 @@ public sealed class Idea : WorkspaceEntityBase
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public string Status { get; private set; } = "unassigned";
+    public int Position { get; private set; }
 
     // Navigation property
     public Workspace Workspace { get; set; } = null!;
@@ -54,6 +55,7 @@ public sealed class Idea : WorkspaceEntityBase
             Title = trimmedTitle,
             Description = trimmedDescription,
             Status = string.IsNullOrEmpty(trimmedStatus) ? "unassigned" : trimmedStatus,
+            Position = 0,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
@@ -100,6 +102,12 @@ public sealed class Idea : WorkspaceEntityBase
         }
 
         Status = string.IsNullOrEmpty(trimmedStatus) ? "unassigned" : trimmedStatus;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetPosition(int position)
+    {
+        Position = position;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }

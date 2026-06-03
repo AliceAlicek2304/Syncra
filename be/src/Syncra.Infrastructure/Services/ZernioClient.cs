@@ -1715,7 +1715,9 @@ public sealed class ZernioClient : IZernioClient
                     c.ParticipantPicture,
                     c.LastMessage,
                     c.UpdatedTime,
-                    c.Status?.ToString()))
+                    c.Status?.ToString(),
+                    c.AccountId,
+                    c.UnreadCount))
                 .ToList();
 
             return new ZernioInboxConversationsPageDto(
@@ -1741,6 +1743,7 @@ public sealed class ZernioClient : IZernioClient
 
     public async Task<ZernioInboxMessagesPageDto> ListInboxMessagesAsync(
         string conversationId,
+        string accountId,
         string? cursor = null,
         CancellationToken cancellationToken = default)
     {
@@ -1748,7 +1751,7 @@ public sealed class ZernioClient : IZernioClient
         {
             var response = await _messagesApi.GetInboxConversationMessagesAsync(
                 conversationId,
-                accountId: null,
+                accountId: accountId,
                 limit: null,
                 cursor: cursor,
                 sortOrder: null,
@@ -1788,17 +1791,101 @@ public sealed class ZernioClient : IZernioClient
     public async Task<ZernioSendMessageResponseDto> SendInboxMessageAsync(
         string profileId,
         string conversationId,
-        string accountId,
-        string text,
+        Syncra.Application.DTOs.Inbox.InboxSendMessageRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var sdkRequest = new SendInboxMessageRequest
+            var sdkRequest = new Zernio.Model.SendInboxMessageRequest(request.AccountId)
             {
-                AccountId = accountId,
-                Message = text
+                Message = request.Text,
+                AttachmentUrl = request.AttachmentUrl,
+                ReplyTo = request.ReplyTo
             };
+
+            if (request.Text is null && request.AttachmentUrl is null && request.Template is null && request.Interactive is null)
+            {
+                sdkRequest.Message = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(request.AttachmentType))
+            {
+                if (Enum.TryParse<Zernio.Model.SendInboxMessageRequest.AttachmentTypeEnum>(request.AttachmentType, true, out var attType))
+                {
+                    sdkRequest.AttachmentType = attType;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.MessagingType))
+            {
+                if (Enum.TryParse<Zernio.Model.SendInboxMessageRequest.MessagingTypeEnum>(request.MessagingType, true, out var msgType))
+                {
+                    sdkRequest.MessagingType = msgType;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.MessageTag))
+            {
+                if (Enum.TryParse<Zernio.Model.SendInboxMessageRequest.MessageTagEnum>(request.MessageTag, true, out var msgTag))
+                {
+                    sdkRequest.MessageTag = msgTag;
+                }
+            }
+
+            if (request.QuickReplies != null)
+            {
+                sdkRequest.QuickReplies = request.QuickReplies.Select(qr => new Zernio.Model.SendInboxMessageRequestQuickRepliesInner
+                {
+                    Title = qr.Title,
+                    Payload = qr.Payload,
+                    ImageUrl = qr.ImageUrl
+                }).ToList();
+            }
+
+            if (request.Buttons != null)
+            {
+                sdkRequest.Buttons = request.Buttons.Select(b => {
+                    var btn = new Zernio.Model.SendInboxMessageRequestButtonsInner
+                    {
+                        Title = b.Title
+                    };
+                    if (Enum.TryParse<Zernio.Model.SendInboxMessageRequestButtonsInner.TypeEnum>(b.Type, true, out var btnType))
+                    {
+                        btn.Type = btnType;
+                    }
+                    if (b.Type.Equals("url", StringComparison.OrdinalIgnoreCase))
+                    {
+                        btn.Url = b.Url;
+                    }
+                    else if (b.Type.Equals("postback", StringComparison.OrdinalIgnoreCase))
+                    {
+                        btn.Payload = b.Payload;
+                    }
+                    else if (b.Type.Equals("phone", StringComparison.OrdinalIgnoreCase))
+                    {
+                        btn.Phone = b.Phone;
+                    }
+                    return btn;
+                }).ToList();
+            }
+
+            if (request.Template != null)
+            {
+                var json = JsonSerializer.Serialize(request.Template, _jsonOptions);
+                sdkRequest.Template = JsonSerializer.Deserialize<Zernio.Model.SendInboxMessageRequestTemplate>(json, _jsonOptions);
+            }
+
+            if (request.Interactive != null)
+            {
+                var json = JsonSerializer.Serialize(request.Interactive, _jsonOptions);
+                sdkRequest.Interactive = JsonSerializer.Deserialize<Zernio.Model.SendInboxMessageRequestInteractive>(json, _jsonOptions);
+            }
+
+            if (request.ReplyMarkup != null)
+            {
+                var json = JsonSerializer.Serialize(request.ReplyMarkup, _jsonOptions);
+                sdkRequest.ReplyMarkup = JsonSerializer.Deserialize<Zernio.Model.SendInboxMessageRequestReplyMarkup>(json, _jsonOptions);
+            }
 
             var response = await _messagesApi.SendInboxMessageAsync(
                 conversationId,
@@ -1822,6 +1909,328 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error sending inbox message to conversation {ConversationId}", conversationId);
             throw new DomainException("zernio_inbox_send_error", "Failed to send inbox message via Zernio", ex);
+        }
+    }
+
+    public async Task<InboxConversationDetailsDto> GetInboxConversationAsync(
+        string conversationId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _messagesApi.GetInboxConversationAsync(
+                conversationId,
+                accountId,
+                cancellationToken);
+
+            var rawData = response.Data;
+            
+            var participants = (rawData.Participants ?? [])
+                .Select(p => new InboxParticipantDto(p.Id, p.Name))
+                .ToList();
+
+            InboxInstagramProfileDto? instagramProfile = null;
+            if (rawData.InstagramProfile != null)
+            {
+                var ip = rawData.InstagramProfile;
+                instagramProfile = new InboxInstagramProfileDto(
+                    ip.IsFollower,
+                    ip.IsFollowing,
+                    ip.FollowerCount,
+                    ip.IsVerified,
+                    ip.FetchedAt);
+            }
+
+            return new InboxConversationDetailsDto(
+                rawData.Id,
+                rawData.AccountId,
+                rawData.AccountUsername,
+                rawData.Platform,
+                rawData.Status?.ToString() ?? string.Empty,
+                rawData.ParticipantName,
+                rawData.ParticipantId,
+                rawData.ParticipantVerifiedType?.ToString(),
+                rawData.LastMessage,
+                rawData.LastMessageAt,
+                rawData.UpdatedTime,
+                participants,
+                instagramProfile);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for get conversation, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to access inbox conversations.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error getting conversation {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_get_error", "Failed to get inbox conversation from Zernio", ex);
+        }
+    }
+
+    public async Task<InboxCreateConversationResponseDto> CreateInboxConversationAsync(
+        Syncra.Application.DTOs.Inbox.CreateInboxConversationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.CreateInboxConversationRequest(request.AccountId)
+            {
+                ParticipantId = request.ParticipantId,
+                ParticipantUsername = request.ParticipantUsername,
+                Message = request.Message,
+                SkipDmCheck = request.SkipDmCheck ?? false,
+                TemplateLanguage = request.TemplateLanguage,
+                TemplateName = request.TemplateName
+            };
+
+            if (request.TemplateParams != null)
+            {
+                sdkRequest.TemplateParams = request.TemplateParams;
+            }
+
+            var response = await _messagesApi.CreateInboxConversationAsync(sdkRequest, cancellationToken);
+            
+            return new InboxCreateConversationResponseDto(
+                response.Data?.MessageId ?? string.Empty,
+                response.Data?.ConversationId ?? string.Empty,
+                response.Data?.ParticipantId ?? string.Empty,
+                response.Data?.ParticipantName,
+                response.Data?.ParticipantUsername);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for create conversation");
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to create inbox conversations.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: null);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error creating conversation");
+            throw new DomainException("zernio_inbox_create_error", "Failed to create inbox conversation via Zernio", ex);
+        }
+    }
+
+    public async Task<InboxUpdateConversationResponseDto> UpdateInboxConversationAsync(
+        string conversationId,
+        Syncra.Application.DTOs.Inbox.UpdateInboxConversationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            Zernio.Model.UpdateInboxConversationRequest.StatusEnum statusEnum = default;
+            Enum.TryParse<Zernio.Model.UpdateInboxConversationRequest.StatusEnum>(request.Status, true, out statusEnum);
+
+            var sdkRequest = new Zernio.Model.UpdateInboxConversationRequest(request.AccountId, statusEnum);
+
+            var response = await _messagesApi.UpdateInboxConversationAsync(conversationId, sdkRequest, cancellationToken);
+
+            return new InboxUpdateConversationResponseDto(
+                response.Data?.Status?.ToString() ?? string.Empty,
+                response.Data?.Id ?? string.Empty,
+                response.Data?.AccountId ?? string.Empty,
+                response.Data?.Platform ?? string.Empty,
+                response.Data?.UpdatedAt ?? DateTime.UtcNow);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for update conversation, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to update inbox conversations.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error updating conversation {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_update_error", "Failed to update inbox conversation via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> MarkConversationReadAsync(
+        string conversationId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.SendTypingIndicatorRequest(accountId);
+
+            var response = await _messagesApi.MarkConversationReadAsync(conversationId, sdkRequest, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for mark conversation read, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to mark inbox conversations as read.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error marking conversation read {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_read_error", "Failed to mark inbox conversation read via Zernio", ex);
+        }
+    }
+
+    public async Task<InboxEditMessageResponseDto> EditInboxMessageAsync(
+        string conversationId,
+        string messageId,
+        Syncra.Application.DTOs.Inbox.EditInboxMessageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.EditInboxMessageRequest(request.AccountId)
+            {
+                Text = request.Text
+            };
+
+            if (request.ReplyMarkup != null)
+            {
+                var json = JsonSerializer.Serialize(request.ReplyMarkup, _jsonOptions);
+                sdkRequest.ReplyMarkup = JsonSerializer.Deserialize<Zernio.Model.EditInboxMessageRequestReplyMarkup>(json, _jsonOptions);
+            }
+
+            var response = await _messagesApi.EditInboxMessageAsync(conversationId, messageId, sdkRequest, cancellationToken);
+
+            return new InboxEditMessageResponseDto(response.Data?.MessageId ?? 0);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for edit message, conversation {ConversationId}, message {MessageId}", conversationId, messageId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to edit inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId, messageId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error editing message {MessageId} in conversation {ConversationId}", messageId, conversationId);
+            throw new DomainException("zernio_inbox_edit_error", "Failed to edit inbox message via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> DeleteInboxMessageAsync(
+        string conversationId,
+        string messageId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _messagesApi.DeleteInboxMessageAsync(conversationId, messageId, accountId, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for delete message, conversation {ConversationId}, message {MessageId}", conversationId, messageId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to delete inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId, messageId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error deleting message {MessageId} in conversation {ConversationId}", messageId, conversationId);
+            throw new DomainException("zernio_inbox_delete_error", "Failed to delete inbox message via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> AddMessageReactionAsync(
+        string conversationId,
+        string messageId,
+        Syncra.Application.DTOs.Inbox.AddMessageReactionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.AddMessageReactionRequest(request.AccountId, request.Emoji);
+
+            var response = await _messagesApi.AddMessageReactionAsync(conversationId, messageId, sdkRequest, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for add reaction, conversation {ConversationId}, message {MessageId}", conversationId, messageId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to react to inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId, messageId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error adding reaction to message {MessageId} in conversation {ConversationId}", messageId, conversationId);
+            throw new DomainException("zernio_inbox_reaction_error", "Failed to add message reaction via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> RemoveMessageReactionAsync(
+        string conversationId,
+        string messageId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _messagesApi.RemoveMessageReactionAsync(conversationId, messageId, accountId, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for remove reaction, conversation {ConversationId}, message {MessageId}", conversationId, messageId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to remove reactions from inbox messages.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId, messageId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error removing reaction from message {MessageId} in conversation {ConversationId}", messageId, conversationId);
+            throw new DomainException("zernio_inbox_reaction_error", "Failed to remove message reaction via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> SendTypingIndicatorAsync(
+        string conversationId,
+        Syncra.Application.DTOs.Inbox.SendTypingIndicatorRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdkRequest = new Zernio.Model.SendTypingIndicatorRequest(request.AccountId);
+
+            var response = await _messagesApi.SendTypingIndicatorAsync(conversationId, sdkRequest, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for typing indicator, conversation {ConversationId}", conversationId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to send typing indicators.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { conversationId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error sending typing indicator in conversation {ConversationId}", conversationId);
+            throw new DomainException("zernio_inbox_typing_error", "Failed to send typing indicator via Zernio", ex);
         }
     }
 
@@ -1921,6 +2330,243 @@ public sealed class ZernioClient : IZernioClient
         {
             _logger.LogError(ex, "Zernio API error replying to comment on post {PostId}", zernioPostId);
             throw new DomainException("zernio_inbox_reply_error", "Failed to reply to comment via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> DeleteInboxCommentAsync(
+        string zernioPostId,
+        string accountId,
+        string commentId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _commentsApi.DeleteInboxCommentAsync(zernioPostId, accountId, commentId, cancellationToken);
+            return response.Success;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for delete comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to delete comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error deleting comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_delete_error", "Failed to delete comment via Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioPostCommentsResponseDto> GetInboxPostCommentsAsync(
+        string zernioPostId,
+        string accountId,
+        string? subreddit = null,
+        int? limit = null,
+        string? cursor = null,
+        string? commentId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _commentsApi.GetInboxPostCommentsAsync(
+                zernioPostId,
+                accountId,
+                subreddit,
+                limit,
+                cursor,
+                commentId,
+                cancellationToken);
+
+            var items = (response.Comments ?? [])
+                .Select(c => new ZernioPostCommentItemDto(
+                    c.Id,
+                    c.Message ?? string.Empty,
+                    c.CreatedTime,
+                    c.From?.Id,
+                    c.From?.Name,
+                    c.From?.Username,
+                    c.From?.Picture,
+                    c.From?.IsOwner ?? false,
+                    c.LikeCount,
+                    c.ReplyCount,
+                    c.Platform ?? string.Empty,
+                    c.Url,
+                    c.CanReply,
+                    c.CanDelete,
+                    c.CanHide,
+                    c.CanLike,
+                    c.IsHidden,
+                    c.IsLiked,
+                    c.LikeUri,
+                    c.Cid,
+                    c.ParentId))
+                .ToList();
+
+            return new ZernioPostCommentsResponseDto(
+                items,
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.Cursor,
+                response.Meta?.Platform ?? string.Empty);
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for get comments of post {PostId}", zernioPostId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to fetch post comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { zernioPostId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error getting comments for post {PostId}", zernioPostId);
+            throw new DomainException("zernio_inbox_get_comments_error", "Failed to get post comments via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> HideInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new Zernio.Model.HideInboxCommentRequest(accountId);
+            var response = await _commentsApi.HideInboxCommentAsync(zernioPostId, commentId, request, cancellationToken);
+            return response.Hidden;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for hide comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to hide comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error hiding comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_hide_error", "Failed to hide comment via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> UnhideInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _commentsApi.UnhideInboxCommentAsync(zernioPostId, commentId, accountId, cancellationToken);
+            return response.Hidden == false;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for unhide comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to unhide comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error unhiding comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_unhide_error", "Failed to unhide comment via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> LikeInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string? cid = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new Zernio.Model.LikeInboxCommentRequest(accountId);
+            if (!string.IsNullOrEmpty(cid)) request.Cid = cid;
+
+            var response = await _commentsApi.LikeInboxCommentAsync(zernioPostId, commentId, request, cancellationToken);
+            return response.Liked;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for like comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to like comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error liking comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_like_error", "Failed to like comment via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> UnlikeInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string? likeUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _commentsApi.UnlikeInboxCommentAsync(zernioPostId, commentId, accountId, likeUri, cancellationToken);
+            return response.Liked == false;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for unlike comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to unlike comments.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error unliking comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_unlike_error", "Failed to unlike comment via Zernio", ex);
+        }
+    }
+
+    public async Task<bool> SendPrivateReplyToCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string message,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new Zernio.Model.SendPrivateReplyToCommentRequest(accountId, message);
+            var response = await _commentsApi.SendPrivateReplyToCommentAsync(zernioPostId, commentId, request, cancellationToken);
+            return true;
+        }
+        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        {
+            _logger.LogWarning(ex, "Zernio inbox billing gate for private reply to comment {CommentId}", commentId);
+            throw new ZernioBillingRequiredException(
+                "Inbox add-on is required to send private replies.",
+                reason: "inbox_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { commentId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error sending private reply to comment {CommentId} on post {PostId}", commentId, zernioPostId);
+            throw new DomainException("zernio_inbox_private_reply_error", "Failed to send private reply via Zernio", ex);
         }
     }
 

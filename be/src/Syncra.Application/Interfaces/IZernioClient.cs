@@ -124,14 +124,62 @@ public interface IZernioClient
 
     Task<ZernioInboxMessagesPageDto> ListInboxMessagesAsync(
         string conversationId,
+        string accountId,
         string? cursor = null,
         CancellationToken cancellationToken = default);
 
     Task<ZernioSendMessageResponseDto> SendInboxMessageAsync(
         string profileId,
         string conversationId,
+        InboxSendMessageRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxConversationDetailsDto> GetInboxConversationAsync(
+        string conversationId,
         string accountId,
-        string text,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxCreateConversationResponseDto> CreateInboxConversationAsync(
+        CreateInboxConversationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxUpdateConversationResponseDto> UpdateInboxConversationAsync(
+        string conversationId,
+        UpdateInboxConversationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> MarkConversationReadAsync(
+        string conversationId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<InboxEditMessageResponseDto> EditInboxMessageAsync(
+        string conversationId,
+        string messageId,
+        EditInboxMessageRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteInboxMessageAsync(
+        string conversationId,
+        string messageId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> AddMessageReactionAsync(
+        string conversationId,
+        string messageId,
+        AddMessageReactionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> RemoveMessageReactionAsync(
+        string conversationId,
+        string messageId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendTypingIndicatorAsync(
+        string conversationId,
+        SendTypingIndicatorRequest request,
         CancellationToken cancellationToken = default);
 
     // ── Inbox Comment methods ───────────────────────────────────
@@ -150,6 +198,54 @@ public interface IZernioClient
         string accountId,
         string message,
         string? commentId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteInboxCommentAsync(
+        string zernioPostId,
+        string accountId,
+        string commentId,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioPostCommentsResponseDto> GetInboxPostCommentsAsync(
+        string zernioPostId,
+        string accountId,
+        string? subreddit = null,
+        int? limit = null,
+        string? cursor = null,
+        string? commentId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HideInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> UnhideInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> LikeInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string? cid = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> UnlikeInboxCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string? likeUri = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendPrivateReplyToCommentAsync(
+        string zernioPostId,
+        string commentId,
+        string accountId,
+        string message,
         CancellationToken cancellationToken = default);
 
     // ── Inbox Review methods ────────────────────────────────────

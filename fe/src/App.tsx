@@ -25,7 +25,6 @@ import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import IdeasPage from './pages/app/IdeasPage'
-import MediaLibraryPage from './pages/app/MediaLibraryPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
@@ -134,7 +133,6 @@ function AnimatedRoutes() {
           <Route path="posts/overview" element={<Navigate to="/app/posts-all" replace />} />
           <Route path="posts/queues" element={<PageWrapper><PostsQueuesPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
-          <Route path="media" element={<PageWrapper><MediaLibraryPage /></PageWrapper>} />
           <Route path="calendar" element={<Navigate to="/app/posts-all?view=calendar" replace />} />
           <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />

@@ -303,6 +303,12 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("metadata");
 
+                    b.Property<int>("Position")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("position");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

@@ -103,16 +103,32 @@ public class IdeasController : ControllerBase
     public async Task<IActionResult> DeleteIdea(
         Guid workspaceId,
         Guid ideaId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         var command = new DeleteIdeaCommand(workspaceId, ideaId);
         var result = await _mediator.Send(command, cancellationToken);
-
         if (!result)
         {
             return NotFound();
         }
-
         return NoContent();
     }
+
+    [HttpPut("reorder")]
+    public async Task<IActionResult> ReorderIdeas(
+        Guid workspaceId,
+        [FromBody] ReorderIdeasRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.OrderedIds is null || request.OrderedIds.Count == 0)
+        {
+            return BadRequest("orderedIds must be a non-empty array.");
+        }
+
+        var command = new ReorderIdeasCommand(workspaceId, request.OrderedIds);
+        var result = await _mediator.Send(command, cancellationToken);
+        return result ? NoContent() : BadRequest();
+    }
 }
+
+public sealed record ReorderIdeasRequest(IReadOnlyList<Guid> OrderedIds);

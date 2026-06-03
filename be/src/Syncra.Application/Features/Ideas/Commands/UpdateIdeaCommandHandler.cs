@@ -34,6 +34,7 @@ public sealed class UpdateIdeaCommandHandler : IRequestHandler<UpdateIdeaCommand
             idea.Title,
             idea.Description,
             idea.Status,
+            idea.Position,
             idea.CreatedAtUtc,
             idea.UpdatedAtUtc
         );

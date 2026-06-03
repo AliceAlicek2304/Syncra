@@ -30,6 +30,7 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         CancellationToken cancellationToken = default)
     {
         return await _context.InboxConversations
+            .Include(c => c.SocialAccount)
             .FirstOrDefaultAsync(
                 c => c.Id == conversationId && c.WorkspaceId == workspaceId,
                 cancellationToken);
@@ -94,6 +95,12 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         await _unitOfWork.SaveChangesAsync();
     }
 
+    public async Task DeleteMessageAsync(InboxMessage message)
+    {
+        _context.InboxMessages.Remove(message);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     public async Task<int> GetUnreadTotalAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default)
@@ -114,6 +121,7 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         CancellationToken cancellationToken = default)
     {
         var query = _context.InboxComments
+            .Include(c => c.SocialAccount)
             .Where(c => c.WorkspaceId == workspaceId)
             .AsQueryable();
 
@@ -126,10 +134,27 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         if (before.HasValue)
             query = query.Where(c => c.ReceivedAtUtc < before.Value);
 
-        return await query
+        var comments = await query
             .OrderByDescending(c => c.ReceivedAtUtc)
             .Take(limit)
             .ToListAsync(cancellationToken);
+
+        var changed = false;
+        foreach (var comment in comments)
+        {
+            if (string.IsNullOrEmpty(comment.ZernioAccountId) && comment.SocialAccount != null)
+            {
+                comment.SetZernioAccountId(comment.SocialAccount.ExternalAccountId);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return comments;
     }
 
     public async Task<InboxComment?> GetCommentByIdAsync(
@@ -137,10 +162,19 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         Guid commentId,
         CancellationToken cancellationToken = default)
     {
-        return await _context.InboxComments
+        var comment = await _context.InboxComments
+            .Include(c => c.SocialAccount)
             .FirstOrDefaultAsync(
                 c => c.Id == commentId && c.WorkspaceId == workspaceId,
                 cancellationToken);
+
+        if (comment != null && string.IsNullOrEmpty(comment.ZernioAccountId) && comment.SocialAccount != null)
+        {
+            comment.SetZernioAccountId(comment.SocialAccount.ExternalAccountId);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return comment;
     }
 
     public async Task<InboxComment?> GetCommentByZernioIdAsync(
@@ -148,11 +182,20 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         string zernioCommentId,
         CancellationToken cancellationToken = default)
     {
-        return await _context.InboxComments
+        var comment = await _context.InboxComments
+            .Include(c => c.SocialAccount)
             .FirstOrDefaultAsync(
                 c => c.WorkspaceId == workspaceId
                   && c.ZernioCommentId == zernioCommentId,
                 cancellationToken);
+
+        if (comment != null && string.IsNullOrEmpty(comment.ZernioAccountId) && comment.SocialAccount != null)
+        {
+            comment.SetZernioAccountId(comment.SocialAccount.ExternalAccountId);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return comment;
     }
 
     public async Task AddCommentAsync(InboxComment comment)

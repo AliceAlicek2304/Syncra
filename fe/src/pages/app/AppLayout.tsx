@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb,
-  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Image, Plug,
+  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Plug,
   FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle
 } from 'lucide-react'
 import { useState } from 'react'
@@ -9,7 +9,6 @@ import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import CreatePostModal from '../../components/CreatePostModal'
-import AICoach from '../../components/AICoach'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
 import NotificationBell from '../../components/NotificationBell'
@@ -19,7 +18,6 @@ import logo from '../../assets/syncra-logo.png'
 const NAV_ITEMS = [
   { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
-  { to: '/app/media', icon: <Image size={18} />, label: 'Media Library' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
   { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
@@ -42,7 +40,6 @@ export default function AppLayout() {
                         location.pathname.includes('/posts-all') ||
                         location.pathname.includes('/ideas') ||
                         location.pathname.includes('/repurpose') ||
-                        location.pathname.includes('/media') ||
                         location.pathname.includes('/trends') ||
                         location.pathname.includes('/help') ||
                         location.pathname.includes('/analytics') ||
@@ -276,9 +273,6 @@ export default function AppLayout() {
         initialDate={state.initialDate}
         editPost={state.editPost}
       />
-      
-      {/* Floating AI Coach */}
-      <AICoach />
       
       {/* Premium Background Layer */}
       <MeshBackground />

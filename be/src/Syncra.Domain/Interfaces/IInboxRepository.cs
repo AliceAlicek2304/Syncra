@@ -32,6 +32,7 @@ public interface IInboxRepository
 
     Task AddConversationAsync(InboxConversation conversation);
     Task AddMessageAsync(InboxMessage message);
+    Task DeleteMessageAsync(InboxMessage message);
     Task<int> GetUnreadTotalAsync(Guid workspaceId, CancellationToken cancellationToken = default);
 
     // ── Comments ────────────────────────────────────────────────────────────

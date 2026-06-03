@@ -6,6 +6,7 @@ public record IdeaDto(
     string Title,
     string? Description,
     string Status,
+    int Position,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc
 );

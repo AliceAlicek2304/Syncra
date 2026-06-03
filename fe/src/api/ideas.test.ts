@@ -21,21 +21,24 @@ describe('ideasApi', () => {
     vi.clearAllMocks()
   })
 
-  it('getIdeas calls correct endpoint with status=idea param', async () => {
-    mockedApi.get.mockResolvedValue({ data: [] })
-    await ideasApi.getIdeas(workspaceId)
-    expect(mockedApi.get).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts`,
-      { params: { status: 'idea' } }
-    )
+  it('getIdeas calls correct endpoint and maps BE Status to FE groupId', async () => {
+    mockedApi.get.mockResolvedValue({
+      data: {
+        items: [{ id: 'a', workspaceId: workspaceId, title: 'T', description: null, status: 'todo', createdAtUtc: '2025-01-01T00:00:00Z', updatedAtUtc: null }],
+        page: 1, pageSize: 20, totalItems: 1, totalPages: 1,
+      },
+    })
+    const ideas = await ideasApi.getIdeas(workspaceId)
+    expect(mockedApi.get).toHaveBeenCalledWith(`workspaces/${workspaceId}/ideas`)
+    expect(ideas[0].groupId).toBe('todo')
   })
 
-  it('createIdea sends status idea in body', async () => {
-    mockedApi.post.mockResolvedValue({ data: { id: ideaId, title: 'Test', status: 'idea', groupId: 'g-1', createdAt: '' } })
-    await ideasApi.createIdea(workspaceId, { title: 'Test', groupId: 'g-1' })
+  it('createIdea sends groupId as BE status', async () => {
+    mockedApi.post.mockResolvedValue({ data: { id: ideaId, workspaceId, title: 'Test', description: null, status: 'todo', createdAtUtc: '', updatedAtUtc: null } })
+    await ideasApi.createIdea(workspaceId, { title: 'Test', groupId: 'todo' })
     expect(mockedApi.post).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts`,
-      expect.objectContaining({ status: 'idea' })
+      `workspaces/${workspaceId}/ideas`,
+      expect.objectContaining({ status: 'todo' })
     )
   })
 
@@ -43,7 +46,7 @@ describe('ideasApi', () => {
     mockedApi.put.mockResolvedValue({ data: {} })
     await ideasApi.updateIdea(workspaceId, ideaId, { title: 'Updated' })
     expect(mockedApi.put).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts/${ideaId}`,
+      `workspaces/${workspaceId}/ideas/${ideaId}`,
       { title: 'Updated' }
     )
   })
@@ -52,7 +55,7 @@ describe('ideasApi', () => {
     mockedApi.delete.mockResolvedValue({ data: undefined })
     await ideasApi.deleteIdea(workspaceId, ideaId)
     expect(mockedApi.delete).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts/${ideaId}`
+      `workspaces/${workspaceId}/ideas/${ideaId}`
     )
   })
 
@@ -61,7 +64,7 @@ describe('ideasApi', () => {
     const ids = ['id-1', 'id-2', 'id-3']
     await ideasApi.reorderIdeas(workspaceId, ids)
     expect(mockedApi.put).toHaveBeenCalledWith(
-      `workspaces/${workspaceId}/posts/reorder`,
+      `workspaces/${workspaceId}/ideas/reorder`,
       { orderedIds: ids }
     )
   })
