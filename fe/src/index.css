@@ -1,5 +1,42 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 57% 3%;
+    --foreground: 0 0% 100%;
+
+    --card: 224 37% 8%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 220 57% 3%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 20% 10%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 258 90% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 346 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 12%;
+    --input: 220 15% 12%;
+    --ring: 258 90% 66%;
+
+    --radius: 12px;
+  }
+}
 
 *,
 *::before,

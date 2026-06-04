@@ -259,6 +259,7 @@ public sealed class InboxBackfillService : IInboxBackfillService
             zernioPostId: item.Id,
             zernioAccountId: matchingAccount?.ExternalAccountId,
             postPreviewCaption: previewCaption,
+            postPreviewThumbnailUrl: item.Picture,
             commentCount: item.CommentCount,
             zernioTopCommentId: item.Cid,
             receivedAtUtc: item.CreatedTime);
