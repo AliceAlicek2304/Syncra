@@ -1,5 +1,6 @@
 using System.Reflection;
 using Syncra.Application.DTOs.Inbox;
+using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Xunit;
 
@@ -83,7 +84,7 @@ public class ZernioClientInboxTests
         Assert.NotNull(method);
         Assert.True(method!.ReturnType.IsGenericType);
         Assert.Equal(typeof(Task<>), method!.ReturnType.GetGenericTypeDefinition());
-        Assert.Equal(typeof(ZernioReplyToCommentResponseDto), method!.ReturnType.GenericTypeArguments[0]);
+        Assert.Equal(typeof(ZernioReplyResponseDto), method!.ReturnType.GenericTypeArguments[0]);
 
         var parameters = method.GetParameters();
         Assert.Contains(parameters, p => p.Name == "profileId" && p.ParameterType == typeof(string));

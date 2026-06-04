@@ -12,6 +12,13 @@ public sealed record ZernioPresignResponse(
     [property: JsonPropertyName("publicUrl")] string PublicUrl
 );
 
+public sealed record ZernioUploadDirectResult(
+    [property: JsonPropertyName("url")] string Url,
+    [property: JsonPropertyName("filename")] string Filename,
+    [property: JsonPropertyName("contentType")] string? ContentType,
+    [property: JsonPropertyName("size")] long? Size
+);
+
 public sealed record ZernioConnectUrlResult(string ConnectUrl);
 
 public sealed record ZernioAccountDto(
@@ -392,3 +399,47 @@ public sealed record ZernioTikTokCreatorInfoDetails(
     [property: JsonPropertyName("max_video_post_duration_sec")] int? MaxVideoPostDurationSec,
     [property: JsonPropertyName("commercial_content_type_options")] IReadOnlyList<string>? CommercialContentTypeOptions
 );
+
+// ── Comment action response DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioCommentActionResponseDto(
+    string? Status = null,
+    string? CommentId = null,
+    string? MessageId = null,
+    string? Platform = null);
+
+public sealed record ZernioLikeActionResponseDto(
+    bool Liked,
+    string? Status = null,
+    string? CommentId = null,
+    string? Platform = null,
+    string? LikeUri = null);
+
+public sealed record ZernioReplyResponseDto(
+    string CommentId,
+    string? Cid = null,
+    bool IsReply = false);
+
+public sealed record ZernioDeleteCommentResponseDto(
+    bool Success,
+    string? Message = null);
+
+// ── Private-reply CTA (Facebook/Messenger) ───────────────────────────────────
+
+public sealed record ZernioPrivateReplyQuickReplyDto(
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("payload")] string? Payload = null,
+    [property: JsonPropertyName("imageUrl")] string? ImageUrl = null);
+
+public sealed record ZernioPrivateReplyButtonDto(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("url")] string? Url = null,
+    [property: JsonPropertyName("payload")] string? Payload = null,
+    [property: JsonPropertyName("phone_number")] string? PhoneNumber = null);
+
+public sealed record ZernioPrivateReplyRequestDto(
+    string AccountId,
+    string Message,
+    IReadOnlyList<ZernioPrivateReplyQuickReplyDto>? QuickReplies = null,
+    IReadOnlyList<ZernioPrivateReplyButtonDto>? Buttons = null);

@@ -16,6 +16,22 @@ export interface InboxConversationDto {
   createdAtUtc: string;
 }
 
+export interface ZernioMessageAttachmentDto {
+  id: string;
+  type: 'image' | 'video' | 'audio' | 'file' | 'sticker' | 'share';
+  url: string;
+  filename?: string;
+  previewUrl?: string;
+}
+
+export interface InboxMessageReactionDto {
+  emoji: string;
+  accountId?: string;
+  participantId?: string;
+  participantName?: string;
+  count?: number;
+}
+
 export interface InboxMessageDto {
   id: string;
   inboxConversationId: string;
@@ -26,6 +42,8 @@ export interface InboxMessageDto {
   zernioAccountId?: string;
   createdAtUtc: string;
   deliveryStatus?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  attachments?: ZernioMessageAttachmentDto[];
+  reactions?: InboxMessageReactionDto[];
 }
 
 export interface InboxParticipantDto {
@@ -181,6 +199,50 @@ export interface InboxCommentDto {
   receivedAtUtc: string;
   createdAtUtc: string;
 }
+
+export interface ZernioInboxFailedAccountDto {
+  accountId: string;
+  accountUsername?: string;
+  platform: string;
+  error: string;
+  code?: string;
+  retryAfter?: number;
+}
+
+export interface ZernioInboxCommentMetaDto {
+  accountsQueried: number;
+  accountsFailed: number;
+  failedAccounts: ZernioInboxFailedAccountDto[];
+  lastUpdated: string;
+}
+
+export interface InboxCommentedPostItemDto {
+  id: string;
+  platform: string;
+  accountId?: string;
+  accountUsername?: string;
+  content: string;
+  picture?: string;
+  permalink?: string;
+  createdTime: string;
+  commentCount: number;
+  likeCount?: number;
+  cid?: string;
+  subreddit?: string;
+  isAd?: boolean;
+  adId?: string;
+  placement?: string;
+}
+
+export interface InboxCommentedPostsResponseDto {
+  data: InboxCommentedPostItemDto[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor?: string;
+  };
+  meta?: ZernioInboxCommentMetaDto;
+}
+
 
 export interface ZernioPostCommentItemDto {
   id: string;
@@ -385,8 +447,8 @@ export const inboxApi = {
   getComments: async (
     workspaceId: string,
     params?: { limit?: number; before?: string; platform?: string; accountId?: string }
-  ): Promise<InboxCommentDto[]> => {
-    const response = await api.get<InboxCommentDto[]>(
+  ): Promise<InboxCommentedPostsResponseDto> => {
+    const response = await api.get<InboxCommentedPostsResponseDto>(
       `workspaces/${workspaceId}/inbox/comments`,
       {
         headers: { 'X-Workspace-Id': workspaceId },

@@ -84,6 +84,11 @@ RecurringJob.AddOrUpdate<ZernioSyncJob>(
     job => job.ExecuteAsync(CancellationToken.None),
     "*/15 * * * *");
 
+RecurringJob.AddOrUpdate<InboxBackfillV2Job>(
+    "inbox-backfill-v2-job",
+    job => job.ExecuteAsync(CancellationToken.None),
+    "0 * * * *");
+
 // Program entry point
 app.Run();
 public partial class Program { }

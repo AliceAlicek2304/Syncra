@@ -1,9 +1,9 @@
 using MediatR;
+using Syncra.Application.DTOs.Zernio;
 
 namespace Syncra.Application.Features.Inbox.Commands;
 
 public sealed record LikeInboxCommentCommand(
     Guid WorkspaceId,
-    Guid CommentId,
-    string? Cid = null,
-    bool Dummy = false) : IRequest<bool>;
+    string CommentId,
+    string? Cid = null) : IRequest<ZernioLikeActionResponseDto>;

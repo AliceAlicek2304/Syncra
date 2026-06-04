@@ -99,7 +99,8 @@ public sealed class GetInboxMessagesQueryHandler
                 localMessage.BodyText,
                 localMessage.SentAtUtc,
                 conversation.SocialAccount?.ExternalAccountId,
-                localMessage.CreatedAtUtc
+                localMessage.CreatedAtUtc,
+                item.Attachments
             ));
         }
 

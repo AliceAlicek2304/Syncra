@@ -196,6 +196,11 @@
   text-align: center;
   color: var(--clr-body-mid);
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .conversationItem {
@@ -868,6 +873,33 @@
   background: var(--clr-canvas);
 }
 
+.btnConfirm {
+  background: #b91c1c;
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnConfirm:hover {
+  background: #991b1b;
+}
+
+.btnConfirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .btnSubmit {
   background: var(--clr-primary);
   border: none;
@@ -961,6 +993,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.filterDropdownLabelContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.filterDropdownLabelIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.filterDropdownLabelText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filterDropdownChevron {
@@ -1011,6 +1064,14 @@
   background: none;
   width: 100%;
   text-align: left;
+}
+
+.filterDropdownCheckSlot {
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .filterDropdownItem:hover {
@@ -1087,6 +1148,24 @@
 }
 
 /* ── Media upload chip ── */
+.attachmentError {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.attachmentError svg {
+  flex-shrink: 0;
+}
+
 .mediaChip {
   display: flex;
   align-items: center;
@@ -1144,5 +1223,43 @@
   margin-top: 8px;
   border-top: 1px solid rgba(0, 0, 0, 0.03);
   padding-top: 8px;
+}
+
+/* ── Message attachments rendering ── */
+.attachmentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.messageImage {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+}
+
+.messageVideo {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  display: block;
+}
+
+.messageAudio {
+  max-width: 100%;
+  display: block;
+}
+
+.messageFileLink {
+  display: inline-flex;
+  align-items: center;
+  color: var(--clr-primary);
+  text-decoration: underline;
+  font-size: 13px;
+  word-break: break-all;
 }
 

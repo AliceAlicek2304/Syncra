@@ -4,5 +4,5 @@ namespace Syncra.Application.Features.Inbox.Commands;
 
 public record MarkCommentReadCommand(
     Guid WorkspaceId,
-    Guid CommentId
+    string CommentId
 ) : IRequest<bool>;

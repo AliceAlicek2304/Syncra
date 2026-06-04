@@ -12,4 +12,5 @@ public interface IWorkspaceRepository
     Task<Workspace?> GetBySlugAsync(string slug);
     Task<Workspace?> GetBySlugWithMembersAsync(string slug);
     Task<IEnumerable<Workspace>> GetByUserIdAsync(Guid userId);
+    Task<IReadOnlyList<Workspace>> GetAllAsync(CancellationToken cancellationToken = default);
 }

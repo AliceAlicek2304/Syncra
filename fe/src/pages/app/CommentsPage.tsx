@@ -5,7 +5,7 @@ import {
   ChevronDown, ExternalLink, Reply, Image
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { inboxApi, type InboxCommentDto, type ZernioPostCommentItemDto } from '../../api/inbox'
+import { inboxApi, type InboxCommentedPostItemDto, type ZernioPostCommentItemDto } from '../../api/inbox'
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons'
 
 interface PostGroup {
@@ -17,7 +17,7 @@ interface PostGroup {
   lastComment: string
   desc: string
   zernioAccountId: string
-  rawComments: InboxCommentDto[]
+  rawComments: InboxCommentedPostItemDto[]
   commentCount: number
 }
 
@@ -125,33 +125,34 @@ export default function CommentsPage() {
     const loadPosts = async () => {
       setIsLoadingPosts(true)
       try {
-        const data = await inboxApi.getComments(workspaceId, { limit: 100 })
+        const responseData = await inboxApi.getComments(workspaceId, { limit: 100 })
+        const list = responseData.data || []
         
-        // Group by zernioPostId
+        // Group by post ID
         const groupMap = new Map<string, PostGroup>()
         
-        data.forEach(c => {
-          if (!c.zernioPostId) return;
-          if (!groupMap.has(c.zernioPostId)) {
-            groupMap.set(c.zernioPostId, {
-              id: c.zernioPostId,
-              title: c.postPreviewCaption || 'Untitled Post',
+        list.forEach(c => {
+          if (!c.id) return;
+          if (!groupMap.has(c.id)) {
+            groupMap.set(c.id, {
+              id: c.id,
+              title: c.content || 'Untitled Post',
               platform: c.platform,
-              image: c.postPreviewThumbnailUrl || '',
-              time: c.receivedAtUtc,
-              lastComment: c.bodyText,
-              desc: c.postPreviewCaption || '',
-              zernioAccountId: c.zernioAccountId || '',
+              image: c.picture || '',
+              time: c.createdTime,
+              lastComment: c.content,
+              desc: c.content || '',
+              zernioAccountId: c.accountId || '',
               rawComments: [c],
               commentCount: c.commentCount || 0
             })
           } else {
-            const group = groupMap.get(c.zernioPostId)!
+            const group = groupMap.get(c.id)!
             group.rawComments.push(c)
             // Update last comment if newer
-            if (new Date(c.receivedAtUtc) > new Date(group.time)) {
-              group.time = c.receivedAtUtc;
-              group.lastComment = c.bodyText;
+            if (new Date(c.createdTime) > new Date(group.time)) {
+              group.time = c.createdTime;
+              group.lastComment = c.content;
             }
             if ((c.commentCount || 0) > group.commentCount) {
               group.commentCount = c.commentCount || 0;
@@ -222,6 +223,16 @@ export default function CommentsPage() {
       }
     } catch (err) {
       triggerToast('Failed to update like status')
+      setLiveComments(prev => prev.map(c => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            isLiked: isCurrentlyLiked,
+            likeCount: isCurrentlyLiked ? c.likeCount + 1 : Math.max(0, c.likeCount - 1)
+          }
+        }
+        return c
+      }))
     } finally {
       setActionLoadingId(null);
     }
@@ -246,6 +257,10 @@ export default function CommentsPage() {
       }
     } catch (err) {
       triggerToast('Failed to hide/unhide comment')
+      setLiveComments(prev => prev.map(c => {
+        if (c.id === commentId) return { ...c, isHidden: isCurrentlyHidden }
+        return c
+      }))
     } finally {
       setActionLoadingId(null);
     }
@@ -254,6 +269,7 @@ export default function CommentsPage() {
   const handleDeleteComment = async (commentId: string) => {
     if (!workspaceId) return;
     
+    const originalComments = [...liveComments];
     setActionLoadingId(commentId);
     setLiveComments(prev => prev.filter(c => c.id !== commentId))
     
@@ -262,10 +278,12 @@ export default function CommentsPage() {
       triggerToast('Comment deleted')
     } catch (err) {
       triggerToast('Failed to delete comment')
+      setLiveComments(originalComments)
     } finally {
       setActionLoadingId(null);
     }
   }
+
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !workspaceId || !activePost) return
@@ -326,8 +344,8 @@ export default function CommentsPage() {
       return new Date(a.time).getTime() - new Date(b.time).getTime();
     }
     if (sortBy === 'unanswered') {
-      const aHasReply = a.rawComments.some(c => c.authorName.toLowerCase() === 'you' || c.authorName === 'Syncra');
-      const bHasReply = b.rawComments.some(c => c.authorName.toLowerCase() === 'you' || c.authorName === 'Syncra');
+      const aHasReply = a.rawComments.some(c => (c as any).authorName?.toLowerCase() === 'you' || (c as any).authorName === 'Syncra');
+      const bHasReply = b.rawComments.some(c => (c as any).authorName?.toLowerCase() === 'you' || (c as any).authorName === 'Syncra');
       if (aHasReply && !bHasReply) return 1;
       if (!aHasReply && bHasReply) return -1;
       return new Date(b.time).getTime() - new Date(a.time).getTime();

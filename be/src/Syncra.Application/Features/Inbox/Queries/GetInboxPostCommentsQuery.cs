@@ -10,4 +10,6 @@ public sealed record GetInboxPostCommentsQuery(
     string? Subreddit = null,
     int? Limit = null,
     string? Cursor = null,
-    string? CommentId = null) : IRequest<ZernioPostCommentsResponseDto>;
+    string? CommentId = null,
+    string? SelfAccountId = null,
+    string? Platform = null) : IRequest<ZernioPostCommentsResponseDto>;

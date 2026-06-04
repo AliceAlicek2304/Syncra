@@ -35,9 +35,9 @@ public interface IInboxRepository
     Task DeleteMessageAsync(InboxMessage message);
     Task<int> GetUnreadTotalAsync(Guid workspaceId, CancellationToken cancellationToken = default);
 
-    // ── Comments ────────────────────────────────────────────────────────────
+    // ── Commented Posts ─────────────────────────────────────────────────────
 
-    Task<IReadOnlyList<InboxComment>> GetCommentsAsync(
+    Task<IReadOnlyList<InboxCommentedPost>> GetCommentedPostsAsync(
         Guid workspaceId,
         int limit = 50,
         DateTime? before = null,
@@ -45,17 +45,27 @@ public interface IInboxRepository
         string? accountId = null,
         CancellationToken cancellationToken = default);
 
-    Task<InboxComment?> GetCommentByIdAsync(
+    Task<InboxCommentedPost?> GetCommentedPostByIdAsync(
         Guid workspaceId,
-        Guid commentId,
+        Guid postId,
         CancellationToken cancellationToken = default);
 
-    Task<InboxComment?> GetCommentByZernioIdAsync(
+    Task<InboxCommentedPost?> GetCommentedPostByZernioPostIdAsync(
         Guid workspaceId,
-        string zernioCommentId,
+        string zernioPostId,
         CancellationToken cancellationToken = default);
 
-    Task AddCommentAsync(InboxComment comment);
+    Task AddCommentedPostAsync(InboxCommentedPost post);
+    Task UpdateCommentedPostAsync(InboxCommentedPost post);
+
+    // ── Comment Threads (cache layer) ───────────────────────────────────────
+
+    Task<InboxCommentThread?> GetByPostAsync(
+        Guid workspaceId,
+        string zernioPostId,
+        CancellationToken cancellationToken = default);
+
+    Task UpsertAsync(InboxCommentThread thread);
 
     // ── Reviews ─────────────────────────────────────────────────────────────
 

@@ -252,21 +252,17 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         // Act
         await _job.ExecuteAsync(webhookEvent.Id, CancellationToken.None);
 
-        // Assert - InboxComment created
-        var comment = await _db.InboxComments
+        // Assert - InboxCommentedPost created
+        var post = await _db.InboxCommentedPosts
             .FirstOrDefaultAsync(c => c.WorkspaceId == _workspaceId);
-        Assert.NotNull(comment);
-        Assert.Equal("zernio-cmnt-001", comment!.ZernioCommentId);
-        Assert.Equal("instagram", comment.Platform);
-        Assert.Equal(socialAccount.Id, comment.SocialAccountId);
-        Assert.Equal("Jane Doe", comment.AuthorName);
-        Assert.Equal("fan_user", comment.AuthorUsername);
-        Assert.Equal("Great post! Love the content!", comment.BodyText);
-        Assert.Equal("zernio-post-456", comment.ZernioPostId);
-        Assert.Equal("zernio-account-123", comment.ZernioAccountId);
-        Assert.False(comment.IsReply);
-        Assert.Null(comment.ParentCommentId);
-        Assert.False(comment.IsRead);
+        Assert.NotNull(post);
+        Assert.Equal("zernio-post-456", post!.ZernioPostId);
+        Assert.Equal("instagram", post.Platform);
+        Assert.Equal(socialAccount.Id, post.SocialAccountId);
+        Assert.Equal("zernio-cmnt-001", post.ZernioTopCommentId);
+        Assert.Equal("zernio-account-123", post.ZernioAccountId);
+        Assert.Equal(1, post.CommentCount);
+        Assert.False(post.IsRead);
 
         // Assert - notifier called with type "comment"
         _inboxNotifierMock.Verify(n => n.NotifyItemCreatedAsync(
@@ -299,18 +295,17 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         _db.SocialAccounts.Add(socialAccount);
         await _db.SaveChangesAsync();
 
-        // Seed existing comment
-        var existingComment = InboxComment.Create(
+        // Seed existing commented post
+        var existingPost = InboxCommentedPost.Create(
             _workspaceId,
-            "zernio-cmnt-001",
+            "zernio-post-456",
             socialAccount.Id,
             "instagram",
-            "Jane Doe",
-            "Great post! Love the content!",
-            zernioPostId: "zernio-post-456",
             zernioAccountId: "zernio-account-123",
+            commentCount: 1,
+            zernioTopCommentId: "zernio-cmnt-001",
             receivedAtUtc: System.DateTime.UtcNow.AddHours(-1));
-        _db.InboxComments.Add(existingComment);
+        _db.InboxCommentedPosts.Add(existingPost);
         await _db.SaveChangesAsync();
 
         var webhookEvent = ZernioWebhookEvent.Create(
@@ -321,10 +316,13 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         // Act
         await _job.ExecuteAsync(webhookEvent.Id, CancellationToken.None);
 
-        // Assert - only one comment exists (no duplicate)
-        var commentCount = await _db.InboxComments
-            .CountAsync(c => c.WorkspaceId == _workspaceId);
-        Assert.Equal(1, commentCount);
+        // Assert - still one post, but comment count bumped
+        var posts = await _db.InboxCommentedPosts
+            .Where(c => c.WorkspaceId == _workspaceId)
+            .ToListAsync();
+        Assert.Single(posts);
+        Assert.Equal(2, posts[0].CommentCount);
+        Assert.Equal("zernio-cmnt-001", posts[0].ZernioTopCommentId);
 
         // Assert - event marked processed
         Assert.Equal(WebhookEventStatus.Processed, webhookEvent.Status);
@@ -345,8 +343,8 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         // Act
         await _job.ExecuteAsync(webhookEvent.Id, CancellationToken.None);
 
-        // Assert - no InboxComment created
-        var commentCount = await _db.InboxComments
+        // Assert - no InboxCommentedPost created
+        var commentCount = await _db.InboxCommentedPosts
             .CountAsync(c => c.WorkspaceId == _workspaceId);
         Assert.Equal(0, commentCount);
 

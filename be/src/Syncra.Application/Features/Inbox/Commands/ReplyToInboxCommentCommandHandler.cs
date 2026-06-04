@@ -1,6 +1,7 @@
 using MediatR;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
+using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 
@@ -27,27 +28,22 @@ public sealed class ReplyToInboxCommentCommandHandler
         ReplyToInboxCommentCommand request,
         CancellationToken cancellationToken)
     {
-        // Verify comment exists and belongs to workspace
-        var comment = await _inboxRepository.GetCommentByIdAsync(
-            request.WorkspaceId,
-            request.CommentId,
-            cancellationToken);
+        InboxCommentedPost? post = await ResolvePostAsync(request.WorkspaceId, request.CommentId, cancellationToken);
 
-        if (comment == null)
+        if (post == null)
         {
             throw new DomainException(
-                "CommentNotFound",
-                $"InboxComment '{request.CommentId}' not found in workspace '{request.WorkspaceId}'.");
+                "CommentedPostNotFound",
+                $"InboxCommentedPost '{request.CommentId}' not found in workspace '{request.WorkspaceId}'.");
         }
 
-        if (string.IsNullOrEmpty(comment.ZernioPostId))
+        if (string.IsNullOrEmpty(post.ZernioAccountId))
         {
             throw new DomainException(
-                "CommentMissingPostId",
-                $"InboxComment '{request.CommentId}' has no ZernioPostId. Cannot reply without a post reference.");
+                "CommentedPostMissingAccountId",
+                $"InboxCommentedPost '{request.CommentId}' has no ZernioAccountId. Cannot reply without an account reference.");
         }
 
-        // Resolve ZernioProfile for API call
         var profile = await _profileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
         if (profile == null)
         {
@@ -56,17 +52,31 @@ public sealed class ReplyToInboxCommentCommandHandler
                 $"No ZernioProfile found for workspace '{request.WorkspaceId}'. Connect a Zernio account first.");
         }
 
-        // Reply via Zernio API using stored post/account IDs
         var result = await _zernioClient.ReplyToInboxCommentAsync(
             profile.ZernioProfileId,
-            comment.ZernioPostId,
-            comment.ZernioAccountId ?? string.Empty,
+            post.ZernioPostId,
+            post.ZernioAccountId,
             request.Message,
-            comment.ParentCommentId,
-            cancellationToken);
+            commentId: post.ZernioTopCommentId,
+            parentCid: request.ParentCid,
+            rootUri: request.RootUri,
+            rootCid: request.RootCid,
+            cancellationToken: cancellationToken);
 
         return new InboxSendCommentReplyResponse(
             result.CommentId,
             result.Cid);
+    }
+
+    private Task<InboxCommentedPost?> ResolvePostAsync(
+        Guid workspaceId,
+        string commentId,
+        CancellationToken cancellationToken)
+    {
+        if (Guid.TryParse(commentId, out var postGuid))
+        {
+            return _inboxRepository.GetCommentedPostByIdAsync(workspaceId, postGuid, cancellationToken);
+        }
+        return _inboxRepository.GetCommentedPostByZernioPostIdAsync(workspaceId, commentId, cancellationToken);
     }
 }

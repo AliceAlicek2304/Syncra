@@ -247,12 +247,27 @@ public class InboxController : ControllerBase
     public async Task<IActionResult> GetComments(
         Guid workspaceId,
         [FromQuery] int limit = 50,
-        [FromQuery] DateTime? before = null,
+        [FromQuery] string? cursor = null,
         [FromQuery] string? platform = null,
         [FromQuery] string? accountId = null,
+        [FromQuery] string? profileId = null,
+        [FromQuery] int? minComments = null,
+        [FromQuery] DateTime? since = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetInboxCommentsQuery(workspaceId, limit, before, platform, accountId);
+        var query = new GetInboxCommentsQuery(
+            workspaceId,
+            limit,
+            cursor,
+            platform,
+            accountId,
+            profileId,
+            minComments,
+            since,
+            sortBy,
+            sortOrder);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
@@ -260,10 +275,10 @@ public class InboxController : ControllerBase
     /// <summary>
     /// Replies to a comment via the Zernio API. Resolves post/account from the local comment record.
     /// </summary>
-    [HttpPost("comments/{commentId:guid}/reply")]
+    [HttpPost("comments/{commentId}/reply")]
     public async Task<IActionResult> ReplyToComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         [FromBody] InboxSendCommentReplyRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -279,10 +294,10 @@ public class InboxController : ControllerBase
     /// <summary>
     /// Marks a comment as read.
     /// </summary>
-    [HttpPatch("comments/{commentId:guid}/read")]
+    [HttpPatch("comments/{commentId}/read")]
     public async Task<IActionResult> MarkCommentRead(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         CancellationToken cancellationToken = default)
     {
         var command = new MarkCommentReadCommand(workspaceId, commentId);
@@ -313,10 +328,25 @@ public class InboxController : ControllerBase
         if (string.IsNullOrWhiteSpace(accountId))
         {
             // Return empty list if accountId is missing, because Zernio API requires it
-            return Ok(new ZernioPostCommentsResponseDto(new List<ZernioPostCommentItemDto>(), false, null, ""));
+            return Ok(new ZernioPostCommentsResponseDto(
+                Status: "ok",
+                Post: null,
+                Meta: new ZernioCommentsMetaDto(string.Empty, null, null, null, null, DateTime.UtcNow),
+                Comments: new List<ZernioPostCommentItemDto>(),
+                Cursor: null,
+                HasMore: false));
         }
 
-        var query = new GetInboxPostCommentsQuery(workspaceId, postId, accountId, subreddit, limit, cursor, commentId);
+        var query = new GetInboxPostCommentsQuery(
+            workspaceId,
+            postId,
+            accountId,
+            subreddit,
+            limit,
+            cursor,
+            commentId,
+            SelfAccountId: accountId,
+            Platform: null);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
@@ -324,94 +354,94 @@ public class InboxController : ControllerBase
     /// <summary>
     /// Deletes a comment.
     /// </summary>
-    [HttpDelete("comments/{commentId:guid}")]
+    [HttpDelete("comments/{commentId}")]
     public async Task<IActionResult> DeleteComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         CancellationToken cancellationToken = default)
     {
         var command = new DeleteInboxCommentCommand(workspaceId, commentId);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to delete comment." });
-        return Ok(new { success = true });
+        if (!result.Success) return BadRequest(new { error = result.Message ?? "Failed to delete comment." });
+        return Ok(result);
     }
 
     /// <summary>
     /// Hides a comment.
     /// </summary>
-    [HttpPost("comments/{commentId:guid}/hide")]
+    [HttpPost("comments/{commentId}/hide")]
     public async Task<IActionResult> HideComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         CancellationToken cancellationToken = default)
     {
         var command = new HideInboxCommentCommand(workspaceId, commentId);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to hide comment." });
-        return Ok(new { success = true });
+        if (result.Status == null) return BadRequest(new { error = "Failed to hide comment." });
+        return Ok(result);
     }
 
     /// <summary>
     /// Unhides a comment.
     /// </summary>
-    [HttpDelete("comments/{commentId:guid}/hide")]
+    [HttpDelete("comments/{commentId}/hide")]
     public async Task<IActionResult> UnhideComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         CancellationToken cancellationToken = default)
     {
         var command = new UnhideInboxCommentCommand(workspaceId, commentId);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to unhide comment." });
-        return Ok(new { success = true });
+        if (result.Status == null) return BadRequest(new { error = "Failed to unhide comment." });
+        return Ok(result);
     }
 
     /// <summary>
     /// Likes a comment.
     /// </summary>
-    [HttpPost("comments/{commentId:guid}/like")]
+    [HttpPost("comments/{commentId}/like")]
     public async Task<IActionResult> LikeComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         [FromBody] LikeInboxCommentRequest request,
         CancellationToken cancellationToken = default)
     {
         var command = new LikeInboxCommentCommand(workspaceId, commentId, request.Cid);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to like comment." });
-        return Ok(new { success = true });
+        if (!result.Liked) return BadRequest(new { error = result.Status ?? "Failed to like comment." });
+        return Ok(result);
     }
 
     /// <summary>
     /// Unlikes a comment.
     /// </summary>
-    [HttpDelete("comments/{commentId:guid}/like")]
+    [HttpDelete("comments/{commentId}/like")]
     public async Task<IActionResult> UnlikeComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         [FromQuery] string? likeUri = null,
         CancellationToken cancellationToken = default)
     {
         var command = new UnlikeInboxCommentCommand(workspaceId, commentId, likeUri);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to unlike comment." });
-        return Ok(new { success = true });
+        if (result.Liked) return BadRequest(new { error = result.Status ?? "Failed to unlike comment." });
+        return Ok(result);
     }
 
     /// <summary>
     /// Sends a private reply to a comment.
     /// </summary>
-    [HttpPost("comments/{commentId:guid}/private-reply")]
+    [HttpPost("comments/{commentId}/private-reply")]
     public async Task<IActionResult> SendPrivateReplyToComment(
         Guid workspaceId,
-        Guid commentId,
+        string commentId,
         [FromBody] SendPrivateReplyRequest request,
         CancellationToken cancellationToken = default)
     {
         var command = new SendPrivateReplyToCommentCommand(workspaceId, commentId, request.Message);
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result) return BadRequest(new { error = "Failed to send private reply." });
-        return Ok(new { success = true });
+        if (result.Status == null && result.CommentId == null) return BadRequest(new { error = "Failed to send private reply." });
+        return Ok(result);
     }
 
     // ── Review routes ───────────────────────────────────────────────────────

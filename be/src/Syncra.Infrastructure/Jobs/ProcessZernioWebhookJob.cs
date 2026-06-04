@@ -1010,57 +1010,28 @@ public sealed class ProcessZernioWebhookJob
             ? platElem.GetString()?.ToLowerInvariant()
             : null;
 
-        var commentText = commentElem.TryGetProperty("text", out var textElem)
-            ? textElem.GetString()
-            : string.Empty;
-
         var zernioPostId = commentElem.TryGetProperty("postId", out var postIdElem)
             ? postIdElem.GetString()
             : null;
 
-        var isReply = commentElem.TryGetProperty("isReply", out var isReplyElem)
-            && isReplyElem.GetBoolean();
-
-        var parentCommentId = commentElem.TryGetProperty("parentCommentId", out var parentIdElem)
-            ? parentIdElem.GetString()
-            : null;
+        if (string.IsNullOrWhiteSpace(zernioPostId))
+        {
+            _logger.LogWarning(
+                "comment.received: payload missing comment.postId for comment {ZernioCommentId} — skipping.",
+                zernioCommentId);
+            return;
+        }
 
         var createdAt = commentElem.TryGetProperty("createdAt", out var createdAtElem)
             && createdAtElem.TryGetDateTime(out var parsedCreatedAt)
             ? parsedCreatedAt
             : utcNow;
 
-        // Author info
-        string? authorName = null;
-        string? authorUsername = null;
-        string? authorPicture = null;
-        if (commentElem.TryGetProperty("author", out var authorElem))
-        {
-            authorName = authorElem.TryGetProperty("name", out var nameElem)
-                ? nameElem.GetString()
-                : null;
-            authorUsername = authorElem.TryGetProperty("username", out var usernameElem)
-                ? usernameElem.GetString()
-                : null;
-            authorPicture = authorElem.TryGetProperty("picture", out var picElem)
-                ? picElem.GetString()
-                : null;
-        }
-
         // Account-level info
         var accountElem = root.GetProperty("account");
         var zernioAccountId = accountElem.TryGetProperty("id", out var acctIdElem)
             ? acctIdElem.GetString()
             : null;
-
-        // Post preview fields
-        string? postPreviewCaption = null;
-        string? postPreviewThumbnailUrl = null;
-        if (root.TryGetProperty("post", out var postElem))
-        {
-            // The webhook post object doesn't include caption/thumbnail;
-            // these are populated from backfill/list APIs per D-15.
-        }
 
         // ── b. Look up SocialAccount ─────────────────────────────────────────
         var socialAccount = await _db.SocialAccounts
@@ -1080,42 +1051,55 @@ public sealed class ProcessZernioWebhookJob
 
         platform ??= socialAccount.Platform;
 
-        // ── c. Check for duplicate comment by ZernioCommentId ────────────────
-        var existingComment = await _db.InboxComments
+        // ── c. Find existing InboxCommentedPost by ZernioPostId ──────────────
+        var existingPost = await _db.InboxCommentedPosts
             .FirstOrDefaultAsync(
-                c => c.WorkspaceId == workspaceId
-                  && c.ZernioCommentId == zernioCommentId,
+                p => p.WorkspaceId == workspaceId
+                  && p.ZernioPostId == zernioPostId,
                 cancellationToken);
 
-        if (existingComment != null)
+        if (existingPost != null)
         {
-            _logger.LogInformation(
-                "comment.received: duplicate comment {ZernioCommentId} detected — skipping.",
-                zernioCommentId);
+            // Bump comment count + record the new top comment id; thread cache is
+            // populated by backfill and is not refreshed here on purpose (D-15).
+            existingPost.IncrementCommentCount();
+            existingPost.SetTopCommentId(zernioCommentId);
+            if (!string.IsNullOrEmpty(zernioAccountId) && string.IsNullOrEmpty(existingPost.ZernioAccountId))
+            {
+                existingPost.SetZernioAccountId(zernioAccountId);
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
+
+            await _inboxNotifier.NotifyItemCreatedAsync(
+                workspaceId,
+                "comment",
+                existingPost.Id.ToString(),
+                string.Empty,
+                platform ?? socialAccount.Platform,
+                socialAccount.Id.ToString(),
+                1,
+                cancellationToken);
+
+            _logger.LogInformation(
+                "comment.received: appended to existing post {PostId} in workspace {WorkspaceId}.",
+                zernioPostId,
+                workspaceId);
             return;
         }
 
-        // ── d. Create InboxComment ────────────────────────────────────────────
-        var comment = InboxComment.Create(
+        // ── d. Create new InboxCommentedPost ─────────────────────────────────
+        var post = InboxCommentedPost.Create(
             workspaceId,
-            zernioCommentId,
+            zernioPostId,
             socialAccount.Id,
             platform ?? socialAccount.Platform,
-            authorName ?? authorUsername ?? "Unknown",
-            commentText ?? string.Empty,
-            zernioPostId: zernioPostId,
             zernioAccountId: zernioAccountId,
-            authorUsername: authorUsername,
-            authorPicture: authorPicture,
-            postPreviewCaption: postPreviewCaption,
-            postPreviewThumbnailUrl: postPreviewThumbnailUrl,
-            parentCommentId: parentCommentId,
-            isReply: isReply,
+            commentCount: 1,
+            zernioTopCommentId: zernioCommentId,
             receivedAtUtc: createdAt);
 
-        _db.InboxComments.Add(comment);
+        _db.InboxCommentedPosts.Add(post);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -1123,17 +1107,18 @@ public sealed class ProcessZernioWebhookJob
         await _inboxNotifier.NotifyItemCreatedAsync(
             workspaceId,
             "comment",
-            comment.Id.ToString(),
-            commentText ?? string.Empty,
+            post.Id.ToString(),
+            string.Empty,
             platform ?? socialAccount.Platform,
             socialAccount.Id.ToString(),
             1,
             cancellationToken);
 
         _logger.LogInformation(
-            "comment.received: processed for workspace {WorkspaceId}, comment {CommentId}.",
+            "comment.received: created post {PostId} in workspace {WorkspaceId}, entity {EntityId}.",
+            zernioPostId,
             workspaceId,
-            comment.Id);
+            post.Id);
     }
 
     /// <summary>

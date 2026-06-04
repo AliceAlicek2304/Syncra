@@ -6,7 +6,12 @@ namespace Syncra.Application.Features.Inbox.Queries;
 public record GetInboxCommentsQuery(
     Guid WorkspaceId,
     int Limit = 50,
-    DateTime? Before = null,
+    string? Cursor = null,
     string? Platform = null,
-    string? AccountId = null
-) : IRequest<IReadOnlyList<InboxCommentDto>>;
+    string? AccountId = null,
+    string? ProfileId = null,
+    int? MinComments = null,
+    DateTime? Since = null,
+    string? SortBy = null,
+    string? SortOrder = null
+) : IRequest<InboxCommentedPostsResponseDto>;

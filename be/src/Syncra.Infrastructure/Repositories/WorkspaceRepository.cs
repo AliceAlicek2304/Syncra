@@ -32,4 +32,11 @@ public class WorkspaceRepository : Repository<Workspace>, IWorkspaceRepository
             .Select(m => m.Workspace)
             .ToListAsync();
     }
+
+    public async Task<IReadOnlyList<Workspace>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }

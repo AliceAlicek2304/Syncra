@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text;
 using System.Text.Json;
 using System.Net.Http.Headers;
 using Syncra.Application.DTOs.Inbox;
@@ -783,10 +784,118 @@ public sealed class ZernioClient : IZernioClient
         }
 
         _logger.LogInformation("Successfully uploaded media stream to Zernio presigned URL.");
-        
+
         // Extract public URL từ response hoặc trả về empty (response có thể không có body)
         // Presigned upload thường không trả về body, publicUrl đã có từ GetMediaPresignedUrlAsync
         return string.Empty;
+    }
+
+    public async Task<ZernioUploadDirectResult> UploadMediaDirectAsync(
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        if (content == null) throw new ArgumentNullException(nameof(content));
+        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
+        if (string.IsNullOrWhiteSpace(contentType)) throw new ArgumentException("Content type cannot be null or empty.", nameof(contentType));
+
+        try
+        {
+            var config = _mediaApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            // Buffer stream to byte[] để có Content-Length chính xác (tránh chunked transfer).
+            byte[] fileBytes;
+            if (content is MemoryStream ms)
+            {
+                fileBytes = ms.ToArray();
+            }
+            else if (content.CanSeek)
+            {
+                content.Position = 0;
+                fileBytes = new byte[content.Length];
+                int offset = 0;
+                while (offset < fileBytes.Length)
+                {
+                    int read = await content.ReadAsync(fileBytes.AsMemory(offset, fileBytes.Length - offset), cancellationToken);
+                    if (read == 0) break;
+                    offset += read;
+                }
+            }
+            else
+            {
+                using var buffer = new MemoryStream();
+                await content.CopyToAsync(buffer, cancellationToken);
+                fileBytes = buffer.ToArray();
+            }
+
+            // Build multipart/form-data body thủ công để tránh mọi ambiguity của .NET MultipartFormDataContent
+            // (một số FastAPI parser reject Content-Type của inner part khi Content-Type outer đã có).
+            // Chỉ gửi field "file" (required), bỏ qua contentType form field — Zernio auto-detect từ file.
+            const string boundary = "----SyncraBoundary7d4f6b8e";
+            var headerSb = new StringBuilder();
+            headerSb.Append("--").Append(boundary).Append("\r\n");
+            headerSb.Append("Content-Disposition: form-data; name=\"file\"; filename=\"").Append(fileName).Append("\"\r\n");
+            headerSb.Append("Content-Type: ").Append(contentType).Append("\r\n");
+            headerSb.Append("\r\n");
+            var headerBytes = Encoding.UTF8.GetBytes(headerSb.ToString());
+            var footerBytes = Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
+
+            var body = new byte[headerBytes.Length + fileBytes.Length + footerBytes.Length];
+            Buffer.BlockCopy(headerBytes, 0, body, 0, headerBytes.Length);
+            Buffer.BlockCopy(fileBytes, 0, body, headerBytes.Length, fileBytes.Length);
+            Buffer.BlockCopy(footerBytes, 0, body, headerBytes.Length + fileBytes.Length, footerBytes.Length);
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/media/upload-direct");
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            var byteContent = new ByteArrayContent(body);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("multipart/form-data");
+            byteContent.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("boundary", boundary));
+            byteContent.Headers.ContentLength = body.Length;
+            httpRequest.Content = byteContent;
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromMinutes(30);
+            var response = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to upload media direct to Zernio. Status: {StatusCode}, Error: {Error}",
+                    response.StatusCode, errorContent);
+                throw new DomainException("zernio_upload_direct_error",
+                    $"Failed to upload media to Zernio. Status: {response.StatusCode}. Error: {errorContent}");
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(responseBody))
+            {
+                throw new DomainException("zernio_upload_direct_error", "Zernio returned an empty upload-direct response.");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+            var root = doc.RootElement;
+            var url = root.TryGetProperty("url", out var urlEl) ? urlEl.GetString()
+                : throw new DomainException("zernio_upload_direct_error", "Zernio upload-direct response missing 'url' field.");
+
+            var returnedFileName = root.TryGetProperty("filename", out var fnEl) ? fnEl.GetString() : fileName;
+            var returnedContentType = root.TryGetProperty("contentType", out var ctEl) ? ctEl.GetString() : contentType;
+            long? size = root.TryGetProperty("size", out var sEl) && sEl.TryGetInt64(out var s) ? s : null;
+
+            _logger.LogInformation("Successfully uploaded media direct to Zernio. Url: {Url}, Size: {Size}", url, size);
+            return new ZernioUploadDirectResult(url, returnedFileName ?? fileName, returnedContentType, size);
+        }
+        catch (DomainException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error uploading media direct");
+            throw new DomainException("zernio_upload_direct_error", "Failed to upload media to Zernio via upload-direct.", ex);
+        }
     }
 
     public async Task RetryPostAsync(
@@ -1764,7 +1873,15 @@ public sealed class ZernioClient : IZernioClient
                     m.Direction?.ToString(),
                     m.CreatedAt,
                     null,
-                    m.ReadAt != default))
+                    m.ReadAt != default,
+                    m.Attachments?.Select(a => new ZernioMessageAttachmentDto(
+                        a.Id ?? string.Empty,
+                        a.Type?.ToString()?.ToLowerInvariant() ?? string.Empty,
+                        a.Url ?? string.Empty,
+                        a.Filename,
+                        a.PreviewUrl
+                    )).ToList()
+                ))
                 .ToList();
 
             return new ZernioInboxMessagesPageDto(
@@ -2081,6 +2198,11 @@ public sealed class ZernioClient : IZernioClient
                 dashboardUrl: "https://zernio.com/dashboard/billing",
                 details: new { conversationId });
         }
+        catch (ApiException ex) when (ex.ErrorCode is 429)
+        {
+            _logger.LogWarning(ex, "Zernio API rate limit exceeded when marking conversation read {ConversationId}", conversationId);
+            return false;
+        }
         catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error marking conversation read {ConversationId}", conversationId);
@@ -2246,6 +2368,10 @@ public sealed class ZernioClient : IZernioClient
         string? cursor = null,
         string? platform = null,
         string? accountId = null,
+        int? minComments = null,
+        string? sortBy = null,
+        string? sortOrder = null,
+        int? limit = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -2253,14 +2379,14 @@ public sealed class ZernioClient : IZernioClient
             var response = await _commentsApi.ListInboxCommentsAsync(
                 profileId,
                 platform: platform,
-                minComments: null,
+                minComments: minComments,
                 since: since,
-                sortBy: null,
-                sortOrder: null,
-                limit: null,
+                sortBy: sortBy,
+                sortOrder: sortOrder,
+                limit: limit,
                 cursor: cursor,
                 accountId: accountId,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             var items = (response.Data ?? [])
                 .Select(c => new ZernioInboxCommentItemDto(
@@ -2271,13 +2397,41 @@ public sealed class ZernioClient : IZernioClient
                     c.Permalink,
                     c.CreatedTime,
                     c.CommentCount,
-                    c.Cid))
+                    c.Cid,
+                    c.AccountId,
+                    c.AccountUsername,
+                    c.LikeCount,
+                    c.Subreddit,
+                    c.IsAd,
+                    c.AdId,
+                    c.Placement?.ToString()))
                 .ToList();
+
+            ZernioInboxCommentMetaDto? metaDto = null;
+            if (response.Meta != null)
+            {
+                var failedAccounts = (response.Meta.FailedAccounts ?? [])
+                    .Select(fa => new ZernioInboxFailedAccountDto(
+                        fa.AccountId,
+                        fa.AccountUsername,
+                        fa.Platform ?? string.Empty,
+                        fa.Error ?? string.Empty,
+                        fa.Code,
+                        fa.RetryAfter))
+                    .ToList();
+
+                metaDto = new ZernioInboxCommentMetaDto(
+                    response.Meta.AccountsQueried,
+                    response.Meta.AccountsFailed,
+                    failedAccounts,
+                    response.Meta.LastUpdated);
+            }
 
             return new ZernioInboxCommentsPageDto(
                 items,
                 response.Pagination?.HasMore ?? false,
-                response.Pagination?.NextCursor);
+                response.Pagination?.NextCursor,
+                metaDto);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2295,12 +2449,15 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<ZernioReplyToCommentResponseDto> ReplyToInboxCommentAsync(
+    public async Task<ZernioReplyResponseDto> ReplyToInboxCommentAsync(
         string profileId,
         string zernioPostId,
         string accountId,
         string message,
         string? commentId = null,
+        string? parentCid = null,
+        string? rootUri = null,
+        string? rootCid = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -2311,15 +2468,19 @@ public sealed class ZernioClient : IZernioClient
                 Message = message,
                 CommentId = commentId
             };
+            if (!string.IsNullOrEmpty(parentCid)) sdkRequest.ParentCid = parentCid;
+            if (!string.IsNullOrEmpty(rootUri)) sdkRequest.RootUri = rootUri;
+            if (!string.IsNullOrEmpty(rootCid)) sdkRequest.RootCid = rootCid;
 
             var response = await _commentsApi.ReplyToInboxPostAsync(
                 zernioPostId,
                 sdkRequest,
                 cancellationToken);
 
-            return new ZernioReplyToCommentResponseDto(
+            return new ZernioReplyResponseDto(
                 response.Data?.CommentId ?? string.Empty,
-                response.Data?.Cid);
+                response.Data?.Cid,
+                response.Data?.IsReply ?? false);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2337,7 +2498,7 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> DeleteInboxCommentAsync(
+    public async Task<ZernioDeleteCommentResponseDto> DeleteInboxCommentAsync(
         string zernioPostId,
         string accountId,
         string commentId,
@@ -2346,7 +2507,9 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var response = await _commentsApi.DeleteInboxCommentAsync(zernioPostId, accountId, commentId, cancellationToken);
-            return response.Success;
+            return new ZernioDeleteCommentResponseDto(
+                Success: response.Success,
+                Message: response.Data?.Message);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2371,6 +2534,8 @@ public sealed class ZernioClient : IZernioClient
         int? limit = null,
         string? cursor = null,
         string? commentId = null,
+        string? selfAccountId = null,
+        string? platform = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -2406,14 +2571,27 @@ public sealed class ZernioClient : IZernioClient
                     c.IsLiked,
                     c.LikeUri,
                     c.Cid,
-                    c.ParentId))
+                    c.ParentId,
+                    RootUri: null,
+                    RootCid: null,
+                    Replies: null))
                 .ToList();
 
+            var meta = new ZernioCommentsMetaDto(
+                Platform: response.Meta?.Platform ?? string.Empty,
+                TotalCount: null,
+                HasAdComments: null,
+                Subreddit: subreddit,
+                AccountId: accountId,
+                LastUpdatedUtc: DateTime.UtcNow);
+
             return new ZernioPostCommentsResponseDto(
-                items,
-                response.Pagination?.HasMore ?? false,
-                response.Pagination?.Cursor,
-                response.Meta?.Platform ?? string.Empty);
+                Status: "ok",
+                Post: null,
+                Meta: meta,
+                Comments: items,
+                Cursor: response.Pagination?.Cursor,
+                HasMore: response.Pagination?.HasMore ?? false);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2431,7 +2609,7 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> HideInboxCommentAsync(
+    public async Task<ZernioCommentActionResponseDto> HideInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
@@ -2441,7 +2619,10 @@ public sealed class ZernioClient : IZernioClient
         {
             var request = new Zernio.Model.HideInboxCommentRequest(accountId);
             var response = await _commentsApi.HideInboxCommentAsync(zernioPostId, commentId, request, cancellationToken);
-            return response.Hidden;
+            return new ZernioCommentActionResponseDto(
+                Status: response.Status,
+                CommentId: response.CommentId,
+                Platform: response.Platform);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2459,7 +2640,7 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> UnhideInboxCommentAsync(
+    public async Task<ZernioCommentActionResponseDto> UnhideInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
@@ -2468,7 +2649,10 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var response = await _commentsApi.UnhideInboxCommentAsync(zernioPostId, commentId, accountId, cancellationToken);
-            return response.Hidden == false;
+            return new ZernioCommentActionResponseDto(
+                Status: response.Status,
+                CommentId: response.CommentId,
+                Platform: response.Platform);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2486,7 +2670,7 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> LikeInboxCommentAsync(
+    public async Task<ZernioLikeActionResponseDto> LikeInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
@@ -2499,7 +2683,12 @@ public sealed class ZernioClient : IZernioClient
             if (!string.IsNullOrEmpty(cid)) request.Cid = cid;
 
             var response = await _commentsApi.LikeInboxCommentAsync(zernioPostId, commentId, request, cancellationToken);
-            return response.Liked;
+            return new ZernioLikeActionResponseDto(
+                Liked: response.Liked,
+                Status: response.Status,
+                CommentId: response.CommentId,
+                Platform: response.Platform,
+                LikeUri: response.LikeUri);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2517,7 +2706,7 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> UnlikeInboxCommentAsync(
+    public async Task<ZernioLikeActionResponseDto> UnlikeInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
@@ -2527,7 +2716,11 @@ public sealed class ZernioClient : IZernioClient
         try
         {
             var response = await _commentsApi.UnlikeInboxCommentAsync(zernioPostId, commentId, accountId, likeUri, cancellationToken);
-            return response.Liked == false;
+            return new ZernioLikeActionResponseDto(
+                Liked: response.Liked == false,
+                Status: response.Status,
+                CommentId: response.CommentId,
+                Platform: response.Platform);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2545,18 +2738,37 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
-    public async Task<bool> SendPrivateReplyToCommentAsync(
+    public async Task<ZernioCommentActionResponseDto> SendPrivateReplyToCommentAsync(
         string zernioPostId,
         string commentId,
-        string accountId,
-        string message,
+        ZernioPrivateReplyRequestDto request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var request = new Zernio.Model.SendPrivateReplyToCommentRequest(accountId, message);
-            var response = await _commentsApi.SendPrivateReplyToCommentAsync(zernioPostId, commentId, request, cancellationToken);
-            return true;
+            var sdkRequest = new Zernio.Model.SendPrivateReplyToCommentRequest(request.AccountId, request.Message);
+            if (request.QuickReplies is { Count: > 0 })
+            {
+                sdkRequest.QuickReplies = request.QuickReplies
+                    .Select(qr => new Zernio.Model.SendPrivateReplyToCommentRequestQuickRepliesInner(
+                        qr.Title,
+                        qr.Payload,
+                        qr.ImageUrl))
+                    .ToList();
+            }
+            if (request.Buttons is { Count: > 0 })
+            {
+                sdkRequest.Buttons = request.Buttons
+                    .Select(b => BuildSdkButton(b))
+                    .ToList();
+            }
+
+            var response = await _commentsApi.SendPrivateReplyToCommentAsync(zernioPostId, commentId, sdkRequest, cancellationToken);
+            return new ZernioCommentActionResponseDto(
+                Status: response.Status,
+                CommentId: response.CommentId,
+                MessageId: response.MessageId,
+                Platform: response.Platform?.ToString());
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2574,6 +2786,30 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    private static Zernio.Model.SendPrivateReplyToCommentRequestButtonsInner BuildSdkButton(
+        ZernioPrivateReplyButtonDto b)
+    {
+        var type = b.Type?.Trim().ToLowerInvariant();
+        return type switch
+        {
+            "postback" => new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInner(
+                new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf1(
+                    Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf1.TypeEnum.Postback,
+                    b.Title,
+                    b.Payload ?? string.Empty)),
+            "phone" => new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInner(
+                new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf2(
+                    Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf2.TypeEnum.Phone,
+                    b.Title,
+                    b.PhoneNumber ?? string.Empty)),
+            _ => new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInner(
+                new Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf(
+                    Zernio.Model.SendPrivateReplyToCommentRequestButtonsInnerOneOf.TypeEnum.Url,
+                    b.Title,
+                    b.Url ?? string.Empty)),
+        };
+    }
+
     // ── Inbox Review methods ────────────────────────────────────────────────
 
     public async Task<ZernioInboxReviewsPageDto> ListInboxReviewsAsync(
@@ -2585,20 +2821,48 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var response = await _reviewsApi.ListInboxReviewsAsync(
-                profileId,
-                platform: platform,
-                minRating: null,
-                maxRating: null,
-                hasReply: null,
-                sortBy: null,
-                sortOrder: null,
-                limit: null,
-                cursor: cursor,
-                accountId: accountId,
-                cancellationToken);
+            var queryParams = new List<string> { $"profileId={Uri.EscapeDataString(profileId)}" };
+            if (!string.IsNullOrEmpty(platform))
+                queryParams.Add($"platform={Uri.EscapeDataString(platform)}");
+            if (!string.IsNullOrEmpty(cursor))
+                queryParams.Add($"cursor={Uri.EscapeDataString(cursor)}");
+            if (!string.IsNullOrEmpty(accountId))
+                queryParams.Add($"accountId={Uri.EscapeDataString(accountId)}");
 
-            var items = (response.Data ?? [])
+            var url = $"https://zernio.com/api/v1/inbox/reviews?{string.Join("&", queryParams)}";
+
+            using var client = _httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+
+            using var responseMessage = await client.SendAsync(request, cancellationToken);
+
+            if (responseMessage.StatusCode == System.Net.HttpStatusCode.PaymentRequired ||
+                responseMessage.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning("Zernio inbox billing gate for list reviews, profile {ProfileId}", profileId);
+                throw new ZernioBillingRequiredException(
+                    "Inbox add-on is required to access reviews.",
+                    reason: "inbox_addon_required",
+                    dashboardUrl: "https://zernio.com/dashboard/billing",
+                    details: new { profileId });
+            }
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                var errorContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Zernio API error listing inbox reviews for profile {ProfileId}. Status: {Status}, Content: {Content}",
+                    profileId, responseMessage.StatusCode, errorContent);
+                throw new DomainException("zernio_inbox_reviews_error", "Failed to list inbox reviews from Zernio");
+            }
+
+            var json = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+            var reviewResponse = JsonSerializer.Deserialize<DirectReviewResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            var items = (reviewResponse?.Data ?? [])
                 .Select(r => new ZernioInboxReviewItemDto(
                     r.Id,
                     r.Platform ?? string.Empty,
@@ -2616,19 +2880,14 @@ public sealed class ZernioClient : IZernioClient
 
             return new ZernioInboxReviewsPageDto(
                 items,
-                response.Pagination?.HasMore ?? false,
-                response.Pagination?.NextCursor);
+                reviewResponse?.Pagination?.HasMore ?? false,
+                reviewResponse?.Pagination?.NextCursor);
         }
-        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        catch (ZernioBillingRequiredException)
         {
-            _logger.LogWarning(ex, "Zernio inbox billing gate for list reviews, profile {ProfileId}", profileId);
-            throw new ZernioBillingRequiredException(
-                "Inbox add-on is required to access reviews.",
-                reason: "inbox_addon_required",
-                dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { profileId });
+            throw;
         }
-        catch (ApiException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Zernio API error listing inbox reviews for profile {ProfileId}", profileId);
             throw new DomainException("zernio_inbox_reviews_error", "Failed to list inbox reviews from Zernio", ex);
@@ -3191,5 +3450,43 @@ public sealed class ZernioClient : IZernioClient
         public int Limit { get; set; }
         public int Total { get; set; }
         public int Pages { get; set; }
+    }
+
+    private sealed class DirectReviewResponse
+    {
+        public List<DirectReviewItem>? Data { get; set; }
+        public DirectReviewPagination? Pagination { get; set; }
+    }
+
+    private sealed class DirectReviewItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string? Platform { get; set; }
+        public string? AccountId { get; set; }
+        public string? AccountUsername { get; set; }
+        public DirectReviewer? Reviewer { get; set; }
+        public int Rating { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public DateTime Created { get; set; }
+        public bool HasReply { get; set; }
+        public DirectReviewReply? Reply { get; set; }
+    }
+
+    private sealed class DirectReviewer
+    {
+        public string? Name { get; set; }
+        public string? ProfileImage { get; set; }
+    }
+
+    private sealed class DirectReviewReply
+    {
+        public string? Text { get; set; }
+        public DateTime? Created { get; set; }
+    }
+
+    private sealed class DirectReviewPagination
+    {
+        public bool HasMore { get; set; }
+        public string? NextCursor { get; set; }
     }
 }

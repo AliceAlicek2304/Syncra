@@ -1,4 +1,5 @@
 using MediatR;
+using Syncra.Domain.Entities;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Inbox.Commands;
@@ -21,15 +22,26 @@ public sealed class MarkCommentReadCommandHandler
         MarkCommentReadCommand request,
         CancellationToken cancellationToken)
     {
-        var comment = await _inboxRepository.GetCommentByIdAsync(
-            request.WorkspaceId,
-            request.CommentId,
-            cancellationToken);
+        InboxCommentedPost? post = null;
+        if (Guid.TryParse(request.CommentId, out var postGuid))
+        {
+            post = await _inboxRepository.GetCommentedPostByIdAsync(
+                request.WorkspaceId,
+                postGuid,
+                cancellationToken);
+        }
+        else
+        {
+            post = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(
+                request.WorkspaceId,
+                request.CommentId,
+                cancellationToken);
+        }
 
-        if (comment == null)
+        if (post == null)
             return false;
 
-        comment.MarkRead();
+        post.MarkRead();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }

@@ -5,8 +5,10 @@ import {
   Paperclip, ExternalLink,
   ChevronDown, Check, Loader2
 } from 'lucide-react';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 import styles from './MessagesPage.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { useToast } from '../../context/ToastContext';
 import { socialAccountsApi, type SocialAccountDto } from '../../api/socialAccounts';
 import {
   inboxApi,
@@ -20,6 +22,61 @@ import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons
 // ── Helpers & Components ───────────────────────────────────────────────────
 
 const HANOI_TZ = 'Asia/Ho_Chi_Minh';
+
+// Zernio chỉ hỗ trợ 4 image + 1 video format cho DM attachment.
+// Text gốc từ Zernio dashboard: "Only JPEG, PNG, GIF images and MP4 videos are supported".
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set<string>([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'video/mp4'
+]);
+const ATTACHMENT_ERROR_MESSAGE = 'Only JPEG, PNG, GIF images and MP4 videos are supported';
+
+// Reaction (thả cảm xúc) chỉ hỗ trợ trên Telegram và WhatsApp qua Zernio API.
+// Các platform khác (Facebook, Instagram, Twitter/X, Bluesky, Reddit...) ẩn nút reaction.
+const REACTION_SUPPORTED_PLATFORMS = new Set(['telegram', 'whatsapp']);
+const REACTION_ERROR_MESSAGE = 'Không thể thả cảm xúc lúc này hoặc nền tảng không hỗ trợ';
+
+// Telegram chỉ support một subset emoji làm reaction (Zernio sẽ reject ngoài tập này).
+// WhatsApp nhận mọi emoji chuẩn nhưng giới hạn 1 reaction/msg/user — sẽ Remove trước khi Add.
+const TELEGRAM_REACTION_EMOJI = ['👍', '❤️', '🔥', '🎉', '😂', '😮'];
+const WHATSAPP_REACTION_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉'];
+
+// Delete message — hỗ trợ không đồng đều giữa các nền tảng.
+// - Facebook / Instagram / WhatsApp: Zernio API KHÔNG hỗ trợ delete → ẩn nút luôn.
+// - Twitter (X): chỉ xóa được DM outgoing → chỉ hiện nút với isMe (direction === 'Outbound').
+// - Bluesky / Reddit: chỉ xóa một chiều (ẩn khỏi màn hình người gửi, người nhận vẫn thấy)
+//   → cần confirmation modal cảnh báo trước khi gọi API.
+// - Telegram: thu hồi hoàn toàn cả 2 phía → gọi API thẳng, không cần cảnh báo.
+const DELETE_DISABLED_PLATFORMS = new Set(['facebook', 'instagram', 'whatsapp']);
+const DELETE_ONE_WAY_PLATFORMS = new Set(['bluesky', 'reddit']);
+const DELETE_ERROR_MESSAGE = 'Không thể xóa tin nhắn lúc này';
+
+// Zernio hỗ trợ inbox/DM (Messages) trên các platform sau. Các platform khác
+// (LinkedIn, YouTube, Pinterest, TikTok, Snapchat, GoogleBusiness...) Zernio
+// API không expose DM endpoint → KHÔNG hiển thị trong filter của trang Messages.
+const MESSAGES_SUPPORTED_PLATFORMS = new Set([
+  'facebook',
+  'instagram',
+  'twitter',
+  'threads',
+  'bluesky',
+  'reddit',
+  'telegram',
+  'whatsapp'
+]);
+
+const PLATFORM_DISPLAY_NAMES: Record<string, string> = {
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  twitter: 'Twitter/X',
+  threads: 'Threads',
+  bluesky: 'Bluesky',
+  reddit: 'Reddit',
+  telegram: 'Telegram',
+  whatsapp: 'WhatsApp'
+};
 
 const getInitials = (name?: string) => {
   const parts = (name || '').trim().split(/\s+/);
@@ -100,7 +157,7 @@ const MessageStatusIcon = ({ status }: { status?: string }) => {
   return <span className={`${styles.statusIcon} ${entry.cls}`}>{entry.icon}</span>;
 };
 
-interface FilterOption { value: string; label: string }
+interface FilterOption { value: string; label: string; iconPlatform?: string }
 
 function FilterDropdown({
   value, onChange, options, label
@@ -119,6 +176,19 @@ function FilterDropdown({
   }, []);
 
   const selected = options.find(o => o.value === value) ?? options[0];
+  const renderOptionLabel = (option?: FilterOption) => {
+    if (!option) return label;
+    return (
+      <span className={styles.filterDropdownLabelContent}>
+        {option.iconPlatform && (
+          <span className={styles.filterDropdownLabelIcon}>
+            <ExtendedPlatformIcon platform={option.iconPlatform} size={14} />
+          </span>
+        )}
+        <span className={styles.filterDropdownLabelText}>{option.label}</span>
+      </span>
+    );
+  };
 
   return (
     <div className={styles.filterDropdownWrapper} ref={ref}>
@@ -126,7 +196,7 @@ function FilterDropdown({
         className={`${styles.filterDropdownTrigger} ${open ? styles.filterDropdownTriggerOpen : ''}`}
         onClick={() => setOpen(!open)}
       >
-        <span className={styles.filterDropdownTriggerLabel}>{selected?.label ?? label}</span>
+        <span className={styles.filterDropdownTriggerLabel}>{renderOptionLabel(selected)}</span>
         <ChevronDown size={14} className={`${styles.filterDropdownChevron} ${open ? styles.filterDropdownChevronOpen : ''}`} />
       </button>
       {open && (
@@ -137,8 +207,10 @@ function FilterDropdown({
               className={`${styles.filterDropdownItem} ${opt.value === value ? styles.filterDropdownItemActive : ''}`}
               onClick={() => { onChange(opt.value); setOpen(false); }}
             >
-              {opt.value === value && <Check size={14} className={styles.filterDropdownCheck} />}
-              <span style={{ marginLeft: opt.value === value ? 0 : 22 }}>{opt.label}</span>
+              <span className={styles.filterDropdownCheckSlot}>
+                {opt.value === value ? <Check size={14} className={styles.filterDropdownCheck} /> : null}
+              </span>
+              {renderOptionLabel(opt)}
             </button>
           ))}
         </div>
@@ -149,15 +221,22 @@ function FilterDropdown({
 
 
 export default function MessagesPage() {
-  const { activeWorkspace } = useWorkspace();
-  const workspaceId = activeWorkspace?.id;
+  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const { error: showError } = useToast();
+  const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>(activeWorkspace?.id || 'all');
+
+  useEffect(() => {
+    if (activeWorkspace?.id) {
+      setFilterWorkspaceId(activeWorkspace.id);
+    }
+  }, [activeWorkspace?.id]);
 
   // ── States ────────────────────────────────────────────────────────────────
-  const [conversations, setConversations] = useState<InboxConversationDto[]>([]);
+  const [conversations, setConversations] = useState<(InboxConversationDto & { workspaceId?: string })[]>([]);
   const [messages, setMessages] = useState<InboxMessageDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [conversationDetails, setConversationDetails] = useState<InboxConversationDetailsDto | null>(null);
-  const [socialAccounts, setSocialAccounts] = useState<SocialAccountDto[]>([]);
+  const [socialAccounts, setSocialAccounts] = useState<(SocialAccountDto & { workspaceId?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -169,7 +248,6 @@ export default function MessagesPage() {
 
   // Search & Filter
   const [filterPlatform, setFilterPlatform] = useState('all');
-  const [filterProfile, setFilterProfile] = useState('all');
   const [filterAccount, setFilterAccount] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
@@ -177,6 +255,7 @@ export default function MessagesPage() {
   const [inputText, setInputText] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Editing & Reactions
@@ -193,28 +272,61 @@ export default function MessagesPage() {
   const [newChatMessage, setNewChatMessage] = useState('');
   const [newChatAccount, setNewChatAccount] = useState('');
   const [newChatIsUsername, setNewChatIsUsername] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<{ messageId: string; oneWay: boolean } | null>(null);
 
   // Refs
   const messageEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeChat = conversations.find(c => c.id === selectedId);
+  const activeChatWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
   const activeSocialAccount = socialAccounts.find(sa => sa.id === activeChat?.socialAccountId);
   const activeZernioAccountId = activeSocialAccount?.externalAccountId || '';
+  const isReactionSupported = activeChat
+    ? REACTION_SUPPORTED_PLATFORMS.has(activeChat.platform.toLowerCase())
+    : false;
+  const reactionEmojiSet = activeChat?.platform.toLowerCase() === 'telegram'
+    ? TELEGRAM_REACTION_EMOJI
+    : WHATSAPP_REACTION_EMOJI;
 
   // ── Load Social Accounts & Conversations ────────────────────────────────
   useEffect(() => {
-    if (!workspaceId) return;
+    if (workspaces.length === 0) return;
 
     const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        const accounts = await socialAccountsApi.listSocialAccounts(workspaceId);
-        setSocialAccounts(accounts);
+        if (filterWorkspaceId === 'all') {
+          const accountsPromises = workspaces.map(async w => {
+            const list = await socialAccountsApi.listSocialAccounts(w.id);
+            return list.map(sa => ({ ...sa, workspaceId: w.id }));
+          });
+          const convsPromises = workspaces.map(async w => {
+            const list = await inboxApi.getConversations(w.id);
+            return list.map(c => ({ ...c, workspaceId: w.id }));
+          });
 
-        const convs = await inboxApi.getConversations(workspaceId);
-        setConversations(convs);
-        if (convs.length > 0) {
-          setSelectedId(convs[0].id);
+          const [accountsLists, convsLists] = await Promise.all([
+            Promise.all(accountsPromises),
+            Promise.all(convsPromises)
+          ]);
+
+          const mergedAccounts = accountsLists.flat();
+          const mergedConvs = convsLists.flat();
+
+          setSocialAccounts(mergedAccounts);
+          setConversations(mergedConvs);
+          if (mergedConvs.length > 0) {
+            setSelectedId(mergedConvs[0].id);
+          }
+        } else {
+          const accounts = await socialAccountsApi.listSocialAccounts(filterWorkspaceId);
+          setSocialAccounts(accounts.map(sa => ({ ...sa, workspaceId: filterWorkspaceId })));
+
+          const convs = await inboxApi.getConversations(filterWorkspaceId);
+          setConversations(convs.map(c => ({ ...c, workspaceId: filterWorkspaceId })));
+          if (convs.length > 0) {
+            setSelectedId(convs[0].id);
+          }
         }
       } catch (err) {
         console.error('Failed to load inbox data', err);
@@ -224,34 +336,39 @@ export default function MessagesPage() {
     };
 
     fetchInitialData();
-  }, [workspaceId]);
+  }, [filterWorkspaceId, workspaces]);
 
   // ── Load Conversation Details & Messages on Select ──────────────────────
   useEffect(() => {
-    if (!workspaceId || !selectedId) {
+    const currentConvo = conversations.find(c => c.id === selectedId);
+    if (!currentConvo || !selectedId) {
       setMessages([]);
       setConversationDetails(null);
       return;
     }
 
+    const convoWorkspaceId = currentConvo.workspaceId || activeWorkspace?.id;
+    if (!convoWorkspaceId) return;
+
     const fetchConvoData = async () => {
       setIsLoadingMessages(true);
       try {
-        const msgList = await inboxApi.getMessages(workspaceId, selectedId);
+        const msgList = await inboxApi.getMessages(convoWorkspaceId, selectedId);
         setMessages(msgList);
 
-        // Mark as read locally and API
-        await inboxApi.markAsRead(workspaceId, selectedId);
-        setConversations(prev =>
-          prev.map(c => (c.id === selectedId ? { ...c, isRead: true, unreadCount: 0 } : c))
-        );
+        // Mark as read locally and API ONLY if not already read
+        if (currentConvo && (!currentConvo.isRead || currentConvo.unreadCount > 0)) {
+          await inboxApi.markAsRead(convoWorkspaceId, selectedId);
+          setConversations(prev =>
+            prev.map(c => (c.id === selectedId ? { ...c, isRead: true, unreadCount: 0 } : c))
+          );
+        }
 
         // Fetch meta details via wrapper
-        const currentConvo = conversations.find(c => c.id === selectedId);
         const currentSa = socialAccounts.find(sa => sa.id === currentConvo?.socialAccountId);
         if (currentSa?.externalAccountId) {
           const details = await inboxApi.getConversationDetails(
-            workspaceId,
+            convoWorkspaceId,
             selectedId,
             currentSa.externalAccountId
           );
@@ -265,25 +382,39 @@ export default function MessagesPage() {
     };
 
     fetchConvoData();
-  }, [workspaceId, selectedId]);
+  }, [selectedId, conversations, socialAccounts, activeWorkspace]);
 
-  // ── Polling for updates every 8 seconds ─────────────────────────────────
+  // ── SignalR real-time updates & Fallback Polling ────────────────────────
   useEffect(() => {
-    if (!workspaceId) return;
+    const convoWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
+    if (!convoWorkspaceId) return;
 
+    // 1. Fallback Polling every 10 seconds (in case SignalR is not connected)
     const interval = setInterval(async () => {
       try {
-        const convs = await inboxApi.getConversations(workspaceId);
+        let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
+        if (filterWorkspaceId === 'all') {
+          const lists = await Promise.all(workspaces.map(async w => {
+            const list = await inboxApi.getConversations(w.id);
+            return list.map(c => ({ ...c, workspaceId: w.id }));
+          }));
+          convs = lists.flat();
+        } else {
+          const list = await inboxApi.getConversations(filterWorkspaceId);
+          convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceId }));
+        }
         setConversations(convs);
 
         if (selectedId) {
-          const currentSa = socialAccounts.find(sa => sa.id === convs.find(c => c.id === selectedId)?.socialAccountId);
-          const msgList = await inboxApi.getMessages(workspaceId, selectedId);
+          const selectedConvo = convs.find(c => c.id === selectedId);
+          const targetWsId = selectedConvo?.workspaceId || convoWorkspaceId;
+          const currentSa = socialAccounts.find(sa => sa.id === selectedConvo?.socialAccountId);
+          const msgList = await inboxApi.getMessages(targetWsId, selectedId);
           setMessages(msgList);
 
           if (currentSa?.externalAccountId) {
             const details = await inboxApi.getConversationDetails(
-              workspaceId,
+              targetWsId,
               selectedId,
               currentSa.externalAccountId
             );
@@ -293,13 +424,73 @@ export default function MessagesPage() {
       } catch (err) {
         console.error('Failed to poll updates', err);
       }
-    }, 8000);
+    }, 10000);
 
-    return () => clearInterval(interval);
-  }, [workspaceId, selectedId, socialAccounts]);
+    // 2. Real-time updates via SignalR NotificationHub
+    const token = localStorage.getItem('syncra_access_token');
+    const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+    const defaultBaseUrl = `${window.location.origin}${import.meta.env.BASE_URL || '/'}api/v1`;
+    const apiBaseUrl = (configuredBaseUrl || defaultBaseUrl).replace(/\/+$/, '');
+    const hubUrl = `${apiBaseUrl}/hubs/notifications?workspaceId=${convoWorkspaceId}`;
+
+    const connection = new HubConnectionBuilder()
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => token || '',
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    const handleInboxItemCreated = async (_payload: any) => {
+      try {
+        let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
+        if (filterWorkspaceId === 'all') {
+          const lists = await Promise.all(workspaces.map(async w => {
+            const list = await inboxApi.getConversations(w.id);
+            return list.map(c => ({ ...c, workspaceId: w.id }));
+          }));
+          convs = lists.flat();
+        } else {
+          const list = await inboxApi.getConversations(filterWorkspaceId);
+          convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceId }));
+        }
+        setConversations(convs);
+
+        if (selectedId) {
+          const selectedConvo = convs.find(c => c.id === selectedId);
+          const targetWsId = selectedConvo?.workspaceId || convoWorkspaceId;
+          const currentSa = socialAccounts.find(sa => sa.id === selectedConvo?.socialAccountId);
+          const msgList = await inboxApi.getMessages(targetWsId, selectedId);
+          setMessages(msgList);
+
+          if (currentSa?.externalAccountId) {
+            const details = await inboxApi.getConversationDetails(
+              targetWsId,
+              selectedId,
+              currentSa.externalAccountId
+            );
+            setConversationDetails(details);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to update inbox on SignalR event', err);
+      }
+    };
+
+    connection.on('inbox.itemCreated', handleInboxItemCreated);
+
+    connection.start().catch((err) => {
+      console.warn('SignalR connection failed, falling back to polling', err);
+    });
+
+    return () => {
+      clearInterval(interval);
+      connection.off('inbox.itemCreated', handleInboxItemCreated);
+      void connection.stop();
+    };
+  }, [filterWorkspaceId, workspaces, selectedId, socialAccounts, activeChat, activeWorkspace]);
 
   const handleSend = async () => {
-    if (!workspaceId || !selectedId || !activeZernioAccountId) return;
+    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
     if (!inputText.trim() && !pendingFile) return;
 
     setIsSending(true);
@@ -309,10 +500,13 @@ export default function MessagesPage() {
 
       if (pendingFile) {
         setIsUploading(true);
-        const result = await mediaApi.uploadMedia(workspaceId, pendingFile);
-        attachmentPublicUrl = result.publicUrl;
-        attachmentMimeType = result.mimeType;
-        setIsUploading(false);
+        try {
+          const result = await mediaApi.uploadMedia(activeChatWorkspaceId, pendingFile);
+          attachmentPublicUrl = result.publicUrl;
+          attachmentMimeType = result.mimeType;
+        } finally {
+          setIsUploading(false);
+        }
       }
 
       const payload: any = {
@@ -332,22 +526,42 @@ export default function MessagesPage() {
         payload.attachmentType = type;
       }
 
-      await inboxApi.sendMessage(workspaceId, selectedId, payload);
+      await inboxApi.sendMessage(activeChatWorkspaceId, selectedId, payload);
       setInputText('');
       setPendingFile(null);
       setPreviewUrl('');
+      setAttachmentError(null);
 
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
 
-      const refreshedMsgs = await inboxApi.getMessages(workspaceId, selectedId);
+      const refreshedMsgs = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
       setMessages(refreshedMsgs);
 
-      const refreshedConvs = await inboxApi.getConversations(workspaceId);
+      // Refresh conversations: if filterWorkspaceId is 'all', refresh all; else refresh the active chat workspace
+      let refreshedConvs: (InboxConversationDto & { workspaceId?: string })[] = [];
+      if (filterWorkspaceId === 'all') {
+        const lists = await Promise.all(workspaces.map(async w => {
+          const list = await inboxApi.getConversations(w.id);
+          return list.map(c => ({ ...c, workspaceId: w.id }));
+        }));
+        refreshedConvs = lists.flat();
+      } else {
+        const list = await inboxApi.getConversations(activeChatWorkspaceId);
+        refreshedConvs = list.map(c => ({ ...c, workspaceId: activeChatWorkspaceId }));
+      }
       setConversations(refreshedConvs);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to send message', err);
+      const errMsg: string = err.response?.data?.message || err.message || 'Unknown error';
+      if (/content type not allowed/i.test(errMsg) || /zernio_upload_direct/i.test(errMsg)) {
+        setPendingFile(null);
+        setPreviewUrl('');
+        setAttachmentError(ATTACHMENT_ERROR_MESSAGE);
+      } else {
+        alert(`Failed to send message: ${errMsg}`);
+      }
     } finally {
       setIsSending(false);
     }
@@ -355,6 +569,7 @@ export default function MessagesPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
+    if (attachmentError) setAttachmentError(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
@@ -370,19 +585,29 @@ export default function MessagesPage() {
 
   // ── Conversation status toggle (Archive/Unarchive) ──────────────────────
   const handleToggleArchive = async () => {
-    if (!workspaceId || !selectedId || !activeZernioAccountId || !conversationDetails) return;
+    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId || !conversationDetails) return;
 
     const nextStatus = conversationDetails.status === 'archived' ? 'active' : 'archived';
     setIsArchiving(true);
     try {
-      await inboxApi.updateConversationStatus(workspaceId, selectedId, {
+      await inboxApi.updateConversationStatus(activeChatWorkspaceId, selectedId, {
         accountId: activeZernioAccountId,
         status: nextStatus
       });
 
       setConversationDetails(prev => prev ? { ...prev, status: nextStatus } : null);
 
-      const refreshedConvs = await inboxApi.getConversations(workspaceId);
+      let refreshedConvs: (InboxConversationDto & { workspaceId?: string })[] = [];
+      if (filterWorkspaceId === 'all') {
+        const lists = await Promise.all(workspaces.map(async w => {
+          const list = await inboxApi.getConversations(w.id);
+          return list.map(c => ({ ...c, workspaceId: w.id }));
+        }));
+        refreshedConvs = lists.flat();
+      } else {
+        const list = await inboxApi.getConversations(activeChatWorkspaceId);
+        refreshedConvs = list.map(c => ({ ...c, workspaceId: activeChatWorkspaceId }));
+      }
       setConversations(refreshedConvs);
     } catch (err) {
       console.error('Failed to toggle conversation status', err);
@@ -398,11 +623,11 @@ export default function MessagesPage() {
   };
 
   const handleSaveEdit = async (messageId: string) => {
-    if (!workspaceId || !selectedId || !activeZernioAccountId || !editingText.trim()) return;
+    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId || !editingText.trim()) return;
 
     setIsEditing(messageId);
     try {
-      await inboxApi.editMessage(workspaceId, selectedId, messageId, {
+      await inboxApi.editMessage(activeChatWorkspaceId, selectedId, messageId, {
         accountId: activeZernioAccountId,
         text: editingText.trim()
       });
@@ -410,7 +635,7 @@ export default function MessagesPage() {
       setEditingMessageId(null);
       setEditingText('');
 
-      const refreshed = await inboxApi.getMessages(workspaceId, selectedId);
+      const refreshed = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
       setMessages(refreshed);
     } catch (err) {
       console.error('Failed to edit message', err);
@@ -420,51 +645,132 @@ export default function MessagesPage() {
   };
 
   // ── Message Deletion ────────────────────────────────────────────────────
+  const canDeleteMessage = (isOutbound: boolean): boolean => {
+    if (!activeChat) return false;
+    const platform = activeChat.platform.toLowerCase();
+    // Facebook / Instagram / WhatsApp: API không hỗ trợ → ẩn nút.
+    if (DELETE_DISABLED_PLATFORMS.has(platform)) return false;
+    // Twitter (X): chỉ cho xóa DM outgoing.
+    if (platform === 'twitter' && !isOutbound) return false;
+    return true;
+  };
+
+  const isOneWayDelete = (): boolean =>
+    activeChat ? DELETE_ONE_WAY_PLATFORMS.has(activeChat.platform.toLowerCase()) : false;
+
   const handleDeleteMessage = async (messageId: string) => {
-    if (!workspaceId || !selectedId || !activeZernioAccountId) return;
-    if (!confirm('Are you sure you want to delete this message?')) return;
+    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
+    // Zernio API yêu cầu conversationId là ObjectId 24-char hex của Zernio,
+    // KHÔNG phải Syncra DB id hay platform-native id (số 17 chữ số).
+    const zernioConvoId = activeChat?.zernioConversationId;
+    if (!zernioConvoId) return;
 
+    // Bluesky / Reddit: chỉ xóa 1 chiều (người nhận vẫn thấy) → cần xác nhận trước.
+    if (isOneWayDelete()) {
+      setPendingDelete({ messageId, oneWay: true });
+      return;
+    }
+
+    await performDelete(messageId, zernioConvoId);
+  };
+
+  const performDelete = async (messageId: string, zernioConvoId: string) => {
+    if (!activeChatWorkspaceId || !selectedId) return;
+
+    // Optimistic UI: ẩn tin nhắn ngay để UX mượt.
+    const previousMessages = messages;
+    setMessages(prev => prev.filter(m => m.zernioMessageId !== messageId));
     setIsDeleting(messageId);
-    try {
-      await inboxApi.deleteMessage(workspaceId, selectedId, messageId, activeZernioAccountId);
 
-      // Refresh messages
-      const refreshed = await inboxApi.getMessages(workspaceId, selectedId);
-      setMessages(refreshed);
+    try {
+      await inboxApi.deleteMessage(activeChatWorkspaceId, zernioConvoId, messageId, activeZernioAccountId);
     } catch (err) {
       console.error('Failed to delete message', err);
+      showError(DELETE_ERROR_MESSAGE);
+      // Khôi phục lại bubble để đồng bộ với trạng thái thật trên server.
+      setMessages(previousMessages);
     } finally {
       setIsDeleting(null);
     }
   };
 
+  const confirmOneWayDelete = async () => {
+    if (!pendingDelete) return;
+    const { messageId } = pendingDelete;
+    const zernioConvoId = activeChat?.zernioConversationId;
+    setPendingDelete(null);
+    if (zernioConvoId) {
+      await performDelete(messageId, zernioConvoId);
+    }
+  };
+
   // ── Emoji Reactions ─────────────────────────────────────────────────────
   const handleAddReaction = async (messageId: string, emoji: string) => {
-    if (!workspaceId || !selectedId || !activeZernioAccountId) return;
+    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
+    // Zernio API yêu cầu conversationId là ObjectId 24-char hex của Zernio,
+    // KHÔNG phải Syncra DB id hay platform-native id (số 17 chữ số).
+    const zernioConvoId = activeChat?.zernioConversationId;
+    if (!isReactionSupported || !zernioConvoId) {
+      showError(REACTION_ERROR_MESSAGE);
+      return;
+    }
+
+    setShowReactionPickerId(null);
+
+    // Optimistic UI: append reaction ngay để user thấy instant.
+    // Nếu BE fail → refresh sẽ sync lại về trạng thái thật (xóa optimistic).
+    const optimisticReaction = {
+      emoji,
+      accountId: activeZernioAccountId,
+      participantId: activeZernioAccountId
+    };
+    setMessages(prev => prev.map(m =>
+      m.zernioMessageId === messageId
+        ? { ...m, reactions: [...(m.reactions || []), optimisticReaction] }
+        : m
+    ));
 
     try {
-      await inboxApi.addReaction(workspaceId, selectedId, messageId, {
+      // WhatsApp giới hạn 1 reaction/msg/user: nếu user đã react emoji khác trước đó
+      // thì remove reaction cũ trước khi add mới (best-effort, bỏ qua nếu chưa có).
+      // Telegram: 1 reaction cũng giới hạn tương tự — remove trước cho an toàn.
+      const msg = messages.find(m => m.zernioMessageId === messageId);
+      const hasExisting = !!msg?.reactions?.some(r => r.emoji && r.emoji !== emoji);
+      if (hasExisting) {
+        try {
+          await inboxApi.removeReaction(activeChatWorkspaceId, zernioConvoId, messageId, activeZernioAccountId);
+        } catch {
+          // Có thể user chưa react lần nào — bỏ qua lỗi 404.
+        }
+      }
+
+      await inboxApi.addReaction(activeChatWorkspaceId, zernioConvoId, messageId, {
         accountId: activeZernioAccountId,
         emoji
       });
-      setShowReactionPickerId(null);
-
-      const refreshed = await inboxApi.getMessages(workspaceId, selectedId);
-      setMessages(refreshed);
     } catch (err) {
       console.error('Failed to add reaction', err);
+      showError(REACTION_ERROR_MESSAGE);
+    } finally {
+      // Sync UI với server state thật (covers optimistic removal khi fail).
+      try {
+        const refreshed = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
+        setMessages(refreshed);
+      } catch {
+        // ignore
+      }
     }
   };
 
   // ── Create Conversation (New Chat) ──────────────────────────────────────
   const handleCreateConvo = async () => {
-    if (!workspaceId || !newChatAccount || !newChatRecipient || !newChatMessage.trim()) return;
+    const selectedSa = socialAccounts.find(sa => sa.id === newChatAccount);
+    if (!selectedSa) return;
+    const accountWorkspaceId = selectedSa.workspaceId || activeWorkspace?.id;
+    if (!accountWorkspaceId || !newChatRecipient || !newChatMessage.trim()) return;
 
     setIsCreatingConvo(true);
     try {
-      const selectedSa = socialAccounts.find(sa => sa.id === newChatAccount);
-      if (!selectedSa) return;
-
       const payload: any = {
         accountId: selectedSa.externalAccountId,
         message: newChatMessage.trim()
@@ -476,13 +782,24 @@ export default function MessagesPage() {
         payload.participantId = newChatRecipient.trim();
       }
 
-      const result = await inboxApi.createConversation(workspaceId, payload);
+      const result = await inboxApi.createConversation(accountWorkspaceId, payload);
       
       setIsNewChatOpen(false);
       setNewChatRecipient('');
       setNewChatMessage('');
 
-      const refreshed = await inboxApi.getConversations(workspaceId);
+      // Refresh conversations: if filterWorkspaceId is 'all', refresh all; else refresh the account workspace
+      let refreshed: (InboxConversationDto & { workspaceId?: string })[] = [];
+      if (filterWorkspaceId === 'all') {
+        const lists = await Promise.all(workspaces.map(async w => {
+          const list = await inboxApi.getConversations(w.id);
+          return list.map(c => ({ ...c, workspaceId: w.id }));
+        }));
+        refreshed = lists.flat();
+      } else {
+        const list = await inboxApi.getConversations(accountWorkspaceId);
+        refreshed = list.map(c => ({ ...c, workspaceId: accountWorkspaceId }));
+      }
       setConversations(refreshed);
       
       const matchingConvo = refreshed.find(c => c.zernioConversationId === result.conversationId);
@@ -497,25 +814,56 @@ export default function MessagesPage() {
   };
 
   // ── Filters & Rendering Lists ───────────────────────────────────────────
+  // Tất cả filter (platform / workspace / account) chỉ hiển thị options thuộc
+  // platform mà Zernio hỗ trợ cho tính năng Messages (DM/inbox).
   const platformOptions: FilterOption[] = [
     { value: 'all', label: 'All platforms' },
-    ...Array.from(new Set(conversations.map(c => c.platform))).map(p => ({ value: p, label: p })),
+    ...Array.from(MESSAGES_SUPPORTED_PLATFORMS).map(p => ({
+      value: p,
+      label: PLATFORM_DISPLAY_NAMES[p] || p.charAt(0).toUpperCase() + p.slice(1),
+      iconPlatform: p
+    })),
   ];
 
-  const uniqueProfilePlatforms = Array.from(new Set(socialAccounts.map(sa => sa.platform)));
-  const profileOptions: FilterOption[] = [
-    { value: 'all', label: 'All profiles' },
-    ...uniqueProfilePlatforms.map(p => ({ value: p, label: p })),
+  const workspaceOptions: FilterOption[] = [
+    { value: 'all', label: 'All workspaces' },
+    ...workspaces.map(w => ({
+      value: w.id,
+      label: w.name
+    }))
   ];
 
   const accountOptions: FilterOption[] = [
     { value: 'all', label: 'All accounts' },
-    ...socialAccounts.map(sa => ({ value: sa.id, label: sa.displayName || sa.handle || sa.platform })),
+    ...socialAccounts
+      .filter(sa => {
+        const platform = sa.platform.toLowerCase();
+        const isSupported = MESSAGES_SUPPORTED_PLATFORMS.has(platform);
+        const matchesPlatform = filterPlatform === 'all' || platform === filterPlatform;
+        const matchesWorkspace = filterWorkspaceId === 'all' || sa.workspaceId === filterWorkspaceId;
+        return isSupported && matchesPlatform && matchesWorkspace;
+      })
+      .map(sa => ({
+        value: sa.id,
+        label: sa.displayName || sa.handle || sa.platform,
+        iconPlatform: sa.platform.toLowerCase()
+      })),
   ];
 
+  // Phòng trường hợp filter đang chọn platform không còn trong supported set → reset về 'all'.
+  if (filterPlatform !== 'all' && !MESSAGES_SUPPORTED_PLATFORMS.has(filterPlatform.toLowerCase())) {
+    setFilterPlatform('all');
+  }
+  if (filterAccount !== 'all' && !accountOptions.some(o => o.value === filterAccount)) {
+    setFilterAccount('all');
+  }
+
   const filteredConversations = conversations.filter(c => {
+    // Loại bỏ luôn conversation thuộc platform không Zernio-supported
+    // (defense in depth — phòng BE trả lẫn platform lạ).
+    if (!MESSAGES_SUPPORTED_PLATFORMS.has(c.platform.toLowerCase())) return false;
+    if (filterWorkspaceId !== 'all' && c.workspaceId !== filterWorkspaceId) return false;
     if (filterPlatform !== 'all' && c.platform !== filterPlatform) return false;
-    if (filterProfile !== 'all' && c.platform !== filterProfile) return false;
     if (filterAccount !== 'all' && c.socialAccountId !== filterAccount) return false;
     return true;
   });
@@ -557,10 +905,18 @@ export default function MessagesPage() {
                 label="All platforms"
               />
               <FilterDropdown
-                value={filterProfile}
-                onChange={setFilterProfile}
-                options={profileOptions}
-                label="All profiles"
+                value={filterWorkspaceId}
+                onChange={(val) => {
+                  setFilterWorkspaceId(val);
+                  if (val !== 'all') {
+                    const ws = workspaces.find(w => w.id === val);
+                    if (ws) {
+                      setActiveWorkspace(ws);
+                    }
+                  }
+                }}
+                options={workspaceOptions}
+                label="All workspaces"
               />
               <FilterDropdown
                 value={filterAccount}
@@ -748,21 +1104,75 @@ export default function MessagesPage() {
                                   </div>
                                 ) : (
                                   <div className={styles.bubble}>
-                                    <p>{m.bodyText}</p>
+                                    {m.attachments && m.attachments.length > 0 && (
+                                      <div className={styles.attachmentsList}>
+                                        {m.attachments.map((att) => {
+                                          const t = (att.type || '').toLowerCase();
+                                          const imageExt = /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$|#)/i;
+                                          const isImage = t === 'image' || t === 'sticker' || (!t && (imageExt.test(att.url) || imageExt.test(att.previewUrl || '')));
+                                          if (isImage) {
+                                            const src = att.previewUrl || att.url;
+                                            return (
+                                              <img
+                                                key={att.id}
+                                                src={src}
+                                                alt={att.filename || 'image'}
+                                                className={styles.messageImage}
+                                                onClick={() => window.open(att.url, '_blank')}
+                                              />
+                                            );
+                                          } else if (t === 'video') {
+                                            return (
+                                              <video
+                                                key={att.id}
+                                                src={att.url}
+                                                controls
+                                                className={styles.messageVideo}
+                                              />
+                                            );
+                                          } else if (t === 'audio') {
+                                            return (
+                                              <audio
+                                                key={att.id}
+                                                src={att.url}
+                                                controls
+                                                className={styles.messageAudio}
+                                              />
+                                            );
+                                          } else {
+                                            return (
+                                              <a
+                                                key={att.id}
+                                                href={att.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={styles.messageFileLink}
+                                              >
+                                                <Paperclip size={14} style={{ marginRight: '4px' }} />
+                                                {att.filename || 'Download file'}
+                                              </a>
+                                            );
+                                          }
+                                        })}
+                                      </div>
+                                    )}
+                                    {m.bodyText && <p>{m.bodyText}</p>}
                                   </div>
                                 )}
 
-                                {/* Message actions menu on hover */}
-                                {!editingMessageId && (
+                                {/* Message actions menu on hover — ẩn luôn wrapper nếu không có action nào */}
+                                {!editingMessageId && (isReactionSupported || (isMe && activeChat.platform === 'telegram') || canDeleteMessage(isMe)) && (
                                   <div className={styles.messageActions}>
-                                    {/* Emoji reaction popover button */}
-                                    <button
-                                      className={styles.actionBtn}
-                                      onClick={() => setShowReactionPickerId(showReactionPickerId === m.id ? null : m.id)}
-                                      title="Add reaction"
-                                    >
-                                      <Smile size={14} />
-                                    </button>
+                                    {/* Emoji reaction popover button — chỉ hiện trên Telegram/WhatsApp */}
+                                    {isReactionSupported && (
+                                      <button
+                                        className={styles.actionBtn}
+                                        onClick={() => setShowReactionPickerId(showReactionPickerId === m.id ? null : m.id)}
+                                        title="Add reaction"
+                                      >
+                                        <Smile size={14} />
+                                      </button>
+                                    )}
                                     {isMe && activeChat.platform === 'telegram' && (
                                       <button
                                         className={styles.actionBtn}
@@ -772,21 +1182,23 @@ export default function MessagesPage() {
                                         <Edit size={14} />
                                       </button>
                                     )}
-                                    <button
-                                      className={styles.actionBtn}
-                                      onClick={() => handleDeleteMessage(m.zernioMessageId)}
-                                      title="Delete message"
-                                      disabled={isDeleting === m.zernioMessageId}
-                                    >
-                                      {isDeleting === m.zernioMessageId ? <Loader2 size={14} className={styles.spinner} /> : <Trash2 size={14} />}
-                                    </button>
+                                    {canDeleteMessage(isMe) && (
+                                      <button
+                                        className={styles.actionBtn}
+                                        onClick={() => handleDeleteMessage(m.zernioMessageId)}
+                                        title="Delete message"
+                                        disabled={isDeleting === m.zernioMessageId}
+                                      >
+                                        {isDeleting === m.zernioMessageId ? <Loader2 size={14} className={styles.spinner} /> : <Trash2 size={14} />}
+                                      </button>
+                                    )}
                                   </div>
                                 )}
 
-                                {/* Emoji Reaction Selector overlay */}
-                                {showReactionPickerId === m.id && (
+                                {/* Emoji Reaction Selector overlay — bộ emoji giới hạn theo platform */}
+                                {showReactionPickerId === m.id && isReactionSupported && (
                                   <div className={styles.emojiPopover}>
-                                    {['👍', '❤️', '😂', '😮', '😢', '🙏'].map(emoji => (
+                                    {reactionEmojiSet.map(emoji => (
                                       <button
                                         key={emoji}
                                         className={styles.emojiBtn}
@@ -817,6 +1229,13 @@ export default function MessagesPage() {
 
               {/* Input Area */}
               <div className={styles.inputArea}>
+                {attachmentError && (
+                  <div className={styles.attachmentError} role="alert">
+                    <AlertCircle size={14} />
+                    <span>{attachmentError}</span>
+                  </div>
+                )}
+
                 {pendingFile && (
                   <div className={styles.mediaChip}>
                     {previewUrl ? (
@@ -828,7 +1247,7 @@ export default function MessagesPage() {
                     {isUploading && <Loader2 size={14} className={styles.statusIconSending} />}
                     <button
                       className={styles.mediaChipRemove}
-                      onClick={() => { setPendingFile(null); setPreviewUrl(''); }}
+                      onClick={() => { setPendingFile(null); setPreviewUrl(''); setAttachmentError(null); }}
                       disabled={isUploading}
                     >
                       <X size={14} />
@@ -876,7 +1295,15 @@ export default function MessagesPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      if (!ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)) {
+                        setPendingFile(null);
+                        setPreviewUrl('');
+                        setAttachmentError(ATTACHMENT_ERROR_MESSAGE);
+                        e.target.value = '';
+                        return;
+                      }
                       setPendingFile(file);
+                      setAttachmentError(null);
                       if (file.type.startsWith('image/')) {
                         setPreviewUrl(URL.createObjectURL(file));
                       } else {
@@ -885,7 +1312,7 @@ export default function MessagesPage() {
                     }
                     e.target.value = '';
                   }}
-                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  accept="image/jpeg,image/png,image/gif,video/mp4"
                 />
               </div>
             </>
@@ -897,6 +1324,34 @@ export default function MessagesPage() {
           )}
         </section>
       </div>
+
+      {/* Delete Confirmation Modal — cho Bluesky/Reddit (chỉ xóa 1 chiều) */}
+      {pendingDelete?.oneWay && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Xóa tin nhắn</h3>
+              <button className={styles.closeBtn} onClick={() => setPendingDelete(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p>
+                <strong>Lưu ý:</strong> Tin nhắn này chỉ được xóa khỏi giao diện của bạn,
+                người nhận vẫn có thể đọc được nội dung.
+              </p>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.btnCancel} onClick={() => setPendingDelete(null)}>
+                Hủy
+              </button>
+              <button className={styles.btnConfirm} onClick={confirmOneWayDelete}>
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Chat Modal */}
       {isNewChatOpen && (

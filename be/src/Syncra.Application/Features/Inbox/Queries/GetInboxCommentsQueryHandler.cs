@@ -1,49 +1,186 @@
 using MediatR;
 using Syncra.Application.DTOs.Inbox;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Inbox.Queries;
 
 public sealed class GetInboxCommentsQueryHandler
-    : IRequestHandler<GetInboxCommentsQuery, IReadOnlyList<InboxCommentDto>>
+    : IRequestHandler<GetInboxCommentsQuery, InboxCommentedPostsResponseDto>
 {
-    private readonly IInboxRepository _inboxRepository;
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
-    public GetInboxCommentsQueryHandler(IInboxRepository inboxRepository)
+    private readonly IInboxRepository _inboxRepository;
+    private readonly ISocialAccountRepository _socialAccountRepository;
+    private readonly IZernioClient _zernioClient;
+    private readonly IInboxCommentListCacheService _listCache;
+
+    public GetInboxCommentsQueryHandler(
+        IInboxRepository inboxRepository,
+        ISocialAccountRepository socialAccountRepository,
+        IZernioClient zernioClient,
+        IInboxCommentListCacheService listCache)
     {
         _inboxRepository = inboxRepository;
+        _socialAccountRepository = socialAccountRepository;
+        _zernioClient = zernioClient;
+        _listCache = listCache;
     }
 
-    public async Task<IReadOnlyList<InboxCommentDto>> Handle(
+    public async Task<InboxCommentedPostsResponseDto> Handle(
         GetInboxCommentsQuery request,
         CancellationToken cancellationToken)
     {
-        var comments = await _inboxRepository.GetCommentsAsync(
+        var limit = request.Limit;
+
+        if (NeedsLiveFetch(request))
+        {
+            var cached = await _listCache.GetAsync(
+                request.WorkspaceId,
+                request.Cursor,
+                request.MinComments,
+                request.Since,
+                request.SortBy,
+                request.SortOrder,
+                request.Platform,
+                request.AccountId,
+                cancellationToken);
+
+            if (cached != null)
+            {
+                return await MapLivePageToResponseAsync(cached, request, cancellationToken);
+            }
+
+            if (string.IsNullOrEmpty(request.ProfileId))
+            {
+                return await ReadFromLocalDbAsync(request, limit, cancellationToken);
+            }
+
+            var live = await _zernioClient.ListInboxCommentsAsync(
+                request.ProfileId,
+                request.Since,
+                request.Cursor,
+                request.Platform,
+                request.AccountId,
+                request.MinComments,
+                request.SortBy,
+                request.SortOrder,
+                limit,
+                cancellationToken);
+
+            await _listCache.SetAsync(
+                request.WorkspaceId,
+                live,
+                request.Cursor,
+                request.MinComments,
+                request.Since,
+                request.SortBy,
+                request.SortOrder,
+                request.Platform,
+                request.AccountId,
+                CacheTtl,
+                cancellationToken);
+
+            return await MapLivePageToResponseAsync(live, request, cancellationToken);
+        }
+
+        return await ReadFromLocalDbAsync(request, limit, cancellationToken);
+    }
+
+    private static bool NeedsLiveFetch(GetInboxCommentsQuery q) =>
+        q.MinComments.HasValue
+        || q.Since.HasValue
+        || !string.IsNullOrEmpty(q.SortBy)
+        || !string.IsNullOrEmpty(q.SortOrder);
+
+    private async Task<InboxCommentedPostsResponseDto> ReadFromLocalDbAsync(
+        GetInboxCommentsQuery request,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var posts = await _inboxRepository.GetCommentedPostsAsync(
             request.WorkspaceId,
-            request.Limit,
-            request.Before,
+            limit + 1,
+            before: null,
             request.Platform,
             request.AccountId,
             cancellationToken);
 
-        return comments.Select(c => new InboxCommentDto(
-            c.Id,
-            c.ZernioCommentId,
-            c.SocialAccountId,
-            c.Platform,
-            c.AuthorName,
-            c.AuthorUsername,
-            c.AuthorPicture,
-            c.BodyText,
+        var hasMore = posts.Count > limit;
+        var itemsToReturn = posts.Take(limit).ToList();
+
+        string? nextCursor = null;
+        if (hasMore && itemsToReturn.Count > 0)
+        {
+            nextCursor = itemsToReturn[^1].ReceivedAtUtc.ToString("O");
+        }
+
+        var mappedItems = itemsToReturn.Select(c => new InboxCommentedPostItemDto(
             c.ZernioPostId,
+            c.Platform,
             c.ZernioAccountId,
-            c.PostPreviewCaption,
+            c.AccountUsername,
             c.PostPreviewThumbnailUrl,
-            c.CommentCount,
-            c.ZernioTopCommentId,
-            c.IsRead,
+            c.Permalink,
             c.ReceivedAtUtc,
-            c.CreatedAtUtc
+            c.CommentCount,
+            c.LikeCount,
+            c.ZernioTopCommentId,
+            c.Subreddit,
+            c.IsAd,
+            c.AdId,
+            c.Placement
         )).ToList();
+
+        var socialAccounts = await _socialAccountRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+        var activeAccountsCount = socialAccounts.Count(sa => sa.IsActive);
+
+        var meta = new ZernioInboxCommentMetaDto(
+            AccountsQueried: activeAccountsCount,
+            AccountsFailed: 0,
+            FailedAccounts: Array.Empty<ZernioInboxFailedAccountDto>(),
+            LastUpdated: DateTime.UtcNow
+        );
+
+        return new InboxCommentedPostsResponseDto(
+            mappedItems,
+            new InboxPageMetadata(hasMore, nextCursor),
+            meta);
+    }
+
+    private static async Task<InboxCommentedPostsResponseDto> MapLivePageToResponseAsync(
+        ZernioInboxCommentsPageDto live,
+        GetInboxCommentsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var mappedItems = live.Items
+            .Select(item => new InboxCommentedPostItemDto(
+                item.Id,
+                item.Platform,
+                item.AccountId,
+                item.AccountUsername,
+                item.Picture,
+                item.Permalink,
+                item.CreatedTime,
+                item.CommentCount,
+                item.LikeCount,
+                item.Cid,
+                item.Subreddit,
+                item.IsAd,
+                item.AdId,
+                item.Placement))
+            .ToList();
+
+        var meta = new ZernioInboxCommentMetaDto(
+            AccountsQueried: live.Meta?.AccountsQueried ?? 0,
+            AccountsFailed: live.Meta?.AccountsFailed ?? 0,
+            FailedAccounts: live.Meta?.FailedAccounts ?? Array.Empty<ZernioInboxFailedAccountDto>(),
+            LastUpdated: live.Meta?.LastUpdated ?? DateTime.UtcNow
+        );
+
+        return await Task.FromResult(new InboxCommentedPostsResponseDto(
+            mappedItems,
+            new InboxPageMetadata(live.HasMore, live.NextCursor),
+            meta));
     }
 }

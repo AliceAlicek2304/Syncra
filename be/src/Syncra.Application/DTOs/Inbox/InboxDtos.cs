@@ -13,6 +13,13 @@ public sealed record InboxConversationDto(
     Guid? SocialAccountId,
     DateTime CreatedAtUtc);
 
+public sealed record ZernioMessageAttachmentDto(
+    string Id,
+    string Type,
+    string Url,
+    string? Filename,
+    string? PreviewUrl);
+
 public sealed record InboxMessageDto(
     Guid Id,
     Guid InboxConversationId,
@@ -21,7 +28,8 @@ public sealed record InboxMessageDto(
     string? BodyText,
     DateTime SentAtUtc,
     string? ZernioAccountId,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    IReadOnlyList<ZernioMessageAttachmentDto>? Attachments = null);
 
 public sealed record InboxSendMessageRequest(
     string? Text,
@@ -67,7 +75,8 @@ public sealed record ZernioInboxMessageItemDto(
     string? Direction,
     DateTime? SentAt,
     string? PlatformMessageId,
-    bool? IsRead);
+    bool? IsRead,
+    IReadOnlyList<ZernioMessageAttachmentDto>? Attachments = null);
 
 public sealed record ZernioInboxConversationsPageDto(
     IReadOnlyList<ZernioInboxConversationItemDto> Items,
@@ -94,16 +103,55 @@ public sealed record ZernioInboxCommentItemDto(
     string? Permalink,
     DateTime CreatedTime,
     int CommentCount,
-    string? Cid);
+    string? Cid,
+    string? AccountId = null,
+    string? AccountUsername = null,
+    int? LikeCount = null,
+    string? Subreddit = null,
+    bool? IsAd = null,
+    string? AdId = null,
+    string? Placement = null);
+
+public sealed record ZernioInboxFailedAccountDto(
+    string AccountId,
+    string? AccountUsername,
+    string Platform,
+    string Error,
+    string? Code,
+    int? RetryAfter);
+
+public sealed record ZernioInboxCommentMetaDto(
+    int AccountsQueried,
+    int AccountsFailed,
+    IReadOnlyList<ZernioInboxFailedAccountDto> FailedAccounts,
+    DateTime LastUpdated);
 
 public sealed record ZernioInboxCommentsPageDto(
     IReadOnlyList<ZernioInboxCommentItemDto> Items,
     bool HasMore,
-    string? NextCursor);
+    string? NextCursor,
+    ZernioInboxCommentMetaDto? Meta = null);
 
-public sealed record ZernioReplyToCommentResponseDto(
-    string CommentId,
-    string? Cid);
+public sealed record InboxCommentedPostItemDto(
+    string Id,
+    string Platform,
+    string? AccountId,
+    string? AccountUsername,
+    string? Picture,
+    string? Permalink,
+    DateTime CreatedTime,
+    int CommentCount,
+    int? LikeCount,
+    string? Cid,
+    string? Subreddit,
+    bool? IsAd,
+    string? AdId,
+    string? Placement);
+
+public sealed record InboxCommentedPostsResponseDto(
+    IReadOnlyList<InboxCommentedPostItemDto> Data,
+    InboxPageMetadata Pagination,
+    ZernioInboxCommentMetaDto? Meta = null);
 
 public sealed record InboxCommentDto(
     Guid Id,
@@ -154,13 +202,35 @@ public sealed record ZernioPostCommentItemDto(
     bool IsLiked,
     string? LikeUri,
     string? Cid,
-    string? ParentId);
+    string? ParentId,
+    string? RootUri = null,
+    string? RootCid = null,
+    IReadOnlyList<ZernioPostCommentItemDto>? Replies = null);
+
+public sealed record ZernioPostMetaDto(
+    string? Id,
+    string? Caption,
+    string? ThumbnailUrl,
+    string? Permalink,
+    int? LikeCount,
+    int? CommentCount,
+    string? Platform);
+
+public sealed record ZernioCommentsMetaDto(
+    string Platform,
+    int? TotalCount,
+    bool? HasAdComments,
+    string? Subreddit,
+    string? AccountId,
+    DateTime? LastUpdatedUtc);
 
 public sealed record ZernioPostCommentsResponseDto(
+    string Status,
+    ZernioPostMetaDto? Post,
+    ZernioCommentsMetaDto Meta,
     IReadOnlyList<ZernioPostCommentItemDto> Comments,
-    bool HasMore,
     string? Cursor,
-    string Platform);
+    bool HasMore = false);
 
 public sealed record LikeInboxCommentRequest(
     string? Cid = null);

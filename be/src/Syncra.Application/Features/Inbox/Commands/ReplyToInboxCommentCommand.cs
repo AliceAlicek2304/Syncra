@@ -5,6 +5,9 @@ namespace Syncra.Application.Features.Inbox.Commands;
 
 public record ReplyToInboxCommentCommand(
     Guid WorkspaceId,
-    Guid CommentId,
-    string Message
+    string CommentId,
+    string Message,
+    string? ParentCid = null,
+    string? RootUri = null,
+    string? RootCid = null
 ) : IRequest<InboxSendCommentReplyResponse>;

@@ -1,9 +1,11 @@
 using MediatR;
+using Syncra.Application.DTOs.Zernio;
 
 namespace Syncra.Application.Features.Inbox.Commands;
 
 public sealed record SendPrivateReplyToCommentCommand(
     Guid WorkspaceId,
-    Guid CommentId,
+    string CommentId,
     string Message,
-    bool Dummy = false) : IRequest<bool>;
+    IReadOnlyList<ZernioPrivateReplyQuickReplyDto>? QuickReplies = null,
+    IReadOnlyList<ZernioPrivateReplyButtonDto>? Buttons = null) : IRequest<ZernioCommentActionResponseDto>;

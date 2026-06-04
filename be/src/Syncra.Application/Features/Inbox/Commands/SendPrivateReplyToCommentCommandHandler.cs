@@ -1,12 +1,14 @@
 using MediatR;
+using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
+using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Inbox.Commands;
 
 public sealed class SendPrivateReplyToCommentCommandHandler
-    : IRequestHandler<SendPrivateReplyToCommentCommand, bool>
+    : IRequestHandler<SendPrivateReplyToCommentCommand, ZernioCommentActionResponseDto>
 {
     private readonly IInboxRepository _inboxRepository;
     private readonly IZernioClient _zernioClient;
@@ -19,30 +21,49 @@ public sealed class SendPrivateReplyToCommentCommandHandler
         _zernioClient = zernioClient;
     }
 
-    public async Task<bool> Handle(
+    public async Task<ZernioCommentActionResponseDto> Handle(
         SendPrivateReplyToCommentCommand request,
         CancellationToken cancellationToken)
     {
-        var comment = await _inboxRepository.GetCommentByIdAsync(
-            request.WorkspaceId,
-            request.CommentId,
+        var post = await ResolvePostAsync(request.WorkspaceId, request.CommentId, cancellationToken);
+
+        if (post == null)
+        {
+            throw new DomainException("CommentedPostNotFound", $"InboxCommentedPost '{request.CommentId}' not found.");
+        }
+
+        if (string.IsNullOrEmpty(post.ZernioAccountId))
+        {
+            throw new DomainException("CommentedPostMissingAccountId", "Commented post has no ZernioAccountId.");
+        }
+
+        if (string.IsNullOrEmpty(post.ZernioTopCommentId))
+        {
+            throw new DomainException("CommentedPostMissingTopCommentId", "Commented post has no top comment id.");
+        }
+
+        var zernioRequest = new ZernioPrivateReplyRequestDto(
+            AccountId: post.ZernioAccountId,
+            Message: request.Message,
+            QuickReplies: request.QuickReplies,
+            Buttons: request.Buttons);
+
+        return await _zernioClient.SendPrivateReplyToCommentAsync(
+            post.ZernioPostId,
+            post.ZernioTopCommentId,
+            zernioRequest,
             cancellationToken);
+    }
 
-        if (comment == null)
+    private Task<InboxCommentedPost?> ResolvePostAsync(
+        Guid workspaceId,
+        string commentId,
+        CancellationToken cancellationToken)
+    {
+        if (Guid.TryParse(commentId, out var postGuid))
         {
-            throw new DomainException("CommentNotFound", $"InboxComment '{request.CommentId}' not found.");
+            return _inboxRepository.GetCommentedPostByIdAsync(workspaceId, postGuid, cancellationToken);
         }
-
-        if (string.IsNullOrEmpty(comment.ZernioPostId))
-        {
-            throw new DomainException("CommentMissingPostId", "Comment has no ZernioPostId.");
-        }
-        
-        if (string.IsNullOrEmpty(comment.ZernioAccountId))
-        {
-            throw new DomainException("CommentMissingAccountId", "Comment has no ZernioAccountId.");
-        }
-
-        return await _zernioClient.SendPrivateReplyToCommentAsync(comment.ZernioPostId, comment.ZernioCommentId, comment.ZernioAccountId, request.Message, cancellationToken);
+        return _inboxRepository.GetCommentedPostByZernioPostIdAsync(workspaceId, commentId, cancellationToken);
     }
 }

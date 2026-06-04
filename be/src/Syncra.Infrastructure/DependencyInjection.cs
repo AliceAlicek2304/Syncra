@@ -58,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<ISocialAccountRepository, SocialAccountRepository>();
         services.AddScoped<IZernioProfileRepository, ZernioProfileRepository>();
         services.AddScoped<IInboxRepository, InboxRepository>();
+        services.AddSingleton<Syncra.Application.Interfaces.IInboxCommentListCacheService,
+                              Syncra.Infrastructure.Services.InMemoryInboxCommentListCacheService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<Syncra.Application.Interfaces.ITokenService, Syncra.Infrastructure.Services.TokenService>();
 
@@ -96,6 +98,7 @@ public static class DependencyInjection
         // WasabiStorageService wraps AmazonS3Client which is thread-safe — registered as singleton.
         services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
         services.Configure<WasabiOptions>(configuration.GetSection(WasabiOptions.SectionName));
+        services.Configure<MediaOptions>(configuration.GetSection(MediaOptions.SectionName));
         services.AddSingleton<IStorageService, WasabiStorageService>();
 
         services.Configure<PaymentOptions>(configuration.GetSection(PaymentOptions.SectionName));

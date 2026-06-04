@@ -85,6 +85,12 @@ public interface IZernioClient
         string mimeType,
         CancellationToken cancellationToken = default);
 
+    Task<ZernioUploadDirectResult> UploadMediaDirectAsync(
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default);
+
     Task UpdatePostAsync(
         string zernioPostId,
         Syncra.Application.DTOs.Zernio.ZernioUpdatePostRequestDto request,
@@ -190,17 +196,24 @@ public interface IZernioClient
         string? cursor = null,
         string? platform = null,
         string? accountId = null,
+        int? minComments = null,
+        string? sortBy = null,
+        string? sortOrder = null,
+        int? limit = null,
         CancellationToken cancellationToken = default);
 
-    Task<ZernioReplyToCommentResponseDto> ReplyToInboxCommentAsync(
+    Task<ZernioReplyResponseDto> ReplyToInboxCommentAsync(
         string profileId,
         string zernioPostId,
         string accountId,
         string message,
         string? commentId = null,
+        string? parentCid = null,
+        string? rootUri = null,
+        string? rootCid = null,
         CancellationToken cancellationToken = default);
 
-    Task<bool> DeleteInboxCommentAsync(
+    Task<ZernioDeleteCommentResponseDto> DeleteInboxCommentAsync(
         string zernioPostId,
         string accountId,
         string commentId,
@@ -213,39 +226,40 @@ public interface IZernioClient
         int? limit = null,
         string? cursor = null,
         string? commentId = null,
+        string? selfAccountId = null,
+        string? platform = null,
         CancellationToken cancellationToken = default);
 
-    Task<bool> HideInboxCommentAsync(
+    Task<ZernioCommentActionResponseDto> HideInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
         CancellationToken cancellationToken = default);
 
-    Task<bool> UnhideInboxCommentAsync(
+    Task<ZernioCommentActionResponseDto> UnhideInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
         CancellationToken cancellationToken = default);
 
-    Task<bool> LikeInboxCommentAsync(
+    Task<ZernioLikeActionResponseDto> LikeInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
         string? cid = null,
         CancellationToken cancellationToken = default);
 
-    Task<bool> UnlikeInboxCommentAsync(
+    Task<ZernioLikeActionResponseDto> UnlikeInboxCommentAsync(
         string zernioPostId,
         string commentId,
         string accountId,
         string? likeUri = null,
         CancellationToken cancellationToken = default);
 
-    Task<bool> SendPrivateReplyToCommentAsync(
+    Task<ZernioCommentActionResponseDto> SendPrivateReplyToCommentAsync(
         string zernioPostId,
         string commentId,
-        string accountId,
-        string message,
+        ZernioPrivateReplyRequestDto request,
         CancellationToken cancellationToken = default);
 
     // ── Inbox Review methods ────────────────────────────────────

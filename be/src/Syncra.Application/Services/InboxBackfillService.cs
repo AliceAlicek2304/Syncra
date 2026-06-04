@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
@@ -236,35 +237,107 @@ public sealed class InboxBackfillService : IInboxBackfillService
         CancellationToken cancellationToken)
     {
         // Skip if this item already exists (by commented-post ID)
-        var existing = await _inboxRepository.GetCommentByZernioIdAsync(
+        var existing = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(
             workspaceId, item.Id, cancellationToken);
 
         if (existing != null)
+        {
+            existing.UpdateCommentedPostFields(
+                item.AccountUsername,
+                item.LikeCount,
+                item.Subreddit,
+                item.IsAd,
+                item.AdId,
+                item.Placement,
+                item.Permalink,
+                item.CommentCount,
+                item.Picture,
+                null);
+
+            await _inboxRepository.UpdateCommentedPostAsync(existing);
             return;
+        }
 
         var socialAccounts = await _socialAccountRepository.GetByWorkspaceIdAsync(workspaceId);
         var matchingAccount = socialAccounts
             .FirstOrDefault(sa => sa.Platform.Equals(item.Platform, StringComparison.OrdinalIgnoreCase)
                                && sa.IsActive);
 
-        var previewCaption = item.Content?[..Math.Min(item.Content.Length, 80)];
-
-        var comment = InboxComment.Create(
+        var post = InboxCommentedPost.Create(
             workspaceId,
             item.Id,
             matchingAccount?.Id,
             item.Platform,
-            item.Content,
-            item.Content,
-            zernioPostId: item.Id,
-            zernioAccountId: matchingAccount?.ExternalAccountId,
-            postPreviewCaption: previewCaption,
+            zernioAccountId: item.AccountId ?? matchingAccount?.ExternalAccountId,
             postPreviewThumbnailUrl: item.Picture,
             commentCount: item.CommentCount,
             zernioTopCommentId: item.Cid,
-            receivedAtUtc: item.CreatedTime);
+            receivedAtUtc: item.CreatedTime,
+            accountUsername: item.AccountUsername,
+            likeCount: item.LikeCount,
+            subreddit: item.Subreddit,
+            isAd: item.IsAd,
+            adId: item.AdId,
+            placement: item.Placement,
+            permalink: item.Permalink);
 
-        await _inboxRepository.AddCommentAsync(comment);
+        await _inboxRepository.AddCommentedPostAsync(post);
+
+        // Eagerly populate the comment thread cache (D-15).
+        await RefreshCommentThreadAsync(workspaceId, item, cancellationToken);
+    }
+
+    /// <summary>
+    /// Fetches the full comment thread for a given post from Zernio and caches it
+    /// in <c>inbox_comment_threads</c>. Best-effort: failures are logged and swallowed
+    /// so a single bad post does not abort the backfill.
+    /// </summary>
+    private async Task RefreshCommentThreadAsync(
+        Guid workspaceId,
+        ZernioInboxCommentItemDto item,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId);
+            if (profile is null)
+                return;
+
+            var accountId = item.AccountId;
+            if (string.IsNullOrEmpty(accountId))
+            {
+                var socialAccounts = await _socialAccountRepository.GetByWorkspaceIdAsync(workspaceId);
+                var match = socialAccounts.FirstOrDefault(sa =>
+                    sa.Platform.Equals(item.Platform, StringComparison.OrdinalIgnoreCase) && sa.IsActive);
+                accountId = match?.ExternalAccountId;
+            }
+
+            if (string.IsNullOrEmpty(accountId))
+                return;
+
+            var thread = await _zernioClient.GetInboxPostCommentsAsync(
+                zernioPostId: item.Id,
+                accountId: accountId,
+                subreddit: item.Subreddit,
+                cancellationToken: cancellationToken);
+
+            var payloadJson = JsonSerializer.Serialize(thread);
+            var threadEntity = InboxCommentThread.Create(
+                workspaceId,
+                item.Id,
+                payloadJson,
+                expiresAtUtc: DateTime.UtcNow.AddMinutes(15));
+
+            await _inboxRepository.UpsertAsync(threadEntity);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to refresh comment thread for workspace {WorkspaceId}, post {PostId} — continuing backfill.",
+                workspaceId,
+                item.Id);
+        }
     }
 
     /// <summary>
