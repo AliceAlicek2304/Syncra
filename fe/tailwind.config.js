@@ -53,11 +53,27 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        brand: {
+          primary: '#ff4f00',
+          'primary-hover': '#e04500',
+          'on-primary': '#fffefb',
+          ink: '#201515',
+          'ink-soft': '#2f2a26',
+          'ink-mid': '#36342e',
+          body: '#605d52',
+          'body-mid': '#939084',
+          mute: '#c5c0b1',
+          canvas: '#fffefb',
+          'canvas-soft': '#f8f4f0',
+          border: '#e5dfd3',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        'brand-md': '12px',
+        'brand-sm': '6px',
       },
       keyframes: {
         "accordion-down": {

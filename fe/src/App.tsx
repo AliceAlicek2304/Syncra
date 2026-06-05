@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
@@ -52,6 +53,22 @@ function Homepage() {
   const isLoginOpen = location.pathname === '/login'
   const isSignupOpen = location.pathname === '/signup'
 
+  useEffect(() => {
+    // Add light theme classes and style overrides to document body for the landing page
+    document.body.classList.add('bg-brand-canvas-soft', 'text-brand-ink');
+    document.body.style.backgroundColor = '#f8f4f0';
+    document.body.style.color = '#201515';
+    document.body.style.backgroundImage = 'none';
+
+    return () => {
+      // Clean up when unmounting (navigating into the app)
+      document.body.classList.remove('bg-brand-canvas-soft', 'text-brand-ink');
+      document.body.style.backgroundColor = '';
+      document.body.style.color = '';
+      document.body.style.backgroundImage = '';
+    };
+  }, []);
+
   const handleCloseLogin = () => {
     navigate('/')
   }
@@ -69,7 +86,7 @@ function Homepage() {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative bg-brand-canvas-soft text-brand-ink min-h-screen font-sans antialiased selection:bg-brand-primary/20 selection:text-brand-primary">
       <Navbar />
       <Hero />
       <Stats />

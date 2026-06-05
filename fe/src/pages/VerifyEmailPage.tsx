@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
-import styles from './VerifyEmailPage.module.css';
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -64,24 +63,24 @@ export default function VerifyEmailPage() {
   // Error state: token missing, expired, or invalid
   if (tokenError) {
     return (
-      <div className={styles.page}>
-        <div className={styles.card}>
-          <div className={styles.header}>
-            <h2 className={styles.title}>Invalid or expired link</h2>
-            <p className={styles.subtitle}>
+      <div className="min-h-screen bg-brand-canvas-soft flex items-center justify-center p-6 text-brand-ink">
+        <div className="bg-brand-canvas border border-brand-border p-8 rounded-brand-md shadow-sm w-full max-w-md flex flex-col gap-6 text-center">
+          <div>
+            <h2 className="text-2xl font-black text-brand-ink tracking-tight mb-2">Invalid or expired link</h2>
+            <p className="text-sm text-brand-body leading-relaxed">
               This verification link is invalid or has expired. Please request a new one.
             </p>
           </div>
-          <div className={styles.actions}>
+          <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
             <button
               onClick={() => navigate('/app/connections', { replace: true })}
-              className={styles.primaryBtn}
+              className="flex-1 py-3 bg-brand-primary hover:bg-brand-primary-hover text-brand-on-primary font-bold rounded-brand-md text-sm transition-all text-center focus:outline-none"
             >
               Go to Connections
             </button>
             <button
               onClick={() => navigate('/login', { replace: true })}
-              className={styles.secondaryBtn}
+              className="flex-1 py-3 bg-brand-canvas-soft border border-brand-border hover:bg-brand-border/10 text-brand-ink font-bold rounded-brand-md text-sm transition-all text-center focus:outline-none"
             >
               Back to Login
             </button>
@@ -94,10 +93,10 @@ export default function VerifyEmailPage() {
   // Loading/verifying state
   if (isVerifying) {
     return (
-      <div className={styles.page}>
-        <div className={styles.card}>
-          <div className={styles.spinner}></div>
-          <p className={styles.status}>{status}</p>
+      <div className="min-h-screen bg-brand-canvas-soft flex items-center justify-center p-6 text-brand-ink">
+        <div className="bg-brand-canvas border border-brand-border p-8 rounded-brand-md shadow-sm w-full max-w-sm flex flex-col items-center justify-center gap-6">
+          <div className="animate-spin h-9 w-9 border-4 border-brand-primary border-t-transparent rounded-full" />
+          <p className="text-sm font-semibold text-brand-body tracking-wide">{status}</p>
         </div>
       </div>
     );

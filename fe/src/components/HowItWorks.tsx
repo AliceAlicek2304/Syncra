@@ -1,5 +1,4 @@
 import { PenSquare, Clock4, Rocket } from 'lucide-react'
-import styles from './HowItWorks.module.css'
 
 const STEPS = [
   {
@@ -24,33 +23,28 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className={styles.section}>
-      {/* Background glow */}
-      <div className={styles.glow} />
-      <div className="container">
-        <div className={styles.header}>
-          <span className="section-label">How it works</span>
-          <h2 className="section-title">
+    <section id="how-it-works" className="py-16 md:py-24 bg-brand-ink text-brand-on-primary border-b border-brand-border/10 relative overflow-hidden">
+      {/* Visual background details */}
+      <div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] rounded-full bg-brand-primary/5 filter blur-[120px] opacity-40 -z-10 -translate-x-1/2 -translate-y-1/2" />
+      
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-3xl mx-auto text-center mb-16">
+          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">How it works</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-brand-on-primary leading-tight">
             From idea to viral —<br />
-            <span className="gradient-text">in 3 simple steps.</span>
+            <span className="text-brand-primary">in 3 simple steps.</span>
           </h2>
         </div>
 
-        <div className={styles.steps}>
-          {STEPS.map((s, i) => (
-            <div key={s.step} className={styles.stepWrapper}>
-              <div className={`glass-card ${styles.card}`}>
-                <div className={styles.stepNum}>{s.step}</div>
-                <div className={styles.iconBox}>{s.icon}</div>
-                <h3 className={styles.title}>{s.title}</h3>
-                <p className={styles.desc}>{s.desc}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {STEPS.map((s) => (
+            <div key={s.step} className="relative border border-brand-border/10 bg-brand-ink-soft p-8 rounded-brand-md flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all duration-150">
+              <div className="absolute top-4 right-6 text-3xl font-black text-brand-primary/20 font-mono tracking-tight select-none">{s.step}</div>
+              <div className="h-16 w-16 bg-brand-ink border border-brand-border/15 text-brand-primary rounded-full flex items-center justify-center mb-6 shadow-sm">
+                {s.icon}
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={styles.connector}>
-                  <div className={styles.line} />
-                  <div className={styles.arrow}>→</div>
-                </div>
-              )}
+              <h3 className="text-xl font-bold text-brand-on-primary mb-3 tracking-tight">{s.title}</h3>
+              <p className="text-sm text-brand-mute leading-relaxed max-w-xs">{s.desc}</p>
             </div>
           ))}
         </div>

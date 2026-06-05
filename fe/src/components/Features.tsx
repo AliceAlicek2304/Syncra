@@ -2,79 +2,79 @@ import {
   PenLine, CalendarClock, BarChart3, Globe2,
   Sparkles, Repeat2,
 } from 'lucide-react'
-import styles from './Features.module.css'
 
 const FEATURES = [
   {
     icon: <PenLine size={22} />,
     title: 'Smart Content Editor',
     desc: 'Write once and auto-adapt your copy for each platform\'s tone, length, and format — TikTok, LinkedIn, Instagram, and beyond.',
-    color: '#8b5cf6',
+    colorClass: 'bg-violet-100 text-violet-700',
   },
   {
     icon: <CalendarClock size={22} />,
     title: 'Intelligent Scheduling',
     desc: 'Pick the best time to post based on your audience activity. Set it and forget it — Syncra handles the rest.',
-    color: '#ec4899',
+    colorClass: 'bg-pink-100 text-pink-700',
   },
   {
     icon: <Globe2 size={22} />,
     title: 'Multi-Platform Publishing',
     desc: 'Publish to TikTok, Instagram, YouTube, LinkedIn, X, and Facebook simultaneously from a single dashboard.',
-    color: '#22d3ee',
+    colorClass: 'bg-cyan-100 text-cyan-700',
   },
   {
     icon: <BarChart3 size={22} />,
     title: 'Unified Analytics',
     desc: 'Track reach, engagement, and follower growth across every platform in one clean real-time dashboard.',
-    color: '#f59e0b',
+    colorClass: 'bg-amber-100 text-amber-700',
   },
   {
     icon: <Sparkles size={22} />,
     title: 'AI Writing Assistant',
     desc: 'Get caption ideas, hashtag suggestions, and SEO-friendly hooks powered by AI. Save hours every week.',
-    color: '#10b981',
+    colorClass: 'bg-emerald-100 text-emerald-700',
     badge: 'Coming soon',
   },
   {
     icon: <Repeat2 size={22} />,
     title: 'Content Recycling',
     desc: 'Automatically re-schedule high-performing evergreen content to maximize its long-term reach.',
-    color: '#f472b6',
+    colorClass: 'bg-rose-100 text-rose-700',
   },
 ]
 
 export default function Features() {
   return (
-    <section id="features" className={styles.section}>
-      <div className="container">
-        <div className={styles.header}>
-          <span className="section-label">Features</span>
-          <h2 className="section-title">
+    <section id="features" className="py-16 md:py-24 bg-brand-canvas-soft text-brand-ink border-b border-brand-border/40">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-3xl text-left">
+          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">Features</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-brand-ink leading-tight">
             Everything a creator needs.<br />
-            <span className="gradient-text">Nothing they don't.</span>
+            <span className="text-brand-primary">Nothing they don't.</span>
           </h2>
-          <p className="section-sub" style={{ marginTop: 16 }}>
+          <p className="text-base sm:text-lg text-brand-body mt-4 leading-relaxed max-w-xl">
             Built specifically for solo creators and small teams who want
             professional-grade tools without enterprise complexity.
           </p>
         </div>
 
-        <div className={styles.grid}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16">
           {FEATURES.map(f => (
-            <div key={f.title} className={`glass-card ${styles.card}`}>
-              <div
-                className={styles.iconWrap}
-                style={{ background: `${f.color}20`, color: f.color }}
-              >
+            <div key={f.title} className="border border-brand-border bg-brand-canvas rounded-brand-md p-6 hover:shadow-md transition-all duration-150 flex flex-col items-start gap-4">
+              <div className={`h-11 w-11 rounded-brand-sm flex items-center justify-center shadow-sm ${f.colorClass}`}>
                 {f.icon}
               </div>
-              <div className={styles.cardBody}>
-                <div className={styles.titleRow}>
-                  <h3 className={styles.title}>{f.title}</h3>
-                  {f.badge && <span className={styles.badge}>{f.badge}</span>}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-brand-ink tracking-tight">{f.title}</h3>
+                  {f.badge && (
+                    <span className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 bg-brand-canvas-soft border border-brand-border text-brand-body-mid rounded-full">
+                      {f.badge}
+                    </span>
+                  )}
                 </div>
-                <p className={styles.desc}>{f.desc}</p>
+                <p className="text-sm text-brand-body leading-relaxed">{f.desc}</p>
               </div>
             </div>
           ))}

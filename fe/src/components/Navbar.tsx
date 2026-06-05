@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Menu, X, Plug, Lightbulb, Calendar, BarChart2, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
-import styles from './Navbar.module.css'
 import logo from '../assets/syncra-logo.png'
+
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from './ui/dropdown-menu'
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -23,8 +32,6 @@ const USER_MENU = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -34,100 +41,101 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   const handleLogin = () => {
     navigate('/login')
   }
 
   const handleLogout = () => {
     logout()
-    setDropdownOpen(false)
     navigate('/')
   }
 
   return (
-    <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
-      <div className={`container ${styles.inner}`}>
+    <nav className={`sticky top-0 z-50 w-full transition-all duration-200 border-b ${
+      scrolled 
+        ? 'bg-brand-canvas-soft/90 backdrop-blur-md border-brand-border/60 py-3 shadow-sm' 
+        : 'bg-transparent border-transparent py-4'
+    }`}>
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <motion.a 
           href="#" 
-          className={styles.logo}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2.5 font-sans font-bold text-xl text-brand-ink tracking-tight focus:outline-none"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
         >
-          <img src={logo} alt="Syncra" className={styles.logoImg} />
-          <span className={styles.logoText}>Syncra</span>
+          <img src={logo} alt="Syncra" className="h-8 w-8 object-contain" />
+          <span>Syncra</span>
         </motion.a>
 
         {/* Desktop links */}
-        <ul className={styles.links}>
+        <ul className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map(l => (
             <li key={l.label}>
-              <a href={l.href} className={styles.link}>{l.label}</a>
+              <a 
+                href={l.href} 
+                className="text-brand-body hover:text-brand-primary font-medium text-sm transition-colors duration-150"
+              >
+                {l.label}
+              </a>
             </li>
           ))}
         </ul>
 
         {/* CTA / Avatar */}
-        <div className={styles.cta}>
+        <div className="hidden md:flex items-center gap-4">
           {user ? (
-            <div className={styles.avatarWrapper} ref={dropdownRef}>
-              <button
-                className={styles.avatarBtn}
-                onClick={() => setDropdownOpen(o => !o)}
-                aria-label="User menu"
-              >
-                <span className={styles.avatarCircle}>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.displayName || user.email} />
-                  ) : (
-                    (user.displayName || user.email).charAt(0).toUpperCase()
-                  )}
-                </span>
-                <div className={styles.avatarInfo}>
-                  <span className={styles.avatarName}>{user.displayName || user.email}</span>
-                  <span className={styles.avatarPlan}>Free Plan</span>
-                </div>
-              </button>
-              {dropdownOpen && (
-                <div className={styles.dropdown}>
-                  <div className={styles.dropdownHeader}>
-                    <span className={styles.dropdownHandle}>{user.email}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 text-left focus:outline-none hover:opacity-90 group transition-all">
+                  <Avatar className="h-9 w-9 border border-brand-border group-hover:border-brand-primary transition-colors">
+                    {user.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} alt={user.displayName || user.email} />
+                    ) : null}
+                    <AvatarFallback className="bg-brand-primary/10 text-brand-primary font-bold">
+                      {(user.displayName || user.email).charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="leading-tight">
+                    <div className="text-sm font-semibold text-brand-ink max-w-[120px] truncate">{user.displayName || user.email}</div>
+                    <div className="text-[10px] text-brand-body-mid font-medium uppercase tracking-wider">Free Plan</div>
                   </div>
-                  {USER_MENU.map(item => (
-                    <button
-                      key={item.path}
-                      className={styles.dropdownItem}
-                      onClick={() => { navigate(item.path); setDropdownOpen(false) }}
-                    >
-                      <item.icon size={15} />
-                      {item.label}
-                    </button>
-                  ))}
-                  <div className={styles.dropdownDivider} />
-                  <button className={`${styles.dropdownItem} ${styles.dropdownLogout}`} onClick={handleLogout}>
-                    <LogOut size={15} />
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 mt-2 border border-brand-border bg-brand-canvas shadow-lg rounded-brand-md p-1.5 animate-in fade-in-50 slide-in-from-top-1">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-0.5 py-1">
+                    <p className="text-[10px] font-semibold text-brand-body-mid uppercase tracking-wider">Account</p>
+                    <p className="text-sm font-bold text-brand-ink truncate">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-brand-border my-1" />
+                {USER_MENU.map(item => (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className="flex items-center gap-2.5 px-2.5 py-2 text-sm font-medium text-brand-body hover:bg-brand-canvas-soft hover:text-brand-ink rounded-md transition-colors"
+                  >
+                    <item.icon size={16} className="text-brand-body-mid" />
+                    <span>{item.label}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="bg-brand-border my-1" />
+                <DropdownMenuItem 
+                  className="flex items-center gap-2.5 px-2.5 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  <span>Đăng xuất</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.1 }}
-                className="btn-secondary"
-                style={{ padding: '10px 20px', fontSize: '14px' }}
+                className="text-brand-ink hover:text-brand-primary font-semibold text-sm px-4 py-2 transition-colors duration-150"
                 onClick={handleLogin}
               >
                 Sign in
@@ -136,8 +144,7 @@ export default function Navbar() {
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.1 }}
                 href="#pricing" 
-                className="btn-primary" 
-                style={{ padding: '10px 20px', fontSize: '14px' }}
+                className="bg-brand-primary text-brand-on-primary font-bold text-sm px-5 py-2.5 rounded-brand-md hover:bg-brand-primary-hover shadow-sm hover:shadow transition-all duration-200"
               >
                 Start free
               </motion.a>
@@ -146,38 +153,51 @@ export default function Navbar() {
         </div>
 
         {/* Mobile burger */}
-        <button className={styles.burger} onClick={() => setMenuOpen(o => !o)} aria-label="Toggle menu">
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        <button 
+          className="md:hidden p-2 text-brand-ink hover:text-brand-primary focus:outline-none transition-colors" 
+          onClick={() => setMenuOpen(o => !o)} 
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div className={styles.drawer}>
+        <div className="absolute top-full left-0 w-full bg-brand-canvas border-b border-brand-border/60 px-6 py-6 flex flex-col gap-4 md:hidden shadow-lg animate-in fade-in slide-in-from-top-4 duration-200 z-50">
           {NAV_LINKS.map(l => (
-            <a key={l.label} href={l.href} className={styles.drawerLink} onClick={() => setMenuOpen(false)}>
+            <a 
+              key={l.label} 
+              href={l.href} 
+              className="text-brand-ink hover:text-brand-primary font-semibold text-base py-2 border-b border-brand-canvas-soft transition-colors" 
+              onClick={() => setMenuOpen(false)}
+            >
               {l.label}
             </a>
           ))}
-          <div className={styles.drawerCta}>
+          <div className="flex flex-col gap-2 pt-2">
             {user ? (
               <button
-                className="btn-secondary"
-                style={{ width: '100%', justifyContent: 'center' }}
+                className="w-full bg-brand-canvas-soft border border-brand-border text-brand-ink font-semibold py-3 rounded-brand-md hover:bg-brand-border/20 transition-all flex items-center justify-center gap-2"
                 onClick={() => { navigate('/app/connections'); setMenuOpen(false) }}
               >
-                Connections
+                <Plug size={16} /> Connections
               </button>
             ) : (
               <>
                 <button
-                  className="btn-secondary"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  className="w-full bg-brand-canvas-soft border border-brand-border text-brand-ink font-semibold py-3 rounded-brand-md hover:bg-brand-border/20 transition-all"
                   onClick={() => { handleLogin(); setMenuOpen(false) }}
                 >
                   Sign in
                 </button>
-                <motion.a whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }} href="#pricing" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Start free</motion.a>
+                <a 
+                  href="#pricing" 
+                  className="w-full bg-brand-primary text-brand-on-primary font-bold py-3 rounded-brand-md hover:bg-brand-primary-hover shadow-sm transition-all flex items-center justify-center"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Start free
+                </a>
               </>
             )}
           </div>
