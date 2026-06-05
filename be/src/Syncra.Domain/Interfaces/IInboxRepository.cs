@@ -57,6 +57,19 @@ public interface IInboxRepository
 
     Task AddCommentedPostAsync(InboxCommentedPost post);
     Task UpdateCommentedPostAsync(InboxCommentedPost post);
+    
+    Task<bool> HasSentPrivateReplyAsync(
+        Guid workspaceId,
+        string zernioCommentId,
+        CancellationToken cancellationToken = default);
+
+    Task AddPrivateReplyRecordAsync(
+        InboxCommentPrivateReply record,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InboxCommentPrivateReply>> GetPrivateRepliesForWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
 
     // ── Comment Threads (cache layer) ───────────────────────────────────────
 
@@ -66,6 +79,11 @@ public interface IInboxRepository
         CancellationToken cancellationToken = default);
 
     Task UpsertAsync(InboxCommentThread thread);
+
+    Task DeleteCommentThreadAsync(
+        Guid workspaceId,
+        string zernioPostId,
+        CancellationToken cancellationToken = default);
 
     // ── Reviews ─────────────────────────────────────────────────────────────
 

@@ -45,6 +45,7 @@ public class AppDbContext : DbContext
     public DbSet<InboxCommentedPost> InboxCommentedPosts => Set<InboxCommentedPost>();
     public DbSet<InboxCommentThread> InboxCommentThreads => Set<InboxCommentThread>();
     public DbSet<InboxReview> InboxReviews => Set<InboxReview>();
+    public DbSet<InboxCommentPrivateReply> InboxCommentPrivateReplies => Set<InboxCommentPrivateReply>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

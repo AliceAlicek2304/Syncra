@@ -60,6 +60,19 @@ public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCach
         return Task.CompletedTask;
     }
 
+    public Task InvalidateAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var prefix = workspaceId.ToString("N") + "|";
+        var keysToRemove = _cache.Keys.Where(k => k.StartsWith(prefix)).ToList();
+        foreach (var key in keysToRemove)
+        {
+            _cache.TryRemove(key, out _);
+        }
+        return Task.CompletedTask;
+    }
+
     private static string BuildKey(
         Guid workspaceId,
         string? cursor,

@@ -182,11 +182,14 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         string zernioPostId,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(zernioPostId))
+            return null;
+
         var post = await _context.InboxCommentedPosts
             .Include(c => c.SocialAccount)
             .FirstOrDefaultAsync(
                 c => c.WorkspaceId == workspaceId
-                  && c.ZernioPostId == zernioPostId,
+                  && (c.ZernioPostId == zernioPostId || c.ZernioPostId.EndsWith("_" + zernioPostId)),
                 cancellationToken);
 
         if (post != null && string.IsNullOrEmpty(post.ZernioAccountId) && post.SocialAccount != null)
@@ -208,6 +211,32 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
     {
         _context.InboxCommentedPosts.Update(post);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<bool> HasSentPrivateReplyAsync(
+        Guid workspaceId,
+        string zernioCommentId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxCommentPrivateReplies
+            .AnyAsync(r => r.WorkspaceId == workspaceId && r.ZernioCommentId == zernioCommentId, cancellationToken);
+    }
+
+    public async Task AddPrivateReplyRecordAsync(
+        InboxCommentPrivateReply record,
+        CancellationToken cancellationToken = default)
+    {
+        await _context.InboxCommentPrivateReplies.AddAsync(record, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<InboxCommentPrivateReply>> GetPrivateRepliesForWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxCommentPrivateReplies
+            .Where(r => r.WorkspaceId == workspaceId)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<InboxCommentThread?> GetByPostAsync(
@@ -237,6 +266,34 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
         }
 
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task DeleteCommentThreadAsync(
+        Guid workspaceId,
+        string zernioPostId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(zernioPostId)) return;
+
+        string? prefix = null;
+        if (zernioPostId.Contains('_'))
+        {
+            prefix = zernioPostId.Split('_')[0];
+        }
+
+        var existingThreads = await _context.InboxCommentThreads
+            .Where(t => t.WorkspaceId == workspaceId && (
+                t.ZernioPostId == zernioPostId ||
+                t.ZernioPostId.StartsWith(zernioPostId + "_") ||
+                (prefix != null && (t.ZernioPostId == prefix || t.ZernioPostId.StartsWith(prefix + "_")))
+            ))
+            .ToListAsync(cancellationToken);
+
+        if (existingThreads.Count > 0)
+        {
+            _context.InboxCommentThreads.RemoveRange(existingThreads);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
     }
 
     // ── Reviews ────────────────────────────────────────────────────────────

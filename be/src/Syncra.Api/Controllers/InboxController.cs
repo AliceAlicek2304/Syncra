@@ -323,6 +323,7 @@ public class InboxController : ControllerBase
         [FromQuery] int? limit = null,
         [FromQuery] string? cursor = null,
         [FromQuery] string? commentId = null,
+        [FromQuery] bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(accountId))
@@ -331,10 +332,9 @@ public class InboxController : ControllerBase
             return Ok(new ZernioPostCommentsResponseDto(
                 Status: "ok",
                 Post: null,
-                Meta: new ZernioCommentsMetaDto(string.Empty, null, null, null, null, DateTime.UtcNow),
+                Meta: new ZernioCommentsMetaDto(string.Empty, null, null, null, DateTime.UtcNow, null),
                 Comments: new List<ZernioPostCommentItemDto>(),
-                Cursor: null,
-                HasMore: false));
+                Pagination: new ZernioCommentsPaginationDto(false, null)));
         }
 
         var query = new GetInboxPostCommentsQuery(
@@ -346,7 +346,8 @@ public class InboxController : ControllerBase
             cursor,
             commentId,
             SelfAccountId: accountId,
-            Platform: null);
+            Platform: null,
+            ForceRefresh: forceRefresh);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
@@ -438,7 +439,12 @@ public class InboxController : ControllerBase
         [FromBody] SendPrivateReplyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var command = new SendPrivateReplyToCommentCommand(workspaceId, commentId, request.Message);
+        var command = new SendPrivateReplyToCommentCommand(
+            workspaceId,
+            commentId,
+            request.Message,
+            request.QuickReplies,
+            request.Buttons);
         var result = await _mediator.Send(command, cancellationToken);
         if (result.Status == null && result.CommentId == null) return BadRequest(new { error = "Failed to send private reply." });
         return Ok(result);

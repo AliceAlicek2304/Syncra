@@ -244,15 +244,28 @@ export interface InboxCommentedPostsResponseDto {
 }
 
 
+export interface LikeCommentResponse {
+  liked: boolean;
+  status?: string;
+  commentId?: string;
+  platform?: string;
+  likeUri?: string;
+}
+
+export interface ZernioCommentAuthorDto {
+  id: string;
+  name: string;
+  username?: string;
+  picture?: string;
+  isOwner: boolean;
+  verifiedType?: string;
+}
+
 export interface ZernioPostCommentItemDto {
   id: string;
   message: string;
   createdTime: string;
-  fromId?: string;
-  fromName?: string;
-  fromUsername?: string;
-  fromPicture?: string;
-  fromIsOwner: boolean;
+  from?: ZernioCommentAuthorDto;
   likeCount: number;
   replyCount: number;
   platform: string;
@@ -266,13 +279,72 @@ export interface ZernioPostCommentItemDto {
   likeUri?: string;
   cid?: string;
   parentId?: string;
+  isAd?: boolean;
+  replies?: ZernioPostCommentItemDto[];
+  hasSentPrivateReply?: boolean;
+}
+
+export interface PrivateReplyQuickReply {
+  title: string;
+  payload?: string;
+  imageUrl?: string;
+}
+
+export interface PrivateReplyButton {
+  type: string; // "url" | "postback" | "phone"
+  title: string;
+  url?: string;
+  payload?: string;
+  phone_number?: string;
+}
+
+export interface SendPrivateReplyRequest {
+  message: string;
+  quickReplies?: PrivateReplyQuickReply[];
+  buttons?: PrivateReplyButton[];
+}
+
+export interface ZernioPostMetaDto {
+  id: string;
+  fullname?: string;
+  title?: string;
+  selftext?: string;
+  author?: string;
+  subreddit?: string;
+  permalink?: string;
+  url?: string;
+  score: number;
+  numComments: number;
+  createdUtc: number;
+  over18: boolean;
+  stickied: boolean;
+  flairText?: string;
+  isGallery: boolean;
+}
+
+export interface ZernioCommentsMetaAdCommentsDto {
+  adId?: string;
+  adCommentsUrl?: string;
+}
+
+export interface ZernioCommentsMetaDto {
+  platform: string;
+  postId?: string;
+  accountId?: string;
+  subreddit?: string;
+  lastUpdated?: string;
+  adComments?: ZernioCommentsMetaAdCommentsDto;
 }
 
 export interface ZernioPostCommentsResponseDto {
+  status: string;
+  post?: ZernioPostMetaDto;
+  meta: ZernioCommentsMetaDto;
   comments: ZernioPostCommentItemDto[];
-  hasMore: boolean;
-  cursor?: string;
-  platform: string;
+  pagination: {
+    hasMore: boolean;
+    cursor?: string;
+  };
 }
 
 export interface InboxSendCommentReplyResponse {
@@ -462,7 +534,7 @@ export const inboxApi = {
     workspaceId: string,
     postId: string,
     accountId: string,
-    params?: { subreddit?: string; limit?: number; cursor?: string; commentId?: string }
+    params?: { subreddit?: string; limit?: number; cursor?: string; commentId?: string; forceRefresh?: boolean }
   ): Promise<ZernioPostCommentsResponseDto> => {
     const response = await api.get<ZernioPostCommentsResponseDto>(
       `workspaces/${workspaceId}/inbox/posts/${postId}/comments`,
@@ -512,8 +584,8 @@ export const inboxApi = {
     workspaceId: string,
     commentId: string,
     cid?: string
-  ): Promise<{ success: boolean }> => {
-    const response = await api.post<{ success: boolean }>(
+  ): Promise<LikeCommentResponse> => {
+    const response = await api.post<LikeCommentResponse>(
       `workspaces/${workspaceId}/inbox/comments/${commentId}/like`,
       { cid },
       { headers: { 'X-Workspace-Id': workspaceId } }
@@ -552,11 +624,11 @@ export const inboxApi = {
   sendPrivateReplyToComment: async (
     workspaceId: string,
     commentId: string,
-    message: string
-  ): Promise<{ success: boolean }> => {
-    const response = await api.post<{ success: boolean }>(
+    request: SendPrivateReplyRequest
+  ): Promise<{ success: boolean; commentId?: string; messageId?: string; status?: string }> => {
+    const response = await api.post<{ success: boolean; commentId?: string; messageId?: string; status?: string }>(
       `workspaces/${workspaceId}/inbox/comments/${commentId}/private-reply`,
-      { message },
+      request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
     return response.data;

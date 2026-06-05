@@ -1,3 +1,5 @@
+using Syncra.Application.DTOs.Zernio;
+
 namespace Syncra.Application.DTOs.Inbox;
 
 public sealed record InboxConversationDto(
@@ -181,15 +183,19 @@ public sealed record InboxSendCommentReplyResponse(
 
 // ── Additional Comment API DTOs ─────────────────────────────────────────────
 
+public sealed record ZernioCommentAuthorDto(
+    string Id,
+    string Name,
+    string? Username,
+    string? Picture,
+    bool IsOwner,
+    string? VerifiedType);
+
 public sealed record ZernioPostCommentItemDto(
     string Id,
     string Message,
     DateTime CreatedTime,
-    string? FromId,
-    string? FromName,
-    string? FromUsername,
-    string? FromPicture,
-    bool FromIsOwner,
+    ZernioCommentAuthorDto? From,
     int LikeCount,
     int ReplyCount,
     string Platform,
@@ -205,38 +211,57 @@ public sealed record ZernioPostCommentItemDto(
     string? ParentId,
     string? RootUri = null,
     string? RootCid = null,
-    IReadOnlyList<ZernioPostCommentItemDto>? Replies = null);
+    IReadOnlyList<ZernioPostCommentItemDto>? Replies = null,
+    bool? IsAd = null,
+    bool HasSentPrivateReply = false);
 
 public sealed record ZernioPostMetaDto(
-    string? Id,
-    string? Caption,
-    string? ThumbnailUrl,
+    string Id,
+    string? Fullname,
+    string? Title,
+    string? Selftext,
+    string? Author,
+    string? Subreddit,
     string? Permalink,
-    int? LikeCount,
-    int? CommentCount,
-    string? Platform);
+    string? Url,
+    int Score,
+    int NumComments,
+    int CreatedUtc,
+    bool Over18,
+    bool Stickied,
+    string? FlairText,
+    bool IsGallery);
+
+public sealed record ZernioCommentsMetaAdCommentsDto(
+    string? AdId,
+    string? AdCommentsUrl);
 
 public sealed record ZernioCommentsMetaDto(
     string Platform,
-    int? TotalCount,
-    bool? HasAdComments,
-    string? Subreddit,
+    string? PostId,
     string? AccountId,
-    DateTime? LastUpdatedUtc);
+    string? Subreddit,
+    DateTime? LastUpdated,
+    ZernioCommentsMetaAdCommentsDto? AdComments);
+
+public sealed record ZernioCommentsPaginationDto(
+    bool HasMore,
+    string? Cursor);
 
 public sealed record ZernioPostCommentsResponseDto(
     string Status,
     ZernioPostMetaDto? Post,
     ZernioCommentsMetaDto Meta,
     IReadOnlyList<ZernioPostCommentItemDto> Comments,
-    string? Cursor,
-    bool HasMore = false);
+    ZernioCommentsPaginationDto Pagination);
 
 public sealed record LikeInboxCommentRequest(
     string? Cid = null);
 
 public sealed record SendPrivateReplyRequest(
-    string Message);
+    string Message,
+    IReadOnlyList<ZernioPrivateReplyQuickReplyDto>? QuickReplies = null,
+    IReadOnlyList<ZernioPrivateReplyButtonDto>? Buttons = null);
 
 // ── Review DTOs ─────────────────────────────────────────────────────────────
 

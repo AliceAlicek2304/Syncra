@@ -2462,15 +2462,14 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var sdkRequest = new ReplyToInboxPostRequest
-            {
-                AccountId = accountId,
-                Message = message,
-                CommentId = commentId
-            };
-            if (!string.IsNullOrEmpty(parentCid)) sdkRequest.ParentCid = parentCid;
-            if (!string.IsNullOrEmpty(rootUri)) sdkRequest.RootUri = rootUri;
-            if (!string.IsNullOrEmpty(rootCid)) sdkRequest.RootCid = rootCid;
+            var targetCommentId = (commentId == zernioPostId || Guid.TryParse(commentId, out _)) ? null : commentId;
+            var sdkRequest = new ReplyToInboxPostRequest(
+                accountId: accountId,
+                message: message,
+                commentId: targetCommentId,
+                parentCid: parentCid,
+                rootUri: rootUri,
+                rootCid: rootCid);
 
             var response = await _commentsApi.ReplyToInboxPostAsync(
                 zernioPostId,
@@ -2549,49 +2548,136 @@ public sealed class ZernioClient : IZernioClient
                 commentId,
                 cancellationToken);
 
-            var items = (response.Comments ?? [])
-                .Select(c => new ZernioPostCommentItemDto(
-                    c.Id,
-                    c.Message ?? string.Empty,
-                    c.CreatedTime,
-                    c.From?.Id,
-                    c.From?.Name,
-                    c.From?.Username,
-                    c.From?.Picture,
-                    c.From?.IsOwner ?? false,
-                    c.LikeCount,
-                    c.ReplyCount,
-                    c.Platform ?? string.Empty,
-                    c.Url,
-                    c.CanReply,
-                    c.CanDelete,
-                    c.CanHide,
-                    c.CanLike,
-                    c.IsHidden,
-                    c.IsLiked,
-                    c.LikeUri,
-                    c.Cid,
-                    c.ParentId,
+            ZernioPostCommentItemDto MapCommentItem(Zernio.Model.GetInboxPostComments200ResponseCommentsInner item)
+            {
+                IReadOnlyList<ZernioPostCommentItemDto>? repliesMapped = null;
+                if (item.Replies != null && item.Replies.Count > 0)
+                {
+                    var list = new List<ZernioPostCommentItemDto>();
+                    foreach (var obj in item.Replies)
+                    {
+                        if (obj == null) continue;
+                        if (obj is Zernio.Model.GetInboxPostComments200ResponseCommentsInner childItem)
+                        {
+                            list.Add(MapCommentItem(childItem));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                string? jsonStr = null;
+                                var typeName = obj.GetType().FullName;
+                                if (typeName != null && (typeName.StartsWith("Newtonsoft.Json") || typeName.StartsWith("System.Text.Json")))
+                                {
+                                    jsonStr = obj.ToString();
+                                }
+                                else
+                                {
+                                    jsonStr = JsonSerializer.Serialize(obj, _jsonOptions);
+                                }
+
+                                if (!string.IsNullOrEmpty(jsonStr))
+                                {
+                                    var deserialized = JsonSerializer.Deserialize<Zernio.Model.GetInboxPostComments200ResponseCommentsInner>(jsonStr, _jsonOptions);
+                                    if (deserialized != null)
+                                    {
+                                        list.Add(MapCommentItem(deserialized));
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to deserialize nested reply comment: {Message}", ex.Message);
+                            }
+                        }
+                    }
+                    repliesMapped = list;
+                }
+
+                var author = item.From != null ? new ZernioCommentAuthorDto(
+                    item.From.Id ?? string.Empty,
+                    item.From.Name ?? string.Empty,
+                    item.From.Username,
+                    item.From.Picture,
+                    item.From.IsOwner,
+                    item.From.VerifiedType?.ToString()
+                ) : null;
+
+                return new ZernioPostCommentItemDto(
+                    item.Id,
+                    item.Message ?? string.Empty,
+                    item.CreatedTime,
+                    author,
+                    item.LikeCount,
+                    item.ReplyCount,
+                    item.Platform ?? string.Empty,
+                    item.Url,
+                    item.CanReply,
+                    item.CanDelete,
+                    item.CanHide,
+                    item.CanLike,
+                    item.IsHidden,
+                    item.IsLiked,
+                    item.LikeUri,
+                    item.Cid,
+                    item.ParentId,
                     RootUri: null,
                     RootCid: null,
-                    Replies: null))
+                    Replies: repliesMapped,
+                    IsAd: null
+                );
+            }
+
+            var items = (response.Comments ?? [])
+                .Select(c => MapCommentItem(c))
                 .ToList();
+
+            var metaAdComments = response.Meta?.AdComments != null ? new ZernioCommentsMetaAdCommentsDto(
+                response.Meta.AdComments.AdId,
+                response.Meta.AdComments.AdCommentsUrl
+            ) : null;
 
             var meta = new ZernioCommentsMetaDto(
                 Platform: response.Meta?.Platform ?? string.Empty,
-                TotalCount: null,
-                HasAdComments: null,
-                Subreddit: subreddit,
-                AccountId: accountId,
-                LastUpdatedUtc: DateTime.UtcNow);
+                PostId: response.Meta?.PostId,
+                AccountId: response.Meta?.AccountId ?? accountId,
+                Subreddit: response.Meta?.Subreddit ?? subreddit,
+                LastUpdated: response.Meta?.LastUpdated ?? DateTime.UtcNow,
+                AdComments: metaAdComments);
+
+            ZernioPostMetaDto? postDto = null;
+            if (response.Post != null)
+            {
+                postDto = new ZernioPostMetaDto(
+                    response.Post.Id ?? string.Empty,
+                    response.Post.Fullname,
+                    response.Post.Title,
+                    response.Post.Selftext,
+                    response.Post.Author,
+                    response.Post.Subreddit,
+                    response.Post.Permalink,
+                    response.Post.Url,
+                    response.Post.Score,
+                    response.Post.NumComments,
+                    response.Post.CreatedUtc,
+                    response.Post.Over18,
+                    response.Post.Stickied,
+                    response.Post.FlairText,
+                    response.Post.IsGallery
+                );
+            }
+
+            var pagination = new ZernioCommentsPaginationDto(
+                response.Pagination?.HasMore ?? false,
+                response.Pagination?.Cursor
+            );
 
             return new ZernioPostCommentsResponseDto(
                 Status: "ok",
-                Post: null,
+                Post: postDto,
                 Meta: meta,
                 Comments: items,
-                Cursor: response.Pagination?.Cursor,
-                HasMore: response.Pagination?.HasMore ?? false);
+                Pagination: pagination);
         }
         catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
         {
@@ -2782,6 +2868,12 @@ public sealed class ZernioClient : IZernioClient
         catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error sending private reply to comment {CommentId} on post {PostId}", commentId, zernioPostId);
+
+            if (ex.Message != null && ex.Message.Contains("older than 7 days"))
+            {
+                throw new DomainException("private_reply_expired", "Private reply can only be sent within 7 days of the comment.", ex);
+            }
+
             throw new DomainException("zernio_inbox_private_reply_error", "Failed to send private reply via Zernio", ex);
         }
     }

@@ -36,6 +36,15 @@ public sealed class MarkCommentReadCommandHandler
                 request.WorkspaceId,
                 request.CommentId,
                 cancellationToken);
+
+            if (post == null && request.CommentId.Contains('_'))
+            {
+                var parts = request.CommentId.Split('_');
+                post = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(
+                    request.WorkspaceId,
+                    parts[0],
+                    cancellationToken);
+            }
         }
 
         if (post == null)

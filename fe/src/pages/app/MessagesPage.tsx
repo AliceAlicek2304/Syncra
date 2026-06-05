@@ -3,10 +3,9 @@ import {
   Smile, Send, MessageSquare,
   Edit, Trash2, Archive, X, AlertCircle,
   Paperclip, ExternalLink,
-  ChevronDown, Check, Loader2
+  ChevronDown, Check, Loader2, Search
 } from 'lucide-react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
-import styles from './MessagesPage.module.css';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { socialAccountsApi, type SocialAccountDto } from '../../api/socialAccounts';
@@ -18,6 +17,8 @@ import {
 } from '../../api/inbox';
 import { mediaApi } from '../../api/media';
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons';
+import { Button } from '../../components/ui/button';
+
 
 // ── Helpers & Components ───────────────────────────────────────────────────
 
@@ -137,24 +138,58 @@ const DoubleCheck = ({ size = 12, className }: { size?: number; className?: stri
   </svg>
 );
 
+const LOCAL_STYLE = `
+  .messages-dashboard-theme {
+    --primary: #8c4d39;
+    --primary-container: #f4a48b;
+    --on-primary: #ffffff;
+    --on-primary-container: #713826;
+    --background: #f9f9fa;
+    --surface: #f9f9fa;
+    --surface-container: #eeeeef;
+    --surface-container-high: #e8e8e9;
+    --surface-container-highest: #e2e2e3;
+    --surface-container-low: #f3f3f4;
+    --surface-container-lowest: #ffffff;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #53433f;
+    --outline: #86736e;
+    --outline-variant: #d8c2bb;
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error: #ffffff;
+    --on-error-container: #93000a;
+    --primary-fixed-dim: #ffb59e;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+`;
+
 const renderPlatformBadge = (platform: string) => (
-  <span className={styles.platformBadge}>
-    <ExtendedPlatformIcon platform={platform} size={17} />
+  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-[var(--outline-variant)] flex items-center justify-center z-10 shadow-sm">
+    <ExtendedPlatformIcon platform={platform} size={14} />
   </span>
 );
 
 const statusIcons: Record<string, { icon: React.ReactNode; cls: string }> = {
-  sending: { icon: <Loader2 size={12} />, cls: styles.statusIconSending },
-  sent: { icon: <Check size={12} />, cls: styles.statusIconSent },
-  delivered: { icon: <DoubleCheck size={12} />, cls: styles.statusIconDelivered },
-  read: { icon: <DoubleCheck size={12} />, cls: styles.statusIconRead },
-  failed: { icon: <X size={12} />, cls: styles.statusIconFailed },
+  sending: { icon: <Loader2 size={12} className="animate-spin" />, cls: 'text-[var(--on-surface-variant)]' },
+  sent: { icon: <Check size={12} />, cls: 'text-[var(--primary)]' },
+  delivered: { icon: <DoubleCheck size={12} />, cls: 'text-[var(--primary)]' },
+  read: { icon: <DoubleCheck size={12} />, cls: 'text-[var(--primary)]' },
+  failed: { icon: <X size={12} />, cls: 'text-red-500' },
 };
 
 const MessageStatusIcon = ({ status }: { status?: string }) => {
-  if (!status) return <DoubleCheck size={12} className={styles.statusIcon} />;
+  if (!status) return <DoubleCheck size={12} className="text-[var(--primary)]" />;
   const entry = statusIcons[status] ?? statusIcons.sent;
-  return <span className={`${styles.statusIcon} ${entry.cls}`}>{entry.icon}</span>;
+  return <span className={`inline-block ${entry.cls}`}>{entry.icon}</span>;
 };
 
 interface FilterOption { value: string; label: string; iconPlatform?: string }
@@ -179,36 +214,36 @@ function FilterDropdown({
   const renderOptionLabel = (option?: FilterOption) => {
     if (!option) return label;
     return (
-      <span className={styles.filterDropdownLabelContent}>
+      <span className="flex items-center gap-1.5 min-w-0">
         {option.iconPlatform && (
-          <span className={styles.filterDropdownLabelIcon}>
+          <span className="shrink-0 flex items-center">
             <ExtendedPlatformIcon platform={option.iconPlatform} size={14} />
           </span>
         )}
-        <span className={styles.filterDropdownLabelText}>{option.label}</span>
+        <span className="truncate">{option.label}</span>
       </span>
     );
   };
 
   return (
-    <div className={styles.filterDropdownWrapper} ref={ref}>
+    <div className="relative flex items-center shrink-0" ref={ref}>
       <button
-        className={`${styles.filterDropdownTrigger} ${open ? styles.filterDropdownTriggerOpen : ''}`}
+        className={`flex items-center justify-between bg-transparent border border-[var(--outline-variant)] rounded-lg pl-3 pr-8 py-1.5 text-xs text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)] transition-colors outline-none cursor-pointer gap-2 ${open ? 'bg-[var(--surface-container-low)]' : ''}`}
         onClick={() => setOpen(!open)}
       >
-        <span className={styles.filterDropdownTriggerLabel}>{renderOptionLabel(selected)}</span>
-        <ChevronDown size={14} className={`${styles.filterDropdownChevron} ${open ? styles.filterDropdownChevronOpen : ''}`} />
+        <span className="text-left select-none">{renderOptionLabel(selected)}</span>
+        <ChevronDown size={14} className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--on-surface-variant)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className={styles.filterDropdownMenu}>
+        <div className="absolute top-full left-0 mt-1 w-48 bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-lg shadow-lg z-50 py-1 overflow-hidden">
           {options.map(opt => (
             <button
               key={opt.value}
-              className={`${styles.filterDropdownItem} ${opt.value === value ? styles.filterDropdownItemActive : ''}`}
+              className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center gap-2 outline-none ${opt.value === value ? 'bg-[var(--surface-container-high)] text-[var(--primary)] font-semibold' : 'text-[var(--on-surface)] hover:bg-[var(--surface-container-low)]'}`}
               onClick={() => { onChange(opt.value); setOpen(false); }}
             >
-              <span className={styles.filterDropdownCheckSlot}>
-                {opt.value === value ? <Check size={14} className={styles.filterDropdownCheck} /> : null}
+              <span className="w-4 shrink-0 flex items-center justify-center">
+                {opt.value === value ? <Check size={14} className="text-[var(--primary)]" /> : null}
               </span>
               {renderOptionLabel(opt)}
             </button>
@@ -218,6 +253,7 @@ function FilterDropdown({
     </div>
   );
 }
+
 
 
 export default function MessagesPage() {
@@ -247,6 +283,7 @@ export default function MessagesPage() {
   const [isCreatingConvo, setIsCreatingConvo] = useState(false);
 
   // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [filterAccount, setFilterAccount] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
@@ -277,6 +314,38 @@ export default function MessagesPage() {
   // Refs
   const messageEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Refs for tracking states without re-triggering effects
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  const conversationsRef = useRef(conversations);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
+  const socialAccountsRef = useRef(socialAccounts);
+  useEffect(() => {
+    socialAccountsRef.current = socialAccounts;
+  }, [socialAccounts]);
+
+  const filterWorkspaceIdRef = useRef(filterWorkspaceId);
+  useEffect(() => {
+    filterWorkspaceIdRef.current = filterWorkspaceId;
+  }, [filterWorkspaceId]);
+
+  const workspacesRef = useRef(workspaces);
+  useEffect(() => {
+    workspacesRef.current = workspaces;
+  }, [workspaces]);
+
+  const activeWorkspaceRef = useRef(activeWorkspace);
+  useEffect(() => {
+    activeWorkspaceRef.current = activeWorkspace;
+  }, [activeWorkspace]);
+
   const activeChat = conversations.find(c => c.id === selectedId);
   const activeChatWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
   const activeSocialAccount = socialAccounts.find(sa => sa.id === activeChat?.socialAccountId);
@@ -287,6 +356,8 @@ export default function MessagesPage() {
   const reactionEmojiSet = activeChat?.platform.toLowerCase() === 'telegram'
     ? TELEGRAM_REACTION_EMOJI
     : WHATSAPP_REACTION_EMOJI;
+
+  const convoWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
 
   // ── Load Social Accounts & Conversations ────────────────────────────────
   useEffect(() => {
@@ -338,89 +409,102 @@ export default function MessagesPage() {
     fetchInitialData();
   }, [filterWorkspaceId, workspaces]);
 
+  const refreshConversationsOnly = async () => {
+    try {
+      let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
+      if (filterWorkspaceIdRef.current === 'all') {
+        const lists = await Promise.all(workspacesRef.current.map(async w => {
+          const list = await inboxApi.getConversations(w.id);
+          return list.map(c => ({ ...c, workspaceId: w.id }));
+        }));
+        convs = lists.flat();
+      } else {
+        const list = await inboxApi.getConversations(filterWorkspaceIdRef.current);
+        convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceIdRef.current }));
+      }
+      setConversations(convs);
+    } catch (err) {
+      console.error('Failed to refresh conversations list', err);
+    }
+  };
+
+  const refreshMessagesAndDetails = async (convoId: string, options?: { showLoader?: boolean }) => {
+    const showLoader = options?.showLoader ?? false;
+    
+    const currentConvo = conversationsRef.current.find(c => c.id === convoId);
+    if (!currentConvo) return;
+
+    const currentConvoWorkspaceId = currentConvo.workspaceId || activeWorkspaceRef.current?.id;
+    if (!currentConvoWorkspaceId) return;
+
+    if (showLoader) {
+      setIsLoadingMessages(true);
+    }
+    
+    try {
+      // 1. Fetch messages first and set immediately (gets from local DB, fast)
+      const msgList = await inboxApi.getMessages(currentConvoWorkspaceId, convoId);
+      setMessages(msgList);
+      
+      // Turn off loader immediately after setting messages so user has instant feedback
+      if (showLoader) {
+        setIsLoadingMessages(false);
+      }
+
+      // Mark as read locally and API ONLY if not already read
+      if (currentConvo && (!currentConvo.isRead || currentConvo.unreadCount > 0)) {
+        await inboxApi.markAsRead(currentConvoWorkspaceId, convoId);
+        setConversations(prev =>
+          prev.map(c => (c.id === convoId ? { ...c, isRead: true, unreadCount: 0 } : c))
+        );
+      }
+
+      // 2. Fetch conversation details (slower, talks to Zernio API live)
+      const currentSa = socialAccountsRef.current.find(sa => sa.id === currentConvo.socialAccountId);
+      if (currentSa?.externalAccountId) {
+        const details = await inboxApi.getConversationDetails(
+          currentConvoWorkspaceId,
+          convoId,
+          currentSa.externalAccountId
+        );
+        setConversationDetails(details);
+      } else {
+        setConversationDetails(null);
+      }
+    } catch (err) {
+      console.error('Error fetching conversation messages/details', err);
+    } finally {
+      if (showLoader) {
+        setIsLoadingMessages(false);
+      }
+    }
+  };
+
   // ── Load Conversation Details & Messages on Select ──────────────────────
   useEffect(() => {
-    const currentConvo = conversations.find(c => c.id === selectedId);
-    if (!currentConvo || !selectedId) {
+    if (!selectedId) {
       setMessages([]);
       setConversationDetails(null);
       return;
     }
-
-    const convoWorkspaceId = currentConvo.workspaceId || activeWorkspace?.id;
-    if (!convoWorkspaceId) return;
-
-    const fetchConvoData = async () => {
-      setIsLoadingMessages(true);
-      try {
-        const msgList = await inboxApi.getMessages(convoWorkspaceId, selectedId);
-        setMessages(msgList);
-
-        // Mark as read locally and API ONLY if not already read
-        if (currentConvo && (!currentConvo.isRead || currentConvo.unreadCount > 0)) {
-          await inboxApi.markAsRead(convoWorkspaceId, selectedId);
-          setConversations(prev =>
-            prev.map(c => (c.id === selectedId ? { ...c, isRead: true, unreadCount: 0 } : c))
-          );
-        }
-
-        // Fetch meta details via wrapper
-        const currentSa = socialAccounts.find(sa => sa.id === currentConvo?.socialAccountId);
-        if (currentSa?.externalAccountId) {
-          const details = await inboxApi.getConversationDetails(
-            convoWorkspaceId,
-            selectedId,
-            currentSa.externalAccountId
-          );
-          setConversationDetails(details);
-        }
-      } catch (err) {
-        console.error('Error fetching conversation messages/details', err);
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
-
-    fetchConvoData();
-  }, [selectedId, conversations, socialAccounts, activeWorkspace]);
+    refreshMessagesAndDetails(selectedId, { showLoader: true });
+  }, [selectedId, activeWorkspace?.id]);
 
   // ── SignalR real-time updates & Fallback Polling ────────────────────────
   useEffect(() => {
-    const convoWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
     if (!convoWorkspaceId) return;
+
+    const handleUpdate = async () => {
+      await refreshConversationsOnly();
+      if (selectedIdRef.current) {
+        await refreshMessagesAndDetails(selectedIdRef.current, { showLoader: false });
+      }
+    };
 
     // 1. Fallback Polling every 10 seconds (in case SignalR is not connected)
     const interval = setInterval(async () => {
       try {
-        let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
-        if (filterWorkspaceId === 'all') {
-          const lists = await Promise.all(workspaces.map(async w => {
-            const list = await inboxApi.getConversations(w.id);
-            return list.map(c => ({ ...c, workspaceId: w.id }));
-          }));
-          convs = lists.flat();
-        } else {
-          const list = await inboxApi.getConversations(filterWorkspaceId);
-          convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceId }));
-        }
-        setConversations(convs);
-
-        if (selectedId) {
-          const selectedConvo = convs.find(c => c.id === selectedId);
-          const targetWsId = selectedConvo?.workspaceId || convoWorkspaceId;
-          const currentSa = socialAccounts.find(sa => sa.id === selectedConvo?.socialAccountId);
-          const msgList = await inboxApi.getMessages(targetWsId, selectedId);
-          setMessages(msgList);
-
-          if (currentSa?.externalAccountId) {
-            const details = await inboxApi.getConversationDetails(
-              targetWsId,
-              selectedId,
-              currentSa.externalAccountId
-            );
-            setConversationDetails(details);
-          }
-        }
+        await handleUpdate();
       } catch (err) {
         console.error('Failed to poll updates', err);
       }
@@ -442,35 +526,7 @@ export default function MessagesPage() {
 
     const handleInboxItemCreated = async (_payload: any) => {
       try {
-        let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
-        if (filterWorkspaceId === 'all') {
-          const lists = await Promise.all(workspaces.map(async w => {
-            const list = await inboxApi.getConversations(w.id);
-            return list.map(c => ({ ...c, workspaceId: w.id }));
-          }));
-          convs = lists.flat();
-        } else {
-          const list = await inboxApi.getConversations(filterWorkspaceId);
-          convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceId }));
-        }
-        setConversations(convs);
-
-        if (selectedId) {
-          const selectedConvo = convs.find(c => c.id === selectedId);
-          const targetWsId = selectedConvo?.workspaceId || convoWorkspaceId;
-          const currentSa = socialAccounts.find(sa => sa.id === selectedConvo?.socialAccountId);
-          const msgList = await inboxApi.getMessages(targetWsId, selectedId);
-          setMessages(msgList);
-
-          if (currentSa?.externalAccountId) {
-            const details = await inboxApi.getConversationDetails(
-              targetWsId,
-              selectedId,
-              currentSa.externalAccountId
-            );
-            setConversationDetails(details);
-          }
-        }
+        await handleUpdate();
       } catch (err) {
         console.error('Failed to update inbox on SignalR event', err);
       }
@@ -487,7 +543,7 @@ export default function MessagesPage() {
       connection.off('inbox.itemCreated', handleInboxItemCreated);
       void connection.stop();
     };
-  }, [filterWorkspaceId, workspaces, selectedId, socialAccounts, activeChat, activeWorkspace]);
+  }, [convoWorkspaceId]);
 
   const handleSend = async () => {
     if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
@@ -860,11 +916,19 @@ export default function MessagesPage() {
 
   const filteredConversations = conversations.filter(c => {
     // Loại bỏ luôn conversation thuộc platform không Zernio-supported
-    // (defense in depth — phòng BE trả lẫn platform lạ).
     if (!MESSAGES_SUPPORTED_PLATFORMS.has(c.platform.toLowerCase())) return false;
     if (filterWorkspaceId !== 'all' && c.workspaceId !== filterWorkspaceId) return false;
     if (filterPlatform !== 'all' && c.platform !== filterPlatform) return false;
     if (filterAccount !== 'all' && c.socialAccountId !== filterAccount) return false;
+    
+    // Local search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchesName = (c.participantName || '').toLowerCase().includes(q);
+      const matchesMsg = (c.lastMessageText || '').toLowerCase().includes(q);
+      return matchesName || matchesMsg;
+    }
+    
     return true;
   });
 
@@ -876,16 +940,66 @@ export default function MessagesPage() {
   });
 
   return (
-    <div className={styles.container}>
-      {/* Main Grid */}
-      <div className={styles.grid}>
-        {/* Left Column: Sidebar List */}
-        <section className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <div className={styles.sidebarTitleRow}>
-              <h2>Messages</h2>
+    <div className="messages-dashboard-theme w-full h-screen flex flex-col overflow-hidden bg-[var(--background)] text-[var(--on-surface)] font-sans antialiased">
+      <style>{LOCAL_STYLE}</style>
+
+      {/* Top Header Bar */}
+      <header className="flex justify-between items-center w-full px-6 py-2 border-b border-[var(--outline-variant)] bg-[var(--surface)] shrink-0 h-16">
+        <div className="flex items-center gap-6 flex-wrap">
+          <h1 className="font-bold text-2xl text-[var(--on-surface)]">Messages</h1>
+          
+          <div className="flex items-center gap-2">
+            <FilterDropdown
+              value={filterPlatform}
+              onChange={setFilterPlatform}
+              options={platformOptions}
+              label="All platforms"
+            />
+            <FilterDropdown
+              value={filterWorkspaceId}
+              onChange={(val) => {
+                setFilterWorkspaceId(val);
+                if (val !== 'all') {
+                  const ws = workspaces.find(w => w.id === val);
+                  if (ws) {
+                    setActiveWorkspace(ws);
+                  }
+                }
+              }}
+              options={workspaceOptions}
+              label="All workspaces"
+            />
+            <FilterDropdown
+              value={filterAccount}
+              onChange={setFilterAccount}
+              options={accountOptions}
+              label="All accounts"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {activeChat && (
+            <button 
+              onClick={() => {}}
+              className="text-[var(--primary)] hover:bg-[var(--surface-container-low)] transition-colors rounded-full p-2 outline-none"
+              title="Open in Native Platform"
+            >
+              <ExternalLink size={18} />
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Main Workspace Split Layout */}
+      <main className="flex-1 flex overflow-hidden min-h-0 w-full">
+        {/* Left Sidebar (Conversations Master List) */}
+        <aside className="w-[320px] shrink-0 flex flex-col border-r border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] h-full">
+          <div className="p-4 border-b border-[var(--outline-variant)] flex justify-between items-center bg-[var(--surface-bright)] shrink-0">
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-lg text-[var(--on-surface)]">Chats</h2>
               <button
-                className={styles.newChatBtn}
+                className="text-[var(--primary)] hover:bg-[var(--surface-container-low)] transition-colors rounded-full p-1.5 outline-none"
                 onClick={() => {
                   if (socialAccounts.length > 0) {
                     setNewChatAccount(socialAccounts[0].id);
@@ -894,153 +1008,164 @@ export default function MessagesPage() {
                 }}
                 title="New Chat"
               >
-                <Edit size={18} />
+                <Edit size={16} />
               </button>
             </div>
-            <div className={styles.filterRow}>
-              <FilterDropdown
-                value={filterPlatform}
-                onChange={setFilterPlatform}
-                options={platformOptions}
-                label="All platforms"
-              />
-              <FilterDropdown
-                value={filterWorkspaceId}
-                onChange={(val) => {
-                  setFilterWorkspaceId(val);
-                  if (val !== 'all') {
-                    const ws = workspaces.find(w => w.id === val);
-                    if (ws) {
-                      setActiveWorkspace(ws);
-                    }
-                  }
-                }}
-                options={workspaceOptions}
-                label="All workspaces"
-              />
-              <FilterDropdown
-                value={filterAccount}
-                onChange={setFilterAccount}
-                options={accountOptions}
-                label="All accounts"
+            
+            <div className="relative flex items-center">
+              <select 
+                className="appearance-none bg-transparent border border-[var(--outline-variant)] rounded pl-2 pr-6 py-1 text-xs text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)] transition-colors outline-none cursor-pointer font-medium"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="newest" className="bg-[var(--surface-container-lowest)] text-[var(--on-surface)]">Newest first</option>
+                <option value="oldest" className="bg-[var(--surface-container-lowest)] text-[var(--on-surface)]">Oldest first</option>
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--on-surface-variant)]" />
+            </div>
+          </div>
+
+          {/* Search bar inside sidebar */}
+          <div className="px-4 py-2 border-b border-[var(--outline-variant)] bg-[var(--surface-bright)] shrink-0">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 text-[var(--on-surface-variant)]" size={14} />
+              <input
+                type="text"
+                placeholder="Search chats..."
+                className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-lg pl-9 pr-4 py-1.5 text-xs text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
 
-          <div className={styles.subHeader}>
-            <span className={styles.subHeaderTitle}>Conversations</span>
-            <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-          </div>
-
-          <div className={styles.conversationsList}>
+          {/* Conversations List Scrolling Items */}
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className={styles.emptyState}><Loader2 size={24} className={styles.spinner} /> Loading conversations...</div>
+              <div className="py-10 px-4 text-center text-[var(--on-surface-variant)] text-xs flex flex-col items-center gap-2">
+                <Loader2 className="animate-spin text-[var(--primary)]" size={24} />
+                <span>Loading conversations...</span>
+              </div>
             ) : sortedConversations.length === 0 ? (
-              <div className={styles.emptyState}>No conversations found</div>
+              <div className="py-10 px-4 text-center text-[var(--on-surface-variant)] text-xs">
+                <span>No conversations found</span>
+              </div>
             ) : (
               sortedConversations.map(c => {
+                const isActive = c.id === selectedId;
                 const socialAccount = socialAccounts.find(sa => sa.id === c.socialAccountId);
                 const accountHandle = socialAccount?.handle || socialAccount?.displayName || '';
+                const isUnread = !c.isRead && c.unreadCount > 0;
 
                 return (
-                  <div
+                  <button
                     key={c.id}
-                    className={`${styles.conversationItem} ${c.id === selectedId ? styles.active : ''} ${!c.isRead && c.unreadCount > 0 ? styles.unread : ''}`}
+                    className={`w-full text-left p-4 border-b border-[var(--outline-variant)] flex gap-3 cursor-pointer hover:bg-[var(--surface-container-low)] transition-colors outline-none border-l-4 ${isActive ? 'bg-[var(--surface-container-high)] border-l-[var(--primary)]' : 'border-l-transparent bg-transparent'}`}
                     onClick={() => setSelectedId(c.id)}
                   >
-                    <div className={styles.avatarWrapper}>
+                    <div className="w-10 h-10 rounded-lg bg-[var(--surface-container-low)] shrink-0 flex items-center justify-center relative border border-[var(--outline-variant)]/30">
                       {c.participantAvatarUrl ? (
-                        <img src={c.participantAvatarUrl} alt={c.participantName} className={styles.avatar} />
+                        <img src={c.participantAvatarUrl} alt={c.participantName} className="w-full h-full object-cover rounded-lg" />
                       ) : (
-                        <div className={`${styles.avatar} ${styles.avatarFallback}`}>
+                        <div className="w-full h-full rounded-lg bg-[var(--primary-container)] flex items-center justify-center text-[var(--on-primary-container)] font-bold text-sm">
                           {getInitials(c.participantName)}
                         </div>
                       )}
                       {renderPlatformBadge(c.platform)}
                     </div>
-                    <div className={styles.convoMeta}>
-                      <div className={styles.convoTop}>
-                        <span className={styles.convoName}>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs truncate pr-2 ${isUnread ? 'font-bold text-[var(--primary)]' : 'font-semibold text-[var(--on-surface)]'}`}>
                           {c.participantName || 'Contact'}
-                          {accountHandle && (
-                            <span className={styles.viaHandle}> · via @{accountHandle}</span>
-                          )}
                         </span>
-                        <span className={styles.convoTime}>
+                        <span className="text-[10px] text-[var(--on-surface-variant)] shrink-0">
                           {c.lastMessageAtUtc ? getShortTimeDiff(c.lastMessageAtUtc) : ''}
                         </span>
                       </div>
-                      <div className={styles.convoBottom}>
-                        <div className={styles.convoBottomRow}>
-                          <p className={styles.convoText}>{c.lastMessageText || 'No messages'}</p>
+
+                      {accountHandle && (
+                        <div className="text-[10px] text-[var(--on-surface-variant)] mb-1 truncate">
+                          via @{accountHandle}
                         </div>
-                        {!c.isRead && c.unreadCount > 0 && <span className={styles.unreadDot}></span>}
+                      )}
+
+                      <div className="flex items-center justify-between mt-1 text-[10px]">
+                        <p className={`truncate flex-1 pr-2 ${isUnread ? 'font-semibold text-[var(--on-surface)]' : 'text-[var(--on-surface-variant)]'}`}>
+                          {c.lastMessageText || 'No messages'}
+                        </p>
+                        {isUnread && (
+                          <span className="w-2 h-2 rounded-full bg-[var(--primary)] shrink-0 ml-1" />
+                        )}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}
           </div>
-        </section>
+        </aside>
 
-        {/* Right Column: Chat Window */}
-        <section className={styles.chatWindow}>
+        {/* Right Content Area (Detail View & Message History) */}
+        <section className="flex-1 flex flex-col bg-[var(--surface-bright)] relative h-full min-w-0">
           {isLoadingMessages ? (
-            <div className={styles.noChatSelected}>
-              <Loader2 size={48} className={styles.spinner} />
-              <p>Loading messages...</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-[var(--on-surface-variant)] gap-3">
+              <Loader2 className="animate-spin text-[var(--primary)]" size={48} />
+              <p className="text-sm font-medium">Loading messages...</p>
             </div>
           ) : activeChat ? (
             <>
-              {/* Chat Header */}
-              <div className={styles.chatHeader}>
-                <div className={styles.headerUser}>
-                  <div className={styles.avatarWrapper}>
+              {/* Detail Header */}
+              <header className="p-4 border-b border-[var(--outline-variant)] flex justify-between items-center bg-[var(--surface-bright)] z-10 shrink-0 h-16">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[var(--surface-container-low)] shrink-0 flex items-center justify-center relative border border-[var(--outline-variant)]/30">
                     {activeChat.participantAvatarUrl ? (
-                      <img src={activeChat.participantAvatarUrl} alt={activeChat.participantName} className={styles.avatar} />
+                      <img src={activeChat.participantAvatarUrl} alt={activeChat.participantName} className="w-full h-full object-cover rounded-lg" />
                     ) : (
-                      <div className={`${styles.avatar} ${styles.avatarFallback}`}>
+                      <div className="w-full h-full rounded-lg bg-[var(--primary-container)] flex items-center justify-center text-[var(--on-primary-container)] font-bold text-sm">
                         {getInitials(activeChat.participantName)}
                       </div>
                     )}
                     {renderPlatformBadge(activeChat.platform)}
                   </div>
                   <div>
-                    <h3>{activeChat.participantName || 'Contact'}</h3>
-                    <div className={styles.headerMetaRow}>
-                      <span className={styles.headerPlatformText}>
-                        Replying as @{activeSocialAccount?.handle || activeSocialAccount?.displayName || 'Unknown'}
-                      </span>
-                      <span className={styles.headerActiveDot}>•</span>
-                      <span className={styles.headerActiveText}>
-                        Active {activeChat.lastMessageAtUtc ? getShortTimeDiff(activeChat.lastMessageAtUtc) : '4m'}
-                      </span>
+                    <h3 className="font-semibold text-sm text-[var(--on-surface)]">{activeChat.participantName || 'Contact'}</h3>
+                    <div className="flex items-center gap-1.5 text-[10px] text-[var(--on-surface-variant)] mt-0.5">
+                      <span>Replying as @{activeSocialAccount?.handle || activeSocialAccount?.displayName || 'Unknown'}</span>
+                      <span>•</span>
+                      <span>Active {activeChat.lastMessageAtUtc ? getShortTimeDiff(activeChat.lastMessageAtUtc) : '4m'}</span>
                     </div>
                   </div>
                 </div>
-                <div className={styles.headerActions}>
+
+                <div className="flex items-center gap-2">
                   {conversationDetails && (
                     <button
                       onClick={handleToggleArchive}
                       disabled={isArchiving}
+                      className="text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors p-2 outline-none"
                       title={conversationDetails.status === 'archived' ? 'Unarchive Convo' : 'Archive Convo'}
-                      style={{ color: conversationDetails.status === 'archived' ? 'var(--clr-primary)' : 'inherit' }}
+                      style={{ color: conversationDetails.status === 'archived' ? 'var(--primary)' : 'inherit' }}
                     >
-                      {isArchiving ? <Loader2 size={18} className={styles.spinner} /> : <Archive size={18} />}
+                      {isArchiving ? <Loader2 size={18} className="animate-spin" /> : <Archive size={18} />}
                     </button>
                   )}
-                  <button title="Open in External Link" onClick={() => {}}><ExternalLink size={18} /></button>
+                  <button 
+                    title="Open in External Link" 
+                    onClick={() => {}}
+                    className="text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors p-2 outline-none"
+                  >
+                    <ExternalLink size={18} />
+                  </button>
                 </div>
-              </div>
+              </header>
 
-              {/* Messages List */}
-              <div className={styles.messagesContainer}>
+              {/* Detail Body scrollable area */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
                 {messages.length === 0 ? (
-                  <div className={styles.emptyState}>No messages yet. Send a message to start!</div>
+                  <div className="py-10 text-center text-[var(--on-surface-variant)] text-xs">
+                    <span>No messages yet. Send a message to start!</span>
+                  </div>
                 ) : (
                   (() => {
                     const sorted = [...messages].sort((a, b) => {
@@ -1073,39 +1198,63 @@ export default function MessagesPage() {
                       else { lastMsgTime = sentMs; }
 
                       return (
-                        <div key={m.id} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <div key={m.id} className="w-full flex flex-col">
                           {showDateSep && (
-                            <div className={styles.dateSeparator}>
-                              <span>{currentDateLabel}</span>
+                            <div className="flex justify-center my-4">
+                              <span className="text-[10px] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] px-3 py-1 rounded-full font-medium shadow-sm">
+                                {currentDateLabel}
+                              </span>
                             </div>
                           )}
                           {showTimeSep && (
-                            <div className={styles.timeSeparator}>
-                              <span>{formatHanoiTime(m.sentAtUtc)}</span>
+                            <div className="flex justify-center my-2">
+                              <span className="text-[10px] text-[var(--on-surface-variant)] opacity-70">
+                                {formatHanoiTime(m.sentAtUtc)}
+                              </span>
                             </div>
                           )}
-                          <div className={`${styles.messageWrapper} ${isMe ? styles.myMessage : styles.userMessage}`}>
-                            <div className={styles.messageContent}>
-                              <div className={styles.messageBubbleContainer}>
-                                
+                          
+                          <div className={`flex gap-3 max-w-[75%] my-1.5 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                            {/* Avatar */}
+                            {!isMe && (
+                              <div className="w-8 h-8 rounded-full bg-[var(--primary-container)] text-[var(--on-primary-container)] flex items-center justify-center shrink-0 text-xs font-bold shadow-sm self-end mb-1">
+                                {getInitials(activeChat.participantName)}
+                              </div>
+                            )}
+
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="relative flex items-center gap-2 group">
                                 {editingMessageId === m.id ? (
-                                  <div className={styles.editMessageForm}>
+                                  <div className="flex flex-col gap-2 p-3 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl min-w-[240px]">
                                     <input
                                       type="text"
                                       value={editingText}
                                       onChange={(e) => setEditingText(e.target.value)}
                                       autoFocus
                                       disabled={isEditing === m.zernioMessageId}
+                                      className="w-full bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded px-2 py-1 text-xs text-[var(--on-surface)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                                     />
-                                    <button className={styles.editBtnSave} onClick={() => handleSaveEdit(m.zernioMessageId)} disabled={!!isEditing}>
-                                      {isEditing ? <Loader2 size={14} className={styles.spinner} /> : 'Save'}
-                                    </button>
-                                    <button className={styles.editBtnCancel} onClick={() => setEditingMessageId(null)} disabled={!!isEditing}>Cancel</button>
+                                    <div className="flex justify-end gap-2">
+                                      <button 
+                                        className="px-2.5 py-1 text-[10px] border border-[var(--outline-variant)] rounded text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] transition-colors disabled:opacity-50"
+                                        onClick={() => setEditingMessageId(null)} 
+                                        disabled={!!isEditing}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button 
+                                        className="px-2.5 py-1 text-[10px] bg-[var(--primary)] text-[var(--on-primary)] rounded hover:opacity-95 transition-opacity flex items-center gap-1 disabled:opacity-50"
+                                        onClick={() => handleSaveEdit(m.zernioMessageId)} 
+                                        disabled={!!isEditing}
+                                      >
+                                        {isEditing ? <Loader2 size={10} className="animate-spin" /> : 'Save'}
+                                      </button>
+                                    </div>
                                   </div>
                                 ) : (
-                                  <div className={styles.bubble}>
+                                  <div className={`p-3 rounded-xl text-xs shadow-sm break-words min-w-0 max-w-md ${isMe ? 'bg-[var(--primary)] text-[var(--on-primary)] rounded-br-none' : 'bg-[var(--surface-container-low)] text-[var(--on-surface)] border border-[var(--outline-variant)] rounded-bl-none'}`}>
                                     {m.attachments && m.attachments.length > 0 && (
-                                      <div className={styles.attachmentsList}>
+                                      <div className="flex flex-col gap-2 mb-2 max-w-full">
                                         {m.attachments.map((att) => {
                                           const t = (att.type || '').toLowerCase();
                                           const imageExt = /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$|#)/i;
@@ -1117,7 +1266,7 @@ export default function MessagesPage() {
                                                 key={att.id}
                                                 src={src}
                                                 alt={att.filename || 'image'}
-                                                className={styles.messageImage}
+                                                className="max-w-full max-h-60 rounded-lg object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                                 onClick={() => window.open(att.url, '_blank')}
                                               />
                                             );
@@ -1127,7 +1276,7 @@ export default function MessagesPage() {
                                                 key={att.id}
                                                 src={att.url}
                                                 controls
-                                                className={styles.messageVideo}
+                                                className="max-w-full rounded-lg max-h-60"
                                               />
                                             );
                                           } else if (t === 'audio') {
@@ -1136,7 +1285,7 @@ export default function MessagesPage() {
                                                 key={att.id}
                                                 src={att.url}
                                                 controls
-                                                className={styles.messageAudio}
+                                                className="max-w-full rounded-lg"
                                               />
                                             );
                                           } else {
@@ -1146,27 +1295,27 @@ export default function MessagesPage() {
                                                 href={att.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={styles.messageFileLink}
+                                                className="flex items-center gap-1 text-[var(--primary)] hover:underline break-all"
+                                                style={{ color: isMe ? '#ffffff' : 'var(--primary)' }}
                                               >
-                                                <Paperclip size={14} style={{ marginRight: '4px' }} />
-                                                {att.filename || 'Download file'}
+                                                <Paperclip size={12} className="shrink-0" />
+                                                <span className="underline">{att.filename || 'Download file'}</span>
                                               </a>
                                             );
                                           }
                                         })}
                                       </div>
                                     )}
-                                    {m.bodyText && <p>{m.bodyText}</p>}
+                                    {m.bodyText && <p className="whitespace-pre-wrap">{m.bodyText}</p>}
                                   </div>
                                 )}
 
-                                {/* Message actions menu on hover — ẩn luôn wrapper nếu không có action nào */}
+                                {/* Hover actions menu */}
                                 {!editingMessageId && (isReactionSupported || (isMe && activeChat.platform === 'telegram') || canDeleteMessage(isMe)) && (
-                                  <div className={styles.messageActions}>
-                                    {/* Emoji reaction popover button — chỉ hiện trên Telegram/WhatsApp */}
+                                  <div className={`hidden group-hover:flex items-center gap-1 bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-full p-1 shadow-md absolute z-20 ${isMe ? 'right-full mr-2' : 'left-full ml-2'}`}>
                                     {isReactionSupported && (
                                       <button
-                                        className={styles.actionBtn}
+                                        className="text-[var(--on-surface-variant)] hover:text-[var(--primary)] hover:bg-[var(--surface-container-low)] p-1 rounded-full transition-colors outline-none"
                                         onClick={() => setShowReactionPickerId(showReactionPickerId === m.id ? null : m.id)}
                                         title="Add reaction"
                                       >
@@ -1175,7 +1324,7 @@ export default function MessagesPage() {
                                     )}
                                     {isMe && activeChat.platform === 'telegram' && (
                                       <button
-                                        className={styles.actionBtn}
+                                        className="text-[var(--on-surface-variant)] hover:text-[var(--primary)] hover:bg-[var(--surface-container-low)] p-1 rounded-full transition-colors outline-none"
                                         onClick={() => startEdit(m.id, m.bodyText || '')}
                                         title="Edit message"
                                       >
@@ -1184,24 +1333,24 @@ export default function MessagesPage() {
                                     )}
                                     {canDeleteMessage(isMe) && (
                                       <button
-                                        className={styles.actionBtn}
+                                        className="text-[var(--on-surface-variant)] hover:text-[var(--error)] hover:bg-[var(--error-container)] p-1 rounded-full transition-colors outline-none"
                                         onClick={() => handleDeleteMessage(m.zernioMessageId)}
                                         title="Delete message"
                                         disabled={isDeleting === m.zernioMessageId}
                                       >
-                                        {isDeleting === m.zernioMessageId ? <Loader2 size={14} className={styles.spinner} /> : <Trash2 size={14} />}
+                                        {isDeleting === m.zernioMessageId ? <Loader2 size={14} className="animate-spin text-[var(--primary)]" /> : <Trash2 size={14} />}
                                       </button>
                                     )}
                                   </div>
                                 )}
 
-                                {/* Emoji Reaction Selector overlay — bộ emoji giới hạn theo platform */}
+                                {/* Emoji Reaction Selector overlay */}
                                 {showReactionPickerId === m.id && isReactionSupported && (
-                                  <div className={styles.emojiPopover}>
+                                  <div className={`absolute bottom-full mb-1 z-30 bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl p-2 flex gap-1.5 shadow-lg ${isMe ? 'right-0' : 'left-0'}`}>
                                     {reactionEmojiSet.map(emoji => (
                                       <button
                                         key={emoji}
-                                        className={styles.emojiBtn}
+                                        className="text-lg hover:scale-125 transition-transform duration-100 p-1 outline-none"
                                         onClick={() => handleAddReaction(m.zernioMessageId, emoji)}
                                       >
                                         {emoji}
@@ -1211,8 +1360,33 @@ export default function MessagesPage() {
                                 )}
                               </div>
 
-                              <div className={styles.msgMeta}>
-                                <span className={styles.msgTime}>{timeStr}</span>
+                              {/* Emoji Reactions List below bubble */}
+                              {m.reactions && m.reactions.length > 0 && (
+                                <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                  {(() => {
+                                    // Group reactions by emoji
+                                    const grouped = new Map<string, number>();
+                                    m.reactions.forEach(r => {
+                                      if (r.emoji) {
+                                        grouped.set(r.emoji, (grouped.get(r.emoji) || 0) + 1);
+                                      }
+                                    });
+                                    return Array.from(grouped.entries()).map(([emoji, count]) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleAddReaction(m.zernioMessageId, emoji)}
+                                        className="bg-[var(--surface-container-lowest)] hover:bg-[var(--surface-container-high)] hover:border-[var(--primary)] border border-[var(--outline-variant)] rounded-full px-2 py-0.5 text-[10px] flex items-center gap-1 shadow-sm transition-colors text-[var(--on-surface-variant)] outline-none"
+                                      >
+                                        <span>{emoji}</span>
+                                        {count > 1 && <span className="font-semibold">{count}</span>}
+                                      </button>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+
+                              <div className={`flex items-center gap-1.5 mt-1 text-[10px] text-[var(--on-surface-variant)] ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                <span>{timeStr}</span>
                                 {isMe && (
                                   <MessageStatusIcon status={m.deliveryStatus} />
                                 )}
@@ -1228,70 +1402,82 @@ export default function MessagesPage() {
               </div>
 
               {/* Input Area */}
-              <div className={styles.inputArea}>
-                {attachmentError && (
-                  <div className={styles.attachmentError} role="alert">
-                    <AlertCircle size={14} />
-                    <span>{attachmentError}</span>
-                  </div>
-                )}
+              <div className="p-4 border-t border-[var(--outline-variant)] bg-[var(--surface-bright)] shrink-0">
+                <div className="relative max-w-4xl mx-auto flex flex-col gap-2">
+                  {attachmentError && (
+                    <div className="flex items-center gap-1.5 bg-[var(--error-container)] text-[var(--on-error-container)] px-3 py-2 rounded-lg text-[11px] shrink-0 font-medium" role="alert">
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span>{attachmentError}</span>
+                    </div>
+                  )}
 
-                {pendingFile && (
-                  <div className={styles.mediaChip}>
-                    {previewUrl ? (
-                      <img src={previewUrl} alt="" className={styles.mediaChipThumb} />
-                    ) : (
-                      <Paperclip size={16} />
-                    )}
-                    <span className={styles.mediaChipName}>{pendingFile.name}</span>
-                    {isUploading && <Loader2 size={14} className={styles.statusIconSending} />}
-                    <button
-                      className={styles.mediaChipRemove}
-                      onClick={() => { setPendingFile(null); setPreviewUrl(''); setAttachmentError(null); }}
-                      disabled={isUploading}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
+                  {pendingFile && (
+                    <div className="flex items-center gap-2 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-lg p-2 max-w-sm shrink-0 shadow-sm">
+                      {previewUrl ? (
+                        <img src={previewUrl} alt="" className="w-10 h-10 object-cover rounded shrink-0 border border-[var(--outline-variant)]" />
+                      ) : (
+                        <div className="w-10 h-10 flex items-center justify-center bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] rounded shrink-0 border border-[var(--outline-variant)]">
+                          <Paperclip size={16} />
+                        </div>
+                      )}
+                      <span className="text-xs text-[var(--on-surface)] truncate flex-1 font-medium">{pendingFile.name}</span>
+                      {isUploading && <Loader2 size={14} className="animate-spin text-[var(--primary)]" />}
+                      <button
+                        className="text-[var(--on-surface-variant)] hover:text-[var(--error)] p-1 rounded transition-colors"
+                        onClick={() => { setPendingFile(null); setPreviewUrl(''); setAttachmentError(null); }}
+                        disabled={isUploading}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
 
-                <div className={styles.inputContainer}>
-                  <textarea
-                    ref={textareaRef}
-                    placeholder="Type a message..."
-                    rows={1}
-                    value={inputText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyPress}
-                  />
+                  <div className="flex items-end gap-3 w-full">
+                    <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-[var(--on-primary)] flex items-center justify-center font-bold text-sm shrink-0 shadow-sm self-end mb-1">
+                      S
+                    </div>
 
-                  <div className={styles.inputActions}>
-                    <button
-                      className={styles.attachmentBtn}
-                      onClick={() => {
-                        const input = document.getElementById('msg-file-input') as HTMLInputElement;
-                        input?.click();
-                      }}
-                      title="Attach file"
-                      disabled={isUploading}
-                    >
-                      <Paperclip size={18} />
-                    </button>
-                    <button
-                      className={styles.sendIconBtn}
-                      onClick={handleSend}
-                      title="Send Message"
-                      disabled={isSending || isUploading || (!inputText.trim() && !pendingFile)}
-                    >
-                      {isSending || isUploading ? <Loader2 size={16} className={styles.spinner} /> : <Send size={16} />}
-                    </button>
+                    <div className="flex-1 relative flex flex-col bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl p-3 shadow-sm focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)] transition-all">
+                      <textarea
+                        ref={textareaRef}
+                        placeholder="Type a message..."
+                        rows={1}
+                        value={inputText}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyPress}
+                        className="w-full bg-transparent border-none outline-none resize-none text-xs text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]/50 pr-24"
+                        style={{ minHeight: '24px' }}
+                      />
+
+                      <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-[var(--outline-variant)]/30">
+                        <button
+                          className="text-[var(--on-surface-variant)] hover:text-[var(--primary)] hover:bg-[var(--surface-container-low)] p-1.5 rounded-lg transition-colors disabled:opacity-50 outline-none"
+                          onClick={() => {
+                            const input = document.getElementById('msg-file-input') as HTMLInputElement;
+                            input?.click();
+                          }}
+                          title="Attach file"
+                          disabled={isUploading}
+                        >
+                          <Paperclip size={16} />
+                        </button>
+                        <button
+                          className="w-8 h-8 rounded-lg bg-[var(--primary)] text-[var(--on-primary)] flex items-center justify-center hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleSend}
+                          title="Send Message"
+                          disabled={isSending || isUploading || (!inputText.trim() && !pendingFile)}
+                        >
+                          {isSending || isUploading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <input
                   id="msg-file-input"
                   type="file"
-                  className={styles.fileInputHidden}
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -1317,37 +1503,48 @@ export default function MessagesPage() {
               </div>
             </>
           ) : (
-            <div className={styles.noChatSelected}>
-              <MessageSquare size={48} />
-              <p>Select a conversation to start messaging</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-[var(--on-surface-variant)] gap-3 bg-[var(--surface-bright)]">
+              <MessageSquare size={48} className="opacity-40" />
+              <p className="text-sm font-medium">Select a conversation to start messaging</p>
             </div>
           )}
         </section>
-      </div>
+      </main>
 
       {/* Delete Confirmation Modal — cho Bluesky/Reddit (chỉ xóa 1 chiều) */}
       {pendingDelete?.oneWay && (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>Xóa tin nhắn</h3>
-              <button className={styles.closeBtn} onClick={() => setPendingDelete(null)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] backdrop-blur-[2px] p-4" role="dialog" aria-modal="true">
+          <div className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 text-[var(--on-surface)]">
+            <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
+              <h3 className="font-bold text-base text-[var(--on-surface)]">Xóa tin nhắn</h3>
+              <button 
+                className="text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors outline-none" 
+                onClick={() => setPendingDelete(null)}
+              >
                 <X size={18} />
               </button>
             </div>
-            <div className={styles.modalBody}>
-              <p>
-                <strong>Lưu ý:</strong> Tin nhắn này chỉ được xóa khỏi giao diện của bạn,
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-[var(--on-surface)] leading-normal">
+                <strong className="text-[var(--error)]">Lưu ý:</strong> Tin nhắn này chỉ được xóa khỏi giao diện của bạn,
                 người nhận vẫn có thể đọc được nội dung.
               </p>
             </div>
-            <div className={styles.modalActions}>
-              <button className={styles.btnCancel} onClick={() => setPendingDelete(null)}>
+            <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
+              <Button 
+                variant="outline" 
+                onClick={() => setPendingDelete(null)}
+                className="h-8 rounded-lg text-xs"
+              >
                 Hủy
-              </button>
-              <button className={styles.btnConfirm} onClick={confirmOneWayDelete}>
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmOneWayDelete}
+                className="h-8 rounded-lg text-xs bg-[var(--error)] text-[var(--on-error)] hover:bg-[var(--error)]/90"
+              >
                 Xóa
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1355,48 +1552,58 @@ export default function MessagesPage() {
 
       {/* New Chat Modal */}
       {isNewChatOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>Start a New DM Conversation</h3>
-              <button className={styles.closeBtn} onClick={() => setIsNewChatOpen(false)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] backdrop-blur-[2px] p-4" role="dialog" aria-modal="true">
+          <div className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 text-[var(--on-surface)]">
+            <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
+              <h3 className="font-bold text-base text-[var(--on-surface)]">Start a New DM Conversation</h3>
+              <button 
+                className="text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors outline-none" 
+                onClick={() => setIsNewChatOpen(false)}
+              >
                 <X size={18} />
               </button>
             </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Select Connected Social Account</label>
-                <select
-                  value={newChatAccount}
-                  onChange={(e) => setNewChatAccount(e.target.value)}
-                >
-                  {socialAccounts.map(sa => (
-                    <option key={sa.id} value={sa.id}>
-                      {sa.platform.toUpperCase()} - {sa.displayName}
-                    </option>
-                  ))}
-                </select>
+            
+            <div className="p-5 space-y-4 overflow-y-auto max-h-[70vh]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[var(--on-surface-variant)]">Select Connected Social Account</label>
+                <div className="relative flex items-center w-full">
+                  <select
+                    value={newChatAccount}
+                    onChange={(e) => setNewChatAccount(e.target.value)}
+                    className="w-full appearance-none bg-transparent border border-[var(--outline-variant)] rounded-lg pl-3 pr-8 py-2 text-xs text-[var(--on-surface)] hover:bg-[var(--surface-container-low)] transition-colors outline-none cursor-pointer"
+                  >
+                    {socialAccounts.map(sa => (
+                      <option key={sa.id} value={sa.id} className="bg-[var(--surface-container-lowest)] text-[var(--on-surface)]">
+                        {sa.platform.toUpperCase()} - {sa.displayName || sa.handle}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--on-surface-variant)]" />
+                </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label>Recipient Detail</label>
-                  <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
-                    <label style={{ display: 'flex', gap: '4px', alignItems: 'center', cursor: 'pointer' }}>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-[var(--on-surface-variant)]">Recipient Detail</label>
+                  <div className="flex gap-4 text-[10px] text-[var(--on-surface-variant)]">
+                    <label className="flex gap-1.5 items-center cursor-pointer select-none">
                       <input
                         type="radio"
                         name="recipientType"
                         checked={newChatIsUsername}
                         onChange={() => setNewChatIsUsername(true)}
+                        className="accent-[var(--primary)]"
                       />
                       Username
                     </label>
-                    <label style={{ display: 'flex', gap: '4px', alignItems: 'center', cursor: 'pointer' }}>
+                    <label className="flex gap-1.5 items-center cursor-pointer select-none">
                       <input
                         type="radio"
                         name="recipientType"
                         checked={!newChatIsUsername}
                         onChange={() => setNewChatIsUsername(false)}
+                        className="accent-[var(--primary)]"
                       />
                       Numeric ID
                     </label>
@@ -1407,29 +1614,43 @@ export default function MessagesPage() {
                   placeholder={newChatIsUsername ? "e.g., elonmusk" : "e.g., 44196397"}
                   value={newChatRecipient}
                   onChange={(e) => setNewChatRecipient(e.target.value)}
+                  className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-lg px-3 py-2 text-xs text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label>Initial Message</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[var(--on-surface-variant)]">Initial Message</label>
                 <textarea
                   placeholder="Type your initial message..."
                   rows={3}
                   value={newChatMessage}
                   onChange={(e) => setNewChatMessage(e.target.value)}
+                  className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-lg px-3 py-2 text-xs text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)] resize-none"
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', background: 'rgba(255, 79, 0, 0.08)', padding: '10px', borderRadius: '8px', fontSize: '11.5px', color: 'var(--clr-primary)' }}>
-                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div className="flex gap-2.5 items-start bg-[var(--primary-container)]/10 text-[var(--primary)] p-3 rounded-lg text-[10.5px] border border-[var(--primary-fixed-dim)]/30 leading-normal">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>Note: Creating new conversations is currently only supported for Twitter/X. Recipient must accept DMs from you.</span>
               </div>
             </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.btnCancel} onClick={() => setIsNewChatOpen(false)}>Cancel</button>
-              <button className={styles.btnSubmit} onClick={handleCreateConvo} disabled={isCreatingConvo}>
-                {isCreatingConvo ? <><Loader2 size={16} className={styles.spinner} /> Sending...</> : 'Send Message'}
-              </button>
+            
+            <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsNewChatOpen(false)}
+                className="h-8 rounded-lg text-xs"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateConvo} 
+                disabled={isCreatingConvo || !newChatRecipient || !newChatMessage.trim()}
+                className="h-8 rounded-lg text-xs bg-[var(--primary)] text-[var(--on-primary)] hover:bg-[var(--primary)]/90"
+              >
+                {isCreatingConvo ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+                Send Message
+              </Button>
             </div>
           </div>
         </div>

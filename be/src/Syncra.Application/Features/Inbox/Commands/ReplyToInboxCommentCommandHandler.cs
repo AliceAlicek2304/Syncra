@@ -13,15 +13,18 @@ public sealed class ReplyToInboxCommentCommandHandler
     private readonly IInboxRepository _inboxRepository;
     private readonly IZernioProfileRepository _profileRepository;
     private readonly IZernioClient _zernioClient;
+    private readonly IInboxCommentListCacheService _listCache;
 
     public ReplyToInboxCommentCommandHandler(
         IInboxRepository inboxRepository,
         IZernioProfileRepository profileRepository,
-        IZernioClient zernioClient)
+        IZernioClient zernioClient,
+        IInboxCommentListCacheService listCache)
     {
         _inboxRepository = inboxRepository;
         _profileRepository = profileRepository;
         _zernioClient = zernioClient;
+        _listCache = listCache;
     }
 
     public async Task<InboxSendCommentReplyResponse> Handle(
@@ -57,26 +60,40 @@ public sealed class ReplyToInboxCommentCommandHandler
             post.ZernioPostId,
             post.ZernioAccountId,
             request.Message,
-            commentId: post.ZernioTopCommentId,
+            commentId: request.CommentId,
             parentCid: request.ParentCid,
             rootUri: request.RootUri,
             rootCid: request.RootCid,
             cancellationToken: cancellationToken);
+
+        await _inboxRepository.DeleteCommentThreadAsync(request.WorkspaceId, post.ZernioPostId, cancellationToken);
+        await _listCache.InvalidateAsync(request.WorkspaceId, cancellationToken);
 
         return new InboxSendCommentReplyResponse(
             result.CommentId,
             result.Cid);
     }
 
-    private Task<InboxCommentedPost?> ResolvePostAsync(
+    private async Task<InboxCommentedPost?> ResolvePostAsync(
         Guid workspaceId,
         string commentId,
         CancellationToken cancellationToken)
     {
         if (Guid.TryParse(commentId, out var postGuid))
         {
-            return _inboxRepository.GetCommentedPostByIdAsync(workspaceId, postGuid, cancellationToken);
+            return await _inboxRepository.GetCommentedPostByIdAsync(workspaceId, postGuid, cancellationToken);
         }
-        return _inboxRepository.GetCommentedPostByZernioPostIdAsync(workspaceId, commentId, cancellationToken);
+
+        var post = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(workspaceId, commentId, cancellationToken);
+        if (post != null) return post;
+
+        if (commentId.Contains('_'))
+        {
+            var parts = commentId.Split('_');
+            post = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(workspaceId, parts[0], cancellationToken);
+            if (post != null) return post;
+        }
+
+        return null;
     }
 }

@@ -12,4 +12,5 @@ public sealed record GetInboxPostCommentsQuery(
     string? Cursor = null,
     string? CommentId = null,
     string? SelfAccountId = null,
-    string? Platform = null) : IRequest<ZernioPostCommentsResponseDto>;
+    string? Platform = null,
+    bool ForceRefresh = false) : IRequest<ZernioPostCommentsResponseDto>;

@@ -10,7 +10,7 @@ namespace Syncra.Application.Features.Inbox.Queries;
 public sealed class GetInboxPostCommentsQueryHandler
     : IRequestHandler<GetInboxPostCommentsQuery, ZernioPostCommentsResponseDto>
 {
-    private static readonly TimeSpan ThreadTtl = TimeSpan.FromHours(24);
+    private static readonly TimeSpan ThreadTtl = TimeSpan.FromMinutes(1);
 
     private readonly IZernioClient _zernioClient;
     private readonly IInboxRepository _inboxRepository;
@@ -32,15 +32,66 @@ public sealed class GetInboxPostCommentsQueryHandler
             request.ZernioPostId,
             cancellationToken);
 
-        if (cached != null && cached.ExpiresAtUtc > DateTime.UtcNow)
+        ZernioPostCommentsResponseDto response;
+
+        if (!request.ForceRefresh && cached != null && cached.ExpiresAtUtc > DateTime.UtcNow)
         {
             var deserialized = JsonSerializer.Deserialize<ZernioPostCommentsResponseDto>(cached.PayloadJson);
-            if (deserialized != null)
+            if (deserialized != null && deserialized.Pagination != null)
             {
-                return deserialized;
+                response = deserialized;
+            }
+            else
+            {
+                response = await FetchLiveAndCacheAsync(request, cancellationToken);
             }
         }
+        else
+        {
+            response = await FetchLiveAndCacheAsync(request, cancellationToken);
+        }
 
+        var privateReplies = await _inboxRepository.GetPrivateRepliesForWorkspaceAsync(request.WorkspaceId, cancellationToken);
+        var repliedCommentIds = new HashSet<string>(privateReplies.Select(pr => pr.ZernioCommentId));
+
+        var postEntity = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(request.WorkspaceId, request.ZernioPostId, cancellationToken);
+        var isAd = postEntity?.IsAd == true;
+
+        if (response.Comments != null)
+        {
+            var updatedComments = PopulateCommentsMetadata(response.Comments, repliedCommentIds, isAd);
+            response = response with { Comments = updatedComments };
+        }
+
+        return response;
+    }
+
+    private static IReadOnlyList<ZernioPostCommentItemDto> PopulateCommentsMetadata(
+        IReadOnlyList<ZernioPostCommentItemDto>? comments,
+        HashSet<string> repliedCommentIds,
+        bool isAd)
+    {
+        if (comments == null) return Array.Empty<ZernioPostCommentItemDto>();
+
+        var list = new List<ZernioPostCommentItemDto>();
+        foreach (var c in comments)
+        {
+            var updatedReplies = PopulateCommentsMetadata(c.Replies, repliedCommentIds, isAd);
+            var hasSentPrivateReply = repliedCommentIds.Contains(c.Id);
+            list.Add(c with
+            {
+                Replies = updatedReplies,
+                HasSentPrivateReply = hasSentPrivateReply,
+                IsAd = isAd ? true : c.IsAd
+            });
+        }
+        return list;
+    }
+
+    private async Task<ZernioPostCommentsResponseDto> FetchLiveAndCacheAsync(
+        GetInboxPostCommentsQuery request,
+        CancellationToken cancellationToken)
+    {
         var live = await _zernioClient.GetInboxPostCommentsAsync(
             request.ZernioPostId,
             request.AccountId,
@@ -51,6 +102,20 @@ public sealed class GetInboxPostCommentsQueryHandler
             request.SelfAccountId,
             request.Platform,
             cancellationToken);
+
+        var postEntity = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(request.WorkspaceId, request.ZernioPostId, cancellationToken);
+        if (postEntity == null)
+        {
+            var newPost = InboxCommentedPost.Create(
+                request.WorkspaceId,
+                request.ZernioPostId,
+                socialAccountId: null,
+                platform: request.Platform ?? "facebook",
+                zernioAccountId: request.AccountId,
+                receivedAtUtc: DateTime.UtcNow
+            );
+            await _inboxRepository.AddCommentedPostAsync(newPost);
+        }
 
         var payloadJson = JsonSerializer.Serialize(live);
         var threadEntity = InboxCommentThread.Create(

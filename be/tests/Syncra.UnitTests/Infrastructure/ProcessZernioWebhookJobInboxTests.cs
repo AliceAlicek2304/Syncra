@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -75,6 +75,7 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
     private readonly Mock<IPostStatusNotifier> _postNotifierMock;
     private readonly Mock<IInboxNotifier> _inboxNotifierMock;
     private readonly Mock<ILogger<ProcessZernioWebhookJob>> _loggerMock;
+    private readonly Mock<IInboxCommentListCacheService> _listCacheMock;
     private readonly ProcessZernioWebhookJob _job;
     private readonly Guid _workspaceId;
 
@@ -90,8 +91,9 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
         _postNotifierMock = new Mock<IPostStatusNotifier>();
         _inboxNotifierMock = new Mock<IInboxNotifier>();
         _loggerMock = new Mock<ILogger<ProcessZernioWebhookJob>>();
+        _listCacheMock = new Mock<IInboxCommentListCacheService>();
 
-        _job = new ProcessZernioWebhookJob(_db, _loggerMock.Object, _postNotifierMock.Object, _inboxNotifierMock.Object);
+        _job = new ProcessZernioWebhookJob(_db, _loggerMock.Object, _postNotifierMock.Object, _inboxNotifierMock.Object, _listCacheMock.Object);
     }
 
     public void Dispose()
@@ -326,6 +328,69 @@ public class ProcessZernioWebhookJobInboxTests : IDisposable
 
         // Assert - event marked processed
         Assert.Equal(WebhookEventStatus.Processed, webhookEvent.Status);
+    }
+
+    [Fact]
+    public async Task HandleCommentReceived_ShouldInvalidateCache()
+    {
+        // Arrange
+        using var doc = JsonDocument.Parse(CommentReceivedPayload);
+        var root = doc.RootElement;
+        var accountId = root.GetProperty("account").GetProperty("id").GetString()!;
+
+        // Seed ZernioProfile
+        var profile = ZernioProfile.Create(
+            _workspaceId, "zernio-profile-001", "Test Profile", "instagram");
+        _db.ZernioProfiles.Add(profile);
+
+        // Seed SocialAccount matching the webhook account.id
+        var socialAccount = SocialAccount.Create(
+            _workspaceId,
+            profile.Id,
+            externalAccountId: accountId,
+            platform: "instagram",
+            displayName: "My Instagram");
+        _db.SocialAccounts.Add(socialAccount);
+
+        // Seed existing commented post
+        var existingPost = InboxCommentedPost.Create(
+            _workspaceId,
+            "zernio-post-456",
+            socialAccount.Id,
+            "instagram",
+            zernioAccountId: "zernio-account-123",
+            commentCount: 1,
+            zernioTopCommentId: "zernio-cmnt-001",
+            receivedAtUtc: System.DateTime.UtcNow.AddHours(-1));
+        _db.InboxCommentedPosts.Add(existingPost);
+
+        // Seed cached comment thread
+        var thread = InboxCommentThread.Create(
+            _workspaceId,
+            "zernio-post-456",
+            "{}",
+            System.DateTime.UtcNow.AddHours(24));
+        _db.InboxCommentThreads.Add(thread);
+
+        // Seed webhook event
+        var webhookEvent = ZernioWebhookEvent.Create(
+            _workspaceId,
+            eventType: "comment.received",
+            payload: CommentReceivedPayload);
+        _db.ZernioWebhookEvents.Add(webhookEvent);
+
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _job.ExecuteAsync(webhookEvent.Id, CancellationToken.None);
+
+        // Assert - cache is deleted
+        var cachedThread = await _db.InboxCommentThreads
+            .FirstOrDefaultAsync(t => t.WorkspaceId == _workspaceId && t.ZernioPostId == "zernio-post-456");
+        Assert.Null(cachedThread);
+
+        // Assert - list cache InvalidateAsync was called
+        _listCacheMock.Verify(c => c.InvalidateAsync(_workspaceId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

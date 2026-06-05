@@ -14,17 +14,20 @@ public sealed class GetInboxCommentsQueryHandler
     private readonly ISocialAccountRepository _socialAccountRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IInboxCommentListCacheService _listCache;
+    private readonly IZernioProfileRepository _profileRepository;
 
     public GetInboxCommentsQueryHandler(
         IInboxRepository inboxRepository,
         ISocialAccountRepository socialAccountRepository,
         IZernioClient zernioClient,
-        IInboxCommentListCacheService listCache)
+        IInboxCommentListCacheService listCache,
+        IZernioProfileRepository profileRepository)
     {
         _inboxRepository = inboxRepository;
         _socialAccountRepository = socialAccountRepository;
         _zernioClient = zernioClient;
         _listCache = listCache;
+        _profileRepository = profileRepository;
     }
 
     public async Task<InboxCommentedPostsResponseDto> Handle(
@@ -33,58 +36,60 @@ public sealed class GetInboxCommentsQueryHandler
     {
         var limit = request.Limit;
 
-        if (NeedsLiveFetch(request))
+        var profileId = request.ProfileId;
+        if (string.IsNullOrEmpty(profileId))
         {
-            var cached = await _listCache.GetAsync(
-                request.WorkspaceId,
-                request.Cursor,
-                request.MinComments,
-                request.Since,
-                request.SortBy,
-                request.SortOrder,
-                request.Platform,
-                request.AccountId,
-                cancellationToken);
-
-            if (cached != null)
-            {
-                return await MapLivePageToResponseAsync(cached, request, cancellationToken);
-            }
-
-            if (string.IsNullOrEmpty(request.ProfileId))
-            {
-                return await ReadFromLocalDbAsync(request, limit, cancellationToken);
-            }
-
-            var live = await _zernioClient.ListInboxCommentsAsync(
-                request.ProfileId,
-                request.Since,
-                request.Cursor,
-                request.Platform,
-                request.AccountId,
-                request.MinComments,
-                request.SortBy,
-                request.SortOrder,
-                limit,
-                cancellationToken);
-
-            await _listCache.SetAsync(
-                request.WorkspaceId,
-                live,
-                request.Cursor,
-                request.MinComments,
-                request.Since,
-                request.SortBy,
-                request.SortOrder,
-                request.Platform,
-                request.AccountId,
-                CacheTtl,
-                cancellationToken);
-
-            return await MapLivePageToResponseAsync(live, request, cancellationToken);
+            var profile = await _profileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+            profileId = profile?.ZernioProfileId;
         }
 
-        return await ReadFromLocalDbAsync(request, limit, cancellationToken);
+        if (string.IsNullOrEmpty(profileId))
+        {
+            return await ReadFromLocalDbAsync(request, limit, cancellationToken);
+        }
+
+        var cached = await _listCache.GetAsync(
+            request.WorkspaceId,
+            request.Cursor,
+            request.MinComments,
+            request.Since,
+            request.SortBy,
+            request.SortOrder,
+            request.Platform,
+            request.AccountId,
+            cancellationToken);
+
+        if (cached != null)
+        {
+            return await MapLivePageToResponseAsync(cached, request, cancellationToken);
+        }
+
+        var live = await _zernioClient.ListInboxCommentsAsync(
+            profileId,
+            request.Since,
+            request.Cursor,
+            request.Platform,
+            request.AccountId,
+            request.MinComments,
+            request.SortBy,
+            request.SortOrder,
+            limit,
+            cancellationToken);
+
+        await _listCache.SetAsync(
+            request.WorkspaceId,
+            live,
+            request.Cursor,
+            request.MinComments,
+            request.Since,
+            request.SortBy,
+            request.SortOrder,
+            request.Platform,
+            request.AccountId,
+            CacheTtl,
+            cancellationToken);
+
+        return await MapLivePageToResponseAsync(live, request, cancellationToken);
     }
 
     private static bool NeedsLiveFetch(GetInboxCommentsQuery q) =>

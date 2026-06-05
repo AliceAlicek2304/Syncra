@@ -29,17 +29,20 @@ public sealed class ProcessZernioWebhookJob
     private readonly ILogger<ProcessZernioWebhookJob> _logger;
     private readonly IPostStatusNotifier _postStatusNotifier;
     private readonly IInboxNotifier _inboxNotifier;
+    private readonly IInboxCommentListCacheService? _listCache;
 
     public ProcessZernioWebhookJob(
         AppDbContext db,
         ILogger<ProcessZernioWebhookJob> logger,
         IPostStatusNotifier postStatusNotifier,
-        IInboxNotifier inboxNotifier)
+        IInboxNotifier inboxNotifier,
+        IInboxCommentListCacheService? listCache = null)
     {
         _db = db;
         _logger = logger;
         _postStatusNotifier = postStatusNotifier;
         _inboxNotifier = inboxNotifier;
+        _listCache = listCache;
     }
 
     public async Task ExecuteAsync(Guid webhookEventId, CancellationToken cancellationToken = default)
@@ -1051,6 +1054,30 @@ public sealed class ProcessZernioWebhookJob
 
         platform ??= socialAccount.Platform;
 
+        // Parse ad info if present
+        bool? isAd = null;
+        string? adId = null;
+        string? placement = null;
+
+        if (commentElem.TryGetProperty("ad", out var adElem) && adElem.ValueKind == JsonValueKind.Object)
+        {
+            isAd = true;
+            if (adElem.TryGetProperty("id", out var adIdElem))
+            {
+                adId = adIdElem.GetString();
+            }
+
+            var platLower = (platform ?? socialAccount.Platform)?.ToLowerInvariant();
+            if (platLower == "instagram" && adElem.TryGetProperty("title", out var titleElem))
+            {
+                placement = titleElem.GetString();
+            }
+            else if (platLower == "facebook" && adElem.TryGetProperty("promotionStatus", out var promoElem))
+            {
+                placement = promoElem.GetString();
+            }
+        }
+
         // ── c. Find existing InboxCommentedPost by ZernioPostId ──────────────
         var existingPost = await _db.InboxCommentedPosts
             .FirstOrDefaultAsync(
@@ -1061,12 +1088,54 @@ public sealed class ProcessZernioWebhookJob
         if (existingPost != null)
         {
             // Bump comment count + record the new top comment id; thread cache is
-            // populated by backfill and is not refreshed here on purpose (D-15).
+            // populated by backfill and is invalidated here so it refreshes on next view.
             existingPost.IncrementCommentCount();
             existingPost.SetTopCommentId(zernioCommentId);
             if (!string.IsNullOrEmpty(zernioAccountId) && string.IsNullOrEmpty(existingPost.ZernioAccountId))
             {
                 existingPost.SetZernioAccountId(zernioAccountId);
+            }
+
+            if (isAd == true)
+            {
+                existingPost.UpdateCommentedPostFields(
+                    existingPost.AccountUsername,
+                    existingPost.LikeCount,
+                    existingPost.Subreddit,
+                    isAd: true,
+                    adId: adId ?? existingPost.AdId,
+                    placement: placement ?? existingPost.Placement,
+                    existingPost.Permalink,
+                    existingPost.CommentCount,
+                    existingPost.PostPreviewThumbnailUrl,
+                    existingPost.PostPreviewCaption);
+            }
+
+            // Invalidate comment thread cache
+            string? prefix = null;
+            if (zernioPostId.Contains('_'))
+            {
+                prefix = zernioPostId.Split('_')[0];
+            }
+
+            var expiredThreads = await _db.InboxCommentThreads
+                .Where(t => t.WorkspaceId == workspaceId && (
+                    t.ZernioPostId == zernioPostId ||
+                    t.ZernioPostId.StartsWith(zernioPostId + "_") ||
+                    (prefix != null && (t.ZernioPostId == prefix || t.ZernioPostId.StartsWith(prefix + "_")))
+                ))
+                .ToListAsync(cancellationToken);
+
+            if (expiredThreads.Count > 0)
+            {
+                _db.InboxCommentThreads.RemoveRange(expiredThreads);
+                _logger.LogInformation("comment.received: invalidated {Count} cached comment thread(s) for post {PostId}.", expiredThreads.Count, zernioPostId);
+            }
+
+            if (_listCache != null)
+            {
+                await _listCache.InvalidateAsync(workspaceId, cancellationToken);
+                _logger.LogInformation("comment.received: invalidated comment list cache for workspace {WorkspaceId}.", workspaceId);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -1097,9 +1166,18 @@ public sealed class ProcessZernioWebhookJob
             zernioAccountId: zernioAccountId,
             commentCount: 1,
             zernioTopCommentId: zernioCommentId,
-            receivedAtUtc: createdAt);
+            receivedAtUtc: createdAt,
+            isAd: isAd,
+            adId: adId,
+            placement: placement);
 
         _db.InboxCommentedPosts.Add(post);
+
+        if (_listCache != null)
+        {
+            await _listCache.InvalidateAsync(workspaceId, cancellationToken);
+            _logger.LogInformation("comment.received (new post): invalidated comment list cache for workspace {WorkspaceId}.", workspaceId);
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 

@@ -27,4 +27,8 @@ public interface IInboxCommentListCacheService
         string? accountId,
         TimeSpan ttl,
         CancellationToken cancellationToken = default);
+
+    Task InvalidateAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
 }

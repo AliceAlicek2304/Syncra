@@ -89,6 +89,11 @@ public class GlobalExceptionMiddleware
                 });
                 break;
 
+            case DomainException domainEx when domainEx.Code == "private_reply_expired":
+                context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+                await context.Response.WriteAsJsonAsync(new { code = domainEx.Code, message = domainEx.Message });
+                break;
+
             case DomainException domainEx:
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsJsonAsync(new { code = domainEx.Code, message = domainEx.Message });
