@@ -1,5 +1,3 @@
-import styles from './Stats.module.css'
-
 const STATS = [
   { value: '2,400+', label: 'Active creators' },
   { value: '6', label: 'Platforms supported' },
@@ -9,14 +7,13 @@ const STATS = [
 
 export default function Stats() {
   return (
-    <section className={styles.section}>
-      <div className="container">
-        <div className={`glass-card ${styles.grid}`}>
-          {STATS.map((s, i) => (
-            <div key={s.label} className={styles.item}>
-              <div className={styles.value}>{s.value}</div>
-              <div className={styles.label}>{s.label}</div>
-              {i < STATS.length - 1 && <div className={styles.divider} />}
+    <section className="py-8 bg-brand-canvas-soft border-b border-brand-border/40">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 border border-brand-border bg-brand-canvas rounded-brand-md shadow-sm divide-y lg:divide-y-0 lg:divide-x divide-brand-border">
+          {STATS.map((s) => (
+            <div key={s.label} className="py-8 px-4 flex flex-col items-center justify-center text-center">
+              <div className="text-3xl sm:text-4xl font-black text-brand-primary tracking-tight mb-1.5">{s.value}</div>
+              <div className="text-[11px] sm:text-xs font-bold text-brand-body uppercase tracking-wider">{s.label}</div>
             </div>
           ))}
         </div>

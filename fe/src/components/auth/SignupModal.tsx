@@ -8,7 +8,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { authApi } from '../../api/auth';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import styles from './LoginModal.module.css';
 
 const signupSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
@@ -85,24 +84,24 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
   }, [onClose]);
 
   return (
-    <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} role="dialog" aria-modal="true" ref={ref} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.closeBtn} aria-label="Close modal" onClick={onClose}>
+    <div className="fixed inset-0 bg-brand-ink/50 backdrop-blur-sm z-[9000] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="relative bg-brand-canvas border border-brand-border rounded-brand-md p-8 shadow-xl max-w-md w-full flex flex-col gap-5 text-brand-ink max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200" role="dialog" aria-modal="true" ref={ref} onClick={(e) => e.stopPropagation()}>
+        <button className="absolute top-4 right-4 text-brand-body-mid hover:text-brand-ink transition-colors focus:outline-none" aria-label="Close modal" onClick={onClose}>
           <X size={20} />
         </button>
 
-        <div className={styles.header}>
-          <h2 className={styles.title}>Create your account</h2>
-          <p className={styles.subtitle}>Start managing your social media</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-black text-brand-ink tracking-tight mb-1">Create your account</h2>
+          <p className="text-sm text-brand-body">Start managing your social media</p>
         </div>
 
         <button
           type="button"
-          className={styles.googleBtn}
+          className="w-full flex items-center justify-center gap-2.5 py-3 border border-brand-ink bg-brand-canvas hover:bg-brand-canvas-soft text-brand-ink font-bold rounded-brand-md text-sm transition-all shadow-xs focus:outline-none"
           aria-label="Sign up with Google"
           onClick={handleGoogleLogin}
         >
-          <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
+          <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -111,71 +110,83 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
           Continue with Google
         </button>
 
-        <div className={styles.divider}>
-          <span>or</span>
+        <div className="flex items-center my-1.5">
+          <div className="flex-1 h-px bg-brand-border" />
+          <span className="px-3.5 text-[10px] font-black text-brand-body-mid uppercase tracking-widest">or</span>
+          <div className="flex-1 h-px bg-brand-border" />
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-          <div className={styles.field}>
-            <label className={styles.label}>First name</label>
-            <input
-              type="text"
-              data-testid="signup-firstname"
-              aria-required="true"
-              className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-              placeholder="John"
-              {...register('firstName')}
-            />
-            {errors.firstName && <span className={styles.errorText}>{errors.firstName.message}</span>}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-brand-ink uppercase tracking-wider">First name</label>
+              <input
+                type="text"
+                data-testid="signup-firstname"
+                aria-required="true"
+                className={`bg-brand-canvas border rounded-brand-sm p-3 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all placeholder:text-brand-mute ${
+                  errors.firstName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-brand-ink'
+                }`}
+                placeholder="John"
+                {...register('firstName')}
+              />
+              {errors.firstName && <span className="text-xs text-red-600 font-medium">{errors.firstName.message}</span>}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-brand-ink uppercase tracking-wider">Last name</label>
+              <input
+                type="text"
+                data-testid="signup-lastname"
+                aria-required="true"
+                className={`bg-brand-canvas border rounded-brand-sm p-3 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all placeholder:text-brand-mute ${
+                  errors.lastName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-brand-ink'
+                }`}
+                placeholder="Doe"
+                {...register('lastName')}
+              />
+              {errors.lastName && <span className="text-xs text-red-600 font-medium">{errors.lastName.message}</span>}
+            </div>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Last name</label>
-            <input
-              type="text"
-              data-testid="signup-lastname"
-              aria-required="true"
-              className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
-              placeholder="Doe"
-              {...register('lastName')}
-            />
-            {errors.lastName && <span className={styles.errorText}>{errors.lastName.message}</span>}
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Email</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-brand-ink uppercase tracking-wider">Email</label>
             <input
               type="email"
               data-testid="signup-email"
               aria-required="true"
-              className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+              className={`bg-brand-canvas border rounded-brand-sm p-3 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all placeholder:text-brand-mute ${
+                errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-brand-ink'
+              }`}
               placeholder="name@example.com"
               {...register('email')}
             />
-            {errors.email && <span className={styles.errorText}>{errors.email.message}</span>}
+            {errors.email && <span className="text-xs text-red-600 font-medium">{errors.email.message}</span>}
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Password</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-brand-ink uppercase tracking-wider">Password</label>
             <input
               type="password"
               data-testid="signup-password"
               aria-required="true"
-              className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+              className={`bg-brand-canvas border rounded-brand-sm p-3 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all placeholder:text-brand-mute ${
+                errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-brand-ink'
+              }`}
               placeholder="At least 8 characters"
               {...register('password')}
             />
-            {errors.password && <span className={styles.errorText}>{errors.password.message}</span>}
+            {errors.password && <span className="text-xs text-red-600 font-medium">{errors.password.message}</span>}
           </div>
 
-          <button type="submit" data-testid="signup-submit" className={styles.submitBtn} disabled={isSubmitting}>
+          <button type="submit" data-testid="signup-submit" className="w-full py-3 mt-2 bg-brand-primary hover:bg-brand-primary-hover text-brand-on-primary font-bold rounded-brand-md text-sm transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none" disabled={isSubmitting}>
             {isSubmitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
-        <div className={styles.footer}>
+        <div className="text-center text-sm text-brand-body mt-2">
           Already have an account?
-          <button onClick={() => navigate('/login')} className={styles.link}>Sign in</button>
+          <button onClick={() => navigate('/login')} className="text-brand-primary font-semibold hover:underline bg-transparent border-none cursor-pointer font-sans text-sm ml-1.5 focus:outline-none">Sign in</button>
         </div>
       </div>
     </div>
