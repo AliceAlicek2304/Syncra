@@ -139,6 +139,7 @@ public sealed record InboxCommentedPostItemDto(
     string Platform,
     string? AccountId,
     string? AccountUsername,
+    string? Content,
     string? Picture,
     string? Permalink,
     DateTime CreatedTime,
