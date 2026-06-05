@@ -178,13 +178,16 @@ public static class DependencyInjection
         var postgresOptions = new PostgresOptions();
         configuration.GetSection(PostgresOptions.SectionName).Bind(postgresOptions);
 
-        services.AddHangfire(configuration =>
+        services.AddHangfire(hangfireConfig =>
         {
-            configuration
+            hangfireConfig
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(postgresOptions.ConnectionString);
+                .UsePostgreSqlStorage(options =>
+                {
+                    options.UseNpgsqlConnection(postgresOptions.ConnectionString);
+                });
         });
 
         services.AddHangfireServer();

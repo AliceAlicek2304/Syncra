@@ -36,7 +36,11 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
-            options.UseNpgsql(postgresOptions.ConnectionString);
+            options.UseNpgsql(postgresOptions.ConnectionString, npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(3);
+                npgsqlOptions.CommandTimeout(30);
+            });
             options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
         });
 
