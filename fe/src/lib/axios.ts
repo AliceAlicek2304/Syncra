@@ -40,7 +40,7 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  if (!config.headers['X-Workspace-Id']) {
+  if (config.headers['X-Workspace-Id'] == null) {
     const workspaceId = localStorage.getItem('syncra_workspace_id');
     if (workspaceId) {
       config.headers['X-Workspace-Id'] = workspaceId;

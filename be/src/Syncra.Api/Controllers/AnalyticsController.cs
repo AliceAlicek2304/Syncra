@@ -52,17 +52,20 @@ public class AnalyticsController : ControllerBase
             profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId.Value);
         }
 
-        if (string.IsNullOrEmpty(profileId) && (profile is null || !profile.IsActive))
+        if (string.IsNullOrEmpty(profileId))
         {
             if (workspaceId.HasValue)
             {
-                _logger.LogInformation("No active Zernio profile for workspace {WorkspaceId}", workspaceId);
-                return Ok(new ZernioDailyMetricsDto(
-                    Array.Empty<ZernioDailyDataPointDto>(),
-                    Array.Empty<ZernioPlatformBreakdownDto>()));
+                if (profile is null || !profile.IsActive)
+                {
+                    _logger.LogInformation("No active Zernio profile for workspace {WorkspaceId}", workspaceId);
+                    return Ok(new ZernioDailyMetricsDto(
+                        Array.Empty<ZernioDailyDataPointDto>(),
+                        Array.Empty<ZernioPlatformBreakdownDto>()));
+                }
+                profileId = profile.ZernioProfileId;
             }
-
-            return BadRequest(new { error = "ProfileId or active Workspace context required." });
+            // else: no workspace context, no profileId → null passes to Zernio for all profiles
         }
 
         // Apply defaults from spec if not provided
@@ -72,7 +75,7 @@ public class AnalyticsController : ControllerBase
         try
         {
             var metrics = await _zernioClient.GetDailyMetricsAsync(
-                profileId ?? profile?.ZernioProfileId ?? string.Empty,
+                profileId,
                 fromDate,
                 toDate,
                 platform,
@@ -165,7 +168,7 @@ public class AnalyticsController : ControllerBase
     public async Task<IActionResult> GetLinkedInPostReactions(
         string accountId,
         [FromQuery] string urn,
-        [FromQuery] int? limit = null,
+        [FromQuery] int? limit = 25,
         [FromQuery] string? cursor = null,
         CancellationToken cancellationToken = default)
     {
@@ -973,6 +976,19 @@ public class AnalyticsController : ControllerBase
         }
     }
 
+    private async Task<string?> ResolveProfileIdAsync(string? profileId)
+    {
+        if (!string.IsNullOrEmpty(profileId))
+            return profileId;
+
+        var workspaceId = HttpContext.Items[TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (!workspaceId.HasValue)
+            return null;
+
+        var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId.Value);
+        return profile?.IsActive == true ? profile.ZernioProfileId : null;
+    }
+
     [HttpGet("posting-frequency")]
     public async Task<IActionResult> GetPostingFrequency(
         [FromQuery] string? platform = null,
@@ -981,6 +997,8 @@ public class AnalyticsController : ControllerBase
         [FromQuery] string? source = "all",
         CancellationToken cancellationToken = default)
     {
+        profileId = await ResolveProfileIdAsync(profileId);
+
         try
         {
             var result = await _zernioClient.GetPostingFrequencyAsync(
@@ -1036,6 +1054,9 @@ public class AnalyticsController : ControllerBase
         [FromQuery] string? toDate = null,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(postId))
+            return BadRequest(new { error = "postId is required." });
+
         DateTime? parsedFrom = DateTime.TryParse(fromDate, out var f) ? f : null;
         DateTime? parsedTo = DateTime.TryParse(toDate, out var t) ? t : null;
 
@@ -1078,11 +1099,11 @@ public class AnalyticsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetPostAnalytics(
-        [FromQuery] string postId,
+        [FromQuery] string? postId = null,
         [FromQuery] string? platform = null,
         [FromQuery] string? profileId = null,
         [FromQuery] string? accountId = null,
-        [FromQuery] string? source = null,
+        [FromQuery] string? source = "all",
         [FromQuery] string? fromDate = null,
         [FromQuery] string? toDate = null,
         [FromQuery] int? limit = null,
@@ -1091,14 +1112,31 @@ public class AnalyticsController : ControllerBase
         [FromQuery] string? order = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(postId))
-            return BadRequest(new { error = "postId is required." });
+        profileId = await ResolveProfileIdAsync(profileId);
 
         DateOnly? parsedFrom = DateOnly.TryParse(fromDate, out var f) ? f : null;
         DateOnly? parsedTo = DateOnly.TryParse(toDate, out var t) ? t : null;
 
         try
         {
+            if (string.IsNullOrWhiteSpace(postId))
+            {
+                var listResult = await _zernioClient.GetAnalyticsListAsync(
+                    platform,
+                    profileId,
+                    accountId,
+                    source,
+                    parsedFrom,
+                    parsedTo,
+                    limit,
+                    page,
+                    sortBy,
+                    order,
+                    cancellationToken);
+
+                return Ok(listResult);
+            }
+
             var result = await _zernioClient.GetPostAnalyticsAsync(
                 postId,
                 platform,
@@ -1161,9 +1199,11 @@ public class AnalyticsController : ControllerBase
         [FromQuery] string? platform = null,
         [FromQuery] string? profileId = null,
         [FromQuery] string? accountId = null,
-        [FromQuery] string? source = null,
+        [FromQuery] string? source = "all",
         CancellationToken cancellationToken = default)
     {
+        profileId = await ResolveProfileIdAsync(profileId);
+
         try
         {
             var result = await _zernioClient.GetBestTimeAsync(
@@ -1209,9 +1249,11 @@ public class AnalyticsController : ControllerBase
         [FromQuery] string? platform = null,
         [FromQuery] string? profileId = null,
         [FromQuery] string? accountId = null,
-        [FromQuery] string? source = null,
+        [FromQuery] string? source = "all",
         CancellationToken cancellationToken = default)
     {
+        profileId = await ResolveProfileIdAsync(profileId);
+
         try
         {
             var result = await _zernioClient.GetContentDecayAsync(
@@ -1254,21 +1296,38 @@ public class AnalyticsController : ControllerBase
 
     [HttpGet("accounts/follower-stats")]
     public async Task<IActionResult> GetFollowerStats(
-        [FromQuery] string accountIds,
-        [FromQuery] string profileId,
+        [FromQuery] string? accountIds = null,
+        [FromQuery] string? profileId = null,
         [FromQuery] string? fromDate = null,
         [FromQuery] string? toDate = null,
         [FromQuery] string? granularity = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(accountIds))
-            return BadRequest(new { error = "accountIds is required." });
-
-        if (string.IsNullOrWhiteSpace(profileId))
-            return BadRequest(new { error = "profileId is required." });
+        var workspaceId = HttpContext.Items[TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
 
         DateTime? parsedFrom = DateTime.TryParse(fromDate, out var f) ? f : null;
         DateTime? parsedTo = DateTime.TryParse(toDate, out var t) ? t : null;
+
+        ZernioProfile? profile = null;
+        if (workspaceId.HasValue)
+        {
+            profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId.Value);
+        }
+
+        if (string.IsNullOrEmpty(profileId))
+        {
+            if (workspaceId.HasValue)
+            {
+                if (profile is null || !profile.IsActive)
+                {
+                    _logger.LogInformation("No active Zernio profile for workspace {WorkspaceId}", workspaceId);
+                    return Ok(new ZernioFollowerStatsResponseDto(
+                        Array.Empty<ZernioFollowerStatsAccountDto>(),
+                        null, null, null));
+                }
+                profileId = profile.ZernioProfileId;
+            }
+        }
 
         try
         {

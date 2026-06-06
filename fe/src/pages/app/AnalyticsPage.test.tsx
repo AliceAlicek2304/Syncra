@@ -19,34 +19,6 @@ vi.mock('../../hooks/useAnalyticsSummary', () => ({
   useAnalyticsSummary: vi.fn(),
 }))
 
-vi.mock('../../api/socialAccounts', () => ({
-  socialAccountsApi: {
-    listSocialAccounts: vi.fn().mockResolvedValue([]),
-  },
-}))
-
-vi.mock('../../api/posts', () => ({
-  postsApi: {
-    getPosts: vi.fn().mockResolvedValue({
-      items: [],
-      pagination: { page: 1, pageSize: 8, totalItems: 0, totalPages: 0 },
-    }),
-  },
-}))
-
-vi.mock('../../api/analytics', () => ({
-  analyticsApi: {
-    getPostAnalytics: vi.fn().mockResolvedValue({
-      impressions: 0,
-      engagements: 0,
-      clicks: 0,
-      views: 0,
-      engagementRate: 0,
-      isSyncPending: false,
-    }),
-  },
-}))
-
 async function mockHook(overrides: Record<string, unknown>) {
   const mod = await import('../../hooks/useAnalyticsSummary')
   const fn = mod.useAnalyticsSummary as Mock
@@ -58,8 +30,13 @@ async function mockHook(overrides: Record<string, unknown>) {
     rangeLabel: 'Apr 24 – May 23, 2026',
     heatmapPlatform: undefined,
     setHeatmapPlatform: vi.fn(),
-    summary: null,
-    heatmap: null,
+    dailyMetrics: null,
+    topPosts: [],
+    bestTime: null,
+    followerStats: null,
+    contentDecay: null,
+    postingFrequency: null,
+    dataUpdatedAt: 0,
     isLoading: false,
     isFetching: false,
     isError: false,
@@ -110,16 +87,32 @@ describe('AnalyticsPage', () => {
 
   it('renders summary metrics when data is available', async () => {
     await mockHook({
-      summary: { totalReach: 50000, engagementRate: 4.5, followerGrowth: 100, totalPosts: 12, weeklyReach: [] },
-      heatmap: { slots: [] },
+      dailyMetrics: {
+        dailyData: [],
+        platformBreakdown: [
+          {
+            platform: 'facebook',
+            postCount: 12,
+            impressions: 100000,
+            reach: 50000,
+            likes: 2250,
+            comments: 100,
+            shares: 50,
+            saves: 0,
+            clicks: 0,
+            views: 0,
+          },
+        ],
+      },
+      bestTime: { slots: [] },
     })
     render(<AnalyticsPage />, { wrapper: createWrapper() })
     await waitFor(() => {
       expect(screen.getByText('Total Reach')).toBeDefined()
     })
     expect(screen.getByText('Avg. Engagement')).toBeDefined()
-    expect(screen.getByText('Follower Growth')).toBeDefined()
-    expect(screen.getByText('Total Posts')).toBeDefined()
+    expect(screen.getByText('Total followers')).toBeDefined()
+    expect(screen.getByText('Posts this period')).toBeDefined()
   })
 
   it('shows billing gate banner for 402 status', async () => {
@@ -216,8 +209,7 @@ describe('AnalyticsPage', () => {
 
   it('shows heatmap platform filter button', async () => {
     await mockHook({
-      heatmap: { slots: [] },
-      summary: { totalReach: 0, engagementRate: 0, followerGrowth: 0, totalPosts: 0, weeklyReach: [] },
+      bestTime: { slots: [] },
     })
     render(<AnalyticsPage />, { wrapper: createWrapper() })
     expect(screen.getByTestId('heatmap-platform-filter')).toBeDefined()

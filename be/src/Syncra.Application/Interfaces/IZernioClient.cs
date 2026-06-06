@@ -281,9 +281,9 @@ public interface IZernioClient
     // ── Analytics methods ───────────────────────────────────────
 
     Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
-        string profileId,
-        DateTime? fromDate,
-        DateTime? toDate,
+        string? profileId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
         string? platform = null,
         string? accountId = null,
         string? source = null,
@@ -450,8 +450,8 @@ public interface IZernioClient
     // ── Follower Stats methods ──────────────────────────────────────────────
 
     Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
-        string accountIds,
-        string profileId,
+        string? accountIds = null,
+        string? profileId = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
         string? granularity = null,

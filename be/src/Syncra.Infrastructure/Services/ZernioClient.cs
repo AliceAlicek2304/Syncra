@@ -1558,9 +1558,9 @@ public sealed class ZernioClient : IZernioClient
     }
 
     public async Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
-        string profileId,
-        DateTime? fromDate,
-        DateTime? toDate,
+        string? profileId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
         string? platform = null,
         string? accountId = null,
         string? source = null,
@@ -5306,9 +5306,36 @@ public sealed class ZernioClient : IZernioClient
 
     // ── Follower Stats methods ──────────────────────────────────────────────
 
+    private record DirectFollowerStatsResponse(
+        List<DirectFollowerStatsAccount>? Accounts,
+        Dictionary<string, List<DirectFollowerStatsDataPoint>>? Stats,
+        DirectFollowerStatsDateRange? DateRange,
+        string? Granularity);
+
+    private record DirectFollowerStatsAccount(
+        [property: System.Text.Json.Serialization.JsonPropertyName("_id")] string? Id,
+        string? AccountId,
+        string? Platform,
+        string? Username,
+        string? DisplayName,
+        string? ProfilePicture,
+        int CurrentFollowers,
+        DateTime LastUpdated,
+        int Growth,
+        float GrowthPercentage,
+        int DataPoints);
+
+    private record DirectFollowerStatsDataPoint(
+        DateOnly Date,
+        int Followers);
+
+    private record DirectFollowerStatsDateRange(
+        DateTime From,
+        DateTime To);
+
     public async Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
-        string accountIds,
-        string profileId,
+        string? accountIds = null,
+        string? profileId = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
         string? granularity = null,
@@ -5316,33 +5343,76 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var response = await _accountsApi.GetFollowerStatsAsync(
-                accountIds,
-                profileId,
-                fromDate.HasValue ? DateOnly.FromDateTime(fromDate.Value) : null,
-                toDate.HasValue ? DateOnly.FromDateTime(toDate.Value) : null,
-                granularity,
-                cancellationToken);
+            var queryParams = new List<string>();
+            if (!string.IsNullOrEmpty(accountIds))
+                queryParams.Add($"accountIds={Uri.EscapeDataString(accountIds)}");
+            if (!string.IsNullOrEmpty(profileId))
+                queryParams.Add($"profileId={Uri.EscapeDataString(profileId)}");
+            if (fromDate.HasValue)
+                queryParams.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+            if (toDate.HasValue)
+                queryParams.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+            if (!string.IsNullOrEmpty(granularity))
+                queryParams.Add($"granularity={Uri.EscapeDataString(granularity)}");
+
+            var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+            var url = $"https://zernio.com/api/v1/accounts/follower-stats{queryString}";
+
+            using var client = _httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+
+            using var responseMessage = await client.SendAsync(request, cancellationToken);
+
+            if (responseMessage.StatusCode == System.Net.HttpStatusCode.PaymentRequired ||
+                responseMessage.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning("Zernio billing gate triggered for follower stats, profile {ProfileId}", profileId);
+                throw new ZernioBillingRequiredException(
+                    "Analytics add-on is required to access follower stats.",
+                    reason: "analytics_addon_required",
+                    dashboardUrl: "https://zernio.com/dashboard/billing",
+                    details: new { profileId });
+            }
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                var errorContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Zernio API error fetching follower stats for profile {ProfileId}. Status: {Status}, Content: {Content}",
+                    profileId, responseMessage.StatusCode, errorContent);
+                throw new DomainException("zernio_follower_stats_error", "Failed to fetch follower stats from Zernio");
+            }
+
+            var json = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+            var response = JsonSerializer.Deserialize<DirectFollowerStatsResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (response == null)
+            {
+                throw new DomainException("zernio_follower_stats_error", "Failed to deserialize follower stats from Zernio");
+            }
 
             var accounts = (response.Accounts ?? [])
                 .Select(a => new ZernioFollowerStatsAccountDto(
-                    a.Id,
-                    a.Platform.ToString(),
+                    a.Id ?? a.AccountId ?? string.Empty,
+                    a.Platform ?? string.Empty,
                     a.Username,
                     a.DisplayName,
                     a.ProfilePicture,
-                    (int)a.CurrentFollowers,
+                    a.CurrentFollowers,
                     a.LastUpdated,
-                    (int)a.Growth,
-                    (float)a.GrowthPercentage,
-                    (int)a.DataPoints))
+                    a.Growth,
+                    a.GrowthPercentage,
+                    a.DataPoints))
                 .ToList();
 
             var stats = response.Stats?
                 .ToDictionary(
                     kvp => kvp.Key,
                     kvp => (IReadOnlyList<ZernioFollowerStatsDataPointDto>)kvp.Value
-                        .Select(d => new ZernioFollowerStatsDataPointDto(d.Date, (int)d.Followers))
+                        .Select(d => new ZernioFollowerStatsDataPointDto(d.Date, d.Followers))
                         .ToList());
 
             var dateRange = response.DateRange != null 
@@ -5355,16 +5425,11 @@ public sealed class ZernioClient : IZernioClient
                 dateRange,
                 response.Granularity);
         }
-        catch (ApiException ex) when (ex.ErrorCode is 402 or 403)
+        catch (ZernioBillingRequiredException)
         {
-            _logger.LogWarning(ex, "Zernio billing gate triggered for follower stats, profile {ProfileId}", profileId);
-            throw new ZernioBillingRequiredException(
-                "Analytics add-on is required to access follower stats.",
-                reason: "analytics_addon_required",
-                dashboardUrl: "https://zernio.com/dashboard/billing",
-                details: new { profileId });
+            throw;
         }
-        catch (ApiException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException && ex is not DomainException)
         {
             _logger.LogError(ex, "Zernio API error fetching follower stats for profile {ProfileId}", profileId);
             throw new DomainException("zernio_follower_stats_error", "Failed to fetch follower stats from Zernio", ex);
