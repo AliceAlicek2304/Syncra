@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Dashboard – Japan Gov Style</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=BIZ+UDPGothic:wght@400;700&display=swap');
+
+  :root {
+    --primary: #0066CC;
+    --primary-light: #E8F0FA;
+    --primary-dark: #004499;
+    --accent-green: #00A96E;
+    --accent-orange: #FF6B35;
+    --accent-purple: #6B4FA0;
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --border: #D9DEE5;
+    --border-strong: #B0BAC5;
+    --text-primary: #1A1F2E;
+    --text-secondary: #5A6478;
+    --text-muted: #8B95A5;
+    --facebook-blue: #1877F2;
+    --success: #00A96E;
+    --warning: #FFB800;
+    --radius: 4px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans JP', 'BIZ UDPGothic', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--primary);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 52px;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-right: 1px solid var(--border);
+    padding-right: 20px;
+    margin-right: 20px;
+  }
+  .header-logo svg { width: 28px; height: 28px; }
+  .header-logo-text { font-size: 15px; font-weight: 700; color: var(--primary); letter-spacing: -0.3px; }
+  .header-nav { display: flex; align-items: center; gap: 0; flex: 1; }
+  .nav-item {
+    padding: 0 16px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--primary); background: var(--primary-light); }
+  .nav-item.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+  /* ── Layout ── */
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px 40px; }
+
+  /* ── Page Title ── */
+  .page-header { margin-bottom: 16px; }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+  .page-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    gap: 0;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px 5px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .filter-select:hover { border-color: var(--primary); }
+  .filter-select select {
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+  }
+  .filter-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+  .filter-sep { flex: 1; }
+  .sync-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .sync-info strong { color: var(--text-secondary); }
+
+  /* ── Cards Grid ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--primary);
+  }
+  .kpi-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-trend { display: flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 6px; }
+  .trend-up { color: var(--success); }
+  .trend-down { color: #E53E3E; }
+  .kpi-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding: 3px 10px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .kpi-btn:hover { background: var(--primary); color: #fff; }
+
+  /* ── Chart Sections ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .chart-grid-large {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .chart-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .chart-card-title { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+  .chart-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .chart-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chart-total { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .chart-total-sub { font-size: 11px; color: var(--text-muted); }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+    gap: 6px;
+  }
+  .empty-state svg { opacity: 0.3; }
+
+  /* ── Metrics Summary ── */
+  .metrics-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  .metric-chip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: none;
+    font-size: 11px;
+  }
+  .metric-chip:first-child { border-left: 1px solid var(--border); border-radius: var(--radius) 0 0 var(--radius); }
+  .metric-chip:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .metric-chip-label { color: var(--text-muted); font-size: 10px; margin-bottom: 2px; display: flex; align-items: center; gap: 3px; }
+  .metric-chip-value { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .metric-chip-value.highlight { color: var(--primary); }
+
+  /* ── Heatmap ── */
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 40px repeat(8, 1fr);
+    gap: 2px;
+    font-size: 10px;
+  }
+  .heatmap-label { color: var(--text-muted); display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; font-size: 10px; }
+  .heatmap-header { color: var(--text-muted); text-align: center; font-size: 9px; font-weight: 600; }
+  .heatmap-cell {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: #E8F0FA;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .heatmap-cell:hover { transform: scale(1.15); }
+  .heatmap-cell.h1 { background: #C3D9F5; }
+  .heatmap-cell.h2 { background: #5599E8; }
+  .heatmap-cell.h3 { background: #0066CC; }
+  .heatmap-cell.h4 { background: #004499; }
+  .heatmap-best-times { margin-top: 8px; font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; flex-wrap: wrap; }
+  .best-time-tag {
+    background: var(--primary);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* ── Tables ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+    background: #F8FAFC;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .data-table th:hover { color: var(--primary); }
+  .data-table th .sort { margin-left: 3px; opacity: 0.4; }
+  .data-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: var(--primary-light); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .platform-tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+  .fb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--facebook-blue); flex-shrink: 0; }
+  .er-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 700; }
+  .er-high { background: #D4F5E9; color: #00805A; }
+  .er-med { background: #FFF3CD; color: #996600; }
+  .post-row { display: flex; flex-direction: column; }
+  .post-id { font-weight: 700; color: var(--text-primary); }
+  .post-date { font-size: 10px; color: var(--text-muted); }
+  .dash { color: var(--text-muted); }
+
+  /* ── Legend ── */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-line { width: 16px; height: 2px; border-radius: 1px; }
+
+  /* ── Full-width chart row ── */
+  .chart-grid-engagement {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chart-grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chart-grid-final {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  canvas { max-width: 100%; }
+
+  /* ── Accumulation chart labels ── */
+  .accumulation-labels { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; }
+  .acc-label { display: flex; align-items: center; gap: 4px; color: var(--text-secondary); }
+  .acc-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .chart-grid-3 { grid-template-columns: 1fr 1fr; }
+    .chart-grid-engagement { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+
+<div class="container">
+
+  <!-- ── PAGE TITLE ── -->
+  <div class="page-header">
+    <h1 class="page-title">Analytics</h1>
+    <p class="page-subtitle">View post performance metrics</p>
+  </div>
+
+  <!-- ── TAB BAR ── -->
+  <div class="tab-bar">
+    <div class="tab active">Posting analytics</div>
+    <div class="tab">Inbox analytics</div>
+  </div>
+
+  <!-- ── FILTER BAR ── -->
+  <div class="filter-bar">
+    <label class="filter-select">
+      <span class="filter-dot" style="background:#0066CC"></span>
+      <select><option>All platforms</option><option>Facebook</option><option>Instagram</option><option>LinkedIn</option><option>TikTok</option><option>YouTube</option></select>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="#5A6478" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </label>
+    <label class="filter-select">
+      <select><option>All profiles</option></select>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="#5A6478" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </label>
+    <label class="filter-select">
+      <select><option>All sources</option></select>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="#5A6478" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </label>
+    <label class="filter-select">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="9" rx="1.5" stroke="#5A6478" stroke-width="1.2"/><path d="M4 1v2M8 1v2M1 5h10" stroke="#5A6478" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <select><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option><option>This month</option></select>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="#5A6478" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </label>
+    <div class="filter-sep"></div>
+    <div class="sync-info">
+      <span>Last sync: <strong>27m ago</strong></span>
+      <span>Next sync: <strong>in 33m</strong></span>
+    </div>
+  </div>
+
+  <!-- ── KPI CARDS ── -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Engagement rate</div>
+      <div class="kpi-value">62.5%</div>
+      <div class="kpi-trend trend-up">↑ +2.3% vs prev.</div>
+    </div>
+    <div class="kpi-card" style="--primary:#00A96E">
+      <div class="kpi-label">Total reach</div>
+      <div class="kpi-value">8</div>
+      <div class="kpi-trend">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#00A96E" stroke-width="1.2"/></svg>
+        <span style="color:var(--text-muted)">Unique accounts</span>
+      </div>
+    </div>
+    <div class="kpi-card" style="--primary:#6B4FA0">
+      <div class="kpi-label">Total followers</div>
+      <div class="kpi-value">62</div>
+      <div class="kpi-sub">Across 2 platforms</div>
+    </div>
+    <div class="kpi-card" style="--primary:#FF6B35">
+      <div class="kpi-label">Posts this period</div>
+      <div class="kpi-value">6</div>
+      <div class="kpi-sub">6 in last 30d</div>
+    </div>
+    <div class="kpi-card" style="--primary:#FFB800">
+      <div class="kpi-label">Best post</div>
+      <div class="kpi-value" style="font-size:18px;margin-top:2px">Post #1213</div>
+      <div class="kpi-sub">25% ER · Jun 2</div>
+      <button class="kpi-btn">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        View
+      </button>
+    </div>
+  </div>
+
+  <!-- ── ROW 1: POST ANALYTICS ── -->
+  <div class="section-label">Post Analytics</div>
+  <div class="chart-grid-3">
+    <!-- Posts per platform -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Posts per platform</div>
+          <div class="chart-card-sub">Top 1 by post count in this window</div>
+        </div>
+        <div>
+          <div class="chart-total">6</div>
+          <div class="chart-total-sub">posts total</div>
+        </div>
+      </div>
+      <canvas id="postsPerPlatform" height="140"></canvas>
+    </div>
+
+    <!-- Posts over time -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Posts over time</div>
+          <div class="chart-card-sub">Posts per week · last 30 days</div>
+        </div>
+        <div>
+          <div class="chart-total">6</div>
+          <div class="chart-total-sub">posts total</div>
+        </div>
+      </div>
+      <canvas id="postsOverTime" height="140"></canvas>
+    </div>
+
+    <!-- Likes per platform -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:3px;vertical-align:-1px"><path d="M6 10.5C6 10.5 1 7.5 1 4A2.5 2.5 0 016 3.2 2.5 2.5 0 0111 4c0 3.5-5 6.5-5 6.5z" stroke="#E53E3E" stroke-width="1.2" fill="none"/></svg>
+            Likes per platform
+          </div>
+          <div class="chart-card-sub">2 likes total</div>
+        </div>
+        <span class="chart-badge">Facebook ▲</span>
+      </div>
+      <canvas id="likesPerPlatform" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- ── ROW 2: ENGAGEMENT ── -->
+  <div class="section-label">Engagement Analytics</div>
+  <div class="chart-grid-engagement">
+    <!-- Engagement over time -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Engagement over time</div>
+          <div class="chart-card-sub">Per week · last 30 days</div>
+        </div>
+      </div>
+      <canvas id="engagementOverTime" height="160"></canvas>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:#0066CC"></div>Likes</div>
+        <div class="legend-item"><div class="legend-line" style="background:#00A96E"></div>Comments</div>
+        <div class="legend-item"><div class="legend-line" style="background:#FF6B35"></div>Shares</div>
+        <div class="legend-item"><div class="legend-line" style="background:#6B4FA0"></div>Impressions (right axis)</div>
+      </div>
+    </div>
+
+    <!-- Likes over time -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Likes over time</div>
+          <div class="chart-card-sub">Likes per week · last 30 days</div>
+        </div>
+        <div class="chart-total">2</div>
+      </div>
+      <canvas id="likesOverTime" height="160"></canvas>
+    </div>
+
+    <!-- Metrics summary -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Period Summary</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">❤ Likes</div>
+          <div style="font-size:20px;font-weight:700">0</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">💬 Comments</div>
+          <div style="font-size:20px;font-weight:700;color:var(--primary)">5</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">🔁 Shares</div>
+          <div style="font-size:20px;font-weight:700">0</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">🔖 Saves</div>
+          <div style="font-size:20px;font-weight:700">0</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">👁 Views</div>
+          <div style="font-size:20px;font-weight:700">0</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">📢 Impress.</div>
+          <div style="font-size:20px;font-weight:700;color:var(--accent-purple)">70</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">📡 Reach</div>
+          <div style="font-size:20px;font-weight:700">8</div>
+        </div>
+        <div style="padding:10px;background:#F8FAFC;border-radius:3px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">🖱 Clicks</div>
+          <div style="font-size:20px;font-weight:700">3</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:var(--primary-light);border-radius:3px;border:1px solid var(--primary);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;font-weight:700;color:var(--primary)">Eng. Rate</span>
+        <span style="font-size:22px;font-weight:700;color:var(--primary)">7.14%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROW 3: HEATMAP + FOLLOWER ── -->
+  <div class="chart-grid-bottom">
+    <!-- Best Time to Post -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Best Time to Post</div>
+          <div class="chart-card-sub">Historical engagement heatmap</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--text-muted)">
+          Less
+          <div style="display:flex;gap:2px">
+            <div style="width:10px;height:10px;border-radius:1px;background:#E8F0FA"></div>
+            <div style="width:10px;height:10px;border-radius:1px;background:#C3D9F5"></div>
+            <div style="width:10px;height:10px;border-radius:1px;background:#5599E8"></div>
+            <div style="width:10px;height:10px;border-radius:1px;background:#0066CC"></div>
+            <div style="width:10px;height:10px;border-radius:1px;background:#004499"></div>
+          </div>
+          More
+        </div>
+      </div>
+      <div id="heatmap-container"></div>
+      <div class="heatmap-best-times">
+        <span style="font-size:11px;color:var(--text-secondary);font-weight:600">Best times:</span>
+        <span class="best-time-tag">Tue 8am · 2</span>
+        <span class="best-time-tag" style="background:var(--accent-green)">Sun 5pm · 1</span>
+      </div>
+    </div>
+
+    <!-- Follower evolution -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Follower evolution</div>
+          <div class="chart-card-sub">Followers per platform · 2 platforms</div>
+        </div>
+        <div>
+          <div class="chart-total">62</div>
+          <div class="chart-total-sub">followers total</div>
+        </div>
+      </div>
+      <canvas id="followerEvolution" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- ── TABLES ── -->
+  <div class="section-label">Platform & Post Breakdown</div>
+  <div class="chart-grid-bottom">
+    <!-- Platform Breakdown -->
+    <div class="chart-card" style="overflow-x:auto">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Platform Breakdown</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Platform <span class="sort">↕</span></th>
+            <th>Posts <span class="sort">↕</span></th>
+            <th>❤ Likes</th>
+            <th>💬 Comm.</th>
+            <th>🔁 Shares</th>
+            <th>🔖 Saves</th>
+            <th>🖱 Clicks</th>
+            <th>👁 Views</th>
+            <th>📢 Impr.</th>
+            <th>📡 Reach</th>
+            <th>ER</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="platform-tag"><span class="fb-dot"></span>Facebook</span></td>
+            <td>6</td>
+            <td><span class="dash">—</span></td>
+            <td>5</td>
+            <td><span class="dash">—</span></td>
+            <td><span class="dash">—</span></td>
+            <td>3</td>
+            <td><span class="dash">—</span></td>
+            <td>70</td>
+            <td>8</td>
+            <td><span class="er-badge er-med">7.14%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Performing Posts -->
+    <div class="chart-card" style="overflow-x:auto">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Top Performing Posts</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Post <span class="sort">↕</span></th>
+            <th>❤ Likes</th>
+            <th>💬 Comm.</th>
+            <th>🔁 Shares</th>
+            <th>🔖 Saves</th>
+            <th>🖱 Clicks</th>
+            <th>👁 Views</th>
+            <th>📢 Impr.</th>
+            <th>📡 Reach</th>
+            <th>ER</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="post-row">
+                <span class="post-id">1213</span>
+                <span class="post-date">Jun 2, 2026</span>
+              </div>
+            </td>
+            <td><span class="dash">—</span></td>
+            <td>4</td>
+            <td><span class="dash">—</span></td>
+            <td><span class="dash">—</span></td>
+            <td>2</td>
+            <td><span class="dash">—</span></td>
+            <td>16</td>
+            <td>1</td>
+            <td><span class="er-badge er-high">25%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="post-row">
+                <span class="post-id">dd</span>
+                <span class="post-date">Jun 1, 2026</span>
+              </div>
+            </td>
+            <td><span class="dash">—</span></td>
+            <td>1</td>
+            <td><span class="dash">—</span></td>
+            <td><span class="dash">—</span></td>
+            <td><span class="dash">—</span></td>
+            <td><span class="dash">—</span></td>
+            <td>8</td>
+            <td>2</td>
+            <td><span class="er-badge er-med">12.5%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── ROW 4: FREQUENCY + ACCUMULATION ── -->
+  <div class="section-label">Advanced Analytics</div>
+  <div class="chart-grid-final">
+    <!-- Posting Frequency vs Engagement -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Posting Frequency vs Engagement</div>
+          <div class="chart-card-sub">Correlation between cadence and ER</div>
+        </div>
+      </div>
+      <canvas id="postingFrequency" height="160"></canvas>
+      <div style="margin-top:10px;padding:8px;background:var(--primary-light);border-radius:3px;border-left:3px solid var(--primary)">
+        <div style="font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px">Optimal cadence per platform</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span class="fb-dot"></span>
+          <span style="font-weight:600">Facebook</span>
+          <span style="color:var(--text-muted)">1–2/wk ·</span>
+          <span style="font-weight:700;color:var(--success)">12.5%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engagement Accumulation -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">Engagement Accumulation</div>
+          <div class="chart-card-sub">How engagement accumulates after publishing</div>
+        </div>
+      </div>
+      <canvas id="engagementAccumulation" height="160"></canvas>
+      <div style="margin-top:8px;padding:8px;background:#FFF8E1;border-radius:3px;border-left:3px solid var(--warning);font-size:11px">
+        <span style="color:#7A5C00">⚡ Half of engagement by <strong>2–7d</strong> · 80% within <strong>2–7d</strong></span>
+      </div>
+    </div>
+
+    <!-- Content Decay insight card -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title">Content Performance Insights</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <div style="padding:10px;border-radius:3px;background:#F0FFF8;border:1px solid #C6F6E2">
+          <div style="font-size:10px;color:#00805A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📈 Growth Insight</div>
+          <div style="font-size:12px;color:#1A4A3A">Engagement rate of <strong>62.5%</strong> significantly above average. Consider increasing posting frequency.</div>
+        </div>
+        <div style="padding:10px;border-radius:3px;background:#EBF4FF;border:1px solid #BDD7F5">
+          <div style="font-size:10px;color:#004499;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🕐 Best Times</div>
+          <div style="font-size:12px;color:#1A2A4A"><strong>Tuesday 8am</strong> and <strong>Sunday 5pm</strong> show highest engagement windows.</div>
+        </div>
+        <div style="padding:10px;border-radius:3px;background:#FFF8E6;border:1px solid #FFD98A">
+          <div style="font-size:10px;color:#996600;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💡 Recommendation</div>
+          <div style="font-size:12px;color:#4A3A00">Maintain <strong>1–2 posts/week</strong> cadence on Facebook for optimal engagement yield.</div>
+        </div>
+        <div style="padding:10px;border-radius:3px;background:#F5F0FF;border:1px solid #C9B8F0">
+          <div style="font-size:10px;color:#4A2D99;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🔗 Platforms Connected</div>
+          <div style="font-size:12px;color:#1A1040">Facebook <strong>active</strong> · Instagram, LinkedIn, TikTok, YouTube available to connect.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Color palette ──
+const C = {
+  primary: '#0066CC',
+  primaryLight: 'rgba(0,102,204,0.12)',
+  green: '#00A96E',
+  orange: '#FF6B35',
+  purple: '#6B4FA0',
+  yellow: '#FFB800',
+  facebook: '#1877F2',
+  facebookLight: 'rgba(24,119,242,0.15)',
+  grid: '#E8ECF2',
+  text: '#5A6478',
+};
+
+Chart.defaults.font.family = "'Noto Sans JP', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = C.text;
+
+const weekLabels = ['May 7', 'May 14', 'May 21', 'May 28', 'Jun 4'];
+
+// ── 1. Posts per platform (bar) ──
+new Chart(document.getElementById('postsPerPlatform'), {
+  type: 'bar',
+  data: {
+    labels: ['Facebook'],
+    datasets: [{
+      data: [6],
+      backgroundColor: C.facebook,
+      borderRadius: 3,
+      barThickness: 48,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, ticks: { stepSize: 2 }, min: 0, max: 8 }
+    }
+  }
+});
+
+// ── 2. Posts over time (line) ──
+new Chart(document.getElementById('postsOverTime'), {
+  type: 'bar',
+  data: {
+    labels: weekLabels,
+    datasets: [{
+      data: [0, 0, 0, 6, 0],
+      backgroundColor: C.facebook,
+      borderRadius: 3,
+      barThickness: 20,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, ticks: { stepSize: 1 }, min: 0, max: 7 }
+    }
+  }
+});
+
+// ── 3. Likes per platform ──
+new Chart(document.getElementById('likesPerPlatform'), {
+  type: 'bar',
+  data: {
+    labels: ['Facebook'],
+    datasets: [{
+      data: [2],
+      backgroundColor: C.facebook,
+      borderRadius: 3,
+      barThickness: 48,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, ticks: { stepSize: 0.5 }, min: 0, max: 2.5 }
+    }
+  }
+});
+
+// ── 4. Engagement over time ──
+new Chart(document.getElementById('engagementOverTime'), {
+  type: 'line',
+  data: {
+    labels: weekLabels,
+    datasets: [
+      {
+        label: 'Likes',
+        data: [0, 0, 0, 0, 0],
+        borderColor: C.primary,
+        backgroundColor: 'rgba(0,102,204,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: false,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Comments',
+        data: [0, 0, 0, 5, 0],
+        borderColor: C.green,
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: false,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Shares',
+        data: [0, 0, 0, 0, 0],
+        borderColor: C.orange,
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: false,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Impressions',
+        data: [0, 0, 0, 70, 0],
+        borderColor: C.purple,
+        borderDash: [4, 3],
+        borderWidth: 1.5,
+        pointRadius: 2,
+        tension: 0.4,
+        fill: false,
+        yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, min: 0, max: 5, position: 'left' },
+      y2: { grid: { display: false }, border: { display: false }, min: 0, max: 80, position: 'right', ticks: { color: C.purple } }
+    }
+  }
+});
+
+// ── 5. Likes over time ──
+new Chart(document.getElementById('likesOverTime'), {
+  type: 'line',
+  data: {
+    labels: weekLabels,
+    datasets: [{
+      data: [0, 0, 0, 2, 0],
+      borderColor: C.primary,
+      backgroundColor: 'rgba(0,102,204,0.08)',
+      borderWidth: 2,
+      pointRadius: 3,
+      tension: 0.4,
+      fill: true,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, min: 0, max: 3 }
+    }
+  }
+});
+
+// ── 6. Heatmap ──
+(function buildHeatmap() {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const hours = ['12am','3am','6am','9am','12pm','3pm','6pm','9pm'];
+  // intensity matrix: 0=none, 1=low, 2=mid, 3=high, 4=peak
+  const data = {
+    'Tue-6am': 2, 'Tue-9am': 4,
+    'Sun-3pm': 3, 'Sun-6pm': 2,
+    'Fri-12pm': 1, 'Mon-9am': 1, 'Thu-3pm': 1
+  };
+
+  const cont = document.getElementById('heatmap-container');
+  const grid = document.createElement('div');
+  grid.className = 'heatmap-grid';
+
+  // Header row
+  grid.appendChild(Object.assign(document.createElement('div'), {className:'heatmap-header'}));
+  hours.forEach(h => {
+    grid.appendChild(Object.assign(document.createElement('div'), {className:'heatmap-header', textContent: h}));
+  });
+
+  // Data rows
+  days.forEach(day => {
+    const lbl = document.createElement('div');
+    lbl.className = 'heatmap-label';
+    lbl.textContent = day;
+    grid.appendChild(lbl);
+
+    hours.forEach(hour => {
+      const key = `${day}-${hour}`;
+      const intensity = data[key] || 0;
+      const cell = document.createElement('div');
+      cell.className = `heatmap-cell${intensity ? ' h'+intensity : ''}`;
+      cell.title = `${day} ${hour}: intensity ${intensity}`;
+      grid.appendChild(cell);
+    });
+  });
+
+  cont.appendChild(grid);
+})();
+
+// ── 7. Follower evolution ──
+new Chart(document.getElementById('followerEvolution'), {
+  type: 'line',
+  data: {
+    labels: ['3 Jun', '4 Jun', '5 Jun'],
+    datasets: [
+      {
+        label: 'Facebook',
+        data: [58, 60, 62],
+        borderColor: C.facebook,
+        backgroundColor: 'rgba(24,119,242,0.10)',
+        borderWidth: 2,
+        pointRadius: 4,
+        tension: 0.3,
+        fill: true,
+      }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8 } } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: C.grid }, border: { display: false }, min: 1, type: 'logarithmic',
+        ticks: { callback: v => v } }
+    }
+  }
+});
+
+// ── 8. Posting frequency vs engagement ──
+new Chart(document.getElementById('postingFrequency'), {
+  type: 'line',
+  data: {
+    labels: ['1/wk', '1-2/wk', '3-5/wk'],
+    datasets: [{
+      label: 'Facebook',
+      data: [8, 12.5, 6],
+      borderColor: C.facebook,
+      backgroundColor: C.facebookLight,
+      borderWidth: 2,
+      pointRadius: 5,
+      pointBackgroundColor: C.facebook,
+      tension: 0.3,
+      fill: true,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: {
+        grid: { color: C.grid }, border: { display: false },
+        min: 0, max: 16,
+        ticks: { callback: v => v + '%' }
+      }
+    }
+  }
+});
+
+// ── 9. Engagement accumulation ──
+new Chart(document.getElementById('engagementAccumulation'), {
+  type: 'line',
+  data: {
+    labels: ['Publish', '12–24h', '1–2d', '2–7d'],
+    datasets: [{
+      label: 'Cumulative engagement %',
+      data: [0, 20, 50, 80],
+      borderColor: C.primary,
+      backgroundColor: 'rgba(0,102,204,0.08)',
+      borderWidth: 2.5,
+      pointRadius: 5,
+      pointBackgroundColor: C.primary,
+      tension: 0.4,
+      fill: true,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: {
+        grid: { color: C.grid }, border: { display: false },
+        min: 0, max: 100,
+        ticks: { callback: v => v + '%' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>

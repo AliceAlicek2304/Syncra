@@ -10,11 +10,6 @@ public interface IZernioWorkspaceAnalyticsService
         int date = 30,
         CancellationToken cancellationToken = default);
 
-    Task<Result<PostMetricsDto>> GetPostMetricsAsync(
-        Guid workspaceId,
-        Guid postId,
-        CancellationToken cancellationToken = default);
-
     Task<Result<HeatmapDto>> GetHeatmapAsync(
         Guid workspaceId,
         int date = 90,

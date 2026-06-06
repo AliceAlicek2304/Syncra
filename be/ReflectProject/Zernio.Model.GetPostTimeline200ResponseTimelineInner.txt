@@ -1,0 +1,174 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Text;
+using Newtonsoft.Json;
+
+namespace Zernio.Model;
+
+[DataContract(Name = "getPostTimeline_200_response_timeline_inner")]
+public class GetPostTimeline200ResponseTimelineInner : IValidatableObject
+{
+	[CompilerGenerated]
+	private sealed class <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__47 : IEnumerable<ValidationResult>, IEnumerable, IEnumerator<ValidationResult>, IEnumerator, IDisposable
+	{
+		private int <>1__state;
+
+		private ValidationResult <>2__current;
+
+		private int <>l__initialThreadId;
+
+		ValidationResult IEnumerator<ValidationResult>.Current
+		{
+			[DebuggerHidden]
+			get
+			{
+				return <>2__current;
+			}
+		}
+
+		object IEnumerator.Current
+		{
+			[DebuggerHidden]
+			get
+			{
+				return <>2__current;
+			}
+		}
+
+		[DebuggerHidden]
+		public <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__47(int <>1__state)
+		{
+			this.<>1__state = <>1__state;
+			<>l__initialThreadId = Environment.CurrentManagedThreadId;
+		}
+
+		[DebuggerHidden]
+		void IDisposable.Dispose()
+		{
+			<>1__state = -2;
+		}
+
+		private bool MoveNext()
+		{
+			if (<>1__state != 0)
+			{
+				return false;
+			}
+			<>1__state = -1;
+			return false;
+		}
+
+		bool IEnumerator.MoveNext()
+		{
+			//ILSpy generated this explicit interface implementation from .override directive in MoveNext
+			return this.MoveNext();
+		}
+
+		[DebuggerHidden]
+		void IEnumerator.Reset()
+		{
+			throw new NotSupportedException();
+		}
+
+		[DebuggerHidden]
+		IEnumerator<ValidationResult> IEnumerable<ValidationResult>.GetEnumerator()
+		{
+			if (<>1__state == -2 && <>l__initialThreadId == Environment.CurrentManagedThreadId)
+			{
+				<>1__state = 0;
+				return this;
+			}
+			return new <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__47(0);
+		}
+
+		[DebuggerHidden]
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return ((IEnumerable<ValidationResult>)this).GetEnumerator();
+		}
+	}
+
+	[DataMember(Name = "date", EmitDefaultValue = false)]
+	public DateOnly Date { get; set; }
+
+	[DataMember(Name = "platform", EmitDefaultValue = false)]
+	public string Platform { get; set; }
+
+	[DataMember(Name = "platformPostId", EmitDefaultValue = false)]
+	public string PlatformPostId { get; set; }
+
+	[DataMember(Name = "impressions", EmitDefaultValue = false)]
+	public int Impressions { get; set; }
+
+	[DataMember(Name = "reach", EmitDefaultValue = false)]
+	public int Reach { get; set; }
+
+	[DataMember(Name = "likes", EmitDefaultValue = false)]
+	public int Likes { get; set; }
+
+	[DataMember(Name = "comments", EmitDefaultValue = false)]
+	public int Comments { get; set; }
+
+	[DataMember(Name = "shares", EmitDefaultValue = false)]
+	public int Shares { get; set; }
+
+	[DataMember(Name = "saves", EmitDefaultValue = false)]
+	public int Saves { get; set; }
+
+	[DataMember(Name = "clicks", EmitDefaultValue = false)]
+	public int Clicks { get; set; }
+
+	[DataMember(Name = "views", EmitDefaultValue = false)]
+	public int Views { get; set; }
+
+	public GetPostTimeline200ResponseTimelineInner(DateOnly date = default(DateOnly), string platform = null, string platformPostId = null, int impressions = 0, int reach = 0, int likes = 0, int comments = 0, int shares = 0, int saves = 0, int clicks = 0, int views = 0)
+	{
+		Date = date;
+		Platform = platform;
+		PlatformPostId = platformPostId;
+		Impressions = impressions;
+		Reach = reach;
+		Likes = likes;
+		Comments = comments;
+		Shares = shares;
+		Saves = saves;
+		Clicks = clicks;
+		Views = views;
+	}
+
+	public override string ToString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append("class GetPostTimeline200ResponseTimelineInner {\n");
+		stringBuilder.Append("  Date: ").Append(Date).Append("\n");
+		stringBuilder.Append("  Platform: ").Append(Platform).Append("\n");
+		stringBuilder.Append("  PlatformPostId: ").Append(PlatformPostId).Append("\n");
+		stringBuilder.Append("  Impressions: ").Append(Impressions).Append("\n");
+		stringBuilder.Append("  Reach: ").Append(Reach).Append("\n");
+		stringBuilder.Append("  Likes: ").Append(Likes).Append("\n");
+		stringBuilder.Append("  Comments: ").Append(Comments).Append("\n");
+		stringBuilder.Append("  Shares: ").Append(Shares).Append("\n");
+		stringBuilder.Append("  Saves: ").Append(Saves).Append("\n");
+		stringBuilder.Append("  Clicks: ").Append(Clicks).Append("\n");
+		stringBuilder.Append("  Views: ").Append(Views).Append("\n");
+		stringBuilder.Append("}\n");
+		return stringBuilder.ToString();
+	}
+
+	public virtual string ToJson()
+	{
+		return JsonConvert.SerializeObject(this, Formatting.Indented);
+	}
+
+	[IteratorStateMachine(typeof(<System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__47))]
+	IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+	{
+		//yield-return decompiler failed: Unexpected instruction in Iterator.Dispose()
+		return new <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__47(-2);
+	}
+}

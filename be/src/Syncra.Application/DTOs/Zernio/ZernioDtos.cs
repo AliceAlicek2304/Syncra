@@ -91,12 +91,28 @@ public sealed record ZernioUpdatePostRequestDto(
 
 // ── Analytics DTOs ─────────────────────────────────────────────
 
+public sealed record ZernioMetricsDto(
+    long Impressions,
+    long Reach,
+    long Likes,
+    long Comments,
+    long Shares,
+    long Saves,
+    long Clicks,
+    long Views);
+
 public sealed record ZernioDailyMetricsDto(
     IReadOnlyList<ZernioDailyDataPointDto> DailyData,
-    IReadOnlyList<ZernioPlatformBreakdownDto>? PlatformBreakdown);
+    IReadOnlyList<ZernioPlatformBreakdownDto> PlatformBreakdown);
 
 public sealed record ZernioDailyDataPointDto(
     string Date,
+    int PostCount,
+    IReadOnlyDictionary<string, int> Platforms,
+    ZernioMetricsDto Metrics);
+
+public sealed record ZernioPlatformBreakdownDto(
+    string Platform,
     int PostCount,
     long Impressions,
     long Reach,
@@ -107,43 +123,99 @@ public sealed record ZernioDailyDataPointDto(
     long Clicks,
     long Views);
 
-public sealed record ZernioPlatformBreakdownDto(
-    string Platform,
-    int PostCount,
-    int Impressions,
-    int Reach,
-    int Likes,
-    int Comments,
-    int Shares,
-    int Saves,
-    int Clicks,
-    int Views);
-
 public sealed record ZernioPostAnalyticsDto(
-    PostAnalyticsFields Analytics,
-    IReadOnlyList<ZernioPlatformPostMetricsDto>? PlatformAnalytics,
-    bool SyncPending);
+    string? PostId = null,
+    string? LatePostId = null,
+    string? Status = null,
+    string? Content = null,
+    DateTime? ScheduledFor = null,
+    DateTime? PublishedAt = null,
+    PostAnalyticsFields? Analytics = null,
+    IReadOnlyList<ZernioPlatformPostMetricsDto>? PlatformAnalytics = null,
+    string? Platform = null,
+    string? PlatformPostUrl = null,
+    bool? IsExternal = null,
+    string? SyncStatus = null,
+    string? Message = null,
+    string? ThumbnailUrl = null,
+    string? MediaType = null,
+    IReadOnlyList<ZernioPostMediaItemDto>? MediaItems = null)
+{
+    public bool SyncPending =>
+        string.Equals(SyncStatus, "pending", StringComparison.OrdinalIgnoreCase);
+
+    public static ZernioPostAnalyticsDto Empty { get; } = new(
+        Analytics: new PostAnalyticsFields());
+}
 
 public sealed record PostAnalyticsFields(
-    int Impressions,
-    int Reach,
-    int Likes,
-    int Comments,
-    int Shares,
-    int Saves,
-    int Clicks,
-    int Views,
-    decimal EngagementRate,
-    DateTime? LastUpdated);
+    int Impressions = 0,
+    int Reach = 0,
+    int Likes = 0,
+    int Comments = 0,
+    int Shares = 0,
+    int Saves = 0,
+    int Clicks = 0,
+    int Views = 0,
+    decimal EngagementRate = 0m,
+    DateTime? LastUpdated = null);
 
 public sealed record ZernioPlatformPostMetricsDto(
-    string Platform,
-    string? PlatformPostId,
-    string? AccountId,
-    string? AccountUsername,
-    PostAnalyticsFields? Analytics,
-    string? PlatformPostUrl,
-    string? ErrorMessage);
+    string? Platform = null,
+    string? Status = null,
+    string? PlatformPostId = null,
+    string? AccountId = null,
+    string? AccountUsername = null,
+    PostAnalyticsFields? Analytics = null,
+    string? SyncStatus = null,
+    string? PlatformPostUrl = null,
+    string? ErrorMessage = null);
+
+public sealed record ZernioPostMediaItemDto(
+    string? Type = null,
+    string? Url = null,
+    string? Thumbnail = null);
+
+public sealed record ZernioAnalyticsOverviewDto(
+    int? TotalPosts = null,
+    int? PublishedPosts = null,
+    int? ScheduledPosts = null,
+    DateTime? LastSync = null,
+    ZernioAnalyticsDataStalenessDto? DataStaleness = null);
+
+public sealed record ZernioAnalyticsDataStalenessDto(
+    int? StaleAccountCount = null,
+    bool? SyncTriggered = null);
+
+public sealed record ZernioAnalyticsListPostDto(
+    string? Id = null,
+    string? LatePostId = null,
+    string? Content = null,
+    DateTime? ScheduledFor = null,
+    DateTime? PublishedAt = null,
+    string? Status = null,
+    PostAnalyticsFields? Analytics = null,
+    IReadOnlyList<ZernioPlatformPostMetricsDto>? Platforms = null,
+    string? Platform = null,
+    string? PlatformPostUrl = null,
+    bool? IsExternal = null,
+    string? ProfileId = null,
+    string? ThumbnailUrl = null,
+    string? MediaType = null,
+    IReadOnlyList<ZernioPostMediaItemDto>? MediaItems = null);
+
+public sealed record ZernioAnalyticsPaginationDto(
+    int? Page = null,
+    int? Limit = null,
+    int? Total = null,
+    int? Pages = null);
+
+public sealed record ZernioPostAnalyticsListDto(
+    ZernioAnalyticsOverviewDto? Overview = null,
+    IReadOnlyList<ZernioAnalyticsListPostDto>? Posts = null,
+    ZernioAnalyticsPaginationDto? Pagination = null,
+    IReadOnlyList<ZernioAccountDto>? Accounts = null,
+    bool? HasAnalyticsAccess = null);
 
 // ── Best-time DTOs ──────────────────────────────────────────
 
@@ -155,6 +227,100 @@ public sealed record ZernioBestTimeSlotDto(
     int Hour,         // 0-23 (UTC)
     double AvgEngagement,
     int PostCount);
+
+public sealed record ZernioContentDecayResponseDto(
+    IReadOnlyList<ZernioContentDecayBucketDto> Buckets);
+
+public sealed record ZernioContentDecayBucketDto(
+    int BucketOrder,
+    string BucketLabel,
+    double AvgPctOfFinal,
+    int PostCount);
+
+// ── Facebook Page Insights DTOs ──────────────────────────────
+
+public sealed record ZernioFacebookPageInsightsResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    ZernioDateRangeDto DateRange,
+    string MetricType,
+    IReadOnlyDictionary<string, ZernioFacebookPageInsightsMetricDto> Metrics,
+    string? DataDelay = null);
+
+public sealed record ZernioFacebookPageInsightsMetricDto(
+    double Total,
+    IReadOnlyList<ZernioFacebookPageInsightsValueDto>? Values = null);
+
+public sealed record ZernioFacebookPageInsightsValueDto(
+    string Date,
+    double Value);
+
+public sealed record ZernioDateRangeDto(
+    string Since,
+    string Until);
+
+// ── Google Business Performance DTOs ────────────────────────────
+
+public sealed record ZernioGoogleBusinessPerformanceResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    ZernioGoogleBusinessDateRangeDto DateRange,
+    IReadOnlyDictionary<string, ZernioGoogleBusinessPerformanceMetricDto> Metrics,
+    string? DataDelay = null);
+
+public sealed record ZernioGoogleBusinessDateRangeDto(
+    string StartDate,
+    string EndDate);
+
+public sealed record ZernioGoogleBusinessPerformanceMetricDto(
+    int Total,
+    IReadOnlyList<ZernioGoogleBusinessPerformanceValueDto> Values);
+
+public sealed record ZernioGoogleBusinessPerformanceValueDto(
+    string Date,
+    int Value);
+
+// ── Instagram Account Insights DTOs ─────────────────────────────
+
+public sealed record ZernioInstagramAccountInsightsResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    ZernioDateRangeDto DateRange,
+    string? MetricType,
+    string? Breakdown,
+    IReadOnlyDictionary<string, ZernioInstagramAccountInsightsMetricDto> Metrics,
+    string? DataDelay = null);
+
+public sealed record ZernioInstagramAccountInsightsMetricDto(
+    decimal Total,
+    IReadOnlyList<ZernioInstagramAccountInsightsValueDto>? Values = null,
+    IReadOnlyList<ZernioInstagramAccountInsightsBreakdownDto>? Breakdowns = null);
+
+public sealed record ZernioInstagramAccountInsightsValueDto(
+    string Date,
+    decimal Value);
+
+public sealed record ZernioInstagramAccountInsightsBreakdownDto(
+    string Dimension,
+    decimal Value);
+
+// ── Instagram Demographics DTOs ──────────────────────────────────
+
+public sealed record ZernioInstagramDemographicsResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    string? Metric,
+    string? Timeframe,
+    IReadOnlyDictionary<string, IReadOnlyList<ZernioInstagramDemographicDimensionDto>> Demographics,
+    string? Note = null);
+
+public sealed record ZernioInstagramDemographicDimensionDto(
+    string Dimension,
+    int Value);
 
 // ── Account Health DTOs ─────────────────────────────────────────
 
@@ -218,28 +384,31 @@ public sealed record ZernioLinkedInOrganizationsResponseDto(
 
 // ── Follower Stats DTOs ───────────────────────────────────────────
 
+public sealed record ZernioFollowerStatsDateRangeDto(
+    DateTime? From,
+    DateTime? To);
+
 public sealed record ZernioFollowerStatsAccountDto(
-    string Id,
+    [property: JsonPropertyName("_id")] string Id,
     string Platform,
     string Username,
     string DisplayName,
     string? ProfilePicture,
-    long CurrentFollowers,
+    int CurrentFollowers,
     DateTime LastUpdated,
-    decimal Growth,
-    decimal GrowthPercentage,
+    int Growth,
+    float GrowthPercentage,
     int DataPoints);
 
 public sealed record ZernioFollowerStatsResponseDto(
     IReadOnlyList<ZernioFollowerStatsAccountDto> Accounts,
     IReadOnlyDictionary<string, IReadOnlyList<ZernioFollowerStatsDataPointDto>>? Stats,
-    DateTime? FromDate,
-    DateTime? ToDate,
+    ZernioFollowerStatsDateRangeDto? DateRange,
     string? Granularity);
 
 public sealed record ZernioFollowerStatsDataPointDto(
     DateOnly Date,
-    decimal Followers);
+    int Followers);
 
 // ── Bulk Account Health DTOs ────────────────────────────────────────
 
@@ -443,3 +612,203 @@ public sealed record ZernioPrivateReplyRequestDto(
     string Message,
     IReadOnlyList<ZernioPrivateReplyQuickReplyDto>? QuickReplies = null,
     IReadOnlyList<ZernioPrivateReplyButtonDto>? Buttons = null);
+
+// ── Google Business Search Keywords ──────────────────────────────────────────
+
+public sealed record ZernioGoogleBusinessSearchKeywordsResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    ZernioMonthRangeDto MonthRange,
+    IReadOnlyList<ZernioSearchKeywordDto> Keywords,
+    string? Note);
+
+public sealed record ZernioMonthRangeDto(string StartMonth, string EndMonth);
+
+public sealed record ZernioSearchKeywordDto(string Keyword, int Impressions);
+
+// ── LinkedIn Aggregate Analytics DTOs ──────────────────────────────────────────
+
+public sealed record ZernioLinkedInAggregateAnalyticsResponseDto(
+    string AccountId,
+    string Platform,
+    string AccountType,
+    string Username,
+    string Aggregation,
+    ZernioLinkedInAggregateAnalyticsDateRangeDto? DateRange,
+    ZernioLinkedInAggregateAnalyticsDataDto? AnalyticsTotal,
+    ZernioLinkedInAggregateAnalyticsDailyDataDto? AnalyticsDaily,
+    IReadOnlyList<string>? SkippedMetrics,
+    string? Note,
+    DateTime LastUpdated
+);
+
+public sealed record ZernioLinkedInAggregateAnalyticsDateRangeDto(
+    string StartDate,
+    string EndDate
+);
+
+public sealed record ZernioLinkedInAggregateAnalyticsDataDto(
+    int Impressions,
+    int Reach,
+    int Reactions,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Sends,
+    decimal EngagementRate
+);
+
+public sealed record ZernioLinkedInAggregateAnalyticsDailyDataDto(
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Impressions,
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Reach, // null or empty usually, but kept for parity if needed
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Reactions,
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Comments,
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Shares,
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Saves,
+    IReadOnlyList<ZernioLinkedInAggregateAnalyticsDailyPointDto>? Sends
+);
+
+public sealed record ZernioLinkedInAggregateAnalyticsDailyPointDto(
+    string Date,
+    int Count
+);
+
+// ── LinkedIn Post Analytics DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioLinkedInPostAnalyticsResponseDto(
+    string AccountId,
+    string Platform,
+    string AccountType,
+    string Username,
+    string PostUrn,
+    ZernioLinkedInPostAnalyticsDataDto? Analytics,
+    DateTime LastUpdated
+);
+
+public sealed record ZernioLinkedInPostAnalyticsDataDto(
+    int Impressions,
+    int Reach,
+    int Likes,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Sends,
+    int Clicks,
+    int Views,
+    decimal EngagementRate
+);
+
+// ── LinkedIn Post Reactions DTOs ─────────────────────────────────────────────
+
+public sealed record ZernioLinkedInPostReactionsResponseDto(
+    string AccountId,
+    string Platform,
+    string AccountType,
+    string Username,
+    string PostUrn,
+    IReadOnlyList<ZernioLinkedInPostReactionDto>? Reactions,
+    ZernioLinkedInPostReactionsPaginationDto? Pagination,
+    DateTime LastUpdated
+);
+
+public sealed record ZernioLinkedInPostReactionDto(
+    string ReactionType,
+    string? ReactionLabel,
+    DateTime ReactedAt,
+    ZernioLinkedInPostReactionAuthorDto? From
+);
+
+public sealed record ZernioLinkedInPostReactionAuthorDto(
+    string Urn,
+    string? Name,
+    string? Headline,
+    string? Username,
+    string? ProfilePicture,
+    string? ProfileUrl
+);
+
+public sealed record ZernioLinkedInPostReactionsPaginationDto(
+    bool HasMore,
+    string? Cursor,
+    int? Total,
+    bool HasTotal
+);
+
+// ── Posting Frequency DTOs ───────────────────────────────────────────────────
+
+public sealed record ZernioPostingFrequencyResponseDto(
+    IReadOnlyList<ZernioPostingFrequencyItemDto>? Frequency
+);
+
+public sealed record ZernioPostingFrequencyItemDto(
+    string Platform,
+    int PostsPerWeek,
+    decimal AvgEngagementRate,
+    decimal AvgEngagement,
+    int WeeksCount
+);
+
+// ── YouTube Demographics DTOs ────────────────────────────────────────────────
+
+public sealed record ZernioYouTubeDemographicsResponseDto(
+    bool Success,
+    string AccountId,
+    string Platform,
+    ZernioDateRangeDto DateRange,
+    IReadOnlyDictionary<string, IReadOnlyList<ZernioYouTubeDemographicDimensionDto>> Demographics,
+    string? Note = null);
+
+public sealed record ZernioYouTubeDemographicDimensionDto(
+    string Dimension,
+    double Value);
+
+// ── YouTube Daily Views DTOs ─────────────────────────────────────────────────
+
+public sealed record ZernioYouTubeDailyViewsResponseDto(
+    bool Success,
+    string VideoId,
+    ZernioYouTubeDailyViewsDateRangeDto DateRange,
+    int TotalViews,
+    IReadOnlyList<ZernioYouTubeDailyViewDataDto> DailyViews,
+    DateTime? LastSyncedAt = null,
+    ZernioYouTubeScopeStatusDto? ScopeStatus = null);
+
+public sealed record ZernioYouTubeDailyViewsDateRangeDto(
+    string StartDate,
+    string EndDate);
+
+public sealed record ZernioYouTubeDailyViewDataDto(
+    string Date,
+    int Views,
+    decimal EstimatedMinutesWatched,
+    decimal AverageViewDuration,
+    int SubscribersGained,
+    int SubscribersLost,
+    int Likes,
+    int Comments,
+    int Shares);
+
+public sealed record ZernioYouTubeScopeStatusDto(
+    bool HasAnalyticsScope);
+
+// ── Post Timeline DTOs ─────────────────────────────────────────────────────
+
+public sealed record ZernioPostTimelineResponseDto(
+    IReadOnlyList<ZernioPostTimelineItemDto>? Timeline
+);
+
+public sealed record ZernioPostTimelineItemDto(
+    string Date,
+    string Platform,
+    string PlatformPostId,
+    int Impressions,
+    int Reach,
+    int Likes,
+    int Comments,
+    int Shares,
+    int Saves,
+    int Clicks,
+    int Views
+);
+

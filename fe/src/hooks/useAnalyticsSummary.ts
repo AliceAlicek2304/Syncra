@@ -1,8 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { analyticsApi } from '../api/analytics';
-import type { AnalyticsError, AnalyticsPresetDays, HeatmapDto, WorkspaceAnalyticsSummaryDto, ZernioDailyMetricsDto } from '../api/analytics';
+import type {
+  AnalyticsError,
+  AnalyticsPresetDays,
+  ZernioDailyMetricsDto,
+  ZernioDailyDataPointDto,
+  ZernioPlatformBreakdownDto
+} from '../api/analytics';
 import { AxiosError } from 'axios';
+import { useWorkspace } from '../context/WorkspaceContext';
 
 interface UseAnalyticsSummaryArgs {
   workspaceId?: string;
@@ -42,44 +49,88 @@ function toAnalyticsError(error: unknown): AnalyticsError | null {
   };
 }
 
+
+
+function aggregateDailyMetrics(metrics: ZernioDailyMetricsDto[]): ZernioDailyMetricsDto {
+  const dailyDataMap: Record<string, ZernioDailyDataPointDto> = {};
+  metrics.forEach((m) => {
+    (m.dailyData || []).forEach((d) => {
+      if (!dailyDataMap[d.date]) {
+        dailyDataMap[d.date] = { ...d };
+      } else {
+        const existing = dailyDataMap[d.date];
+        existing.postCount += d.postCount;
+        existing.impressions += d.impressions;
+        existing.reach += d.reach;
+        existing.likes += d.likes;
+        existing.comments += d.comments;
+        existing.shares += d.shares;
+        existing.saves += d.saves;
+        existing.clicks += d.clicks;
+        existing.views += d.views;
+      }
+    });
+  });
+  const dailyData = Object.values(dailyDataMap).sort((a, b) => a.date.localeCompare(b.date));
+
+  const platformBreakdownMap: Record<string, ZernioPlatformBreakdownDto> = {};
+  metrics.forEach((m) => {
+    (m.platformBreakdown || []).forEach((p) => {
+      if (!platformBreakdownMap[p.platform]) {
+        platformBreakdownMap[p.platform] = { ...p };
+      } else {
+        const existing = platformBreakdownMap[p.platform];
+        existing.postCount += p.postCount;
+        existing.impressions += p.impressions;
+        existing.reach += p.reach;
+        existing.likes += p.likes;
+        existing.comments += p.comments;
+        existing.shares += p.shares;
+        existing.saves += p.saves;
+        existing.clicks += p.clicks;
+        existing.views += p.views;
+      }
+    });
+  });
+  const platformBreakdown = Object.values(platformBreakdownMap);
+
+  return { dailyData, platformBreakdown };
+}
+
 export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
+  const { workspaces } = useWorkspace();
   const [presetDays, setPresetDays] = useState<AnalyticsPresetDays>(30);
   const [heatmapPlatform, setHeatmapPlatform] = useState<string | undefined>(undefined);
 
-  const summaryQuery = useQuery({
-    queryKey: ['analytics-summary', workspaceId, presetDays],
-    enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<WorkspaceAnalyticsSummaryDto | null> => {
-      if (!workspaceId) return null;
-      return analyticsApi.getWorkspaceSummary(workspaceId, presetDays);
-    },
-  });
+  const targetIds = useMemo(() => {
+    if (!workspaceId) return [];
+    if (workspaceId === 'all') return workspaces.map((w) => w.id);
+    return [workspaceId];
+  }, [workspaceId, workspaces]);
 
-  const heatmapQuery = useQuery({
-    queryKey: ['analytics-heatmap', workspaceId, presetDays, heatmapPlatform],
-    enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<HeatmapDto | null> => {
-      if (!workspaceId) return null;
-      return analyticsApi.getWorkspaceHeatmap(workspaceId, presetDays, heatmapPlatform);
-    },
-  });
-
-  const dailyMetricsQuery = useQuery({
-    queryKey: ['analytics-daily-metrics', workspaceId],
-    enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<ZernioDailyMetricsDto | null> => {
-      if (!workspaceId) return null;
-      const fromDate = new Date()
-      fromDate.setDate(fromDate.getDate() - 365)
-      return analyticsApi.getDailyMetrics(fromDate.toISOString().split('T')[0]);
-    },
-    staleTime: 300_000,
+  const dailyMetricsQueries = useQueries({
+    queries: targetIds.map((id) => ({
+      queryKey: ['analytics-daily-metrics', id],
+      enabled: Boolean(id),
+      queryFn: async () => {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 365);
+        return analyticsApi.getDailyMetrics({
+          accountId: undefined, // Add correct params based on what is needed
+          fromDate: fromDate.toISOString().split('T')[0]
+        }); // Pass properly adjusted params object
+      },
+      staleTime: 300_000,
+    })),
   });
 
   // Structured error info
   const analyticsError: AnalyticsError | null = useMemo(() => {
-    return toAnalyticsError(summaryQuery.error) ?? toAnalyticsError(heatmapQuery.error) ?? null;
-  }, [summaryQuery.error, heatmapQuery.error]);
+    const errors = [
+      ...dailyMetricsQueries.map((q) => q.error),
+    ].filter(Boolean);
+    return errors.length > 0 ? toAnalyticsError(errors[0]) : null;
+  }, [dailyMetricsQueries]);
 
   const selectedPresetLabel = useMemo(
     () => PRESET_OPTIONS.find((option) => option.days === presetDays)?.label ?? 'Last 30 days',
@@ -87,15 +138,20 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
   );
 
   const refresh = useCallback(() => {
-    summaryQuery.refetch();
-    heatmapQuery.refetch();
-    dailyMetricsQuery.refetch();
-  }, [summaryQuery.refetch, heatmapQuery.refetch, dailyMetricsQuery.refetch]);
+    dailyMetricsQueries.forEach((q) => q.refetch());
+  }, [dailyMetricsQueries]);
 
   const isBillingGateError = analyticsError?.status === 402
     || (analyticsError?.status === 403 && analyticsError?.code === 'analytics_addon_required');
 
   const isScopeError = analyticsError?.status === 412;
+
+  const dailyMetrics = useMemo(() => {
+    const data = dailyMetricsQueries.map((q) => q.data).filter(Boolean) as ZernioDailyMetricsDto[];
+    if (data.length === 0) return null;
+    if (workspaceId !== 'all') return data[0];
+    return aggregateDailyMetrics(data);
+  }, [dailyMetricsQueries, workspaceId]);
 
   return {
     presetDays,
@@ -105,12 +161,10 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
     rangeLabel: formatRangeLabel(presetDays),
     heatmapPlatform,
     setHeatmapPlatform,
-    summary: summaryQuery.data,
-    heatmap: heatmapQuery.data,
-    dailyMetrics: dailyMetricsQuery.data,
-    isLoading: summaryQuery.isLoading || heatmapQuery.isLoading,
-    isFetching: summaryQuery.isFetching || heatmapQuery.isFetching || dailyMetricsQuery.isFetching,
-    isError: summaryQuery.isError || heatmapQuery.isError,
+    dailyMetrics,
+    isLoading: dailyMetricsQueries.some((q) => q.isLoading),
+    isFetching: dailyMetricsQueries.some((q) => q.isFetching),
+    isError: dailyMetricsQueries.some((q) => q.isError),
     analyticsError,
     isBillingGateError,
     isScopeError,

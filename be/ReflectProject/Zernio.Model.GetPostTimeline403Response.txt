@@ -1,0 +1,124 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Text;
+using Newtonsoft.Json;
+
+namespace Zernio.Model;
+
+[DataContract(Name = "getPostTimeline_403_response")]
+public class GetPostTimeline403Response : IValidatableObject
+{
+	[CompilerGenerated]
+	private sealed class <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__7 : IEnumerable<ValidationResult>, IEnumerable, IEnumerator<ValidationResult>, IEnumerator, IDisposable
+	{
+		private int <>1__state;
+
+		private ValidationResult <>2__current;
+
+		private int <>l__initialThreadId;
+
+		ValidationResult IEnumerator<ValidationResult>.Current
+		{
+			[DebuggerHidden]
+			get
+			{
+				return <>2__current;
+			}
+		}
+
+		object IEnumerator.Current
+		{
+			[DebuggerHidden]
+			get
+			{
+				return <>2__current;
+			}
+		}
+
+		[DebuggerHidden]
+		public <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__7(int <>1__state)
+		{
+			this.<>1__state = <>1__state;
+			<>l__initialThreadId = Environment.CurrentManagedThreadId;
+		}
+
+		[DebuggerHidden]
+		void IDisposable.Dispose()
+		{
+			<>1__state = -2;
+		}
+
+		private bool MoveNext()
+		{
+			if (<>1__state != 0)
+			{
+				return false;
+			}
+			<>1__state = -1;
+			return false;
+		}
+
+		bool IEnumerator.MoveNext()
+		{
+			//ILSpy generated this explicit interface implementation from .override directive in MoveNext
+			return this.MoveNext();
+		}
+
+		[DebuggerHidden]
+		void IEnumerator.Reset()
+		{
+			throw new NotSupportedException();
+		}
+
+		[DebuggerHidden]
+		IEnumerator<ValidationResult> IEnumerable<ValidationResult>.GetEnumerator()
+		{
+			if (<>1__state == -2 && <>l__initialThreadId == Environment.CurrentManagedThreadId)
+			{
+				<>1__state = 0;
+				return this;
+			}
+			return new <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__7(0);
+		}
+
+		[DebuggerHidden]
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return ((IEnumerable<ValidationResult>)this).GetEnumerator();
+		}
+	}
+
+	[DataMember(Name = "error", EmitDefaultValue = false)]
+	public string Error { get; set; }
+
+	public GetPostTimeline403Response(string error = null)
+	{
+		Error = error;
+	}
+
+	public override string ToString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append("class GetPostTimeline403Response {\n");
+		stringBuilder.Append("  Error: ").Append(Error).Append("\n");
+		stringBuilder.Append("}\n");
+		return stringBuilder.ToString();
+	}
+
+	public virtual string ToJson()
+	{
+		return JsonConvert.SerializeObject(this, Formatting.Indented);
+	}
+
+	[IteratorStateMachine(typeof(<System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__7))]
+	IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+	{
+		//yield-return decompiler failed: Unexpected instruction in Iterator.Dispose()
+		return new <System-ComponentModel-DataAnnotations-IValidatableObject-Validate>d__7(-2);
+	}
+}

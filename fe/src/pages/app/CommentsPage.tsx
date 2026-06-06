@@ -816,8 +816,6 @@ export default function CommentsPage() {
     return 0;
   });
 
-  const uniqueAccounts = Array.from(new Set(posts.map(p => p.zernioAccountId).filter(Boolean)));
-
   const workspaceOptions: FilterOption[] = [
     { value: 'all', label: 'All workspaces' },
     ...workspaces.map(w => ({

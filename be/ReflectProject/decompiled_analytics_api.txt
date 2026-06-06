@@ -1,0 +1,2467 @@
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Zernio.Client;
+using Zernio.Model;
+
+namespace Zernio.Api;
+
+public class AnalyticsApi : IDisposable, IAnalyticsApi, IAnalyticsApiSync, IApiAccessor, IAnalyticsApiAsync
+{
+	private ExceptionFactory _exceptionFactory = (string name, IApiResponse response) => (Exception)null;
+
+	public ApiClient ApiClient { get; set; }
+
+	public IAsynchronousClient AsynchronousClient { get; set; }
+
+	public ISynchronousClient Client { get; set; }
+
+	public IReadableConfiguration Configuration { get; set; }
+
+	public ExceptionFactory ExceptionFactory
+	{
+		get
+		{
+			if (_exceptionFactory != null && _exceptionFactory.GetInvocationList().Length > 1)
+			{
+				throw new InvalidOperationException("Multicast delegate for ExceptionFactory is unsupported.");
+			}
+			return _exceptionFactory;
+		}
+		set
+		{
+			_exceptionFactory = value;
+		}
+	}
+
+	public AnalyticsApi()
+		: this((string)null)
+	{
+	}
+
+	public AnalyticsApi(string basePath)
+	{
+		Configuration = Zernio.Client.Configuration.MergeConfigurations(GlobalConfiguration.Instance, new Configuration
+		{
+			BasePath = basePath
+		});
+		ApiClient = new ApiClient(Configuration.BasePath);
+		Client = ApiClient;
+		AsynchronousClient = ApiClient;
+		ExceptionFactory = Zernio.Client.Configuration.DefaultExceptionFactory;
+	}
+
+	public AnalyticsApi(Configuration configuration)
+	{
+		if (configuration == null)
+		{
+			throw new ArgumentNullException("configuration");
+		}
+		Configuration = Zernio.Client.Configuration.MergeConfigurations(GlobalConfiguration.Instance, configuration);
+		ApiClient = new ApiClient(Configuration.BasePath);
+		Client = ApiClient;
+		AsynchronousClient = ApiClient;
+		ExceptionFactory = Zernio.Client.Configuration.DefaultExceptionFactory;
+	}
+
+	public AnalyticsApi(HttpClient client, HttpClientHandler handler = null)
+		: this(client, (string)null, handler)
+	{
+	}
+
+	public AnalyticsApi(HttpClient client, string basePath, HttpClientHandler handler = null)
+	{
+		if (client == null)
+		{
+			throw new ArgumentNullException("client");
+		}
+		Configuration = Zernio.Client.Configuration.MergeConfigurations(GlobalConfiguration.Instance, new Configuration
+		{
+			BasePath = basePath
+		});
+		ApiClient = new ApiClient(client, Configuration.BasePath, handler);
+		Client = ApiClient;
+		AsynchronousClient = ApiClient;
+		ExceptionFactory = Zernio.Client.Configuration.DefaultExceptionFactory;
+	}
+
+	public AnalyticsApi(HttpClient client, Configuration configuration, HttpClientHandler handler = null)
+	{
+		if (configuration == null)
+		{
+			throw new ArgumentNullException("configuration");
+		}
+		if (client == null)
+		{
+			throw new ArgumentNullException("client");
+		}
+		Configuration = Zernio.Client.Configuration.MergeConfigurations(GlobalConfiguration.Instance, configuration);
+		ApiClient = new ApiClient(client, Configuration.BasePath, handler);
+		Client = ApiClient;
+		AsynchronousClient = ApiClient;
+		ExceptionFactory = Zernio.Client.Configuration.DefaultExceptionFactory;
+	}
+
+	public AnalyticsApi(ISynchronousClient client, IAsynchronousClient asyncClient, IReadableConfiguration configuration)
+	{
+		if (client == null)
+		{
+			throw new ArgumentNullException("client");
+		}
+		if (asyncClient == null)
+		{
+			throw new ArgumentNullException("asyncClient");
+		}
+		if (configuration == null)
+		{
+			throw new ArgumentNullException("configuration");
+		}
+		Client = client;
+		AsynchronousClient = asyncClient;
+		Configuration = configuration;
+		ExceptionFactory = Zernio.Client.Configuration.DefaultExceptionFactory;
+	}
+
+	public void Dispose()
+	{
+		ApiClient?.Dispose();
+	}
+
+	public string GetBasePath()
+	{
+		return Configuration.BasePath;
+	}
+
+	public GetAnalytics200Response GetAnalytics(string? postId = null, string? platform = null, string? profileId = null, string? accountId = null, string? source = null, DateOnly? fromDate = null, DateOnly? toDate = null, int? limit = null, int? page = null, string? sortBy = null, string? order = null)
+	{
+		return GetAnalyticsWithHttpInfo(postId, platform, profileId, accountId, source, fromDate, toDate, limit, page, sortBy, order).Data;
+	}
+
+	public ApiResponse<GetAnalytics200Response> GetAnalyticsWithHttpInfo(string? postId = null, string? platform = null, string? profileId = null, string? accountId = null, string? source = null, DateOnly? fromDate = null, DateOnly? toDate = null, int? limit = null, int? page = null, string? sortBy = null, string? order = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (postId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "postId", postId));
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (limit.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "limit", limit));
+		}
+		if (page.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "page", page));
+		}
+		if (sortBy != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "sortBy", sortBy));
+		}
+		if (order != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "order", order));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetAnalytics200Response> apiResponse = Client.Get<GetAnalytics200Response>("/v1/analytics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetAnalytics200Response> GetAnalyticsAsync(string? postId = null, string? platform = null, string? profileId = null, string? accountId = null, string? source = null, DateOnly? fromDate = null, DateOnly? toDate = null, int? limit = null, int? page = null, string? sortBy = null, string? order = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetAnalyticsWithHttpInfoAsync(postId, platform, profileId, accountId, source, fromDate, toDate, limit, page, sortBy, order, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetAnalytics200Response>> GetAnalyticsWithHttpInfoAsync(string? postId = null, string? platform = null, string? profileId = null, string? accountId = null, string? source = null, DateOnly? fromDate = null, DateOnly? toDate = null, int? limit = null, int? page = null, string? sortBy = null, string? order = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (postId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "postId", postId));
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (limit.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "limit", limit));
+		}
+		if (page.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "page", page));
+		}
+		if (sortBy != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "sortBy", sortBy));
+		}
+		if (order != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "order", order));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetAnalytics200Response> apiResponse = await AsynchronousClient.GetAsync<GetAnalytics200Response>("/v1/analytics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetBestTimeToPost200Response GetBestTimeToPost(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		return GetBestTimeToPostWithHttpInfo(platform, profileId, accountId, source).Data;
+	}
+
+	public ApiResponse<GetBestTimeToPost200Response> GetBestTimeToPostWithHttpInfo(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetBestTimeToPost200Response> apiResponse = Client.Get<GetBestTimeToPost200Response>("/v1/analytics/best-time", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetBestTimeToPost", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetBestTimeToPost200Response> GetBestTimeToPostAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetBestTimeToPostWithHttpInfoAsync(platform, profileId, accountId, source, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetBestTimeToPost200Response>> GetBestTimeToPostWithHttpInfoAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetBestTimeToPost200Response> apiResponse = await AsynchronousClient.GetAsync<GetBestTimeToPost200Response>("/v1/analytics/best-time", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetBestTimeToPost", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetContentDecay200Response GetContentDecay(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		return GetContentDecayWithHttpInfo(platform, profileId, accountId, source).Data;
+	}
+
+	public ApiResponse<GetContentDecay200Response> GetContentDecayWithHttpInfo(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetContentDecay200Response> apiResponse = Client.Get<GetContentDecay200Response>("/v1/analytics/content-decay", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetContentDecay", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetContentDecay200Response> GetContentDecayAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetContentDecayWithHttpInfoAsync(platform, profileId, accountId, source, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetContentDecay200Response>> GetContentDecayWithHttpInfoAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetContentDecay200Response> apiResponse = await AsynchronousClient.GetAsync<GetContentDecay200Response>("/v1/analytics/content-decay", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetContentDecay", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetDailyMetrics200Response GetDailyMetrics(string? platform = null, string? profileId = null, string? accountId = null, DateTime? fromDate = null, DateTime? toDate = null, string? source = null)
+	{
+		return GetDailyMetricsWithHttpInfo(platform, profileId, accountId, fromDate, toDate, source).Data;
+	}
+
+	public ApiResponse<GetDailyMetrics200Response> GetDailyMetricsWithHttpInfo(string? platform = null, string? profileId = null, string? accountId = null, DateTime? fromDate = null, DateTime? toDate = null, string? source = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetDailyMetrics200Response> apiResponse = Client.Get<GetDailyMetrics200Response>("/v1/analytics/daily-metrics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetDailyMetrics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetDailyMetrics200Response> GetDailyMetricsAsync(string? platform = null, string? profileId = null, string? accountId = null, DateTime? fromDate = null, DateTime? toDate = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetDailyMetricsWithHttpInfoAsync(platform, profileId, accountId, fromDate, toDate, source, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetDailyMetrics200Response>> GetDailyMetricsWithHttpInfoAsync(string? platform = null, string? profileId = null, string? accountId = null, DateTime? fromDate = null, DateTime? toDate = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetDailyMetrics200Response> apiResponse = await AsynchronousClient.GetAsync<GetDailyMetrics200Response>("/v1/analytics/daily-metrics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetDailyMetrics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetFacebookPageInsights(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		return GetFacebookPageInsightsWithHttpInfo(accountId, metrics, since, until, metricType).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetFacebookPageInsightsWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetFacebookPageInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/facebook/page-insights", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetFacebookPageInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetFacebookPageInsightsAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetFacebookPageInsightsWithHttpInfoAsync(accountId, metrics, since, until, metricType, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetFacebookPageInsightsWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetFacebookPageInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/facebook/page-insights", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetFacebookPageInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetFollowerStats200Response GetFollowerStats(string? accountIds = null, string? profileId = null, DateOnly? fromDate = null, DateOnly? toDate = null, string? granularity = null)
+	{
+		return GetFollowerStatsWithHttpInfo(accountIds, profileId, fromDate, toDate, granularity).Data;
+	}
+
+	public ApiResponse<GetFollowerStats200Response> GetFollowerStatsWithHttpInfo(string? accountIds = null, string? profileId = null, DateOnly? fromDate = null, DateOnly? toDate = null, string? granularity = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (accountIds != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountIds", accountIds));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (granularity != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "granularity", granularity));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetFollowerStats200Response> apiResponse = Client.Get<GetFollowerStats200Response>("/v1/accounts/follower-stats", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetFollowerStats", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetFollowerStats200Response> GetFollowerStatsAsync(string? accountIds = null, string? profileId = null, DateOnly? fromDate = null, DateOnly? toDate = null, string? granularity = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetFollowerStatsWithHttpInfoAsync(accountIds, profileId, fromDate, toDate, granularity, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetFollowerStats200Response>> GetFollowerStatsWithHttpInfoAsync(string? accountIds = null, string? profileId = null, DateOnly? fromDate = null, DateOnly? toDate = null, string? granularity = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (accountIds != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountIds", accountIds));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (granularity != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "granularity", granularity));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetFollowerStats200Response> apiResponse = await AsynchronousClient.GetAsync<GetFollowerStats200Response>("/v1/accounts/follower-stats", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetFollowerStats", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetGoogleBusinessPerformance200Response GetGoogleBusinessPerformance(string accountId, string? metrics = null, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		return GetGoogleBusinessPerformanceWithHttpInfo(accountId, metrics, startDate, endDate).Data;
+	}
+
+	public ApiResponse<GetGoogleBusinessPerformance200Response> GetGoogleBusinessPerformanceWithHttpInfo(string accountId, string? metrics = null, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetGoogleBusinessPerformance");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetGoogleBusinessPerformance200Response> apiResponse = Client.Get<GetGoogleBusinessPerformance200Response>("/v1/analytics/googlebusiness/performance", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetGoogleBusinessPerformance", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetGoogleBusinessPerformance200Response> GetGoogleBusinessPerformanceAsync(string accountId, string? metrics = null, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetGoogleBusinessPerformanceWithHttpInfoAsync(accountId, metrics, startDate, endDate, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetGoogleBusinessPerformance200Response>> GetGoogleBusinessPerformanceWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetGoogleBusinessPerformance");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetGoogleBusinessPerformance200Response> apiResponse = await AsynchronousClient.GetAsync<GetGoogleBusinessPerformance200Response>("/v1/analytics/googlebusiness/performance", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetGoogleBusinessPerformance", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetGoogleBusinessSearchKeywords200Response GetGoogleBusinessSearchKeywords(string accountId, string? startMonth = null, string? endMonth = null)
+	{
+		return GetGoogleBusinessSearchKeywordsWithHttpInfo(accountId, startMonth, endMonth).Data;
+	}
+
+	public ApiResponse<GetGoogleBusinessSearchKeywords200Response> GetGoogleBusinessSearchKeywordsWithHttpInfo(string accountId, string? startMonth = null, string? endMonth = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetGoogleBusinessSearchKeywords");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (startMonth != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startMonth", startMonth));
+		}
+		if (endMonth != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endMonth", endMonth));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetGoogleBusinessSearchKeywords200Response> apiResponse = Client.Get<GetGoogleBusinessSearchKeywords200Response>("/v1/analytics/googlebusiness/search-keywords", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetGoogleBusinessSearchKeywords", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetGoogleBusinessSearchKeywords200Response> GetGoogleBusinessSearchKeywordsAsync(string accountId, string? startMonth = null, string? endMonth = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetGoogleBusinessSearchKeywordsWithHttpInfoAsync(accountId, startMonth, endMonth, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetGoogleBusinessSearchKeywords200Response>> GetGoogleBusinessSearchKeywordsWithHttpInfoAsync(string accountId, string? startMonth = null, string? endMonth = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetGoogleBusinessSearchKeywords");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (startMonth != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startMonth", startMonth));
+		}
+		if (endMonth != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endMonth", endMonth));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetGoogleBusinessSearchKeywords200Response> apiResponse = await AsynchronousClient.GetAsync<GetGoogleBusinessSearchKeywords200Response>("/v1/analytics/googlebusiness/search-keywords", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetGoogleBusinessSearchKeywords", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetInstagramAccountInsights(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, string? breakdown = null)
+	{
+		return GetInstagramAccountInsightsWithHttpInfo(accountId, metrics, since, until, metricType, breakdown).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetInstagramAccountInsightsWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, string? breakdown = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramAccountInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/instagram/account-insights", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramAccountInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetInstagramAccountInsightsAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, string? breakdown = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetInstagramAccountInsightsWithHttpInfoAsync(accountId, metrics, since, until, metricType, breakdown, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetInstagramAccountInsightsWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, string? breakdown = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramAccountInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/instagram/account-insights", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramAccountInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramDemographicsResponse GetInstagramDemographics(string accountId, string? metric = null, string? breakdown = null, string? timeframe = null)
+	{
+		return GetInstagramDemographicsWithHttpInfo(accountId, metric, breakdown, timeframe).Data;
+	}
+
+	public ApiResponse<InstagramDemographicsResponse> GetInstagramDemographicsWithHttpInfo(string accountId, string? metric = null, string? breakdown = null, string? timeframe = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramDemographics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metric != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metric", metric));
+		}
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (timeframe != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "timeframe", timeframe));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramDemographicsResponse> apiResponse = Client.Get<InstagramDemographicsResponse>("/v1/analytics/instagram/demographics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramDemographics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramDemographicsResponse> GetInstagramDemographicsAsync(string accountId, string? metric = null, string? breakdown = null, string? timeframe = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetInstagramDemographicsWithHttpInfoAsync(accountId, metric, breakdown, timeframe, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramDemographicsResponse>> GetInstagramDemographicsWithHttpInfoAsync(string accountId, string? metric = null, string? breakdown = null, string? timeframe = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramDemographics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metric != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metric", metric));
+		}
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (timeframe != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "timeframe", timeframe));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramDemographicsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramDemographicsResponse>("/v1/analytics/instagram/demographics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramDemographics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetInstagramFollowerHistory(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		return GetInstagramFollowerHistoryWithHttpInfo(accountId, metrics, since, until, metricType).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetInstagramFollowerHistoryWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramFollowerHistory");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/instagram/follower-history", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramFollowerHistory", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetInstagramFollowerHistoryAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetInstagramFollowerHistoryWithHttpInfoAsync(accountId, metrics, since, until, metricType, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetInstagramFollowerHistoryWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetInstagramFollowerHistory");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/instagram/follower-history", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetInstagramFollowerHistory", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetLinkedInAggregateAnalytics200Response GetLinkedInAggregateAnalytics(string accountId, string? aggregation = null, DateOnly? startDate = null, DateOnly? endDate = null, string? metrics = null)
+	{
+		return GetLinkedInAggregateAnalyticsWithHttpInfo(accountId, aggregation, startDate, endDate, metrics).Data;
+	}
+
+	public ApiResponse<GetLinkedInAggregateAnalytics200Response> GetLinkedInAggregateAnalyticsWithHttpInfo(string accountId, string? aggregation = null, DateOnly? startDate = null, DateOnly? endDate = null, string? metrics = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInAggregateAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		if (aggregation != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "aggregation", aggregation));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInAggregateAnalytics200Response> apiResponse = Client.Get<GetLinkedInAggregateAnalytics200Response>("/v1/accounts/{accountId}/linkedin-aggregate-analytics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInAggregateAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetLinkedInAggregateAnalytics200Response> GetLinkedInAggregateAnalyticsAsync(string accountId, string? aggregation = null, DateOnly? startDate = null, DateOnly? endDate = null, string? metrics = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetLinkedInAggregateAnalyticsWithHttpInfoAsync(accountId, aggregation, startDate, endDate, metrics, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetLinkedInAggregateAnalytics200Response>> GetLinkedInAggregateAnalyticsWithHttpInfoAsync(string accountId, string? aggregation = null, DateOnly? startDate = null, DateOnly? endDate = null, string? metrics = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInAggregateAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		if (aggregation != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "aggregation", aggregation));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInAggregateAnalytics200Response> apiResponse = await AsynchronousClient.GetAsync<GetLinkedInAggregateAnalytics200Response>("/v1/accounts/{accountId}/linkedin-aggregate-analytics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInAggregateAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetLinkedInOrgAggregateAnalytics(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		return GetLinkedInOrgAggregateAnalyticsWithHttpInfo(accountId, metrics, since, until, metricType).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetLinkedInOrgAggregateAnalyticsWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInOrgAggregateAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/linkedin/org-aggregate-analytics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInOrgAggregateAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetLinkedInOrgAggregateAnalyticsAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetLinkedInOrgAggregateAnalyticsWithHttpInfoAsync(accountId, metrics, since, until, metricType, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetLinkedInOrgAggregateAnalyticsWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInOrgAggregateAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/linkedin/org-aggregate-analytics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInOrgAggregateAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetLinkedInPostAnalytics200Response GetLinkedInPostAnalytics(string accountId, string urn)
+	{
+		return GetLinkedInPostAnalyticsWithHttpInfo(accountId, urn).Data;
+	}
+
+	public ApiResponse<GetLinkedInPostAnalytics200Response> GetLinkedInPostAnalyticsWithHttpInfo(string accountId, string urn)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInPostAnalytics");
+		}
+		if (urn == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'urn' when calling AnalyticsApi->GetLinkedInPostAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "urn", urn));
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInPostAnalytics200Response> apiResponse = Client.Get<GetLinkedInPostAnalytics200Response>("/v1/accounts/{accountId}/linkedin-post-analytics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInPostAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetLinkedInPostAnalytics200Response> GetLinkedInPostAnalyticsAsync(string accountId, string urn, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetLinkedInPostAnalyticsWithHttpInfoAsync(accountId, urn, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetLinkedInPostAnalytics200Response>> GetLinkedInPostAnalyticsWithHttpInfoAsync(string accountId, string urn, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInPostAnalytics");
+		}
+		if (urn == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'urn' when calling AnalyticsApi->GetLinkedInPostAnalytics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "urn", urn));
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInPostAnalytics200Response> apiResponse = await AsynchronousClient.GetAsync<GetLinkedInPostAnalytics200Response>("/v1/accounts/{accountId}/linkedin-post-analytics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInPostAnalytics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetLinkedInPostReactions200Response GetLinkedInPostReactions(string accountId, string urn, int? limit = null, string? cursor = null)
+	{
+		return GetLinkedInPostReactionsWithHttpInfo(accountId, urn, limit, cursor).Data;
+	}
+
+	public ApiResponse<GetLinkedInPostReactions200Response> GetLinkedInPostReactionsWithHttpInfo(string accountId, string urn, int? limit = null, string? cursor = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInPostReactions");
+		}
+		if (urn == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'urn' when calling AnalyticsApi->GetLinkedInPostReactions");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "urn", urn));
+		if (limit.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "limit", limit));
+		}
+		if (cursor != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "cursor", cursor));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInPostReactions200Response> apiResponse = Client.Get<GetLinkedInPostReactions200Response>("/v1/accounts/{accountId}/linkedin-post-reactions", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInPostReactions", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetLinkedInPostReactions200Response> GetLinkedInPostReactionsAsync(string accountId, string urn, int? limit = null, string? cursor = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetLinkedInPostReactionsWithHttpInfoAsync(accountId, urn, limit, cursor, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetLinkedInPostReactions200Response>> GetLinkedInPostReactionsWithHttpInfoAsync(string accountId, string urn, int? limit = null, string? cursor = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetLinkedInPostReactions");
+		}
+		if (urn == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'urn' when calling AnalyticsApi->GetLinkedInPostReactions");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.PathParameters.Add("accountId", ClientUtils.ParameterToString(accountId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "urn", urn));
+		if (limit.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "limit", limit));
+		}
+		if (cursor != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "cursor", cursor));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetLinkedInPostReactions200Response> apiResponse = await AsynchronousClient.GetAsync<GetLinkedInPostReactions200Response>("/v1/accounts/{accountId}/linkedin-post-reactions", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetLinkedInPostReactions", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetPostTimeline200Response GetPostTimeline(string postId, DateTime? fromDate = null, DateTime? toDate = null)
+	{
+		return GetPostTimelineWithHttpInfo(postId, fromDate, toDate).Data;
+	}
+
+	public ApiResponse<GetPostTimeline200Response> GetPostTimelineWithHttpInfo(string postId, DateTime? fromDate = null, DateTime? toDate = null)
+	{
+		if (postId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'postId' when calling AnalyticsApi->GetPostTimeline");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "postId", postId));
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetPostTimeline200Response> apiResponse = Client.Get<GetPostTimeline200Response>("/v1/analytics/post-timeline", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetPostTimeline", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetPostTimeline200Response> GetPostTimelineAsync(string postId, DateTime? fromDate = null, DateTime? toDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetPostTimelineWithHttpInfoAsync(postId, fromDate, toDate, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetPostTimeline200Response>> GetPostTimelineWithHttpInfoAsync(string postId, DateTime? fromDate = null, DateTime? toDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (postId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'postId' when calling AnalyticsApi->GetPostTimeline");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "postId", postId));
+		if (fromDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "fromDate", fromDate));
+		}
+		if (toDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "toDate", toDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetPostTimeline200Response> apiResponse = await AsynchronousClient.GetAsync<GetPostTimeline200Response>("/v1/analytics/post-timeline", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetPostTimeline", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public GetPostingFrequency200Response GetPostingFrequency(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		return GetPostingFrequencyWithHttpInfo(platform, profileId, accountId, source).Data;
+	}
+
+	public ApiResponse<GetPostingFrequency200Response> GetPostingFrequencyWithHttpInfo(string? platform = null, string? profileId = null, string? accountId = null, string? source = null)
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetPostingFrequency200Response> apiResponse = Client.Get<GetPostingFrequency200Response>("/v1/analytics/posting-frequency", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetPostingFrequency", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<GetPostingFrequency200Response> GetPostingFrequencyAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetPostingFrequencyWithHttpInfoAsync(platform, profileId, accountId, source, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<GetPostingFrequency200Response>> GetPostingFrequencyWithHttpInfoAsync(string? platform = null, string? profileId = null, string? accountId = null, string? source = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		if (platform != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "platform", platform));
+		}
+		if (profileId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "profileId", profileId));
+		}
+		if (accountId != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		}
+		if (source != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "source", source));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<GetPostingFrequency200Response> apiResponse = await AsynchronousClient.GetAsync<GetPostingFrequency200Response>("/v1/analytics/posting-frequency", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetPostingFrequency", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetTikTokAccountInsights(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		return GetTikTokAccountInsightsWithHttpInfo(accountId, metrics, since, until, metricType).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetTikTokAccountInsightsWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetTikTokAccountInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/tiktok/account-insights", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetTikTokAccountInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetTikTokAccountInsightsAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetTikTokAccountInsightsWithHttpInfoAsync(accountId, metrics, since, until, metricType, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetTikTokAccountInsightsWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetTikTokAccountInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/tiktok/account-insights", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetTikTokAccountInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public InstagramAccountInsightsResponse GetYouTubeChannelInsights(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		return GetYouTubeChannelInsightsWithHttpInfo(accountId, metrics, since, until, metricType).Data;
+	}
+
+	public ApiResponse<InstagramAccountInsightsResponse> GetYouTubeChannelInsightsWithHttpInfo(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeChannelInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = Client.Get<InstagramAccountInsightsResponse>("/v1/analytics/youtube/channel-insights", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeChannelInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<InstagramAccountInsightsResponse> GetYouTubeChannelInsightsAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetYouTubeChannelInsightsWithHttpInfoAsync(accountId, metrics, since, until, metricType, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<InstagramAccountInsightsResponse>> GetYouTubeChannelInsightsWithHttpInfoAsync(string accountId, string? metrics = null, DateOnly? since = null, DateOnly? until = null, string? metricType = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeChannelInsights");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (metrics != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metrics", metrics));
+		}
+		if (since.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "since", since));
+		}
+		if (until.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "until", until));
+		}
+		if (metricType != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "metricType", metricType));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<InstagramAccountInsightsResponse> apiResponse = await AsynchronousClient.GetAsync<InstagramAccountInsightsResponse>("/v1/analytics/youtube/channel-insights", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeChannelInsights", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public YouTubeDailyViewsResponse GetYouTubeDailyViews(string videoId, string accountId, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		return GetYouTubeDailyViewsWithHttpInfo(videoId, accountId, startDate, endDate).Data;
+	}
+
+	public ApiResponse<YouTubeDailyViewsResponse> GetYouTubeDailyViewsWithHttpInfo(string videoId, string accountId, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		if (videoId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'videoId' when calling AnalyticsApi->GetYouTubeDailyViews");
+		}
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeDailyViews");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "videoId", videoId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<YouTubeDailyViewsResponse> apiResponse = Client.Get<YouTubeDailyViewsResponse>("/v1/analytics/youtube/daily-views", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeDailyViews", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<YouTubeDailyViewsResponse> GetYouTubeDailyViewsAsync(string videoId, string accountId, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetYouTubeDailyViewsWithHttpInfoAsync(videoId, accountId, startDate, endDate, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<YouTubeDailyViewsResponse>> GetYouTubeDailyViewsWithHttpInfoAsync(string videoId, string accountId, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (videoId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'videoId' when calling AnalyticsApi->GetYouTubeDailyViews");
+		}
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeDailyViews");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "videoId", videoId));
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<YouTubeDailyViewsResponse> apiResponse = await AsynchronousClient.GetAsync<YouTubeDailyViewsResponse>("/v1/analytics/youtube/daily-views", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeDailyViews", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public YouTubeDemographicsResponse GetYouTubeDemographics(string accountId, string? breakdown = null, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		return GetYouTubeDemographicsWithHttpInfo(accountId, breakdown, startDate, endDate).Data;
+	}
+
+	public ApiResponse<YouTubeDemographicsResponse> GetYouTubeDemographicsWithHttpInfo(string accountId, string? breakdown = null, DateOnly? startDate = null, DateOnly? endDate = null)
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeDemographics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<YouTubeDemographicsResponse> apiResponse = Client.Get<YouTubeDemographicsResponse>("/v1/analytics/youtube/demographics", requestOptions, Configuration);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeDemographics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+
+	public async Task<YouTubeDemographicsResponse> GetYouTubeDemographicsAsync(string accountId, string? breakdown = null, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return (await GetYouTubeDemographicsWithHttpInfoAsync(accountId, breakdown, startDate, endDate, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Data;
+	}
+
+	public async Task<ApiResponse<YouTubeDemographicsResponse>> GetYouTubeDemographicsWithHttpInfoAsync(string accountId, string? breakdown = null, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken cancellationToken = default(CancellationToken))
+	{
+		if (accountId == null)
+		{
+			throw new ApiException(400, "Missing required parameter 'accountId' when calling AnalyticsApi->GetYouTubeDemographics");
+		}
+		RequestOptions requestOptions = new RequestOptions();
+		string[] contentTypes = new string[0];
+		string[] accepts = new string[1] { "application/json" };
+		string text = ClientUtils.SelectHeaderContentType(contentTypes);
+		if (text != null)
+		{
+			requestOptions.HeaderParameters.Add("Content-Type", text);
+		}
+		string text2 = ClientUtils.SelectHeaderAccept(accepts);
+		if (text2 != null)
+		{
+			requestOptions.HeaderParameters.Add("Accept", text2);
+		}
+		requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "accountId", accountId));
+		if (breakdown != null)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "breakdown", breakdown));
+		}
+		if (startDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "startDate", startDate));
+		}
+		if (endDate.HasValue)
+		{
+			requestOptions.QueryParameters.Add(ClientUtils.ParameterToMultiMap("", "endDate", endDate));
+		}
+		if (!string.IsNullOrEmpty(Configuration.AccessToken) && !requestOptions.HeaderParameters.ContainsKey("Authorization"))
+		{
+			requestOptions.HeaderParameters.Add("Authorization", "Bearer " + Configuration.AccessToken);
+		}
+		ApiResponse<YouTubeDemographicsResponse> apiResponse = await AsynchronousClient.GetAsync<YouTubeDemographicsResponse>("/v1/analytics/youtube/demographics", requestOptions, Configuration, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (ExceptionFactory != null)
+		{
+			Exception ex = ExceptionFactory("GetYouTubeDemographics", apiResponse);
+			if (ex != null)
+			{
+				throw ex;
+			}
+		}
+		return apiResponse;
+	}
+}

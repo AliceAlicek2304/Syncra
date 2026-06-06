@@ -18,7 +18,6 @@ public class BestTimeMapperTests
 {
     private readonly Mock<IZernioClient> _zernioClientMock = new();
     private readonly Mock<IZernioProfileRepository> _profileRepoMock = new();
-    private readonly Mock<IPostRepository> _postRepoMock = new();
     private readonly Mock<ISocialAccountRepository> _socialAccountRepoMock = new();
     private readonly Mock<IAnalyticsCache> _cacheMock = new();
     private readonly Mock<ILogger<ZernioWorkspaceAnalyticsService>> _loggerMock = new();
@@ -29,7 +28,6 @@ public class BestTimeMapperTests
         _service = new ZernioWorkspaceAnalyticsService(
             _zernioClientMock.Object,
             _profileRepoMock.Object,
-            _postRepoMock.Object,
             _socialAccountRepoMock.Object,
             _cacheMock.Object,
             _loggerMock.Object);
@@ -60,7 +58,7 @@ public class BestTimeMapperTests
         };
 
         _zernioClientMock.Setup(c => c.GetBestTimeAsync(
-                profile.ZernioProfileId, null, It.IsAny<CancellationToken>()))
+                profile.ZernioProfileId, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ZernioBestTimeDto(zernioSlots));
 
         // Act
@@ -74,17 +72,17 @@ public class BestTimeMapperTests
         // Slot 1: Sunday 23 UTC → DayOfWeek 6, Hour 23 (unchanged)
         Assert.Equal(6, slots[0].DayOfWeek);
         Assert.Equal(23, slots[0].Hour);
-        Assert.Equal(510, slots[0].Score); // avg_engagement 510.3 → rounded to int 510
+        Assert.Equal(510, slots[0].Score);
 
         // Slot 2: Monday 9 UTC → DayOfWeek 0, Hour 9 (unchanged)
         Assert.Equal(0, slots[1].DayOfWeek);
         Assert.Equal(9, slots[1].Hour);
-        Assert.Equal(343, slots[1].Score); // avg_engagement 342.5 → rounded to int 343
+        Assert.Equal(343, slots[1].Score);
 
         // Slot 3: Thursday 12 UTC → DayOfWeek 4, Hour 12 (unchanged)
         Assert.Equal(4, slots[2].DayOfWeek);
         Assert.Equal(12, slots[2].Hour);
-        Assert.Equal(289, slots[2].Score); // avg_engagement 289.1 → rounded to int 289
+        Assert.Equal(289, slots[2].Score);
     }
 
     [Fact]
@@ -116,11 +114,11 @@ public class BestTimeMapperTests
         };
 
         _zernioClientMock.Setup(c => c.GetBestTimeAsync(
-                profile.ZernioProfileId, null, It.IsAny<CancellationToken>()))
+                profile.ZernioProfileId, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ZernioBestTimeDto(allSlots));
 
         _zernioClientMock.Setup(c => c.GetBestTimeAsync(
-                profile.ZernioProfileId, "instagram", It.IsAny<CancellationToken>()))
+                profile.ZernioProfileId, "instagram", null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ZernioBestTimeDto(instagramSlots));
 
         // Act — all platforms
@@ -164,6 +162,6 @@ public class BestTimeMapperTests
 
         // Verify no Zernio call was made
         _zernioClientMock.Verify(c => c.GetBestTimeAsync(
-            It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+            It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -367,16 +367,24 @@ When multiple health checks are performed, the most severe status is reported ac
 
 | Method | Endpoint | Description | Frontend Page |
 |--------|----------|-------------|---------------|
-| GET | `/workspaces/{workspaceId}/analytics/summary` | Get workspace overview summary | Analytics Page |
-| GET | `/workspaces/{workspaceId}/analytics/heatmap` | Get best posting time heatmap | Analytics Page |
-| GET | `/workspaces/{workspaceId}/analytics/{integrationId}` | Get analytics for specific integration | Analytics Page |
-| GET | `/workspaces/{workspaceId}/analytics/post/{postId}` | Get analytics for specific post | Analytics Page |
-| GET | `/workspaces/{workspaceId}/analytics/post/{postId}/debug` | Get raw platform data for debugging | - |
+| GET | `/api/v1/analytics/summary` | Get overview summary | Analytics Page |
+| GET | `/api/v1/analytics/heatmap` | Get best posting time heatmap | Analytics Page |
+| GET | `/api/v1/analytics/daily-metrics` | Get daily performance metrics | Analytics Page |
+| GET | `/api/v1/analytics/accounts/follower-stats` | Get follower growth statistics | Analytics Page |
+| GET | `/api/v1/analytics/post/{postId}/debug` | Get raw platform data for debugging | - |
+| GET | `/api/analytics` | Search/List analytics for posts or accounts | Analytics Page |
+
+**Notes:**
+- These endpoints no longer require `{workspaceId}` in the URL path.
+- Provide `X-Workspace-Id` header to scope analytics to a specific workspace.
+- Alternatively, provide `profileId` query parameter to scope to a specific Zernio profile.
 
 **Query Parameters:**
 - `date`: Number of days to look back (default: 30)
-- `fromUtc`: Start date (ISO 8601)
-- `toUtc`: End date (ISO 8601)
+- `fromDate`/`toDate`: Date range filters
+- `profileId`: Zernio profile ID
+- `platform`: Filter by social platform (x, tiktok, youtube, facebook)
+- `accountId`: Filter by specific social account ID
 
 ---
 
@@ -441,7 +449,7 @@ Restricted endpoints for system administration.
 
 **Used APIs:**
 - `GET /api/v1/workspaces/{workspaceId}/posts` - Recent posts
-- `GET /api/v1/workspaces/{workspaceId}/analytics/summary` - Quick stats
+- `GET /api/v1/analytics/summary` - Quick stats
 
 **Display:**
 - Quick stats cards (total reach, engagement, platforms connected, scheduled posts)
@@ -490,10 +498,10 @@ Restricted endpoints for system administration.
 ### Analytics Page (`/app/analytics`)
 
 **Used APIs:**
-- `GET /api/v1/workspaces/{workspaceId}/analytics/summary` - Overall stats
-- `GET /api/v1/workspaces/{workspaceId}/analytics/heatmap` - Best posting times
-- `GET /api/v1/workspaces/{workspaceId}/analytics/{integrationId}` - Integration-specific
-- `GET /api/v1/workspaces/{workspaceId}/analytics/post/{postId}` - Post-specific
+- `GET /api/v1/analytics/summary` - Overall stats
+- `GET /api/v1/analytics/heatmap` - Best posting times
+- `GET /api/v1/analytics/accounts/follower-stats` - Follower stats
+- `GET /api/v1/analytics/post/{postId}` - Post-specific analytics
 
 **Display:**
 - Total reach, engagement rate, follower growth, total posts

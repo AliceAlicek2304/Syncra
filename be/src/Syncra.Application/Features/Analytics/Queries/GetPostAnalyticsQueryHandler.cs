@@ -1,75 +1,53 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Syncra.Application.DTOs.Analytics;
+using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Common;
-using Syncra.Domain.Interfaces;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
 public sealed class GetPostAnalyticsQueryHandler
-    : IRequestHandler<GetPostAnalyticsQuery, Result<PostMetricsDto>>
+    : IRequestHandler<GetPostAnalyticsQuery, Result<ZernioPostAnalyticsDto>>
 {
-    private readonly IZernioWorkspaceAnalyticsService _zernioAnalyticsService;
-    private readonly IZernioProfileRepository _zernioProfileRepository;
-    private readonly IPostRepository _postRepository;
+    private readonly IZernioClient _zernioClient;
     private readonly ILogger<GetPostAnalyticsQueryHandler> _logger;
 
     public GetPostAnalyticsQueryHandler(
-        IZernioWorkspaceAnalyticsService zernioAnalyticsService,
-        IZernioProfileRepository zernioProfileRepository,
-        IPostRepository postRepository,
+        IZernioClient zernioClient,
         ILogger<GetPostAnalyticsQueryHandler> logger)
     {
-        _zernioAnalyticsService = zernioAnalyticsService;
-        _zernioProfileRepository = zernioProfileRepository;
-        _postRepository = postRepository;
+        _zernioClient = zernioClient;
         _logger = logger;
     }
 
-    public async Task<Result<PostMetricsDto>> Handle(
+    public async Task<Result<ZernioPostAnalyticsDto>> Handle(
         GetPostAnalyticsQuery request,
         CancellationToken cancellationToken)
     {
-        // Check if workspace has a Zernio profile
-        var zernioProfile = await _zernioProfileRepository
-            .GetByWorkspaceIdAsync(request.WorkspaceId);
+        _logger.LogInformation("Handling GetPostAnalyticsQuery for PostId: {PostId}", request.PostId);
 
-        if (zernioProfile is null)
+        try
         {
-            _logger.LogDebug(
-                "No Zernio profile for workspace {WorkspaceId}; post analytics unavailable",
-                request.WorkspaceId);
+            var result = await _zernioClient.GetPostAnalyticsAsync(
+                postId: request.PostId,
+                platform: request.Platform,
+                profileId: request.ProfileId,
+                accountId: request.AccountId,
+                source: request.Source,
+                fromDate: request.FromDate,
+                toDate: request.ToDate,
+                limit: request.Limit,
+                page: request.Page,
+                sortBy: request.SortBy,
+                order: request.Order,
+                cancellationToken: cancellationToken);
 
-            return Result<PostMetricsDto>.Failure(
-                "Analytics are not available for this workspace. Connect a Zernio integration to view post-level metrics.");
+            return Result.Success(result);
         }
-
-        // Load the post and check for ZernioPostId
-        var post = await _postRepository.GetByIdAsync(request.PostId);
-
-        if (post is null)
+        catch (Exception ex)
         {
-            return Result<PostMetricsDto>.Failure("Post not found.");
+            _logger.LogError(ex, "Error handling GetPostAnalyticsQuery for PostId: {PostId}", request.PostId);
+            return Result.Failure<ZernioPostAnalyticsDto>(ex.Message);
         }
-
-        if (string.IsNullOrWhiteSpace(post.ZernioPostId))
-        {
-            _logger.LogDebug(
-                "Post {PostId} has no ZernioPostId; Zernio analytics not available",
-                request.PostId);
-
-            return Result<PostMetricsDto>.Failure(
-                "Analytics are not yet available for this post. It may still be publishing or was created before analytics tracking was enabled.");
-        }
-
-        _logger.LogDebug(
-            "Using Zernio analytics path for post {PostId} in workspace {WorkspaceId}",
-            request.PostId, request.WorkspaceId);
-
-        return await _zernioAnalyticsService.GetPostMetricsAsync(
-            request.WorkspaceId,
-            request.PostId,
-            cancellationToken);
     }
 }

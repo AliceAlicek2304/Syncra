@@ -6,13 +6,23 @@ import type { PropsWithChildren } from 'react'
 import AnalyticsPage from './AnalyticsPage'
 
 vi.mock('../../context/WorkspaceContext', () => ({
-  useWorkspace: () => ({ activeWorkspace: { id: 'ws-1' } }),
+  useWorkspace: () => ({
+    workspaces: [{ id: 'ws-1', name: 'Workspace 1' }],
+    activeWorkspace: { id: 'ws-1', name: 'Workspace 1' },
+    setActiveWorkspace: vi.fn(),
+  }),
 }))
 
 const mockRefresh = vi.fn()
 
 vi.mock('../../hooks/useAnalyticsSummary', () => ({
   useAnalyticsSummary: vi.fn(),
+}))
+
+vi.mock('../../api/socialAccounts', () => ({
+  socialAccountsApi: {
+    listSocialAccounts: vi.fn().mockResolvedValue([]),
+  },
 }))
 
 vi.mock('../../api/posts', () => ({

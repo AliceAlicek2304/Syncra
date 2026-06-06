@@ -4,8 +4,7 @@ using Syncra.Domain.Common;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
-public record GetPostAnalyticsQuery(
-    string PostId,
+public record GetAnalyticsListQuery(
     string? Platform,
     string? ProfileId,
     string? AccountId,
@@ -15,4 +14,4 @@ public record GetPostAnalyticsQuery(
     int? Limit,
     int? Page,
     string? SortBy,
-    string? Order) : IRequest<Result<ZernioPostAnalyticsDto>>;
+    string? Order) : IRequest<Result<ZernioPostAnalyticsListDto>>;

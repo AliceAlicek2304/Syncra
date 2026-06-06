@@ -1,0 +1,184 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+
+namespace Zernio.Client;
+
+public static class ClientUtils
+{
+	public static readonly Regex JsonRegex = new Regex("(?i)^(application/json|[^;/ \t]+/[^;/ \t]+[+]json)[ \t]*(;.*)?$");
+
+	public static string SanitizeFilename(string filename)
+	{
+		Match match = Regex.Match(filename, ".*[/\\\\](.*)$");
+		if (!match.Success)
+		{
+			return filename;
+		}
+		return match.Groups[1].Value;
+	}
+
+	public static Multimap<string, string> ParameterToMultiMap(string collectionFormat, string name, object value)
+	{
+		Multimap<string, string> multimap = new Multimap<string, string>();
+		if (value is ICollection collection && collectionFormat == "multi")
+		{
+			foreach (object item in collection)
+			{
+				multimap.Add(name, ParameterToString(item));
+			}
+		}
+		else if (value is IDictionary dictionary)
+		{
+			if (collectionFormat == "deepObject")
+			{
+				foreach (DictionaryEntry item2 in dictionary)
+				{
+					multimap.Add(name + "[" + item2.Key?.ToString() + "]", ParameterToString(item2.Value));
+				}
+			}
+			else
+			{
+				foreach (DictionaryEntry item3 in dictionary)
+				{
+					multimap.Add(item3.Key.ToString(), ParameterToString(item3.Value));
+				}
+			}
+		}
+		else
+		{
+			multimap.Add(name, ParameterToString(value));
+		}
+		return multimap;
+	}
+
+	public static string ParameterToString(object obj, IReadableConfiguration configuration = null)
+	{
+		if (obj is DateTime dateTime)
+		{
+			return dateTime.ToString((configuration ?? GlobalConfiguration.Instance).DateTimeFormat);
+		}
+		if (obj is DateTimeOffset dateTimeOffset)
+		{
+			return dateTimeOffset.ToString((configuration ?? GlobalConfiguration.Instance).DateTimeFormat);
+		}
+		if (obj is DateOnly dateOnly)
+		{
+			return dateOnly.ToString((configuration ?? GlobalConfiguration.Instance).DateTimeFormat);
+		}
+		if (obj is bool)
+		{
+			if (!(bool)obj)
+			{
+				return "false";
+			}
+			return "true";
+		}
+		if (obj is ICollection collection)
+		{
+			List<string> list = new List<string>();
+			foreach (object item in collection)
+			{
+				list.Add(ParameterToString(item, configuration));
+			}
+			return string.Join(",", list);
+		}
+		if (obj is Enum && HasEnumMemberAttrValue(obj))
+		{
+			return GetEnumMemberAttrValue(obj);
+		}
+		return Convert.ToString(obj, CultureInfo.InvariantCulture);
+	}
+
+	public static string Serialize(object obj)
+	{
+		if (obj == null)
+		{
+			return null;
+		}
+		return JsonConvert.SerializeObject(obj);
+	}
+
+	public static string Base64Encode(string text)
+	{
+		return Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
+	}
+
+	public static byte[] ReadAsBytes(Stream inputStream)
+	{
+		using MemoryStream memoryStream = new MemoryStream();
+		inputStream.CopyTo(memoryStream);
+		return memoryStream.ToArray();
+	}
+
+	public static string SelectHeaderContentType(string[] contentTypes)
+	{
+		if (contentTypes.Length == 0)
+		{
+			return null;
+		}
+		foreach (string text in contentTypes)
+		{
+			if (IsJsonMime(text))
+			{
+				return text;
+			}
+		}
+		return contentTypes[0];
+	}
+
+	public static string SelectHeaderAccept(string[] accepts)
+	{
+		if (accepts.Length == 0)
+		{
+			return null;
+		}
+		if (accepts.Contains<string>("application/json", StringComparer.OrdinalIgnoreCase))
+		{
+			return "application/json";
+		}
+		return string.Join(",", accepts);
+	}
+
+	public static bool IsJsonMime(string mime)
+	{
+		if (string.IsNullOrWhiteSpace(mime))
+		{
+			return false;
+		}
+		if (!JsonRegex.IsMatch(mime))
+		{
+			return mime.Equals("application/json-patch+json");
+		}
+		return true;
+	}
+
+	private static bool HasEnumMemberAttrValue(object enumVal)
+	{
+		if (enumVal == null)
+		{
+			throw new ArgumentNullException("enumVal");
+		}
+		if (enumVal.GetType().GetMember(enumVal.ToString() ?? throw new InvalidOperationException()).FirstOrDefault()?.GetCustomAttributes(inherit: false).OfType<EnumMemberAttribute>().FirstOrDefault() != null)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	private static string GetEnumMemberAttrValue(object enumVal)
+	{
+		if (enumVal == null)
+		{
+			throw new ArgumentNullException("enumVal");
+		}
+		return (enumVal.GetType().GetMember(enumVal.ToString() ?? throw new InvalidOperationException()).FirstOrDefault()?.GetCustomAttributes(inherit: false).OfType<EnumMemberAttribute>().FirstOrDefault())?.Value;
+	}
+}
