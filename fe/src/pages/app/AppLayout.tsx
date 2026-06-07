@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb,
-  BarChart3, LogOut, ChevronLeft, Menu, TrendingUp, Repeat, HelpCircle, Plug,
+  BarChart3, LogOut, ChevronLeft, Menu, Repeat, HelpCircle, Plug,
   FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle
 } from 'lucide-react'
 import { useState } from 'react'
@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
-  { to: '/app/trends', icon: <TrendingUp size={18} />, label: 'Trend Radar' },
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
   { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
 ]

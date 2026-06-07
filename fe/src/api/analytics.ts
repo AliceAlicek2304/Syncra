@@ -73,6 +73,24 @@ export interface ZernioPostAnalyticsDto {
   syncPending: boolean;
 }
 
+export interface ZernioPostTimelineItemDto {
+  date: string;
+  platform: string;
+  platformPostId: string;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  views: number;
+}
+
+export interface ZernioPostTimelineResponseDto {
+  timeline?: ZernioPostTimelineItemDto[];
+}
+
 export interface ZernioAnalyticsListPostDto {
   id?: string;
   latePostId?: string;
@@ -322,6 +340,22 @@ export const analyticsApi = {
     const response = await api.get<ZernioPostingFrequencyResponseDto>(
       'analytics/posting-frequency',
       { headers: buildWorkspaceHeader(workspaceId) }
+    );
+    return response.data;
+  },
+
+  getPostTimeline: async (
+    workspaceId: string | null | undefined,
+    postId: string,
+    fromDate?: string,
+    toDate?: string
+  ): Promise<ZernioPostTimelineResponseDto> => {
+    const response = await api.get<ZernioPostTimelineResponseDto>(
+      'analytics/post-timeline',
+      {
+        params: { postId, fromDate, toDate },
+        headers: buildWorkspaceHeader(workspaceId),
+      }
     );
     return response.data;
   },

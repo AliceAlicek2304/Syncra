@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, Cell, Legend,
 } from 'recharts'
 import {
   Users,
@@ -18,10 +18,13 @@ import {
   MessageSquare,
   Share2,
   Bookmark,
-  MousePointerClick
+  MousePointerClick,
+  BarChart3,
+  Percent,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
-import HeatMap from '@uiw/react-heat-map'
-import UITooltip from '@uiw/react-tooltip'
 import CountingNumber from '../../components/CountingNumber'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -40,6 +43,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip as UITooltip,
+  TooltipContent as UITooltipContent,
+  TooltipProvider as UITooltipProvider,
+  TooltipTrigger as UITooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Separator } from "@/components/ui/separator"
+import PostDetailsPanel from '../../components/analytics/PostDetailsPanel'
 
 function PlatformTick({ x, y, payload }: any) {
   const platform = String(payload?.value || '').toLowerCase()
@@ -54,12 +65,50 @@ function PlatformTick({ x, y, payload }: any) {
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
-  const value = payload[0]?.value ?? 0
   return (
-    <div className="rounded-lg border border-brand-border bg-white px-3 py-2 shadow-lg">
+    <div className="rounded-brand-md border border-brand-border/80 bg-white px-3 py-2 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
       <div className="text-[10px] font-semibold text-brand-ink text-center mb-1">{label}</div>
-      <div className="text-[11px] text-center text-brand-body-mid">
-        Post: <span className="font-semibold text-brand-ink">{typeof value === 'number' ? value.toLocaleString() : value}</span> posts
+      {payload.map((entry: any, i: number) => (
+        <div key={i} className="text-[11px] text-brand-body-mid flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+          <span className="font-semibold text-brand-ink">{entry.name}:</span>
+          <span>{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FollowerTooltip({ active, payload, label, accounts }: any) {
+  if (!active || !payload?.length) return null
+
+  const rawDate = payload[0]?.payload?.fullDate ?? label
+  const dateObj = new Date(rawDate)
+  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' })
+  const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const year = dateObj.getFullYear()
+
+  const total = payload.reduce((sum: number, entry: any) => sum + (entry.value ?? 0), 0)
+
+  return (
+    <div className="rounded-brand-md border border-brand-border/80 bg-white px-3 py-2.5 shadow-[0_12px_32px_rgba(15,23,42,0.14)] min-w-[160px]">
+      <div className="text-[11px] font-bold text-brand-ink text-center mb-1.5">
+        {dayName}, {monthDay} {year}
+      </div>
+      <div className="border-t border-brand-border/60 my-1.5" />
+      {payload.map((entry: any, i: number) => (
+        <div key={i} className="flex items-center gap-1.5 py-0.5">
+          <ExtendedPlatformIcon platform={entry.dataKey} size={14} />
+          <span className="text-[10px] text-brand-body-mid font-medium">{entry.name}</span>
+          <span className="text-[10px] font-bold text-brand-ink ml-auto">
+            {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
+          </span>
+        </div>
+      ))}
+      <div className="border-t border-brand-border/60 my-1.5" />
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-brand-body-mid font-medium">Total</span>
+        <span className="text-[10px] font-bold text-brand-ink">{total.toLocaleString()}</span>
       </div>
     </div>
   )
@@ -464,7 +513,7 @@ function EngagementOverTimeCard({
           <CardContent className="p-4 pt-1">
             <div
               ref={containerRef}
-              style={{ position: 'relative', height: '240px' }}
+              className="relative h-[240px] min-w-0 min-h-0"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -595,9 +644,42 @@ const toLocalSlot = (dayOfWeek: number, hourUtc: number) => {
   return { localDay, localHour }
 }
 
+const formatSlotLabel = (slot: { dayOfWeek: number; hour: number }) => {
+  const day = DAY_LABELS[slot.dayOfWeek] ?? ''
+  const hour = slot.hour
+  const hourLabel = hour === 0
+    ? '12am'
+    : hour < 12
+      ? `${hour}am`
+      : hour === 12
+        ? '12pm'
+        : `${hour - 12}pm`
+  return `${day} ${hourLabel}`
+}
+
 export default function AnalyticsPage() {
   console.log('AnalyticsPage render')
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace()
+  const heatmapContainerRef = useRef<HTMLDivElement>(null)
+  const [dynamicRectSize, setDynamicRectSize] = useState(14)
+
+  useEffect(() => {
+    if (!heatmapContainerRef.current) return
+    const obs = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width
+      if (width > 0) {
+        // 24 columns resolution
+        const calculated = Math.floor(width / 30) 
+        setDynamicRectSize(Math.max(12, Math.min(18, calculated)))
+      }
+    })
+    obs.observe(heatmapContainerRef.current)
+    return () => obs.disconnect()
+  }, [])
+
+  const heatmapGap = Math.max(2, Math.floor(dynamicRectSize * 0.2))
+  const dynamicHeatmapHeight = dynamicRectSize * 7 + heatmapGap * 6 + 30 // +30 for month labels
+
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false)
   const [engagementMetric, setEngagementMetric] = useState<'likes' | 'comments' | 'shares' | 'views' | 'impressions' | 'reach' | 'saves' | 'clicks'>('likes')
   const [selectedEngagementMetrics, setSelectedEngagementMetrics] = useState<Set<string>>(() => {
@@ -640,8 +722,11 @@ export default function AnalyticsPage() {
     dailyMetrics,
     topPosts: hookTopPosts,
     analyticsListSummary,
+    analyticsListSummaryPosts,
     bestTime: hookBestTime,
     followerStats: hookFollowerStats,
+    contentDecay: hookContentDecay,
+    postingFrequency: hookPostingFrequency,
     dataUpdatedAt,
     refresh,
   } = useAnalyticsSummary({
@@ -659,9 +744,11 @@ export default function AnalyticsPage() {
     const totalImpressions = breakdown.reduce((acc, b) => acc + b.impressions, 0);
     const totalEngagements = breakdown.reduce((acc, b) => acc + b.likes + b.comments + b.shares, 0);
     const engagementRate = totalImpressions > 0 ? (totalEngagements / totalImpressions) * 100 : 0;
+    const engagementRateByReach = totalReach > 0 ? (totalEngagements / totalReach) * 100 : 0;
 
     return {
       engagementRate,
+      engagementRateByReach,
       totalReach,
       totalImpressions,
       totalEngagements,
@@ -680,7 +767,7 @@ export default function AnalyticsPage() {
   const topPostsLoading = hookTopPosts === null || (Array.isArray(hookTopPosts) && hookTopPosts.length === 0 && isLoading)
 
   const topPosts = useMemo(() => {
-    const items = hookTopPosts ?? []
+    const items = analyticsListSummaryPosts.length > 0 ? analyticsListSummaryPosts : hookTopPosts ?? []
     return items
       .filter((p) => p.analytics)
       .map((p) => {
@@ -706,10 +793,17 @@ export default function AnalyticsPage() {
           engagements,
           reach: Number(a.reach ?? 0),
           likes: Number(a.likes ?? 0),
+          comments: Number(a.comments ?? 0),
+          shares: Number(a.shares ?? 0),
+          saves: Number(a.saves ?? 0),
+          clicks: Number(a.clicks ?? 0),
+          impressions: Number(a.impressions ?? 0),
         }
       })
       .sort((a, b) => (b.reach - a.reach) || (b.engagements - a.engagements))
-  }, [hookTopPosts])
+      .filter((p) => p.engagementRate > 0)
+      .sort((a, b) => b.engagementRate - a.engagementRate)
+  }, [analyticsListSummaryPosts, hookTopPosts])
 
   const followerStatsLoading = !hookFollowerStats
 
@@ -764,6 +858,77 @@ export default function AnalyticsPage() {
     })
   }, [dailyMetrics, platformLabelMap])
 
+  const [platformSortKey, setPlatformSortKey] = useState<string>('platform')
+  const [platformSortDir, setPlatformSortDir] = useState<'asc' | 'desc'>('asc')
+
+  const handlePlatformSort = (key: string) => {
+    if (platformSortKey === key) {
+      setPlatformSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setPlatformSortKey(key)
+      setPlatformSortDir('asc')
+    }
+  }
+
+  const sortedPlatformRows = useMemo(() => {
+    const rows = [...platformRows]
+    rows.sort((a, b) => {
+      let aVal = (a as any)[platformSortKey]
+      let bVal = (b as any)[platformSortKey]
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+      if (aVal == null) aVal = 0
+      if (bVal == null) bVal = 0
+      if (aVal < bVal) return platformSortDir === 'asc' ? -1 : 1
+      if (aVal > bVal) return platformSortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return rows
+  }, [platformRows, platformSortKey, platformSortDir])
+
+  const SortIcon = ({ colKey }: { colKey: string }) => {
+    if (platformSortKey !== colKey) return <ArrowUpDown size={10} className="opacity-30" />
+    return platformSortDir === 'asc'
+      ? <ArrowUp size={10} className="text-brand-primary" />
+      : <ArrowDown size={10} className="text-brand-primary" />
+  }
+
+  const [topPostSortKey, setTopPostSortKey] = useState<string>('reach')
+  const [topPostSortDir, setTopPostSortDir] = useState<'asc' | 'desc'>('desc')
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+
+  const handleTopPostSort = (key: string) => {
+    if (topPostSortKey === key) {
+      setTopPostSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setTopPostSortKey(key)
+      setTopPostSortDir('desc')
+    }
+  }
+
+  const sortedTopPosts = useMemo(() => {
+    const rows = [...topPosts]
+    rows.sort((a, b) => {
+      let aVal: any = topPostSortKey === 'post' ? (a.post.id || '') : (a as any)[topPostSortKey]
+      let bVal: any = topPostSortKey === 'post' ? (b.post.id || '') : (b as any)[topPostSortKey]
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+      if (aVal == null) aVal = 0
+      if (bVal == null) bVal = 0
+      if (aVal < bVal) return topPostSortDir === 'asc' ? -1 : 1
+      if (aVal > bVal) return topPostSortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return rows
+  }, [topPosts, topPostSortKey, topPostSortDir])
+
+  const SortIconTop = ({ colKey }: { colKey: string }) => {
+    if (topPostSortKey !== colKey) return <ArrowUpDown size={10} className="opacity-30" />
+    return topPostSortDir === 'asc'
+      ? <ArrowUp size={10} className="text-brand-primary" />
+      : <ArrowDown size={10} className="text-brand-primary" />
+  }
+
   const bestTimeSlots = useMemo(() => {
     const slots = hookBestTime?.slots ?? []
     if (slots.length === 0) return []
@@ -771,65 +936,39 @@ export default function AnalyticsPage() {
       dayOfWeek: s.dayOfWeek,
       hour: s.hour,
       score: s.avgEngagement,
+      postCount: s.postCount || 0,
     }))
   }, [hookBestTime])
 
   const bestSlots = useMemo(() => {
-    const sorted = [...bestTimeSlots].sort((a, b) => b.score - a.score)
+    const sorted = [...bestTimeSlots]
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
     return sorted.slice(0, 3)
   }, [bestTimeSlots])
 
-  const heatmapValue = useMemo(() => {
-    const grid = Array.from({ length: 7 }, () => Array.from({ length: 8 }, () => 0))
+  const engagementGrid = useMemo(() => {
+    const grid = Array.from({ length: 7 }, () => Array.from({ length: 24 }).map(() => ({ score: 0, postCount: 0 })))
+    let max = 0
     bestTimeSlots.forEach((slot) => {
       const { localDay, localHour } = toLocalSlot(slot.dayOfWeek, slot.hour)
-      const blockIndex = Math.floor(localHour / 3)
-      grid[localDay][blockIndex] += Math.max(0, slot.score)
-    })
-
-    const now = new Date()
-    const currentMonday = new Date(now)
-    const monDow = (currentMonday.getDay() + 6) % 7
-    currentMonday.setDate(currentMonday.getDate() - monDow)
-    currentMonday.setHours(0, 0, 0, 0)
-
-    const initStartDate = new Date(currentMonday)
-    initStartDate.setDate(currentMonday.getDate() - 7 * 8 - 1)
-
-    const values: { date: string; count: number }[] = []
-    for (let col = 0; col < 8; col++) {
-      for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-        const heatmapRow = dayIdx === 6 ? 0 : dayIdx + 1
-        const d = new Date(initStartDate)
-        d.setDate(initStartDate.getDate() + col * 7 + heatmapRow)
-        const score = Math.round(grid[dayIdx][col])
-        values.push({
-          date: `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`,
-          count: score,
-        })
+      grid[localDay][localHour] = {
+        score: Math.max(0, slot.score),
+        postCount: (slot as any).postCount || 0
       }
-    }
-    return values
+      if (grid[localDay][localHour].score > max) max = grid[localDay][localHour].score
+    })
+    return { grid, max }
   }, [bestTimeSlots])
 
-  const heatmapStartDate = useMemo(() => {
-    const now = new Date()
-    const currentMonday = new Date(now)
-    const monDow = (currentMonday.getDay() + 6) % 7
-    currentMonday.setDate(currentMonday.getDate() - monDow)
-    currentMonday.setHours(0, 0, 0, 0)
-    return new Date(currentMonday.getTime() - 7 * 8 * 86400000)
-  }, [])
-
-  const heatmapEndDate = useMemo(() => {
-    const now = new Date()
-    const currentMonday = new Date(now)
-    const monDow = (currentMonday.getDay() + 6) % 7
-    currentMonday.setDate(currentMonday.getDate() - monDow)
-    currentMonday.setHours(0, 0, 0, 0)
-    const initStartDate = new Date(currentMonday.getTime() - (7 * 8 + 1) * 86400000)
-    return new Date(initStartDate.getTime() + 55 * 86400000 + 86399999)
-  }, [])
+  const getHeatColor = (value: number, max: number) => {
+    if (value === 0) return '#f8f4f0'
+    const ratio = value / (max || 1)
+    if (ratio < 0.2) return '#fee4d2'
+    if (ratio < 0.5) return '#ffbb98'
+    if (ratio < 0.8) return '#ff8e5d'
+    return '#ff4f00'
+  }
 
   // Recharts bar chart data
   const postsPerPlatformData = useMemo(() => {
@@ -1071,34 +1210,66 @@ export default function AnalyticsPage() {
     return { chartData, labels, _raw: dataByKey, weekRanges, weekPlatforms }
   }, [dailyMetrics, presetDays, ENGAGEMENT_CHART_METRICS])
 
+const PLATFORM_CHART_COLORS: Record<string, string> = {
+  facebook: '#1877F2',
+  tiktok: '#ff4f00',
+  instagram: '#E4405F',
+  linkedin: '#0A66C2',
+  youtube: '#FF0000',
+  twitter: '#1DA1F2',
+  pinterest: '#E60023',
+  threads: '#000000',
+}
+
   const followerEvolutionData = useMemo(() => {
-    const weeklyReach: any[] = []
-    if (weeklyReach.length === 0) {
-      return [
-        { name: '3 Jun', reach: 58 },
-        { name: '4 Jun', reach: 60 },
-        { name: '5 Jun', reach: 62 },
-      ]
-    }
+    const accounts = hookFollowerStats?.accounts ?? []
+    const stats = hookFollowerStats?.stats ?? {}
 
-    return weeklyReach.map(w => ({
-      name: new Date(w.weekStart).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-      reach: w.reach,
+    if (accounts.length === 0 || Object.keys(stats).length === 0) return []
+
+    const dateSet = new Set<string>()
+    Object.values(stats).forEach(points => {
+      points.forEach(p => dateSet.add(p.date))
+    })
+    const sortedDates = Array.from(dateSet).sort()
+
+    return sortedDates.map(date => {
+      const entry: Record<string, any> = {
+        name: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: date + 'T00:00:00',
+      }
+      accounts.forEach(account => {
+        const accountStats = stats[account._id] ?? []
+        const point = accountStats.find(p => p.date === date)
+        entry[account.platform] = point?.followers ?? 0
+      })
+      return entry
+    })
+  }, [hookFollowerStats])
+
+  const postingFrequencyData = useMemo(() => {
+    const buckets = hookPostingFrequency?.buckets ?? []
+    if (buckets.length === 0) return []
+    const byRange: Record<string, Record<string, number>> = {}
+    buckets.forEach((b) => {
+      if (!b.range) return
+      if (!byRange[b.range]) byRange[b.range] = {}
+      const key = b.platform ?? 'all'
+      byRange[b.range][key] = b.avgEngagementRate
+    })
+    return Object.entries(byRange).map(([range, platforms]) => ({
+      name: range,
+      ...platforms,
     }))
-  }, [])
+  }, [hookPostingFrequency])
 
-  const postingFrequencyData = useMemo(() => [
-    { name: '1/wk', Facebook: 8 },
-    { name: '1-2/wk', Facebook: 12.5 },
-    { name: '3-5/wk', Facebook: 6 },
-  ], [])
-
-  const engagementAccumulationData = useMemo(() => [
-    { name: 'Publish', pct: 0 },
-    { name: '12–24h', pct: 20 },
-    { name: '1–2d', pct: 50 },
-    { name: '2–7d', pct: 80 },
-  ], [])
+  const engagementAccumulationData = useMemo(() => {
+    const buckets = hookContentDecay?.decayCurve ?? hookContentDecay?.buckets ?? []
+    return buckets.map((b) => ({
+      name: b.ageBucket,
+      pct: b.engagementRate,
+    }))
+  }, [hookContentDecay])
 
   const platformOptions = useMemo<FilterOption[]>(() => {
     return [
@@ -1146,825 +1317,1021 @@ export default function AnalyticsPage() {
   }, [topPosts])
 
   return (
-    <div
-      className="p-6 md:p-8 flex flex-col gap-6 text-brand-ink min-h-screen font-sans bg-brand-canvas"
-      style={{ background: 'radial-gradient(circle at top, #ffffff 0%, #fffefb 52%, #f8f4f0 100%)' }}
-    >
-      {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b-2 border-brand-primary pb-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-brand-ink">Analytics</h1>
-          <p className="text-xs text-brand-body mt-1">View post performance metrics</p>
-        </div>
+    <UITooltipProvider delayDuration={100}>
+      <div
+        className="p-6 md:p-8 flex flex-col gap-6 text-brand-ink min-h-screen font-sans bg-brand-canvas"
+        style={{ background: 'radial-gradient(circle at top, #ffffff 0%, #fffefb 52%, #f8f4f0 100%)' }}
+      >
+        {/* ── HEADER ── */}
+        <div className="flex items-center justify-between flex-wrap gap-4 border-b-2 border-brand-primary pb-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-brand-ink">Analytics</h1>
+            <p className="text-xs text-brand-body mt-1">View post performance metrics</p>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={refresh}
-            disabled={isFetching}
-            data-testid="refresh-analytics-btn"
-            className="flex items-center gap-2 border-brand-ink text-brand-ink hover:bg-brand-ink hover:text-brand-on-primary transition-all duration-300 rounded-brand-md h-10 px-4 font-bold text-xs"
-          >
-            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
-            {isFetching ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </div>
-      </div>
-
-      {/* ── TAB BAR ── */}
-      <div className="flex items-center border-b border-brand-border/60 gap-0 -mt-2">
-        <button
-          onClick={() => setActiveTab('posting')}
-          className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${activeTab === 'posting'
-            ? 'border-brand-primary text-brand-primary font-bold'
-            : 'border-transparent text-brand-body hover:text-brand-primary'
-            }`}
-        >
-          Posting analytics
-        </button>
-        <button
-          onClick={() => setActiveTab('inbox')}
-          className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${activeTab === 'inbox'
-            ? 'border-brand-primary text-brand-primary font-bold'
-            : 'border-transparent text-brand-body hover:text-brand-primary'
-            }`}
-        >
-          Inbox analytics
-        </button>
-      </div>
-
-      {/* ── FILTER BAR ── */}
-      <div className="flex items-center flex-wrap gap-2 text-xs">
-        <FilterDropdown
-          value={filterPlatform}
-          onChange={handlePlatformChange}
-          options={platformOptions}
-          label="All platforms"
-        />
-
-        <FilterDropdown
-          value={filterWorkspace}
-          onChange={(val) => {
-            setFilterWorkspace(val)
-            if (val !== 'all') {
-              const ws = workspaces.find((w) => w.id === val)
-              if (ws) setActiveWorkspace(ws)
-            }
-          }}
-          options={workspaceOptions}
-          label="All workspaces"
-        />
-
-        <FilterDropdown
-          value={String(presetDays)}
-          onChange={(val) => setPresetDays(Number(val) as 7 | 30 | 90)}
-          options={datePresetOptions}
-          label="Last 30 days"
-          leftIcon={<Calendar size={12} className="text-brand-body" />}
-        />
-
-        <div className="flex-1"></div>
-
-        <div className="flex flex-col items-end text-[10px] text-brand-body-mid leading-tight">
-          {lastSyncText ? (
-            <>
-              <span>Last sync: <strong className="text-brand-body">{lastSyncText}</strong></span>
-              <span>Next sync: <strong className="text-brand-body">{nextSyncText}</strong></span>
-            </>
-          ) : (
-            <span className="opacity-50">No sync data yet</span>
-          )}
-          <span className="text-brand-ink-mid font-bold mt-1 bg-brand-canvas-soft px-2 py-0.5 rounded-full">{rangeLabel}</span>
-        </div>
-      </div>
-
-      {/* ── BANNERS ── */}
-      {showBillingGate && (
-        <BillingGateBanner
-          error={{ message: analyticsError.message, dashboardUrl: analyticsError.dashboardUrl }}
-          onDismiss={() => setDismissedBilling(true)}
-        />
-      )}
-
-      {showReauth && (
-        <ReauthorizeBanner
-          error={{
-            message: analyticsError.message,
-            reauthorizeUrl: analyticsError.reauthorizeUrl,
-            platform: analyticsError.platform,
-          }}
-          onDismiss={() => setDismissedReauth(true)}
-        />
-      )}
-
-      {isError && !isBillingGateError && !isScopeError && (
-        <Alert variant="destructive" data-testid="generic-error-banner" className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <AlertTriangle size={16} className="text-destructive flex-shrink-0" />
-            <AlertDescription className="text-xs font-semibold">Could not load analytics data. Please try again later.</AlertDescription>
+            <Button
+              variant="outline"
+              onClick={refresh}
+              disabled={isFetching}
+              data-testid="refresh-analytics-btn"
+              className="flex items-center gap-2 border-brand-ink text-brand-ink hover:bg-brand-ink hover:text-brand-on-primary transition-all duration-300 rounded-brand-md h-10 px-4 font-bold text-xs"
+            >
+              <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-            className="text-xs text-brand-ink border-brand-ink hover:bg-brand-canvas-soft h-8 px-3 rounded-brand-sm"
+        </div>
+
+        {/* ── TAB BAR ── */}
+        <div className="flex items-center border-b border-brand-border/60 gap-0 -mt-2">
+          <button
+            onClick={() => setActiveTab('posting')}
+            className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${activeTab === 'posting'
+              ? 'border-brand-primary text-brand-primary font-bold'
+              : 'border-transparent text-brand-body hover:text-brand-primary'
+              }`}
           >
-            Retry
-          </Button>
-        </Alert>
-      )}
+            Posting analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('inbox')}
+            className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${activeTab === 'inbox'
+              ? 'border-brand-primary text-brand-primary font-bold'
+              : 'border-transparent text-brand-body hover:text-brand-primary'
+              }`}
+          >
+            Inbox analytics
+          </button>
+        </div>
 
-      {/* ── KPI GRID ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Engagement Rate Card */}
-        <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-brand-primary before:h-[3px]">
-          <span className="sr-only">Avg. Engagement</span>
-          <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Engagement rate</div>
-          <div className="text-2xl font-extrabold text-brand-ink">
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <CountingNumber value={summary?.engagementRate ?? 0} format={(v) => `${v.toFixed(1)}%`} />
-            )}
-          </div>
-          <TrendBadge
-            delta={engagementTrend}
-            isLoading={isLoading}
-            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}pp`}
+        {/* ── FILTER BAR ── */}
+        <div className="flex items-center flex-wrap gap-2 text-xs">
+          <FilterDropdown
+            value={filterPlatform}
+            onChange={handlePlatformChange}
+            options={platformOptions}
+            label="All platforms"
           />
-        </div>
 
-        {/* Total Reach Card */}
-        <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-emerald-600 before:h-[3px]">
-          <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Total Reach</div>
-          <div className="text-2xl font-extrabold text-brand-ink">
-            {isLoading ? (
-              <Skeleton className="h-8 w-12" />
-            ) : (
-              <CountingNumber value={summary?.totalReach ?? 8} format={(v) => v.toLocaleString()} />
-            )}
-          </div>
-          <TrendBadge
-            delta={reachTrend}
-            isLoading={isLoading}
-            format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()}`}
+          <FilterDropdown
+            value={filterWorkspace}
+            onChange={(val) => {
+              setFilterWorkspace(val)
+              if (val !== 'all') {
+                const ws = workspaces.find((w) => w.id === val)
+                if (ws) setActiveWorkspace(ws)
+              }
+            }}
+            options={workspaceOptions}
+            label="All workspaces"
           />
-        </div>
 
-        {/* Total Followers Card */}
-        <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-purple-600 before:h-[3px]">
-          <span className="sr-only">Follower Growth</span>
-          <span className="sr-only">+{followerStats.totalGrowth}</span>
-          <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Total followers</div>
-          <div className="text-2xl font-extrabold text-brand-ink">
-            {isLoading || followerStatsLoading ? (
-              <Skeleton className="h-8 w-14" />
-            ) : (
-              <CountingNumber value={followerStats.totalFollowers} format={(v) => v.toLocaleString()} />
-            )}
-          </div>
-          <TrendBadge
-            delta={followerStatsLoading ? null : followerStats.totalGrowth}
-            isLoading={isLoading || followerStatsLoading}
-            format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()} in last ${presetDays}d`}
+          <FilterDropdown
+            value={String(presetDays)}
+            onChange={(val) => setPresetDays(Number(val) as 7 | 30 | 90)}
+            options={datePresetOptions}
+            label="Last 30 days"
+            leftIcon={<Calendar size={12} className="text-brand-body" />}
           />
-        </div>
 
-        {/* Posts This Period Card */}
-        <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-orange-500 before:h-[3px]">
-          <span className="sr-only">Total Posts</span>
-          <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Posts this period</div>
-          <div className="text-2xl font-extrabold text-brand-ink">
-            {isLoading ? (
-              <Skeleton className="h-8 w-10" />
+          <div className="flex-1"></div>
+
+          <div className="flex flex-col items-end text-[10px] text-brand-body-mid leading-tight">
+            {lastSyncText ? (
+              <>
+                <span>Last sync: <strong className="text-brand-body">{lastSyncText}</strong></span>
+                <span>Next sync: <strong className="text-brand-body">{nextSyncText}</strong></span>
+              </>
             ) : (
-              <CountingNumber value={summary?.totalPosts ?? platformTotals.posts} format={(v) => v.toLocaleString()} />
+              <span className="opacity-50">No sync data yet</span>
             )}
+            <span className="text-brand-ink-mid font-bold mt-1 bg-brand-canvas-soft px-2 py-0.5 rounded-full">{rangeLabel}</span>
           </div>
-          <TrendBadge
-            delta={postsTrend}
-            isLoading={isLoading}
-            format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()} vs prev. ${presetDays}d`}
+        </div>
+
+        {/* ── BANNERS ── */}
+        {showBillingGate && (
+          <BillingGateBanner
+            error={{ message: analyticsError.message, dashboardUrl: analyticsError.dashboardUrl }}
+            onDismiss={() => setDismissedBilling(true)}
           />
-        </div>
+        )}
 
-        {/* Best Post Card */}
-        <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-amber-500 before:h-[3px] flex flex-col gap-2">
-          <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider">Best post</div>
-          {topPostsLoading ? (
-            <div className="flex items-start gap-2.5">
-              <Skeleton className="w-12 h-12 rounded-brand-sm shrink-0" />
-              <div className="flex-1 space-y-1.5 min-w-0">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-2.5 w-1/2" />
-              </div>
+        {showReauth && (
+          <ReauthorizeBanner
+            error={{
+              message: analyticsError.message,
+              reauthorizeUrl: analyticsError.reauthorizeUrl,
+              platform: analyticsError.platform,
+            }}
+            onDismiss={() => setDismissedReauth(true)}
+          />
+        )}
+
+        {isError && !isBillingGateError && !isScopeError && (
+          <Alert variant="destructive" data-testid="generic-error-banner" className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={16} className="text-destructive flex-shrink-0" />
+              <AlertDescription className="text-xs font-semibold">Could not load analytics data. Please try again later.</AlertDescription>
             </div>
-          ) : bestPost ? (
-            <>
-              <div className="flex items-start gap-2.5 min-w-0">
-                {bestPost.post.thumbnailUrl ? (
-                  <img
-                    src={bestPost.post.thumbnailUrl}
-                    alt=""
-                    className="w-12 h-12 rounded-brand-sm object-cover shrink-0 border border-brand-border/60 bg-brand-canvas-soft"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-brand-sm bg-brand-canvas-soft border border-brand-border/60 flex items-center justify-center shrink-0">
-                    <MessageSquare size={16} className="text-brand-body-mid" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-brand-ink line-clamp-2 leading-tight" title={bestPost.post.content || undefined}>
-                    {bestPost.post.content?.trim() || `Post #${bestPost.post.id.slice(-4)}`}
-                  </p>
-                  <div className="text-[10px] text-brand-body-mid mt-1 flex items-center gap-1 flex-wrap">
-                    <Heart size={9} className="text-brand-primary fill-brand-primary" />
-                    <span className="font-bold text-brand-ink">{bestPost.engagements.toLocaleString()}</span>
-                    <span>engagements</span>
-                    <span className="opacity-50 mx-0.5">·</span>
-                    <span>{formatShortDate(bestPost.post.scheduledAtUtc ?? bestPost.post.createdAt)}</span>
-                  </div>
-                </div>
-              </div>
-              <a
-                href={bestPost.post.platformPostUrl || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => { if (!bestPost.post.platformPostUrl) e.preventDefault() }}
-                className="inline-flex items-center gap-1.5 self-start mt-1 px-3 py-1 bg-brand-canvas-soft border border-brand-primary text-brand-primary rounded-brand-sm text-[10px] font-bold hover:bg-brand-primary hover:text-white transition-colors cursor-pointer"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                View
-              </a>
-            </>
-          ) : (
-            <div className="text-xs text-brand-body-mid py-2">No posts in this period</div>
-          )}
-        </div>
-      </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+              className="text-xs text-brand-ink border-brand-ink hover:bg-brand-canvas-soft h-8 px-3 rounded-brand-sm"
+            >
+              Retry
+            </Button>
+          </Alert>
+        )}
 
-      {/* ── ROW 1: POST ANALYTICS ── */}
-      <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
-        Post Analytics
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Posts per platform */}
-        <Card className="border-brand-border shadow-sm">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-            <div>
-              <CardTitle className="text-xs font-bold text-brand-ink">Posts per platform</CardTitle>
-              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Top 1 by post count in this window</CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-brand-ink leading-tight">
-                {isLoading ? '—' : (summary?.totalPosts ?? platformTotals.posts)}
-              </div>
-              <div className="text-[9px] text-brand-body-mid font-medium">posts total</div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 h-[140px]">
-            {isLoading ? (
-              <Skeleton className="w-full h-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={postsPerPlatformData} barCategoryGap="20%">
-                  <defs>
-                    <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#1D4ED8" stopOpacity={0.85} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={<PlatformTick />} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={postsPerPlatformData.length === 1 ? 48 : undefined}>
-                    {postsPerPlatformData.map((entry: any, i: number) => (
-                      <Cell key={i} fill="url(#barGrad1)" />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Posts over time */}
-        <Card className="border-brand-border shadow-sm">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-            <div>
-              <CardTitle className="text-xs font-bold text-brand-ink">Posts over time</CardTitle>
-              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Posts per week · last {presetDays} days</CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-brand-ink leading-tight">
-                {isLoading ? '—' : (summary?.totalPosts ?? platformTotals.posts)}
-              </div>
-              <div className="text-[9px] text-brand-body-mid font-medium">posts total</div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 h-[140px]">
-            {isLoading ? (
-              <Skeleton className="w-full h-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={postsOverTimeData} barCategoryGap="15%">
-                  <defs>
-                    <linearGradient id="barGrad2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#1D4ED8" stopOpacity={0.85} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={20}>
-                    {postsOverTimeData.map((entry: any, i: number) => (
-                      <Cell key={i} fill="url(#barGrad2)" />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Metric per platform – dynamic selector */}
-        <Card className="border-brand-border shadow-sm">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-            <div>
-              <CardTitle className="text-xs font-bold text-brand-ink">
-                {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label} per platform
-              </CardTitle>
-              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">
-                {isLoading ? '—' : ((platformTotals as any)[engagementMetric] ?? 0).toLocaleString()} {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label.toLowerCase()} total
-              </CardDescription>
-            </div>
-
-            {/* Metric picker */}
-            <div className="relative">
-              <button
-                onClick={() => setShowMetricDropdown(v => !v)}
-                className="flex items-center gap-1.5 h-6 pl-2 pr-1.5 rounded-full border border-brand-border bg-brand-canvas-soft text-[10px] font-semibold text-brand-ink-soft hover:border-brand-primary hover:text-brand-primary transition-all"
-              >
-                <span className="text-brand-body-mid">{METRIC_CONFIG.find(m => m.key === engagementMetric)?.icon}</span>
-                <span>{METRIC_CONFIG.find(m => m.key === engagementMetric)?.label}</span>
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className={`transition-transform duration-150 ${showMetricDropdown ? 'rotate-180' : ''}`}>
-                  <path d="M1.5 3L4 5.5 6.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-
-              {showMetricDropdown && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMetricDropdown(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-brand-border rounded-brand-md shadow-lg py-1 min-w-[148px]">
-                    {METRIC_CONFIG.map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => { setEngagementMetric(opt.key); setShowMetricDropdown(false) }}
-                        className={`w-full flex items-center gap-2 px-3 py-[5px] text-[11px] transition-colors ${opt.key === engagementMetric
-                          ? 'text-brand-ink font-semibold'
-                          : 'text-brand-body hover:bg-brand-canvas-soft/60 hover:text-brand-ink'
-                          }`}
-                      >
-                        <span className="w-4 shrink-0 flex items-center justify-center text-brand-body-mid">{opt.icon}</span>
-                        <span className="flex-1 text-left">{opt.label}</span>
-                        {opt.key === engagementMetric && (
-                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8 9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-4 pt-1 h-[140px]">
-            {isLoading ? (
-              <Skeleton className="w-full h-full" />
-            ) : metricPerPlatformData === null ? (
-              <div className="w-full h-full flex items-center justify-center text-[11px] text-brand-body-mid">
-                No {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label.toLowerCase()} data yet
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metricPerPlatformData} barCategoryGap="20%">
-                  <defs>
-                    <linearGradient id="barGrad3" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8B5CF6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#6D28D9" stopOpacity={0.85} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={<PlatformTick />} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={metricPerPlatformData.length === 1 ? 48 : undefined}>
-                    {metricPerPlatformData.map((entry: any, i: number) => (
-                      <Cell key={i} fill={entry.fill || 'url(#barGrad3)'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── ROW 2: ENGAGEMEN T ── */}
-      <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
-        Engagement Analytics
-      </div>
-
-      {/* Combined Engagement Card: chart left + Metric Summary right */}
-      <EngagementOverTimeCard
-        presetDays={presetDays}
-        isLoading={isLoading}
-        engagementOverTimeData={engagementOverTimeData}
-        selectedEngagementMetrics={selectedEngagementMetrics}
-        setSelectedEngagementMetrics={setSelectedEngagementMetrics}
-        platformTotals={platformTotals}
-        engagementRate={summary?.engagementRate ?? 7.14}
-        ENGAGEMENT_CHART_METRICS={ENGAGEMENT_CHART_METRICS}
-      />
-
-      {/* ── ROW 3: HEATMAP + FOLLOWER ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Best Time to Post Heatmap */}
-        <Card className="border-brand-border shadow-sm flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-            <div>
-              <CardTitle className="text-xs font-bold text-brand-ink">Best Time to Post</CardTitle>
-              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Historical engagement heatmap</CardDescription>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <DropdownMenu open={showPlatformDropdown} onOpenChange={setShowPlatformDropdown}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="heatmap-platform-filter"
-                    className="h-7 px-2.5 rounded-brand-sm text-[10px] border-brand-border text-brand-ink-mid bg-white hover:bg-brand-canvas-soft/60"
-                  >
-                    {PLATFORM_OPTIONS.find(p => p.value === (heatmapPlatform ?? ''))?.label ?? 'All Platforms'}
-                    <ChevronDown size={10} className="ml-1 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-brand-canvas border border-brand-border text-brand-ink rounded-brand-md min-w-[150px]">
-                  {PLATFORM_OPTIONS.map((opt) => (
-                    <DropdownMenuItem
-                      key={opt.value}
-                      onClick={() => {
-                        setHeatmapPlatform(opt.value || undefined)
-                        setShowPlatformDropdown(false)
-                      }}
-                      className="flex items-center gap-2 hover:bg-brand-canvas-soft hover:text-brand-ink rounded-brand-sm py-1.5 px-2.5 text-xs cursor-pointer"
-                    >
-                      {heatmapPlatform === (opt.value || undefined) ? <Check size={12} className="text-brand-ink" /> : <div className="w-3" />}
-                      <span>{opt.label}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <div className="flex items-center gap-1.5 text-[9px] text-brand-body-mid font-semibold">
-                Less
-                <div className="flex gap-0.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-brand-canvas-soft"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/20"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/50"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/80"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary"></div>
-                </div>
-                More
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between">
-            <div className="overflow-x-auto pb-1">
-              <HeatMap
-                value={heatmapValue}
-                startDate={heatmapStartDate}
-                endDate={heatmapEndDate}
-                rectSize={45}
-                space={4}
-                rectProps={{ rx: 0, ry: 0 }}
-                panelColors={[
-                  '#F5F5F5',
-                  '#FFDCCC',
-                  '#FFA780',
-                  '#FF7233',
-                  '#FF4F00',
-                ]}
-                weekLabels={['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']}
-                monthLabels={false}
-                legendCellSize={0}
-                rectRender={(rectProps, valueItem) => {
-                  const dayName = valueItem.row === 0 ? 'Sun' : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][valueItem.row - 1]
-                  const timeSlot = HOUR_LABELS[valueItem.column] || ''
-                  if (!valueItem.count) return <rect {...rectProps} />
-                  return (
-                    <UITooltip placement="top" content={`${dayName}, ${timeSlot} · ${valueItem.count} engagements`}>
-                      <rect {...rectProps} />
-                    </UITooltip>
-                  )
-                }}
-              />
-            </div>
-
-            <div className="mt-3 flex items-center gap-2 flex-wrap text-[10px] text-brand-body">
-              <span className="font-bold">Best times:</span>
-              {bestSlots.length === 0 ? (
-                <span className="bg-brand-primary text-white px-2 py-0.5 rounded-full font-bold text-[9px]">Tue 8am</span>
+        {/* ── KPI GRID ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Engagement Rate Card */}
+          <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-brand-primary before:h-[3px]">
+            <span className="sr-only">Avg. Engagement</span>
+            <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Engagement rate</div>
+            <div className="text-2xl font-extrabold text-brand-ink">
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
               ) : (
-                bestSlots.map((slot, i) => (
-                  <span key={i} className="bg-brand-primary text-white px-2 py-0.5 rounded-full font-bold text-[9px]">
-                    {DAY_LABELS[slot.dayOfWeek]} {slot.hour >= 12 ? `${slot.hour === 12 ? 12 : slot.hour - 12}pm` : `${slot.hour === 0 ? 12 : slot.hour}am`}
-                  </span>
-                ))
+                <CountingNumber value={summary?.engagementRateByReach ?? 0} format={(v) => `${v.toFixed(1)}%`} />
               )}
             </div>
-          </CardContent>
-        </Card>
+            <TrendBadge
+              delta={engagementTrend}
+              isLoading={isLoading}
+              format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}pp`}
+            />
+          </div>
 
-        {/* Follower evolution */}
-        <Card className="border-brand-border shadow-sm flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-            <div>
-              <CardTitle className="text-xs font-bold text-brand-ink">Follower evolution</CardTitle>
-              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Followers per platform · {summary?.platformBreakdown?.length ?? 2} platform{(summary?.platformBreakdown?.length ?? 2) !== 1 ? 's' : ''}</CardDescription>
+          {/* Total Reach Card */}
+          <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-emerald-600 before:h-[3px]">
+            <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Total Reach</div>
+            <div className="text-2xl font-extrabold text-brand-ink">
+              {isLoading ? (
+                <Skeleton className="h-8 w-12" />
+              ) : (
+                <CountingNumber value={summary?.totalReach ?? 8} format={(v) => v.toLocaleString()} />
+              )}
             </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-brand-ink leading-tight">
-                {isLoading ? '—' : (summary?.totalReach ?? 62)}
-              </div>
-              <div className="text-[9px] text-brand-body-mid font-medium">followers total</div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 h-[180px] flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={followerEvolutionData}>
-                <defs>
-                  <linearGradient id="lineGrad1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1877F2" stopOpacity={0.20} />
-                    <stop offset="100%" stopColor="#1877F2" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
-                <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#1877F2', strokeDasharray: '4 3', strokeWidth: 1 }} />
-                <Line
-                  type="monotone"
-                  dataKey="reach"
-                  stroke="#1877F2"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: '#1877F2', stroke: '#fff', strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: '#1877F2', stroke: '#fff', strokeWidth: 2 }}
-                  fill="url(#lineGrad1)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+            <TrendBadge
+              delta={reachTrend}
+              isLoading={isLoading}
+              format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()}`}
+            />
+          </div>
 
-      {/* ── PLATFORM & POST BREAKDOWN TABLES ── */}
-      <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
-        Platform & Post Breakdown
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Platform Breakdown */}
-        <Card className="border-brand-border shadow-sm overflow-hidden flex flex-col">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-xs font-bold text-brand-ink">Platform Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto flex-1">
-            {platformRows.length === 0 ? (
-              <div className="p-8 text-center text-brand-body flex flex-col gap-2 items-center justify-center h-full min-h-[150px]">
-                <TrendingUp size={24} className="text-brand-body-mid opacity-40" />
-                <p className="text-xs font-semibold">No platform analytics available yet.</p>
+          {/* Total Followers Card */}
+          <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-purple-600 before:h-[3px]">
+            <span className="sr-only">Follower Growth</span>
+            <span className="sr-only">+{followerStats.totalGrowth}</span>
+            <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Total followers</div>
+            <div className="text-2xl font-extrabold text-brand-ink">
+              {isLoading || followerStatsLoading ? (
+                <Skeleton className="h-8 w-14" />
+              ) : (
+                <CountingNumber value={followerStats.totalFollowers} format={(v) => v.toLocaleString()} />
+              )}
+            </div>
+            <TrendBadge
+              delta={followerStatsLoading ? null : followerStats.totalGrowth}
+              isLoading={isLoading || followerStatsLoading}
+              format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()} in last ${presetDays}d`}
+            />
+          </div>
+
+          {/* Posts This Period Card */}
+          <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-orange-500 before:h-[3px]">
+            <span className="sr-only">Total Posts</span>
+            <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider mb-1">Posts this period</div>
+            <div className="text-2xl font-extrabold text-brand-ink">
+              {isLoading ? (
+                <Skeleton className="h-8 w-10" />
+              ) : (
+                <CountingNumber value={summary?.totalPosts ?? platformTotals.posts} format={(v) => v.toLocaleString()} />
+              )}
+            </div>
+            <TrendBadge
+              delta={postsTrend}
+              isLoading={isLoading}
+              format={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()} vs prev. ${presetDays}d`}
+            />
+          </div>
+
+          {/* Best Post Card */}
+          <div className="bg-white border border-brand-border rounded-brand-md p-4 shadow-sm relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:height-[3px] before:bg-amber-500 before:h-[3px] flex flex-col gap-2">
+            <div className="text-[10px] text-brand-body font-bold uppercase tracking-wider">Best post</div>
+            {topPostsLoading ? (
+              <div className="flex items-start gap-2.5">
+                <Skeleton className="w-12 h-12 rounded-brand-sm shrink-0" />
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-2.5 w-1/2" />
+                </div>
               </div>
+            ) : bestPost ? (
+              <>
+                <div className="flex items-start gap-2.5 min-w-0">
+                  {bestPost.post.thumbnailUrl ? (
+                    <img
+                      src={bestPost.post.thumbnailUrl}
+                      alt=""
+                      className="w-12 h-12 rounded-brand-sm object-cover shrink-0 border border-brand-border/60 bg-brand-canvas-soft"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-brand-sm bg-brand-canvas-soft border border-brand-border/60 flex items-center justify-center shrink-0">
+                      <MessageSquare size={16} className="text-brand-body-mid" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-brand-ink line-clamp-2 leading-tight" title={bestPost.post.content || undefined}>
+                      {bestPost.post.content?.trim() || `Post #${bestPost.post.id.slice(-4)}`}
+                    </p>
+                    <div className="text-[10px] text-brand-body-mid mt-1 flex items-center gap-1 flex-wrap">
+                      <Heart size={9} className="text-brand-primary fill-brand-primary" />
+                      <span className="font-bold text-brand-ink">{bestPost.engagements.toLocaleString()}</span>
+                      <span>engagements</span>
+                      <span className="opacity-50 mx-0.5">·</span>
+                      <span>{formatShortDate(bestPost.post.scheduledAtUtc ?? bestPost.post.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href={bestPost.post.platformPostUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => { if (!bestPost.post.platformPostUrl) e.preventDefault() }}
+                  className="inline-flex items-center gap-1.5 self-start mt-1 px-3 py-1 bg-brand-canvas-soft border border-brand-primary text-brand-primary rounded-brand-sm text-[10px] font-bold hover:bg-brand-primary hover:text-white transition-colors cursor-pointer"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  View
+                </a>
+              </>
             ) : (
-              <Table className="text-xs">
-                <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider">Platform</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Posts</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Likes</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Comm.</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Shares</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Reach</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">ER</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {platformRows.map((row) => (
-                    <TableRow key={row.platform} className="hover:bg-brand-canvas-soft/40 border-b border-brand-border/60">
-                      <TableCell className="font-bold text-brand-ink py-2.5 px-3 flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${row.platform === 'facebook' ? 'bg-[#1877F2]' : 'bg-brand-primary'}`} />
-                        <span>{row.label}</span>
-                        {row.requiresReauth && row.reauthorizeUrl && (
-                          <a
-                            className="text-[9px] font-bold text-brand-primary border border-brand-primary/20 px-1.5 py-0.5 rounded-full hover:bg-brand-primary/5 transition-colors"
-                            href={row.reauthorizeUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Reauth
-                          </a>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">{row.postCount}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">{row.likes || '—'}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">{row.comments || '—'}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">{row.shares || '—'}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">{row.reach ? row.reach.toLocaleString() : '—'}</TableCell>
-                      <TableCell className="text-right py-2.5 px-3">
-                        <span className={`px-1.5 py-0.5 rounded-sm font-bold text-[10px] ${row.engagement > 15 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                          {row.engagement.toFixed(1)}%
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-xs text-brand-body-mid py-2">No posts in this period</div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Top Performing Posts */}
-        <Card className="border-brand-border shadow-sm overflow-hidden flex flex-col">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-xs font-bold text-brand-ink">Top Performing Posts</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto flex-1">
-            {topPosts.length === 0 ? (
-              <div className="p-8 text-center text-brand-body flex flex-col gap-2 items-center justify-center h-full min-h-[150px]">
-                <TrendingUp size={24} className="text-brand-body-mid opacity-40" />
-                <p className="text-xs font-semibold">Top posts will appear once analytics sync completes.</p>
+        {/* ── ROW 1: POST ANALYTICS ── */}
+        <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
+          Post Analytics
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Posts per platform */}
+          <Card className="border-brand-border shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-brand-ink">Posts per platform</CardTitle>
+                <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Top 1 by post count in this window</CardDescription>
               </div>
-            ) : (
-              <Table className="text-xs">
-                <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider">Post</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Likes</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Comm.</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Shares</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Views</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">Reach</TableHead>
-                    <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right">ER</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topPosts.map((item) => (
-                    <TableRow key={item.post.id} className="hover:bg-brand-canvas-soft/40 border-b border-brand-border/60">
-                      <TableCell className="py-2.5 px-3">
-                        <div className="flex flex-col leading-tight">
-                          <span className="font-bold text-brand-ink">Post #{item.post.id.slice(-4)}</span>
-                          <span className="text-[9px] text-brand-body-mid font-medium">{formatShortDate(item.post.scheduledAtUtc ?? item.post.createdAt)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">—</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">{item.metrics?.engagements || '—'}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">—</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3">{item.metrics?.views ? item.metrics.views.toLocaleString() : '—'}</TableCell>
-                      <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">—</TableCell>
-                      <TableCell className="text-right py-2.5 px-3">
-                        <span className={`px-1.5 py-0.5 rounded-sm font-bold text-[10px] ${item.engagementRate > 15 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                          {item.engagementRate.toFixed(1)}%
-                        </span>
-                      </TableCell>
-                    </TableRow>
+              <div className="text-right">
+                <div className="text-lg font-bold text-brand-ink leading-tight">
+                  {isLoading ? '—' : (summary?.totalPosts ?? platformTotals.posts)}
+                </div>
+                <div className="text-[9px] text-brand-body-mid font-medium">posts total</div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 h-[140px]">
+              {isLoading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={postsPerPlatformData} barCategoryGap="20%">
+                    <defs>
+                      <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#1D4ED8" stopOpacity={0.85} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="name" tick={<PlatformTick />} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={postsPerPlatformData.length === 1 ? 48 : undefined}>
+                      {postsPerPlatformData.map((entry: any, i: number) => (
+                        <Cell key={i} fill="url(#barGrad1)" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Posts over time */}
+          <Card className="border-brand-border shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-brand-ink">Posts over time</CardTitle>
+                <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Posts per week · last {presetDays} days</CardDescription>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-brand-ink leading-tight">
+                  {isLoading ? '—' : (summary?.totalPosts ?? platformTotals.posts)}
+                </div>
+                <div className="text-[9px] text-brand-body-mid font-medium">posts total</div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 h-[140px]">
+              {isLoading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={postsOverTimeData} barCategoryGap="15%">
+                    <defs>
+                      <linearGradient id="barGrad2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#1D4ED8" stopOpacity={0.85} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={20}>
+                      {postsOverTimeData.map((entry: any, i: number) => (
+                        <Cell key={i} fill="url(#barGrad2)" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Metric per platform – dynamic selector */}
+          <Card className="border-brand-border shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-brand-ink">
+                  {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label} per platform
+                </CardTitle>
+                <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">
+                  {isLoading ? '—' : ((platformTotals as any)[engagementMetric] ?? 0).toLocaleString()} {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label.toLowerCase()} total
+                </CardDescription>
+              </div>
+
+              {/* Metric picker */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowMetricDropdown(v => !v)}
+                  className="flex items-center gap-1.5 h-6 pl-2 pr-1.5 rounded-full border border-brand-border bg-brand-canvas-soft text-[10px] font-semibold text-brand-ink-soft hover:border-brand-primary hover:text-brand-primary transition-all"
+                >
+                  <span className="text-brand-body-mid">{METRIC_CONFIG.find(m => m.key === engagementMetric)?.icon}</span>
+                  <span>{METRIC_CONFIG.find(m => m.key === engagementMetric)?.label}</span>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className={`transition-transform duration-150 ${showMetricDropdown ? 'rotate-180' : ''}`}>
+                    <path d="M1.5 3L4 5.5 6.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {showMetricDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowMetricDropdown(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-brand-border rounded-brand-md shadow-lg py-1 min-w-[148px]">
+                      {METRIC_CONFIG.map(opt => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setEngagementMetric(opt.key); setShowMetricDropdown(false) }}
+                          className={`w-full flex items-center gap-2 px-3 py-[5px] text-[11px] transition-colors ${opt.key === engagementMetric
+                            ? 'text-brand-ink font-semibold'
+                            : 'text-brand-body hover:bg-brand-canvas-soft/60 hover:text-brand-ink'
+                            }`}
+                        >
+                          <span className="w-4 shrink-0 flex items-center justify-center text-brand-body-mid">{opt.icon}</span>
+                          <span className="flex-1 text-left">{opt.label}</span>
+                          {opt.key === engagementMetric && (
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8 9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-1 h-[140px]">
+              {isLoading ? (
+                <Skeleton className="w-full h-full" />
+              ) : metricPerPlatformData === null ? (
+                <div className="w-full h-full flex items-center justify-center text-[11px] text-brand-body-mid">
+                  No {METRIC_CONFIG.find(m => m.key === engagementMetric)?.label.toLowerCase()} data yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metricPerPlatformData} barCategoryGap="20%">
+                    <defs>
+                      <linearGradient id="barGrad3" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#6D28D9" stopOpacity={0.85} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="name" tick={<PlatformTick />} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={metricPerPlatformData.length === 1 ? 48 : undefined}>
+                      {metricPerPlatformData.map((entry: any, i: number) => (
+                        <Cell key={i} fill={entry.fill || 'url(#barGrad3)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── ROW 2: ENGAGEMEN T ── */}
+        <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
+          Engagement Analytics
+        </div>
+
+        {/* Combined Engagement Card: chart left + Metric Summary right */}
+        <EngagementOverTimeCard
+          presetDays={presetDays}
+          isLoading={isLoading}
+          engagementOverTimeData={engagementOverTimeData}
+          selectedEngagementMetrics={selectedEngagementMetrics}
+          setSelectedEngagementMetrics={setSelectedEngagementMetrics}
+          platformTotals={platformTotals}
+          engagementRate={summary?.engagementRate ?? 7.14}
+          ENGAGEMENT_CHART_METRICS={ENGAGEMENT_CHART_METRICS}
+        />
+
+        {/* ── ROW 3: HEATMAP + FOLLOWER ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* Best Time to Post Heatmap */}
+          <Card className="border-brand-border shadow-sm flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-brand-ink">Best Time to Post</CardTitle>
+                <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Historical engagement heatmap</CardDescription>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <DropdownMenu open={showPlatformDropdown} onOpenChange={setShowPlatformDropdown}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="heatmap-platform-filter"
+                      className="h-7 px-2.5 rounded-brand-sm text-[10px] border-brand-border text-brand-ink-mid bg-white hover:bg-brand-canvas-soft/60"
+                    >
+                      {PLATFORM_OPTIONS.find(p => p.value === (heatmapPlatform ?? ''))?.label ?? 'All Platforms'}
+                      <ChevronDown size={10} className="ml-1 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-brand-canvas border border-brand-border text-brand-ink rounded-brand-md min-w-[150px]">
+                    {PLATFORM_OPTIONS.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.value}
+                        onClick={() => {
+                          setHeatmapPlatform(opt.value || undefined)
+                          setShowPlatformDropdown(false)
+                        }}
+                        className="flex items-center gap-2 hover:bg-brand-canvas-soft hover:text-brand-ink rounded-brand-sm py-1.5 px-2.5 text-xs cursor-pointer"
+                      >
+                        {heatmapPlatform === (opt.value || undefined) ? <Check size={12} className="text-brand-ink" /> : <div className="w-3" />}
+                        <span>{opt.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="flex items-center gap-1.5 text-[9px] text-brand-body-mid font-semibold">
+                  Less
+                  <div className="flex gap-0.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-brand-canvas-soft"></div>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/20"></div>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/50"></div>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary/80"></div>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-brand-primary"></div>
+                  </div>
+                  More
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between overflow-hidden">
+              <div 
+                ref={heatmapContainerRef}
+                className="flex-1 min-h-[220px] w-full flex flex-col mt-2 min-w-0"
+              >
+                {/* Hour Labels Header */}
+                <div className="flex mb-1 ml-8">
+                  {Array.from({ length: 24 }).map((_, h) => (
+                    <div key={h} className="flex-1 text-[8px] text-brand-body-mid text-center">
+                      {h % 4 === 0 ? (h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`) : ''}
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
 
-      {/* ── ROW 4: FREQUENCY + ACCUMULATION ── */}
-      <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
-        Advanced Analytics
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Posting Frequency vs Engagement */}
-        <Card className="border-brand-border shadow-sm flex flex-col justify-between">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-xs font-bold text-brand-ink">Posting Frequency vs Engagement</CardTitle>
-            <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Correlation between cadence and ER</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between">
-            <div className="h-[160px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={postingFrequencyData}>
-                  <defs>
-                    <linearGradient id="lineGrad2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1877F2" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="#1877F2" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} tickFormatter={(v: number) => `${v}%`} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#1877F2', strokeDasharray: '4 3', strokeWidth: 1 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="Facebook"
-                    stroke="#1877F2"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: '#1877F2', stroke: '#fff', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#1877F2', stroke: '#fff', strokeWidth: 2 }}
-                    fill="url(#lineGrad2)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-3 p-2.5 bg-brand-canvas-soft border-l-3 border-brand-primary border-l-4 rounded-r-brand-sm text-[11px]">
-              <div className="font-bold text-brand-primary mb-1">Optimal cadence per platform</div>
-              <div className="flex items-center gap-1.5 font-semibold text-brand-ink">
-                <span className="w-2 h-2 rounded-full bg-[#1877F2]" />
-                <span>Facebook</span>
-                <span className="text-brand-body-mid font-medium">1–2/wk ·</span>
-                <span className="font-bold text-emerald-600">12.5%</span>
+                <div className="flex flex-1 min-h-0">
+                  {/* Day Labels Sidebar */}
+                  <div className="w-8 flex flex-col">
+                    {DAY_LABELS.map(day => (
+                      <div key={day} className="flex-1 flex items-center text-[8px] font-bold text-brand-body-mid pr-2 uppercase">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Grid Cells */}
+                  <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                    {engagementGrid.grid.map((row, dayIdx) => (
+                      <div key={dayIdx} className="flex-1 flex gap-0.5 min-h-0">
+                        {row.map((data, hourIdx) => (
+                          <UITooltip key={`${dayIdx}-${hourIdx}`}>
+                            <UITooltipTrigger asChild>
+                              <div 
+                                tabIndex={0}
+                                className="flex-1 rounded-[1px] transition-colors duration-200 cursor-help outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+                                style={{ backgroundColor: getHeatColor(data.score, engagementGrid.max) }}
+                              />
+                            </UITooltipTrigger>
+                            <UITooltipContent className="p-3 min-w-[160px]">
+                              <div className="space-y-1.5">
+                                <div className="font-bold text-xs">
+                                  {DAY_LABELS[dayIdx]} {hourIdx === 0 ? '12am' : hourIdx < 12 ? `${hourIdx}am` : hourIdx === 12 ? '12pm' : `${hourIdx-12}pm`} - {hourIdx + 1 === 24 ? '12am' : (hourIdx + 1) === 12 ? '12pm' : (hourIdx + 1) < 12 ? `${hourIdx + 1}am` : `${hourIdx + 1 - 12}pm`}
+                                </div>
+                                <div className="text-[10px] text-brand-body">
+                                  Avg engagement: {data.score > 0 ? (
+                                    <span className="font-semibold text-brand-ink ml-1">{data.score.toFixed(1)}</span>
+                                  ) : (
+                                    <span className="italic ml-1">no data</span>
+                                  )}
+                                </div>
+                                <Separator className="bg-brand-border/40" />
+                                <div className="text-[10px] text-brand-body">
+                                  <span className="font-semibold text-brand-ink">{data.postCount}</span> {data.postCount === 1 ? 'post' : 'posts'}
+                                </div>
+                              </div>
+                            </UITooltipContent>
+                          </UITooltip>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Engagement Accumulation */}
-        <Card className="border-brand-border shadow-sm flex flex-col justify-between">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-xs font-bold text-brand-ink">Engagement Accumulation</CardTitle>
-            <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">How engagement accumulates after publishing</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between">
-            <div className="h-[160px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={engagementAccumulationData}>
-                  <defs>
-                    <linearGradient id="lineGrad3" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ff4f00" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="#ff4f00" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} tickFormatter={(v: number) => `${v}%`} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#ff4f00', strokeDasharray: '4 3', strokeWidth: 1 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="pct"
-                    stroke="#ff4f00"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
-                    fill="url(#lineGrad3)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-3 p-2.5 bg-[#FFF8E1] border-l-3 border-amber-500 border-l-4 rounded-r-brand-sm text-[11px] text-[#7A5C00]">
-              <span>⚡ Half of engagement by <strong>2–7d</strong> · 80% within <strong>2–7d</strong></span>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 flex items-center gap-2 flex-wrap text-[10px] text-brand-body">
+                <span className="font-bold">Best times:</span>
+                {bestSlots.length === 0 ? (
+                  <span className="bg-brand-primary text-white px-2 py-0.5 rounded-full font-bold text-[9px]">Tue 8am</span>
+                ) : (
+                  bestSlots.map((slot, i) => (
+                    <span key={i} className="bg-brand-primary text-white px-2 py-0.5 rounded-full font-bold text-[9px]">
+                      {DAY_LABELS[slot.dayOfWeek]} {slot.hour >= 12 ? `${slot.hour === 12 ? 12 : slot.hour - 12}pm` : `${slot.hour === 0 ? 12 : slot.hour}am`}
+                    </span>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Content decay / performance insights */}
-        <Card className="border-brand-border shadow-sm flex flex-col">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-xs font-bold text-brand-ink">Content Performance Insights</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 flex-1 flex flex-col gap-2 text-xs leading-normal">
-            <div className="p-2.5 rounded-brand-sm bg-[#F0FFF8] border border-[#C6F6E2] text-[#1A4A3A]">
-              <div className="text-[9px] text-[#00805A] font-bold uppercase tracking-wider mb-0.5">📈 Growth Insight</div>
-              <div>Engagement rate of <strong>{summary?.engagementRate?.toFixed(1) ?? '62.5'}%</strong> significantly above average. Consider increasing posting frequency.</div>
-            </div>
+          {/* Follower evolution */}
+          <Card className="border-brand-border shadow-sm flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-brand-ink">Follower evolution</CardTitle>
+                <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Followers per platform · {followerStats.accountCount} platform{followerStats.accountCount !== 1 ? 's' : ''}</CardDescription>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-brand-ink leading-tight">
+                  {isLoading || followerStatsLoading ? '—' : followerStats.totalFollowers.toLocaleString()}
+                </div>
+                <div className="text-[9px] text-brand-body-mid font-medium">followers total</div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 h-[180px] flex-1">
+              {followerEvolutionData.length === 0 ? (
+                <div className="w-full h-full flex items-center justify-center text-[11px] text-brand-body-mid">
+                  No follower data yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={followerEvolutionData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
+                    <Tooltip content={<FollowerTooltip accounts={hookFollowerStats?.accounts ?? []} />} cursor={{ stroke: '#9CA3AF', strokeDasharray: '4 3', strokeWidth: 1 }} />
+                    <Legend
+                      wrapperStyle={{ fontSize: '10px', marginTop: '4px' }}
+                      iconType="circle"
+                      iconSize={8}
+                    />
+                    {hookFollowerStats?.accounts.map(account => (
+                      <Line
+                        key={account._id}
+                        type="monotone"
+                        dataKey={account.platform}
+                        name={account.displayName}
+                        stroke={PLATFORM_CHART_COLORS[account.platform] ?? '#6B7280'}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: PLATFORM_CHART_COLORS[account.platform] ?? '#6B7280', stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="p-2.5 rounded-brand-sm bg-[#EBF4FF] border border-[#BDD7F5] text-[#1A2A4A]">
-              <div className="text-[9px] text-[#004499] font-bold uppercase tracking-wider mb-0.5">🕐 Best Times</div>
-              <div><strong>Tuesday 8am</strong> and <strong>Sunday 5pm</strong> show highest engagement windows.</div>
-            </div>
+        {/* ── PLATFORM & POST BREAKDOWN TABLES ── */}
+        <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
+          Platform & Post Breakdown
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          {/* Platform Breakdown */}
+          <Card className="border-brand-border shadow-sm overflow-hidden flex flex-col">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-xs font-bold text-brand-ink">Platform Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto flex-1">
+              {platformRows.length === 0 ? (
+                <div className="p-8 text-center text-brand-body flex flex-col gap-2 items-center justify-center h-full min-h-[150px]">
+                  <TrendingUp size={24} className="text-brand-body-mid opacity-40" />
+                  <p className="text-xs font-semibold">No platform analytics available yet.</p>
+                </div>
+              ) : (
+                <Table className="text-xs">
+                  <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('platform')}>
+                        <span className="flex items-center gap-1">Platform <SortIcon colKey="platform" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('postCount')}>
+                        <span className="flex items-center justify-end gap-1">Posts <SortIcon colKey="postCount" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('likes')}>
+                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes <SortIcon colKey="likes" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('comments')}>
+                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments <SortIcon colKey="comments" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('shares')}>
+                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares <SortIcon colKey="shares" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('saves')}>
+                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves <SortIcon colKey="saves" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('clicks')}>
+                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks <SortIcon colKey="clicks" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('views')}>
+                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views <SortIcon colKey="views" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('impressions')}>
+                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. <SortIcon colKey="impressions" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('reach')}>
+                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach <SortIcon colKey="reach" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('engagement')}>
+                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER <SortIcon colKey="engagement" /></span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedPlatformRows.map((row) => (
+                      <TableRow key={row.platform} className="hover:bg-brand-canvas-soft/40 border-b border-brand-border/60">
+                        <TableCell className="font-bold text-brand-ink py-2.5 px-3 flex items-center gap-2">
+                          <ExtendedPlatformIcon platform={row.platform} size={14} />
+                          <span>{row.label}</span>
+                          {row.requiresReauth && row.reauthorizeUrl && (
+                            <a
+                              className="text-[9px] font-bold text-brand-primary border border-brand-primary/20 px-1.5 py-0.5 rounded-full hover:bg-brand-primary/5 transition-colors"
+                              href={row.reauthorizeUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Reauth
+                            </a>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">{row.postCount}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.likes || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.comments || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.shares || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.saves || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.clicks || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.views || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{row.impressions || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">{row.reach ? row.reach.toLocaleString() : <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-right py-2.5 px-3">
+                          <span className={`px-1.5 py-0.5 rounded-sm font-bold text-[10px] ${row.engagement > 15 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                            {row.engagement.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
-            <div className="p-2.5 rounded-brand-sm bg-[#FFF8E6] border border-[#FFD98A] text-[#4A3A00]">
-              <div className="text-[9px] text-[#996600] font-bold uppercase tracking-wider mb-0.5">💡 Recommendation</div>
-              <div>Maintain <strong>1–2 posts/week</strong> cadence on Facebook for optimal engagement yield.</div>
-            </div>
+          {/* Top Performing Posts */}
+          <Card className="border-brand-border shadow-sm overflow-hidden flex flex-col">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-xs font-bold text-brand-ink">Top Performing Posts</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto flex-1">
+              {topPosts.length === 0 ? (
+                <div className="p-8 text-center text-brand-body flex flex-col gap-2 items-center justify-center h-full min-h-[150px]">
+                  <TrendingUp size={24} className="text-brand-body-mid opacity-40" />
+                  <p className="text-xs font-semibold">Top posts will appear once analytics sync completes.</p>
+                </div>
+              ) : (
+                <Table className="text-xs">
+                  <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('post')}>
+                        <span className="flex items-center gap-1">Post <SortIconTop colKey="post" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('likes')}>
+                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes <SortIconTop colKey="likes" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('comments')}>
+                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments <SortIconTop colKey="comments" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('shares')}>
+                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares <SortIconTop colKey="shares" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('saves')}>
+                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves <SortIconTop colKey="saves" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('clicks')}>
+                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks <SortIconTop colKey="clicks" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('views')}>
+                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views <SortIconTop colKey="views" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('impressions')}>
+                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. <SortIconTop colKey="impressions" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('reach')}>
+                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach <SortIconTop colKey="reach" /></span>
+                      </TableHead>
+                      <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('engagementRate')}>
+                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER <SortIconTop colKey="engagementRate" /></span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedTopPosts.map((item) => (
+                      <TableRow
+                        key={item.post.id}
+                        className="hover:bg-brand-canvas-soft/40 border-b border-brand-border/60 cursor-pointer"
+                        onClick={() => setSelectedPostId(item.post.id)}
+                      >
+                        <TableCell className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            {item.post.platform && <ExtendedPlatformIcon platform={item.post.platform} size={12} />}
+                            <div className="flex flex-col leading-tight">
+                              <span className="font-bold text-brand-ink">{item.post.content || 'No content'}</span>
+                              <span className="text-[9px] text-brand-body-mid font-medium">{formatShortDate(item.post.scheduledAtUtc ?? item.post.createdAt)}</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.likes || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.comments || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.shares || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.saves || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.clicks || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.metrics?.views ? item.metrics.views.toLocaleString() : <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3">{item.impressions || <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-brand-body text-right py-2.5 px-3 font-semibold">{item.reach ? item.reach.toLocaleString() : <span className="text-brand-body-mid/40">-</span>}</TableCell>
+                        <TableCell className="text-right py-2.5 px-3">
+                          <span className={`px-1.5 py-0.5 rounded-sm font-bold text-[10px] ${item.engagementRate > 15 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                            {item.engagementRate.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="p-2.5 rounded-brand-sm bg-[#F5F0FF] border border-[#C9B8F0] text-[#1A1040]">
-              <div className="text-[9px] text-[#4A2D99] font-bold uppercase tracking-wider mb-0.5">🔗 Platforms Connected</div>
-              <div>Facebook <strong>active</strong> · Instagram, LinkedIn, TikTok, YouTube available to connect.</div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ── ROW 4: FREQUENCY + ACCUMULATION ── */}
+        <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
+          Advanced Analytics
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Posting Frequency vs Engagement */}
+          <Card className="border-brand-border shadow-sm flex flex-col justify-between">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-xs font-bold text-brand-ink">Posting Frequency vs Engagement</CardTitle>
+              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">Correlation between cadence and ER</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between">
+              <div className="h-[160px] min-w-0 min-h-0">
+                {postingFrequencyData.length === 0 ? (
+                  <Skeleton className="h-full w-full rounded-brand-sm" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={postingFrequencyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                      <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} tickFormatter={(v: number) => `${v}%`} />
+                      <Tooltip content={<ChartTooltip />} cursor={{ strokeDasharray: '4 3', strokeWidth: 1 }} />
+                      {(() => {
+                        const platformKeys = Object.keys(postingFrequencyData[0] ?? {}).filter((k) => k !== 'name')
+                        if (platformKeys.length === 0) return null
+                        return platformKeys.map((platform) => (
+                          <Line
+                            key={platform}
+                            type="monotone"
+                            dataKey={platform}
+                            stroke={PLATFORM_CHART_COLORS[platform] ?? '#6B7280'}
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: PLATFORM_CHART_COLORS[platform] ?? '#6B7280', stroke: '#fff', strokeWidth: 2 }}
+                            activeDot={{ r: 5, fill: PLATFORM_CHART_COLORS[platform] ?? '#6B7280', stroke: '#fff', strokeWidth: 2 }}
+                            connectNulls
+                          />
+                        ))
+                      })()}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              <div className="mt-3 p-2.5 bg-brand-canvas-soft border-l-3 border-brand-primary border-l-4 rounded-r-brand-sm text-[11px]">
+                <div className="font-bold text-brand-primary mb-1">Optimal cadence per platform</div>
+                {(() => {
+                  const cadence = hookPostingFrequency?.optimalCadence
+                  if (!cadence) {
+                    return <div className="text-brand-body-mid">No optimal cadence detected yet</div>
+                  }
+                  const platform = cadence.platform
+                  const color = platform ? (PLATFORM_CHART_COLORS[platform] ?? '#6B7280') : '#6B7280'
+                  return (
+                    <div className="flex items-center gap-1.5 font-semibold text-brand-ink">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <span>{platform ? (ZERNIO_PLATFORMS.find((p) => p.id === platform)?.label ?? platform) : 'All platforms'}</span>
+                      <span className="text-brand-body-mid font-medium">{cadence.postsPerWeek}/wk ·</span>
+                      <span className="font-bold text-emerald-600">
+                        {typeof hookPostingFrequency?.correlation === 'number'
+                          ? `${(hookPostingFrequency.correlation * 100).toFixed(1)}%`
+                          : '—'}
+                      </span>
+                    </div>
+                  )
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Engagement Accumulation */}
+          <Card className="border-brand-border shadow-sm flex flex-col justify-between">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-xs font-bold text-brand-ink">Engagement Accumulation</CardTitle>
+              <CardDescription className="text-[10px] text-brand-body-mid mt-0.5">How engagement accumulates after publishing</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 flex-1 flex flex-col justify-between">
+              <div className="h-[160px] min-w-0 min-h-0">
+                {engagementAccumulationData.length === 0 ? (
+                  <Skeleton className="h-full w-full rounded-brand-sm" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={engagementAccumulationData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                      <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} tickFormatter={(v: number) => `${v}%`} />
+                      <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#ff4f00', strokeDasharray: '4 3', strokeWidth: 1 }} />
+                      <Line
+                        type="monotone"
+                        dataKey="pct"
+                        stroke="#ff4f00"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 6, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
+                        connectNulls
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              <div className="mt-3 p-2.5 bg-[#FFF8E1] border-l-3 border-amber-500 border-l-4 rounded-r-brand-sm text-[11px] text-[#7A5C00]">
+                {(() => {
+                  if (typeof hookContentDecay?.averageHalfLifeHours === 'number') {
+                    const hours = hookContentDecay.averageHalfLifeHours
+                    const human = hours < 24
+                      ? `${hours.toFixed(0)}h`
+                      : hours < 168
+                        ? `${(hours / 24).toFixed(1)}d`
+                        : `${(hours / 168).toFixed(1)}w`
+                    return <span>⚡ Half of engagement by <strong>{human}</strong></span>
+                  }
+                  const buckets = hookContentDecay?.decayCurve ?? hookContentDecay?.buckets ?? []
+                  if (buckets.length > 0) {
+                    const peak = Math.max(...buckets.map((b) => b.engagementRate))
+                    if (peak > 0) {
+                      const halfBucket = buckets.find((b) => b.engagementRate >= peak / 2)
+                      if (halfBucket) {
+                        return <span>⚡ Half of engagement by <strong>{halfBucket.ageBucket}</strong></span>
+                      }
+                    }
+                  }
+                  return <span className="text-brand-body-mid">Engagement decay data not available yet</span>
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content decay / performance insights */}
+          <Card className="border-brand-border shadow-sm flex flex-col">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-xs font-bold text-brand-ink">Content Performance Insights</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-1 flex-1 flex flex-col gap-2 text-xs leading-normal">
+              {/* Growth Insight */}
+              <div className="p-2.5 rounded-brand-sm bg-[#F0FFF8] border border-[#C6F6E2] text-[#1A4A3A]">
+                <div className="text-[9px] text-[#00805A] font-bold uppercase tracking-wider mb-0.5">📈 Growth Insight</div>
+                <div>
+                  {summary ? (
+                    <>Engagement rate of <strong>{summary.engagementRate.toFixed(1)}%</strong>. {summary.engagementRate >= 5 ? 'Above industry average — keep going.' : 'Room to grow. Test new content formats.'}</>
+                  ) : (
+                    <span className="text-brand-body-mid">Calculating engagement rate…</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Best Times */}
+              <div className="p-2.5 rounded-brand-sm bg-[#EBF4FF] border border-[#BDD7F5] text-[#1A2A4A]">
+                <div className="text-[9px] text-[#004499] font-bold uppercase tracking-wider mb-0.5">🕐 Best Times</div>
+                <div>
+                  {bestSlots.length >= 2 ? (
+                    <>{formatSlotLabel(bestSlots[0])} and {formatSlotLabel(bestSlots[1])} show highest engagement windows.</>
+                  ) : bestSlots.length === 1 ? (
+                    <>{formatSlotLabel(bestSlots[0])} shows the highest engagement window.</>
+                  ) : (
+                    <span className="text-brand-body-mid">Best time data not available yet</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Recommendation */}
+              <div className="p-2.5 rounded-brand-sm bg-[#FFF8E6] border border-[#FFD98A] text-[#4A3A00]">
+                <div className="text-[9px] text-[#996600] font-bold uppercase tracking-wider mb-0.5">💡 Recommendation</div>
+                <div>
+                  {(() => {
+                    const cadence = hookPostingFrequency?.optimalCadence
+                    if (cadence) {
+                      const platformLabel = cadence.platform
+                        ? (ZERNIO_PLATFORMS.find((p) => p.id === cadence.platform)?.label ?? cadence.platform)
+                        : null
+                      return platformLabel
+                        ? <>Maintain <strong>{cadence.postsPerWeek}–{cadence.postsPerWeek + 1} posts/week</strong> cadence on {platformLabel} for optimal engagement yield.</>
+                        : <>Maintain <strong>{cadence.postsPerWeek}–{cadence.postsPerWeek + 1} posts/week</strong> cadence for optimal engagement yield.</>
+                    }
+                    return <span className="text-brand-body-mid">Maintain your current posting rhythm for stable engagement.</span>
+                  })()}
+                </div>
+              </div>
+
+              {/* Platforms Connected */}
+              <div className="p-2.5 rounded-brand-sm bg-[#F5F0FF] border border-[#C9B8F0] text-[#1A1040]">
+                <div className="text-[9px] text-[#4A2D99] font-bold uppercase tracking-wider mb-0.5">🔗 Platforms Connected</div>
+                <div>
+                  {(() => {
+                    const platforms = (summary?.platformBreakdown ?? [])
+                      .filter((p) => p.postCount > 0)
+                      .map((p) => ZERNIO_PLATFORMS.find((z) => z.id === p.platform)?.label ?? p.platform)
+                    if (platforms.length === 0) {
+                      return <span className="text-brand-body-mid">No active platforms in this period</span>
+                    }
+                    if (platforms.length === 1) {
+                      return <><strong>{platforms[0]}</strong> is the only active platform.</>
+                    }
+                    return <><strong>{platforms[0]}</strong> active · {platforms.slice(1).join(', ')} also posting.</>
+                  })()}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+
+      {/* Post Details Panel */}
+      {selectedPostId && (
+        <PostDetailsPanel
+          postId={selectedPostId}
+          workspaceId={filterWorkspace === 'all' ? undefined : filterWorkspace}
+          onClose={() => setSelectedPostId(null)}
+        />
+      )}
+    </UITooltipProvider>
   )
 }

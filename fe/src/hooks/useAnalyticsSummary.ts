@@ -145,7 +145,7 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
         platform: platformParam,
       });
       const posts = list.posts ?? [];
-      return posts.reduce(
+      const totals = posts.reduce(
         (acc, p) => {
           const a = p.analytics;
           if (!a) return acc;
@@ -163,6 +163,7 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
         },
         { likes: 0, comments: 0, shares: 0, saves: 0, views: 0, impressions: 0, reach: 0, clicks: 0, posts: 0 }
       );
+      return { totals, posts };
     },
   });
 
@@ -250,7 +251,8 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
     setHeatmapPlatform,
     dailyMetrics: dailyMetricsQuery.data ?? null,
     topPosts: topPostsQuery.data ?? [],
-    analyticsListSummary: analyticsListSummaryQuery.data ?? null,
+    analyticsListSummary: analyticsListSummaryQuery.data?.totals ?? null,
+    analyticsListSummaryPosts: analyticsListSummaryQuery.data?.posts ?? [],
     bestTime: bestTimeQuery.data ?? null,
     followerStats: followerStatsQuery.data ?? null,
     contentDecay: contentDecayQuery.data ?? null,
