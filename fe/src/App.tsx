@@ -27,7 +27,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import IdeasPage from './pages/app/IdeasPage'
 import RepurposePage from './pages/app/RepurposePage'
-import AnalyticsPage from './pages/app/AnalyticsPage'
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/Dashboard'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
 import { useNavigate } from 'react-router-dom'
@@ -114,12 +115,24 @@ function Homepage() {
   )
 }
 
+const AdminGuard = ({ children }: any) => {
+  // Set VITE_ADMIN_OPEN=true in fe/.env.local to bypass auth temporarily
+  return import.meta.env.VITE_ADMIN_OPEN === 'true' ? <>{children}</> : <ProtectedRoute>{children}</ProtectedRoute>
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.key}>
+          <Route path="/admin" element={
+          <AdminGuard>
+            <AdminLayout />
+          </AdminGuard>
+        }>
+          <Route index element={<AdminDashboard />} />
+        </Route>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/signup" element={<PageWrapper><Homepage /></PageWrapper>} />
@@ -151,7 +164,6 @@ function AnimatedRoutes() {
           <Route path="posts/queues" element={<PageWrapper><PostsQueuesPage /></PageWrapper>} />
           <Route path="ideas" element={<PageWrapper><IdeasPage /></PageWrapper>} />
           <Route path="calendar" element={<Navigate to="/app/posts-all?view=calendar" replace />} />
-          <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
           <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
           <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
