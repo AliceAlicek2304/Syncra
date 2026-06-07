@@ -11,5 +11,5 @@ public class RedisOptions
     public string ConnectionString =>
         string.IsNullOrEmpty(Password)
             ? $"{Host}:{Port}"
-            : $"{Host}:{Port},password={Password},db={Database}";
+            : $"{Host}:{Port},password={Password},defaultDatabase={Database}";
 }

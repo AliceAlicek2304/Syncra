@@ -140,26 +140,26 @@ const DoubleCheck = ({ size = 12, className }: { size?: number; className?: stri
 
 const LOCAL_STYLE = `
   .messages-dashboard-theme {
-    --primary: #8c4d39;
-    --primary-container: #f4a48b;
-    --on-primary: #ffffff;
-    --on-primary-container: #713826;
-    --background: #f9f9fa;
-    --surface: #f9f9fa;
-    --surface-container: #eeeeef;
-    --surface-container-high: #e8e8e9;
-    --surface-container-highest: #e2e2e3;
-    --surface-container-low: #f3f3f4;
+    --primary: #ff4f00;
+    --primary-container: #ffece0;
+    --on-primary: #fffefb;
+    --on-primary-container: #201515;
+    --background: #fffefb;
+    --surface: #fffefb;
+    --surface-container: #f8f4f0;
+    --surface-container-high: #f1e8de;
+    --surface-container-highest: #eae0d3;
+    --surface-container-low: #faf7f4;
     --surface-container-lowest: #ffffff;
-    --on-surface: #1a1c1d;
-    --on-surface-variant: #53433f;
-    --outline: #86736e;
-    --outline-variant: #d8c2bb;
+    --on-surface: #201515;
+    --on-surface-variant: #605d52;
+    --outline: #c5c0b1;
+    --outline-variant: #e6dfd2;
     --error: #ba1a1a;
     --error-container: #ffdad6;
     --on-error: #ffffff;
     --on-error-container: #93000a;
-    --primary-fixed-dim: #ffb59e;
+    --primary-fixed-dim: #ffc7a8;
   }
 
   @keyframes spin {
