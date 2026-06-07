@@ -281,18 +281,115 @@ public interface IZernioClient
     // ── Analytics methods ───────────────────────────────────────
 
     Task<ZernioDailyMetricsDto> GetDailyMetricsAsync(
-        string profileId,
-        DateTime? fromDate,
-        DateTime? toDate,
+        string? profileId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
         CancellationToken cancellationToken = default);
 
     Task<ZernioPostAnalyticsDto> GetPostAnalyticsAsync(
-        string zernioPostId,
+        string postId,
+        string? platform = null,
+        string? profileId = null,
+        string? accountId = null,
+        string? source = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        int? limit = null,
+        int? page = null,
+        string? sortBy = null,
+        string? order = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioPostAnalyticsListDto> GetAnalyticsListAsync(
+        string? platform = null,
+        string? profileId = null,
+        string? accountId = null,
+        string? source = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        int? limit = null,
+        int? page = null,
+        string? sortBy = null,
+        string? order = null,
         CancellationToken cancellationToken = default);
 
     Task<ZernioBestTimeDto> GetBestTimeAsync(
-        string profileId,
+        string? profileId = null,
         string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioContentDecayResponseDto> GetContentDecayAsync(
+        string? platform = null,
+        string? profileId = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioFacebookPageInsightsResponseDto> GetFacebookPageInsightsAsync(
+        string accountId,
+        string? metrics = null,
+        string? since = null,
+        string? until = null,
+        string? metricType = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioGoogleBusinessPerformanceResponseDto> GetGoogleBusinessPerformanceAsync(
+        string accountId,
+        string? metrics = null,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInstagramAccountInsightsResponseDto> GetInstagramAccountInsightsAsync(
+        string accountId,
+        string? metrics = null,
+        string? since = null,
+        string? until = null,
+        string? metricType = null,
+        string? breakdown = null,
+        CancellationToken cancellationToken = default);
+
+    // ── YouTube Daily Views methods ────────────────────────────────
+
+    Task<ZernioYouTubeDailyViewsResponseDto> GetYouTubeDailyViewsAsync(
+        string videoId,
+        string accountId,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default);
+
+    // ── YouTube Channel Insights methods ───────────────────────────
+
+    Task<ZernioInstagramAccountInsightsResponseDto> GetYouTubeChannelInsightsAsync(
+        string accountId,
+        string? metrics = null,
+        string? since = null,
+        string? until = null,
+        string? metricType = null,
+        CancellationToken cancellationToken = default);
+
+    // ── YouTube Demographics methods ───────────────────────────────
+
+    Task<ZernioYouTubeDemographicsResponseDto> GetYouTubeDemographicsAsync(
+        string accountId,
+        string? breakdown = null,
+        string? startDate = null,
+        string? endDate = null,
+        CancellationToken cancellationToken = default);
+
+    // ── TikTok Account Insights methods ────────────────────────────
+
+    Task<ZernioInstagramAccountInsightsResponseDto> GetTikTokAccountInsightsAsync(
+        string accountId,
+        string? metrics = null,
+        string? since = null,
+        string? until = null,
+        string? metricType = null,
         CancellationToken cancellationToken = default);
 
     // ── Account Health methods ──────────────────────────────────
@@ -336,24 +433,6 @@ public interface IZernioClient
         string selectedOrganizationUrn,
         CancellationToken cancellationToken = default);
 
-    // ── Follower Stats methods ────────────────────────────────
-
-    Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
-        string accountIds,
-        string profileId,
-        DateTime? fromDate = null,
-        DateTime? toDate = null,
-        string? granularity = null,
-        CancellationToken cancellationToken = default);
-
-    // ── Bulk Account Health methods ───────────────────────────
-
-    Task<ZernioBulkHealthResponseDto> GetAllAccountsHealthAsync(
-        string profileId,
-        string? platform = null,
-        string? status = null,
-        CancellationToken cancellationToken = default);
-
     // ── Account Update methods ────────────────────────────────
 
     Task<ZernioUpdateAccountResponseDto> UpdateAccountAsync(
@@ -366,5 +445,166 @@ public interface IZernioClient
     Task<ZernioMoveAccountResponseDto> MoveAccountToProfileAsync(
         string accountId,
         string targetProfileId,
+        CancellationToken cancellationToken = default);
+
+    // ── Follower Stats methods ──────────────────────────────────────────────
+
+    Task<ZernioFollowerStatsResponseDto> GetFollowerStatsAsync(
+        string? accountIds = null,
+        string? profileId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? granularity = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Bulk Account Health methods ─────────────────────────────────────────
+
+    Task<ZernioBulkHealthResponseDto> GetAllAccountsHealthAsync(
+        string profileId,
+        string? platform = null,
+        string? status = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Google Business Analytics methods ─────────────────────────────────────
+
+    Task<ZernioGoogleBusinessSearchKeywordsResponseDto> GetGoogleBusinessSearchKeywordsAsync(
+        string accountId,
+        string? startMonth = null,
+        string? endMonth = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Instagram Demographics methods ────────────────────────────────────
+
+    Task<ZernioInstagramDemographicsResponseDto> GetInstagramDemographicsAsync(
+        string accountId,
+        string? metric = null,
+        string? breakdown = null,
+        string? timeframe = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Instagram Follower History methods ────────────────────────────────
+
+    Task<ZernioInstagramAccountInsightsResponseDto> GetInstagramFollowerHistoryAsync(
+        string accountId,
+        string? metrics = null,
+        string? since = null,
+        string? until = null,
+        string? metricType = null,
+        CancellationToken cancellationToken = default);
+
+    // ── LinkedIn Org Aggregate Analytics methods ───────────────────────────
+
+    Task<ZernioInstagramAccountInsightsResponseDto> GetLinkedInOrgAggregateAnalyticsAsync(
+        string accountId,
+        string? metrics = null,
+        DateOnly? since = null,
+        DateOnly? until = null,
+        string? metricType = null,
+        CancellationToken cancellationToken = default);
+
+    // ── LinkedIn Aggregate Analytics methods ──────────────────────────────
+
+    Task<ZernioLinkedInAggregateAnalyticsResponseDto> GetLinkedInAggregateAnalyticsAsync(
+        string accountId,
+        string? aggregation = null,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        string? metrics = null,
+        CancellationToken cancellationToken = default);
+
+    // ── LinkedIn Post Analytics methods ───────────────────────────────────
+
+    Task<ZernioLinkedInPostAnalyticsResponseDto> GetLinkedInPostAnalyticsAsync(
+        string accountId,
+        string urn,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioLinkedInPostReactionsResponseDto> GetLinkedInPostReactionsAsync(
+        string accountId,
+        string urn,
+        int? limit = null,
+        string? cursor = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Posting Frequency methods ─────────────────────────────────────────
+
+    Task<ZernioPostingFrequencyResponseDto> GetPostingFrequencyAsync(
+        string? platform = null,
+        string? profileId = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Post Timeline methods ─────────────────────────────────────────────
+
+    Task<ZernioPostTimelineResponseDto> GetPostTimelineAsync(
+        string postId,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default);
+
+    // ── Inbox Analytics methods ───────────────────────────────────────────
+
+    Task<ZernioInboxVolumeResponseDto> GetInboxVolumeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxTopAccountsResponseDto> GetInboxTopAccountsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? source = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxSourceBreakdownResponseDto> GetInboxSourceBreakdownAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxResponseTimeResponseDto> GetInboxResponseTimeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxHeatmapResponseDto> GetInboxHeatmapAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        string? action = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxConversationsListResponseDto> ListInboxConversationsAnalyticsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        int? limit = null,
+        int? page = null,
+        string? sortBy = null,
+        string? order = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxConversationDetailDto> GetInboxConversationAnalyticsAsync(
+        string conversationId,
+        DateTime fromDate,
+        DateTime? toDate = null,
         CancellationToken cancellationToken = default);
 }

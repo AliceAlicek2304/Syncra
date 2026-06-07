@@ -1,10 +1,18 @@
 using MediatR;
-using Syncra.Application.DTOs.Analytics;
+using Syncra.Application.DTOs.Zernio;
 using Syncra.Domain.Common;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
 public record GetPostAnalyticsQuery(
-    Guid WorkspaceId,
-    Guid PostId,
-    int Date) : IRequest<Result<PostMetricsDto>>;
+    string PostId,
+    string? Platform,
+    string? ProfileId,
+    string? AccountId,
+    string? Source,
+    DateOnly? FromDate,
+    DateOnly? ToDate,
+    int? Limit,
+    int? Page,
+    string? SortBy,
+    string? Order) : IRequest<Result<ZernioPostAnalyticsDto>>;

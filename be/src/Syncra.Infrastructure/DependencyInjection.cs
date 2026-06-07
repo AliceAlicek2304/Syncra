@@ -9,6 +9,7 @@ using Syncra.Infrastructure.Persistence.Interceptors;
 using Syncra.Infrastructure.Repositories;
 using Syncra.Infrastructure.Services;
 using Syncra.Domain.Interfaces;
+using Syncra.Application.Services;
 using Syncra.Application.Options;
 using Syncra.Application.Common.Interfaces;
 using Syncra.Application.Providers;
@@ -138,6 +139,7 @@ public static class DependencyInjection
     {
         services.Configure<ZernioOptions>(configuration.GetSection(ZernioOptions.SectionName));
         services.AddScoped<IZernioClient, ZernioClient>();
+        services.AddScoped<IInboxAnalyticsService, InboxAnalyticsService>();
         services.AddScoped<ProcessZernioWebhookJob>();
         services.AddScoped<CancelScheduledPostsForDisconnectedAccountJob>();
         services.AddScoped<InboxBackfillJob>();

@@ -3,7 +3,6 @@ using Syncra.Application.DTOs.Analytics;
 using Syncra.Application.DTOs.Zernio;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Common;
-using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 
@@ -15,7 +14,6 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
 
     private readonly IZernioClient _zernioClient;
     private readonly IZernioProfileRepository _zernioProfileRepository;
-    private readonly IPostRepository _postRepository;
     private readonly ISocialAccountRepository _socialAccountRepository;
     private readonly IAnalyticsCache _cache;
     private readonly ILogger<ZernioWorkspaceAnalyticsService> _logger;
@@ -23,14 +21,12 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
     public ZernioWorkspaceAnalyticsService(
         IZernioClient zernioClient,
         IZernioProfileRepository zernioProfileRepository,
-        IPostRepository postRepository,
         ISocialAccountRepository socialAccountRepository,
         IAnalyticsCache cache,
         ILogger<ZernioWorkspaceAnalyticsService> logger)
     {
         _zernioClient = zernioClient;
         _zernioProfileRepository = zernioProfileRepository;
-        _postRepository = postRepository;
         _socialAccountRepository = socialAccountRepository;
         _cache = cache;
         _logger = logger;
@@ -68,7 +64,7 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
 
         // Fetch daily metrics from Zernio
         var dailyMetrics = await _zernioClient.GetDailyMetricsAsync(
-            profile.ZernioProfileId, fromDate, toDate, cancellationToken);
+            profileId: profile.ZernioProfileId, fromDate: fromDate, toDate: toDate, cancellationToken: cancellationToken);
 
         // Build summary from daily metrics
         var summary = BuildSummaryFromDailyMetrics(dailyMetrics);
@@ -80,65 +76,6 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
         await _cache.SetAsync(cacheKey, summary, TimeSpan.FromMinutes(60), cancellationToken);
 
         return Result.Success(summary);
-    }
-
-    public async Task<Result<PostMetricsDto>> GetPostMetricsAsync(
-        Guid workspaceId,
-        Guid postId,
-        CancellationToken cancellationToken = default)
-    {
-        // Load post; return failure if not found (IDOR mitigation T-27-01)
-        var post = await _postRepository.GetByIdAsync(postId);
-        if (post is null)
-        {
-            _logger.LogWarning("Post not found: {PostId}", postId);
-            return Result.Failure<PostMetricsDto>("Post not found.");
-        }
-
-        // Verify workspace ownership (T-27-01)
-        if (post.WorkspaceId != workspaceId)
-        {
-            _logger.LogWarning("Cross-workspace post access denied: post {PostId} does not belong to workspace {WorkspaceId}", postId, workspaceId);
-            return Result.Failure<PostMetricsDto>("Post does not belong to this workspace.");
-        }
-
-        // Check ZernioPostId
-        if (string.IsNullOrEmpty(post.ZernioPostId))
-        {
-            _logger.LogInformation("Post {PostId} has no ZernioPostId — analytics unavailable", postId);
-            return Result.Failure<PostMetricsDto>("This post has not been published through Zernio yet.");
-        }
-
-        // Cache-aside
-        var cacheKey = $"zernio:analytics:post:{workspaceId}:{postId}";
-        var cached = await _cache.GetAsync<PostMetricsDto>(cacheKey, cancellationToken);
-        if (cached != null)
-        {
-            _logger.LogInformation("Cache hit for post analytics: {PostId}", postId);
-            return Result.Success(cached);
-        }
-
-        // Fetch from Zernio
-        var postAnalytics = await _zernioClient.GetPostAnalyticsAsync(post.ZernioPostId, cancellationToken);
-
-        // Map to PostMetricsDto, preserving sync-pending status (D-09)
-        var analytics = postAnalytics.Analytics;
-        var dto = new PostMetricsDto(
-            analytics.Impressions,
-            analytics.Likes + analytics.Comments + analytics.Shares,
-            analytics.Clicks,
-            analytics.Views,
-            analytics.EngagementRate,
-            postAnalytics.PlatformAnalytics,
-            IsSyncPending: postAnalytics.SyncPending);
-
-        // Cache with 10-minute TTL (D-05) — only cache non-pending results
-        if (!postAnalytics.SyncPending)
-        {
-            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(10), cancellationToken);
-        }
-
-        return Result.Success(dto);
     }
 
     public async Task<Result<HeatmapDto>> GetHeatmapAsync(
@@ -173,7 +110,7 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
 
         // Fetch best-time slots from Zernio (UTC, no timezone shift - D-01/D-02)
         var bestTime = await _zernioClient.GetBestTimeAsync(
-            profile.ZernioProfileId, platform, cancellationToken);
+            profileId: profile.ZernioProfileId, platform: platform, cancellationToken: cancellationToken);
 
         // Map Zernio slots to HeatmapSlotDto — preserve UTC DayOfWeek and Hour (D-01)
         // Score = avg_engagement rounded to int using AwayFromZero (documented in plan)
@@ -202,17 +139,17 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
     {
         var dailyData = dailyMetrics.DailyData;
 
-        var totalReach = dailyData.Sum(d => d.Reach);
-        var totalImpressions = dailyData.Sum(d => d.Impressions);
-        var totalLikes = dailyData.Sum(d => d.Likes);
-        var totalComments = dailyData.Sum(d => d.Comments);
-        var totalShares = dailyData.Sum(d => d.Shares);
+        var totalReach = dailyData.Sum(d => d.Metrics.Reach);
+        var totalImpressions = dailyData.Sum(d => d.Metrics.Impressions);
+        var totalLikes = dailyData.Sum(d => d.Metrics.Likes);
+        var totalComments = dailyData.Sum(d => d.Metrics.Comments);
+        var totalShares = dailyData.Sum(d => d.Metrics.Shares);
         var totalEngagements = totalLikes + totalComments + totalShares;
         var engagementRate = totalImpressions > 0
             ? Math.Round((double)totalEngagements / totalImpressions * 100, 2)
             : 0.0;
         var totalPosts = dailyData.Sum(d => d.PostCount);
-        var totalFollowerGrowth = dailyData.Sum(d => d.Saves);
+        var totalFollowerGrowth = dailyData.Sum(d => d.Metrics.Saves);
 
         var weeklyReach = dailyData
             .GroupBy(d =>
@@ -228,13 +165,13 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
             .OrderBy(g => g.Key)
             .Select(g => new WeeklyReachDto(
                 WeekStart: g.Key.ToString("yyyy-MM-dd"),
-                Reach: g.Sum(d => d.Reach)))
+                Reach: g.Sum(d => d.Metrics.Reach)))
             .ToList();
 
-        var platformBreakdown = dailyMetrics.PlatformBreakdown?
+        var platformBreakdown = dailyMetrics.PlatformBreakdown
             .Select(p => new PlatformBreakdownDto(
-                p.Platform, p.PostCount, p.Impressions, p.Reach,
-                p.Likes, p.Comments, p.Shares, p.Saves, p.Clicks, p.Views))
+                p.Platform, (int)p.PostCount, (int)p.Impressions, (int)p.Reach,
+                (int)p.Likes, (int)p.Comments, (int)p.Shares, (int)p.Saves, (int)p.Clicks, (int)p.Views))
             .ToList();
 
         return new WorkspaceAnalyticsSummaryDto(
@@ -287,7 +224,7 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
                 // Call a Zernio analytics endpoint for this platform/account
                 // If it throws ZernioAnalyticsScopeException (412), the account needs reauth
                 await _zernioClient.GetDailyMetricsAsync(
-                    profileId, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow, cancellationToken);
+                    profileId: profileId, fromDate: DateTime.UtcNow.AddDays(-7), toDate: DateTime.UtcNow, cancellationToken: cancellationToken);
 
                 // Success — scope is valid
                 enriched.Add(pb);

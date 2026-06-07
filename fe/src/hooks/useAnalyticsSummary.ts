@@ -1,11 +1,20 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi } from '../api/analytics';
-import type { AnalyticsError, AnalyticsPresetDays, HeatmapDto, WorkspaceAnalyticsSummaryDto, ZernioDailyMetricsDto } from '../api/analytics';
+import type {
+  AnalyticsError,
+  AnalyticsPresetDays,
+  BestTimeDto,
+  ZernioContentDecayResponseDto,
+  ZernioFollowerStatsResponseDto,
+  ZernioPostingFrequencyResponseDto,
+} from '../api/analytics';
 import { AxiosError } from 'axios';
 
 interface UseAnalyticsSummaryArgs {
   workspaceId?: string;
+  /** Platform filter (e.g. 'facebook'). undefined / 'all' = all platforms. */
+  platform?: string;
 }
 
 const PRESET_OPTIONS = [
@@ -27,6 +36,34 @@ const formatRangeLabel = (days: number) => {
   return `${startText} – ${endText}, ${end.getFullYear()}`;
 };
 
+/**
+ * Compute the YYYY-MM-DD string for "today minus N days" using the local
+ * calendar. Used as the `fromDate` query param for daily-metrics, analytics
+ * (top-posts), and follower-stats.
+ */
+const computeFromDate = (days: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  // Use local calendar date to avoid UTC offset shifting the day
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
+};
+
+/**
+ * Convert a workspace-id prop into the value `analyticsApi` expects.
+ * - 'all' → null (sends X-Workspace-Id: '' to override default)
+ * - string → that workspace id
+ * - undefined → undefined (axios interceptor fills from localStorage)
+ */
+const resolveWorkspaceId = (workspaceId?: string): string | null | undefined => {
+  if (workspaceId === 'all') return null;
+  if (workspaceId) return workspaceId;
+  return undefined;
+};
+
 /** Extract a structured AnalyticsError from an Axios error response. */
 function toAnalyticsError(error: unknown): AnalyticsError | null {
   if (!(error instanceof AxiosError) || !error.response) return null;
@@ -42,44 +79,138 @@ function toAnalyticsError(error: unknown): AnalyticsError | null {
   };
 }
 
-export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
+/**
+ * Disable React Query auto-refetches that would re-issue any of the 6
+ * contract endpoints without user interaction. The QueryClient global
+ * already disables `refetchOnWindowFocus`, but we set it explicitly per-query
+ * for defense-in-depth.
+ */
+const noAutoRefetch = {
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+} as const;
+
+export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSummaryArgs) {
   const [presetDays, setPresetDays] = useState<AnalyticsPresetDays>(30);
   const [heatmapPlatform, setHeatmapPlatform] = useState<string | undefined>(undefined);
 
-  const summaryQuery = useQuery({
-    queryKey: ['analytics-summary', workspaceId, presetDays],
-    enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<WorkspaceAnalyticsSummaryDto | null> => {
-      if (!workspaceId) return null;
-      return analyticsApi.getWorkspaceSummary(workspaceId, presetDays);
-    },
-  });
-
-  const heatmapQuery = useQuery({
-    queryKey: ['analytics-heatmap', workspaceId, presetDays, heatmapPlatform],
-    enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<HeatmapDto | null> => {
-      if (!workspaceId) return null;
-      return analyticsApi.getWorkspaceHeatmap(workspaceId, presetDays, heatmapPlatform);
-    },
-  });
+  const wsId = resolveWorkspaceId(workspaceId);
+  // Normalise 'all' → undefined so API receives no platform param
+  const platformParam = (!platform || platform === 'all') ? undefined : platform;
+  const fromDate = useMemo(() => computeFromDate(presetDays), [presetDays]);
 
   const dailyMetricsQuery = useQuery({
-    queryKey: ['analytics-daily-metrics', workspaceId],
+    queryKey: ['analytics-daily-metrics', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
     enabled: Boolean(workspaceId),
-    queryFn: async (): Promise<ZernioDailyMetricsDto | null> => {
-      if (!workspaceId) return null;
-      const fromDate = new Date()
-      fromDate.setDate(fromDate.getDate() - 365)
-      return analyticsApi.getDailyMetrics(fromDate.toISOString().split('T')[0]);
-    },
-    staleTime: 300_000,
+    staleTime: 5 * 60_000,
+    ...noAutoRefetch,
+    queryFn: () => {
+      return analyticsApi.getDailyMetrics({ fromDate, platform: platformParam }, wsId)
+    }
   });
 
-  // Structured error info
-  const analyticsError: AnalyticsError | null = useMemo(() => {
-    return toAnalyticsError(summaryQuery.error) ?? toAnalyticsError(heatmapQuery.error) ?? null;
-  }, [summaryQuery.error, heatmapQuery.error]);
+  const topPostsQuery = useQuery({
+    queryKey: ['analytics-top-posts', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    ...noAutoRefetch,
+    queryFn: async () => {
+      const list = await analyticsApi.getAnalyticsList(wsId, {
+        sortBy: 'engagement',
+        order: 'desc',
+        limit: 10,
+        fromDate,
+        platform: platformParam,
+      });
+      return list.posts ?? [];
+    },
+  });
+
+  /**
+   * Fetch a broader post list (limit 100, the backend max) to aggregate Metric Summary totals.
+   * Uses the same getAnalyticsList endpoint so the summed
+   * likes/comments/shares/saves/views/impressions/reach/clicks are representative.
+   */
+  const analyticsListSummaryQuery = useQuery({
+    queryKey: ['analytics-list-summary', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
+    enabled: Boolean(workspaceId),
+    staleTime: 5 * 60_000,
+    ...noAutoRefetch,
+    queryFn: async () => {
+      const list = await analyticsApi.getAnalyticsList(wsId, {
+        sortBy: 'engagement',
+        order: 'desc',
+        limit: 100,
+        fromDate,
+        platform: platformParam,
+      });
+      const posts = list.posts ?? [];
+      const totals = posts.reduce(
+        (acc, p) => {
+          const a = p.analytics;
+          if (!a) return acc;
+          return {
+            likes: acc.likes + (a.likes ?? 0),
+            comments: acc.comments + (a.comments ?? 0),
+            shares: acc.shares + (a.shares ?? 0),
+            saves: acc.saves + (a.saves ?? 0),
+            views: acc.views + (a.views ?? 0),
+            impressions: acc.impressions + (a.impressions ?? 0),
+            reach: acc.reach + (a.reach ?? 0),
+            clicks: acc.clicks + (a.clicks ?? 0),
+            posts: acc.posts + 1,
+          };
+        },
+        { likes: 0, comments: 0, shares: 0, saves: 0, views: 0, impressions: 0, reach: 0, clicks: 0, posts: 0 }
+      );
+      return { totals, posts };
+    },
+  });
+
+  const bestTimeQuery = useQuery({
+    queryKey: ['analytics-best-time', workspaceId ?? 'none', heatmapPlatform ?? 'all'],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    ...noAutoRefetch,
+    queryFn: (): Promise<BestTimeDto> => analyticsApi.getBestTime(wsId, heatmapPlatform),
+  });
+
+  const followerStatsQuery = useQuery({
+    queryKey: ['analytics-follower-stats', workspaceId ?? 'none', presetDays],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    ...noAutoRefetch,
+    queryFn: (): Promise<ZernioFollowerStatsResponseDto> =>
+      analyticsApi.getFollowerStats(wsId, { fromDate }),
+  });
+
+  const contentDecayQuery = useQuery({
+    queryKey: ['analytics-content-decay', workspaceId ?? 'none'],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    ...noAutoRefetch,
+    queryFn: (): Promise<ZernioContentDecayResponseDto> =>
+      analyticsApi.getContentDecay(wsId),
+  });
+
+  const postingFrequencyQuery = useQuery({
+    queryKey: ['analytics-posting-frequency', workspaceId ?? 'none'],
+    enabled: Boolean(workspaceId),
+    staleTime: 60_000,
+    ...noAutoRefetch,
+    queryFn: (): Promise<ZernioPostingFrequencyResponseDto> =>
+      analyticsApi.getPostingFrequency(wsId),
+  });
+
+  // Use the first failed query's error as the page-level analytics error.
+  // daily-metrics is the most "primary" and is the one shown in the banner.
+  const primaryError =
+    dailyMetricsQuery.error ?? bestTimeQuery.error ?? followerStatsQuery.error ?? null;
+
+  const analyticsError: AnalyticsError | null = useMemo(
+    () => (primaryError ? toAnalyticsError(primaryError) : null),
+    [primaryError]
+  );
 
   const selectedPresetLabel = useMemo(
     () => PRESET_OPTIONS.find((option) => option.days === presetDays)?.label ?? 'Last 30 days',
@@ -87,13 +218,26 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
   );
 
   const refresh = useCallback(() => {
-    summaryQuery.refetch();
-    heatmapQuery.refetch();
     dailyMetricsQuery.refetch();
-  }, [summaryQuery.refetch, heatmapQuery.refetch, dailyMetricsQuery.refetch]);
+    topPostsQuery.refetch();
+    analyticsListSummaryQuery.refetch();
+    bestTimeQuery.refetch();
+    followerStatsQuery.refetch();
+    contentDecayQuery.refetch();
+    postingFrequencyQuery.refetch();
+  }, [
+    dailyMetricsQuery,
+    topPostsQuery,
+    analyticsListSummaryQuery,
+    bestTimeQuery,
+    followerStatsQuery,
+    contentDecayQuery,
+    postingFrequencyQuery,
+  ]);
 
-  const isBillingGateError = analyticsError?.status === 402
-    || (analyticsError?.status === 403 && analyticsError?.code === 'analytics_addon_required');
+  const isBillingGateError =
+    analyticsError?.status === 402 ||
+    (analyticsError?.status === 403 && analyticsError?.code === 'analytics_addon_required');
 
   const isScopeError = analyticsError?.status === 412;
 
@@ -105,12 +249,18 @@ export function useAnalyticsSummary({ workspaceId }: UseAnalyticsSummaryArgs) {
     rangeLabel: formatRangeLabel(presetDays),
     heatmapPlatform,
     setHeatmapPlatform,
-    summary: summaryQuery.data,
-    heatmap: heatmapQuery.data,
-    dailyMetrics: dailyMetricsQuery.data,
-    isLoading: summaryQuery.isLoading || heatmapQuery.isLoading,
-    isFetching: summaryQuery.isFetching || heatmapQuery.isFetching || dailyMetricsQuery.isFetching,
-    isError: summaryQuery.isError || heatmapQuery.isError,
+    dailyMetrics: dailyMetricsQuery.data ?? null,
+    topPosts: topPostsQuery.data ?? [],
+    analyticsListSummary: analyticsListSummaryQuery.data?.totals ?? null,
+    analyticsListSummaryPosts: analyticsListSummaryQuery.data?.posts ?? [],
+    bestTime: bestTimeQuery.data ?? null,
+    followerStats: followerStatsQuery.data ?? null,
+    contentDecay: contentDecayQuery.data ?? null,
+    postingFrequency: postingFrequencyQuery.data ?? null,
+    dataUpdatedAt: dailyMetricsQuery.dataUpdatedAt ?? 0,
+    isLoading: dailyMetricsQuery.isLoading,
+    isFetching: dailyMetricsQuery.isFetching,
+    isError: dailyMetricsQuery.isError,
     analyticsError,
     isBillingGateError,
     isScopeError,

@@ -177,7 +177,19 @@ function AnimatedRoutes() {
   )
 }
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        const status = error?.response?.status;
+        if (status >= 400 && status < 500) return false;
+        return failureCount < 1;
+      },
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (

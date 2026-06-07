@@ -1,59 +1,53 @@
 using System;
-using System.Reflection;
-using System.Linq;
+using Newtonsoft.Json;
+using Zernio.Model;
 
 class Program {
     static void Main() {
         try {
-            var assembly = Assembly.Load("Zernio");
-            Console.WriteLine("Inspecting GetInboxConversationMessages inner types...");
-
-            var msgInnerType = assembly.GetType("Zernio.Model.GetInboxConversationMessages200ResponseMessagesInner");
-            if (msgInnerType != null) {
-                Console.WriteLine($"\nMessage Inner Type: {msgInnerType.FullName}");
-                foreach (var prop in msgInnerType.GetProperties()) {
-                    Console.WriteLine($"  {prop.Name} : {prop.PropertyType.FullName}");
+            Console.WriteLine("=== Testing DateOnly Deserialization ===");
+            string json = @"{
+              ""postId"": ""6507a1b2c3d4e5f6a7b8c9d0"",
+              ""timeline"": [
+                {
+                  ""date"": ""2025-01-15"",
+                  ""platform"": ""instagram"",
+                  ""platformPostId"": ""17902345678901234"",
+                  ""impressions"": 1200,
+                  ""reach"": 980,
+                  ""likes"": 45,
+                  ""comments"": 3,
+                  ""shares"": 12,
+                  ""saves"": 8,
+                  ""clicks"": 25,
+                  ""views"": 0
                 }
-            } else {
-                Console.WriteLine("GetInboxConversationMessages200ResponseMessagesInner not found!");
-            }
+              ]
+            }";
 
-            var mediaApiType = assembly.GetType("Zernio.Api.MediaApi");
-            if (mediaApiType != null) {
-                Console.WriteLine($"\nMediaApi Methods:");
-                foreach (var m in mediaApiType.GetMethods()) {
-                    if (m.DeclaringType == mediaApiType)
-                        Console.WriteLine($"  {m.Name}({string.Join(", ", m.GetParameters().Select(p => p.ParameterType.Name + " " + p.Name))})");
-                }
-            }
+            var response = JsonConvert.DeserializeObject<GetPostTimeline200Response>(json);
+            Console.WriteLine("Deserialization Success!");
+            Console.WriteLine("PostId: " + response.PostId);
+            Console.WriteLine("Timeline Count: " + response.Timeline.Count);
+            Console.WriteLine("First Date: " + response.Timeline[0].Date);
+        } catch (Exception ex) {
+            Console.WriteLine("Deserialization FAILED with error: " + ex);
+        }
 
-            var attInnerType = assembly.GetType("Zernio.Model.GetInboxConversationMessages200ResponseMessagesInnerAttachmentsInner");
-            if (attInnerType != null) {
-                Console.WriteLine($"\nAttachment Inner Type: {attInnerType.FullName}");
-                foreach (var prop in attInnerType.GetProperties()) {
-                    Console.WriteLine($"  {prop.Name} : {prop.PropertyType.FullName}");
-                }
-
-                var typeEnumType = assembly.GetType("Zernio.Model.GetInboxConversationMessages200ResponseMessagesInnerAttachmentsInner+TypeEnum");
-                if (typeEnumType != null) {
-                    Console.WriteLine($"\nTypeEnum Values:");
-                    foreach (var v in Enum.GetNames(typeEnumType)) {
-                        Console.WriteLine($"  {v}");
-                    }
-                }
-            } else {
-                Console.WriteLine("GetInboxConversationMessages200ResponseMessagesInnerAttachmentsInner not found! Let's search types.");
-                var matched = assembly.GetTypes().Where(t => t.Name.Contains("MessagesInnerAttachments") || t.Name.Contains("MessagesInnerAttachmentsInner") || (t.Name.Contains("Attachments") && t.FullName.Contains("GetInbox"))).ToList();
-                foreach (var m in matched) {
-                    Console.WriteLine($"Found matched type: {m.FullName}");
-                    foreach (var prop in m.GetProperties()) {
-                        Console.WriteLine($"  {prop.Name} : {prop.PropertyType.FullName}");
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            Console.WriteLine(e.Message);
+        try {
+            Console.WriteLine("\n=== Testing DateOnly.ToString(\"o\") ===");
+            var d = DateOnly.FromDateTime(DateTime.Today);
+            string formatted = d.ToString("o");
+            Console.WriteLine("DateOnly.ToString(\"o\") formatted to: " + formatted);
+        } catch (Exception ex) {
+            Console.WriteLine("DateOnly.ToString(\"o\") FAILED with error: " + ex.Message);
         }
     }
 }
+
+
+
+
+
+
+

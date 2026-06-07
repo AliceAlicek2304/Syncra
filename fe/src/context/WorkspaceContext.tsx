@@ -22,6 +22,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     queryKey: ['workspaces', user?.userId],
     queryFn: workspacesApi.getWorkspaces,
     enabled: !!user,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0] || null;

@@ -22,7 +22,7 @@ vi.mock('../../context/ToastContext', () => ({
 
 vi.mock('../../api/analytics', () => ({
   analyticsApi: {
-    getWorkspaceSummary: vi.fn(),
+    getDailyMetrics: vi.fn(),
   },
 }))
 
@@ -49,7 +49,23 @@ function createWrapper() {
   )
 }
 
-const mockSummaryData = { totalReach: 50000, engagementRate: 4.5, totalPosts: 12, followerGrowth: 0, weeklyReach: [] }
+const mockDailyMetrics = {
+  dailyData: [],
+  platformBreakdown: [
+    {
+      platform: 'instagram',
+      postCount: 12,
+      reach: 50000,
+      likes: 1000,
+      comments: 500,
+      shares: 750,
+      impressions: 50000,
+      views: 0,
+      saves: 0,
+      clicks: 0
+    }
+  ]
+}
 
 describe('DashboardPage', () => {
   beforeEach(() => {
@@ -57,7 +73,7 @@ describe('DashboardPage', () => {
   })
 
   it('shows skeleton loaders while data is loading', async () => {
-    vi.mocked((await import('../../api/analytics')).analyticsApi.getWorkspaceSummary).mockReturnValue(new Promise(() => {}))
+    vi.mocked((await import('../../api/analytics')).analyticsApi.getDailyMetrics).mockReturnValue(new Promise(() => {}))
     vi.mocked((await import('../../api/posts')).postsApi.getPosts).mockReturnValue(new Promise(() => {}))
     vi.mocked((await import('../../lib/axios')).default.get).mockReturnValue(new Promise(() => {}))
 
@@ -72,7 +88,7 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(analyticsApi.getDailyMetrics).mockResolvedValue(mockDailyMetrics)
     vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
     vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
@@ -92,7 +108,7 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(analyticsApi.getDailyMetrics).mockResolvedValue(mockDailyMetrics)
     vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
     vi.mocked(postsApi.getPosts).mockResolvedValue({
       items: [
@@ -115,7 +131,7 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    vi.mocked(analyticsApi.getWorkspaceSummary).mockRejectedValue(new Error('API Error'))
+    vi.mocked(analyticsApi.getDailyMetrics).mockRejectedValue(new Error('API Error'))
     vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
     vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
@@ -131,7 +147,7 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(analyticsApi.getDailyMetrics).mockResolvedValue(mockDailyMetrics)
     vi.mocked(postsApi.getPosts).mockRejectedValue(new Error('Posts Error'))
     vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
@@ -147,7 +163,7 @@ describe('DashboardPage', () => {
     const { postsApi } = await import('../../api/posts')
     const axios = await import('../../lib/axios')
 
-    vi.mocked(analyticsApi.getWorkspaceSummary).mockResolvedValue(mockSummaryData)
+    vi.mocked(analyticsApi.getDailyMetrics).mockResolvedValue(mockDailyMetrics)
     vi.mocked(postsApi.getPosts).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
     vi.mocked(axios.default.get).mockResolvedValue({ data: [] })
 
