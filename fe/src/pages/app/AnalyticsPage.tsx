@@ -52,6 +52,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import PostDetailsPanel from '../../components/analytics/PostDetailsPanel'
 
+// Group raw postsPerWeek into the cadence ranges shown on the chart's x-axis.
+function cadenceBucket(postsPerWeek: number): { key: string; order: number } {
+  if (postsPerWeek <= 2) return { key: '1-2', order: 0 }
+  if (postsPerWeek <= 5) return { key: '3-5', order: 1 }
+  if (postsPerWeek <= 10) return { key: '6-10', order: 2 }
+  return { key: '11+', order: 3 }
+}
+
 function PlatformTick({ x, y, payload }: any) {
   const platform = String(payload?.value || '').toLowerCase()
   return (
@@ -60,6 +68,32 @@ function PlatformTick({ x, y, payload }: any) {
         <ExtendedPlatformIcon platform={platform} size={18} />
       </foreignObject>
     </g>
+  )
+}
+
+function EngagementAccumulationTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]?.payload
+  if (!point) return null
+  return (
+    <div className="rounded-brand-md border border-brand-border/80 bg-white px-3 py-2 shadow-[0_12px_32px_rgba(15,23,42,0.14)] min-w-[150px]">
+      <div className="text-[11px] font-semibold text-brand-ink mb-1">{point.name}</div>
+      <div className="text-[10px] text-brand-body-mid flex items-center justify-between gap-3">
+        <span>Cumulative:</span>
+        <span className="font-semibold text-brand-ink">{point.pct}%</span>
+      </div>
+      {point.delta !== null && (
+        <div className="text-[10px] text-brand-body-mid flex items-center justify-between gap-3">
+          <span>This window:</span>
+          <span className="font-semibold text-emerald-600">+{point.delta}%</span>
+        </div>
+      )}
+      {point.postCount !== null && (
+        <div className="text-[10px] text-brand-body-mid">
+          {point.postCount} {point.postCount === 1 ? 'post' : 'posts'} averaged
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -1248,27 +1282,70 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
   }, [hookFollowerStats])
 
   const postingFrequencyData = useMemo(() => {
-    const buckets = hookPostingFrequency?.buckets ?? []
-    if (buckets.length === 0) return []
-    const byRange: Record<string, Record<string, number>> = {}
-    buckets.forEach((b) => {
-      if (!b.range) return
-      if (!byRange[b.range]) byRange[b.range] = {}
-      const key = b.platform ?? 'all'
-      byRange[b.range][key] = b.avgEngagementRate
+    const frequency = hookPostingFrequency?.frequency ?? []
+    if (frequency.length === 0) return []
+    // Accumulate avgEngagementRate per (bucket, platform), then average.
+    const byBucket: Record<string, { order: number; platforms: Record<string, { sum: number; count: number }> }> = {}
+    frequency.forEach((b) => {
+      const { key, order } = cadenceBucket(b.postsPerWeek)
+      if (byBucket[key] == null) byBucket[key] = { order, platforms: {} }
+      if (byBucket[key].platforms[b.platform] == null) {
+        byBucket[key].platforms[b.platform] = { sum: 0, count: 0 }
+      }
+      byBucket[key].platforms[b.platform].sum += b.avgEngagementRate
+      byBucket[key].platforms[b.platform].count += 1
     })
-    return Object.entries(byRange).map(([range, platforms]) => ({
-      name: range,
-      ...platforms,
-    }))
+    return Object.entries(byBucket)
+      .sort(([, a], [, b]) => a.order - b.order)
+      .map(([key, { platforms }]) => ({
+        name: `${key}/wk`,
+        ...Object.fromEntries(
+          Object.entries(platforms).map(([p, { sum, count }]) => [p, sum / count]),
+        ),
+      }))
+  }, [hookPostingFrequency])
+
+  // Derive "optimal cadence" client-side: the (platform, postsPerWeek)
+  // pair with the highest avgEngagementRate. Backend doesn't return
+  // optimalCadence or correlation in this response shape.
+  // Display the cadence as the same range bucket used on the chart x-axis.
+  const optimalCadence = useMemo(() => {
+    const frequency = hookPostingFrequency?.frequency ?? []
+    if (frequency.length === 0) return null
+    const best = frequency.reduce((acc, cur) =>
+      cur.avgEngagementRate > acc.avgEngagementRate ? cur : acc,
+    )
+    const { key } = cadenceBucket(best.postsPerWeek)
+    return {
+      platform: best.platform,
+      postsPerWeek: best.postsPerWeek,
+      cadenceLabel: `${key}/wk`,
+      avgEngagementRate: best.avgEngagementRate,
+    }
   }, [hookPostingFrequency])
 
   const engagementAccumulationData = useMemo(() => {
-    const buckets = hookContentDecay?.decayCurve ?? hookContentDecay?.buckets ?? []
-    return buckets.map((b) => ({
-      name: b.ageBucket,
-      pct: b.engagementRate,
-    }))
+    const buckets = hookContentDecay?.buckets ?? []
+    const sorted = [...buckets].sort((a, b) => a.bucketOrder - b.bucketOrder)
+    // Prepend a synthetic "Publish" anchor (0%) so the curve starts at the
+    // origin. Each subsequent point carries the delta from the previous
+    // cumulative value and the number of posts averaged in that window.
+    const result: Array<{
+      name: string
+      pct: number
+      delta: number | null
+      postCount: number | null
+    }> = [{ name: 'Publish', pct: 0, delta: null, postCount: null }]
+    sorted.forEach((b) => {
+      const prev = result[result.length - 1]
+      result.push({
+        name: b.bucketLabel,
+        pct: b.avgPctOfFinal,
+        delta: b.avgPctOfFinal - prev.pct,
+        postCount: b.postCount,
+      })
+    })
+    return result
   }, [hookContentDecay])
 
   const platformOptions = useMemo<FilterOption[]>(() => {
@@ -2129,7 +2206,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
         <div className="flex items-center gap-2 text-[10px] font-extrabold text-brand-body uppercase tracking-wider mt-2 before:content-[''] before:flex-none before:w-1.5 before:h-1.5 before:bg-brand-primary after:content-[''] after:flex-1 after:h-[1px] after:bg-brand-border/60">
           Advanced Analytics
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Posting Frequency vs Engagement */}
           <Card className="border-brand-border shadow-sm flex flex-col justify-between">
             <CardHeader className="p-4 pb-2">
@@ -2170,21 +2247,18 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
               <div className="mt-3 p-2.5 bg-brand-canvas-soft border-l-3 border-brand-primary border-l-4 rounded-r-brand-sm text-[11px]">
                 <div className="font-bold text-brand-primary mb-1">Optimal cadence per platform</div>
                 {(() => {
-                  const cadence = hookPostingFrequency?.optimalCadence
-                  if (!cadence) {
+                  if (!optimalCadence) {
                     return <div className="text-brand-body-mid">No optimal cadence detected yet</div>
                   }
-                  const platform = cadence.platform
+                  const platform = optimalCadence.platform
                   const color = platform ? (PLATFORM_CHART_COLORS[platform] ?? '#6B7280') : '#6B7280'
                   return (
                     <div className="flex items-center gap-1.5 font-semibold text-brand-ink">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                       <span>{platform ? (ZERNIO_PLATFORMS.find((p) => p.id === platform)?.label ?? platform) : 'All platforms'}</span>
-                      <span className="text-brand-body-mid font-medium">{cadence.postsPerWeek}/wk ·</span>
+                      <span className="text-brand-body-mid font-medium">{optimalCadence.cadenceLabel} ·</span>
                       <span className="font-bold text-emerald-600">
-                        {typeof hookPostingFrequency?.correlation === 'number'
-                          ? `${(hookPostingFrequency.correlation * 100).toFixed(1)}%`
-                          : '—'}
+                        {optimalCadence.avgEngagementRate.toFixed(1)}%
                       </span>
                     </div>
                   )
@@ -2208,8 +2282,19 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                     <LineChart data={engagementAccumulationData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                       <XAxis dataKey="name" tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} tickFormatter={(v: number) => `${v}%`} />
-                      <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#ff4f00', strokeDasharray: '4 3', strokeWidth: 1 }} />
+                      <YAxis
+                        tick={{ color: '#6B7280', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        minTickGap={6}
+                        domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        tickFormatter={(v: number) => `${v}%`}
+                      />
+                      <Tooltip
+                        content={<EngagementAccumulationTooltip />}
+                        cursor={{ stroke: '#ff4f00', strokeDasharray: '4 3', strokeWidth: 1 }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="pct"
@@ -2225,99 +2310,35 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
               </div>
               <div className="mt-3 p-2.5 bg-[#FFF8E1] border-l-3 border-amber-500 border-l-4 rounded-r-brand-sm text-[11px] text-[#7A5C00]">
                 {(() => {
-                  if (typeof hookContentDecay?.averageHalfLifeHours === 'number') {
-                    const hours = hookContentDecay.averageHalfLifeHours
-                    const human = hours < 24
-                      ? `${hours.toFixed(0)}h`
-                      : hours < 168
-                        ? `${(hours / 24).toFixed(1)}d`
-                        : `${(hours / 168).toFixed(1)}w`
-                    return <span>⚡ Half of engagement by <strong>{human}</strong></span>
+                  const buckets = hookContentDecay?.buckets ?? []
+                  if (buckets.length === 0) {
+                    return <span className="text-brand-body-mid">Engagement decay data not available yet</span>
                   }
-                  const buckets = hookContentDecay?.decayCurve ?? hookContentDecay?.buckets ?? []
-                  if (buckets.length > 0) {
-                    const peak = Math.max(...buckets.map((b) => b.engagementRate))
-                    if (peak > 0) {
-                      const halfBucket = buckets.find((b) => b.engagementRate >= peak / 2)
-                      if (halfBucket) {
-                        return <span>⚡ Half of engagement by <strong>{halfBucket.ageBucket}</strong></span>
-                      }
-                    }
+                  // Find the bucket where avgPctOfFinal first reaches >= 50%
+                  // and the bucket where it first reaches >= 80%.
+                  const sorted = [...buckets].sort((a, b) => a.bucketOrder - b.bucketOrder)
+                  const peak = Math.max(...sorted.map((b) => b.avgPctOfFinal))
+                  if (peak <= 0) {
+                    return <span className="text-brand-body-mid">Engagement decay data not available yet</span>
                   }
-                  return <span className="text-brand-body-mid">Engagement decay data not available yet</span>
+                  const halfBucket = sorted.find((b) => b.avgPctOfFinal >= peak / 2)
+                  const eightyBucket = sorted.find((b) => b.avgPctOfFinal >= 80)
+                  const halfLabel = halfBucket?.bucketLabel ?? sorted[sorted.length - 1].bucketLabel
+                  const eightyLabel = eightyBucket?.bucketLabel ?? sorted[sorted.length - 1].bucketLabel
+                  return (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <span>⚡ Half of engagement by <strong>{halfLabel}</strong></span>
+                        {eightyBucket && (
+                          <span>📈 80% within <strong>{eightyLabel}</strong></span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-brand-body-mid/80 italic">
+                        From {sorted.length} {sorted.length === 1 ? 'window' : 'windows'} · peak {peak.toFixed(0)}% cumulative
+                      </span>
+                    </div>
+                  )
                 })()}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Content decay / performance insights */}
-          <Card className="border-brand-border shadow-sm flex flex-col">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-xs font-bold text-brand-ink">Content Performance Insights</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-1 flex-1 flex flex-col gap-2 text-xs leading-normal">
-              {/* Growth Insight */}
-              <div className="p-2.5 rounded-brand-sm bg-[#F0FFF8] border border-[#C6F6E2] text-[#1A4A3A]">
-                <div className="text-[9px] text-[#00805A] font-bold uppercase tracking-wider mb-0.5">📈 Growth Insight</div>
-                <div>
-                  {summary ? (
-                    <>Engagement rate of <strong>{summary.engagementRate.toFixed(1)}%</strong>. {summary.engagementRate >= 5 ? 'Above industry average — keep going.' : 'Room to grow. Test new content formats.'}</>
-                  ) : (
-                    <span className="text-brand-body-mid">Calculating engagement rate…</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Best Times */}
-              <div className="p-2.5 rounded-brand-sm bg-[#EBF4FF] border border-[#BDD7F5] text-[#1A2A4A]">
-                <div className="text-[9px] text-[#004499] font-bold uppercase tracking-wider mb-0.5">🕐 Best Times</div>
-                <div>
-                  {bestSlots.length >= 2 ? (
-                    <>{formatSlotLabel(bestSlots[0])} and {formatSlotLabel(bestSlots[1])} show highest engagement windows.</>
-                  ) : bestSlots.length === 1 ? (
-                    <>{formatSlotLabel(bestSlots[0])} shows the highest engagement window.</>
-                  ) : (
-                    <span className="text-brand-body-mid">Best time data not available yet</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Recommendation */}
-              <div className="p-2.5 rounded-brand-sm bg-[#FFF8E6] border border-[#FFD98A] text-[#4A3A00]">
-                <div className="text-[9px] text-[#996600] font-bold uppercase tracking-wider mb-0.5">💡 Recommendation</div>
-                <div>
-                  {(() => {
-                    const cadence = hookPostingFrequency?.optimalCadence
-                    if (cadence) {
-                      const platformLabel = cadence.platform
-                        ? (ZERNIO_PLATFORMS.find((p) => p.id === cadence.platform)?.label ?? cadence.platform)
-                        : null
-                      return platformLabel
-                        ? <>Maintain <strong>{cadence.postsPerWeek}–{cadence.postsPerWeek + 1} posts/week</strong> cadence on {platformLabel} for optimal engagement yield.</>
-                        : <>Maintain <strong>{cadence.postsPerWeek}–{cadence.postsPerWeek + 1} posts/week</strong> cadence for optimal engagement yield.</>
-                    }
-                    return <span className="text-brand-body-mid">Maintain your current posting rhythm for stable engagement.</span>
-                  })()}
-                </div>
-              </div>
-
-              {/* Platforms Connected */}
-              <div className="p-2.5 rounded-brand-sm bg-[#F5F0FF] border border-[#C9B8F0] text-[#1A1040]">
-                <div className="text-[9px] text-[#4A2D99] font-bold uppercase tracking-wider mb-0.5">🔗 Platforms Connected</div>
-                <div>
-                  {(() => {
-                    const platforms = (summary?.platformBreakdown ?? [])
-                      .filter((p) => p.postCount > 0)
-                      .map((p) => ZERNIO_PLATFORMS.find((z) => z.id === p.platform)?.label ?? p.platform)
-                    if (platforms.length === 0) {
-                      return <span className="text-brand-body-mid">No active platforms in this period</span>
-                    }
-                    if (platforms.length === 1) {
-                      return <><strong>{platforms[0]}</strong> is the only active platform.</>
-                    }
-                    return <><strong>{platforms[0]}</strong> active · {platforms.slice(1).join(', ')} also posting.</>
-                  })()}
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -2325,13 +2346,17 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
       </div>
 
       {/* Post Details Panel */}
-      {selectedPostId && (
-        <PostDetailsPanel
-          postId={selectedPostId}
-          workspaceId={filterWorkspace === 'all' ? undefined : filterWorkspace}
-          onClose={() => setSelectedPostId(null)}
-        />
-      )}
+      {selectedPostId && (() => {
+        const matchedSummaryPost = sortedTopPosts.find((p) => p.post.id === selectedPostId) ?? null
+        return (
+          <PostDetailsPanel
+            postId={selectedPostId}
+            workspaceId={filterWorkspace === 'all' ? undefined : filterWorkspace}
+            summaryPost={matchedSummaryPost}
+            onClose={() => setSelectedPostId(null)}
+          />
+        )
+      })()}
     </UITooltipProvider>
   )
 }

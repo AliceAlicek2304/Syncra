@@ -159,32 +159,26 @@ export interface ZernioFollowerStatsResponseDto {
 }
 
 export interface ContentDecayPointDto {
-  ageBucket: string;
-  engagementRate: number;
-  reachRate: number;
+  bucketOrder: number;
+  bucketLabel: string;
+  avgPctOfFinal: number;
   postCount: number;
 }
 
 export interface ZernioContentDecayResponseDto {
-  decayCurve?: ContentDecayPointDto[];
   buckets?: ContentDecayPointDto[];
-  averageHalfLifeHours?: number;
 }
 
-export interface PostingFrequencyBucketDto {
-  range: string;
+export interface PostingFrequencyItemDto {
+  platform: string;
+  postsPerWeek: number;
   avgEngagementRate: number;
-  postCount: number;
-  platform?: string;
+  avgEngagement: number;
+  weeksCount: number;
 }
 
 export interface ZernioPostingFrequencyResponseDto {
-  buckets?: PostingFrequencyBucketDto[];
-  optimalCadence?: {
-    postsPerWeek: number;
-    platform?: string;
-  };
-  correlation?: number;
+  frequency?: PostingFrequencyItemDto[];
 }
 
 /**
