@@ -542,4 +542,69 @@ public interface IZernioClient
         DateTime? fromDate = null,
         DateTime? toDate = null,
         CancellationToken cancellationToken = default);
+
+    // ── Inbox Analytics methods ───────────────────────────────────────────
+
+    Task<ZernioInboxVolumeResponseDto> GetInboxVolumeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxTopAccountsResponseDto> GetInboxTopAccountsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? source = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxSourceBreakdownResponseDto> GetInboxSourceBreakdownAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxResponseTimeResponseDto> GetInboxResponseTimeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxHeatmapResponseDto> GetInboxHeatmapAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        string? action = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxConversationsListResponseDto> ListInboxConversationsAnalyticsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        int? limit = null,
+        int? page = null,
+        string? sortBy = null,
+        string? order = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioInboxConversationDetailDto> GetInboxConversationAnalyticsAsync(
+        string conversationId,
+        DateTime fromDate,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default);
 }

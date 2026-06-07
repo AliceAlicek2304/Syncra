@@ -33,6 +33,8 @@ export interface ZernioDailyDataPointDto {
 export interface ZernioPlatformBreakdownDto extends ZernioMetricsDto {
   platform: string;
   postCount: number;
+  requiresReauth?: boolean;
+  reauthorizeUrl?: string;
 }
 
 export interface ZernioDailyMetricsDto {
@@ -247,7 +249,7 @@ export const analyticsApi = {
   },
 
   getPostAnalytics: async (
-    workspaceId: string,
+    workspaceId: string | null | undefined,
     postId: string,
     dateDays: AnalyticsPresetDays
   ): Promise<ZernioPostAnalyticsDto> => {
@@ -255,7 +257,7 @@ export const analyticsApi = {
       `analytics`,
       {
         params: { postId, date: dateDays },
-        headers: { 'X-Workspace-Id': workspaceId }
+        headers: buildWorkspaceHeader(workspaceId)
       }
     );
 

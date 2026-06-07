@@ -809,6 +809,177 @@ public sealed record ZernioPostTimelineItemDto(
     int Shares,
     int Saves,
     int Clicks,
-    int Views
-);
+    int Views);
+
+// =================== Inbox Analytics ===================
+
+public sealed record ZernioInboxVolumeResponseDto(
+    bool Success,
+    string From,
+    string To,
+    ZernioInboxVolumeSummaryDto Summary,
+    IReadOnlyList<ZernioInboxDailyTotalsDto> Timeseries,
+    IReadOnlyList<ZernioInboxPlatformBreakdownDto> ByPlatform);
+
+public sealed record ZernioInboxVolumeSummaryDto(
+    long Received,
+    long Sent,
+    long Read,
+    long Failed,
+    long UniqueConversations);
+
+public sealed record ZernioInboxDailyTotalsDto(
+    string Date,
+    long Sent,
+    long Received,
+    long Read,
+    long Failed);
+
+public sealed record ZernioInboxPlatformBreakdownDto(
+    string Platform,
+    long Sent,
+    long Received,
+    long Read,
+    long Failed);
+
+public sealed record ZernioInboxTopAccountsResponseDto(
+    bool Success,
+    string From,
+    string To,
+    IReadOnlyList<ZernioInboxTopAccountDto> Accounts);
+
+public sealed record ZernioInboxTopAccountDto(
+    string AccountId,
+    string Platform,
+    string DisplayName,
+    string Username,
+    long Received,
+    long Sent,
+    long Total,
+    long Conversations,
+    double MedianResponseSeconds,
+    long RepliedCount);
+
+public sealed record ZernioInboxSourceBreakdownResponseDto(
+    bool Success,
+    string From,
+    string To,
+    IReadOnlyList<ZernioInboxSourceBreakdownRowDto> Sources);
+
+public sealed record ZernioInboxSourceBreakdownRowDto(
+    string Source,
+    long Received,
+    long Sent,
+    long Read,
+    IReadOnlyList<ZernioInboxSourcePlatformDto> ByPlatform);
+
+public sealed record ZernioInboxSourcePlatformDto(
+    string Platform,
+    long Received,
+    long Sent,
+    long Read);
+
+public sealed record ZernioInboxResponseTimeResponseDto(
+    bool Success,
+    string From,
+    string To,
+    ZernioInboxResponseTimeSummaryDto Summary,
+    IReadOnlyList<ZernioInboxResponseHistogramBucketDto> Histogram);
+
+public sealed record ZernioInboxResponseTimeSummaryDto(
+    long SampleSize,
+    double MedianSeconds,
+    double P90Seconds,
+    double P99Seconds,
+    double MeanSeconds,
+    double FastestSeconds,
+    double SlowestSeconds);
+
+public sealed record ZernioInboxResponseHistogramBucketDto(
+    string Bucket,
+    double LowerSeconds,
+    double UpperSeconds,
+    long Count);
+
+public sealed record ZernioInboxHeatmapResponseDto(
+    bool Success,
+    string From,
+    string To,
+    IReadOnlyList<ZernioInboxHeatmapBucketDto> Buckets);
+
+public sealed record ZernioInboxHeatmapBucketDto(
+    int Dow,
+    int Hour,
+    long Received,
+    long Sent,
+    long Read);
+
+public sealed record ZernioInboxConversationsListResponseDto(
+    bool Success,
+    string From,
+    string To,
+    IReadOnlyList<ZernioInboxConversationListItemDto> Items,
+    ZernioInboxPaginationDto Pagination);
+
+public sealed record ZernioInboxConversationListItemDto(
+    string ConversationId,
+    string Mongoid,
+    string AccountId,
+    string Platform,
+    string ParticipantName,
+    string ParticipantUsername,
+    string ParticipantPicture,
+    string LastMessage,
+    long TotalMessages,
+    long Received,
+    long Sent,
+    long Read,
+    long Failed,
+    DateTime FirstMessagedAt,
+    DateTime LastMessagedAt);
+
+public sealed record ZernioInboxPaginationDto(
+    int Page,
+    int Limit,
+    long Total,
+    int TotalPages,
+    bool HasMore);
+
+public sealed record ZernioInboxConversationDetailDto(
+    bool Success,
+    string ConversationId,
+    string Mongoid,
+    string Platform,
+    string From,
+    string To,
+    ZernioInboxConversationSummaryDto Summary,
+    IReadOnlyList<ZernioInboxDailyTotalsDto> Timeseries,
+    IReadOnlyList<ZernioInboxBySourceRowDto> BySource);
+
+public sealed record ZernioInboxConversationSummaryDto(
+    long Received,
+    long Sent,
+    long Read,
+    long Failed,
+    long TotalMessages,
+    DateTime FirstMessagedAt,
+    DateTime LastMessagedAt);
+
+public sealed record ZernioInboxBySourceRowDto(
+    string Source,
+    long Count);
+
+public sealed record InboxAnalyticsFilters(
+    DateTime? FromDate,
+    DateTime? ToDate,
+    string? ProfileId,
+    string? Platform,
+    string? AccountId,
+    string? Source,
+    string? Action,
+    int? Limit,
+    int? Page,
+    string? SortBy,
+    string? Order);
+
 

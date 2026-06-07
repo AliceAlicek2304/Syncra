@@ -5827,6 +5827,571 @@ public sealed class ZernioClient : IZernioClient
         };
     }
 
+    // ── Inbox Analytics methods ───────────────────────────────────────────
+
+    public async Task<ZernioInboxVolumeResponseDto> GetInboxVolumeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["accountId"] = accountId,
+                ["source"] = source
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/volume?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxVolume>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxVolumeResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                    new ZernioInboxVolumeSummaryDto(0, 0, 0, 0, 0), [], []);
+
+            return new ZernioInboxVolumeResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                new ZernioInboxVolumeSummaryDto(
+                    Received: raw.Summary?.Received ?? 0,
+                    Sent: raw.Summary?.Sent ?? 0,
+                    Read: raw.Summary?.Read ?? 0,
+                    Failed: raw.Summary?.Failed ?? 0,
+                    UniqueConversations: raw.Summary?.UniqueConversations ?? 0),
+                (raw.Timeseries ?? []).Select(t => new ZernioInboxDailyTotalsDto(t.Date ?? string.Empty, t.Sent ?? 0, t.Received ?? 0, t.Read ?? 0, t.Failed ?? 0)).ToList(),
+                (raw.ByPlatform ?? []).Select(p => new ZernioInboxPlatformBreakdownDto(p.Platform ?? string.Empty, p.Sent ?? 0, p.Received ?? 0, p.Read ?? 0, p.Failed ?? 0)).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox volume");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox analytics.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/volume" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox volume preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox volume preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox volume");
+            throw new DomainException("zernio_inbox_volume_error", "Failed to fetch inbox volume from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxTopAccountsResponseDto> GetInboxTopAccountsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? source = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["source"] = source,
+                ["limit"] = limit?.ToString()
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/top-accounts?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxTopAccounts>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxTopAccountsResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"), []);
+
+            return new ZernioInboxTopAccountsResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                (raw.Accounts ?? []).Select(a => new ZernioInboxTopAccountDto(
+                    AccountId: a.AccountId ?? string.Empty,
+                    Platform: a.Platform ?? string.Empty,
+                    DisplayName: a.DisplayName ?? string.Empty,
+                    Username: a.Username ?? string.Empty,
+                    Received: a.Received ?? 0,
+                    Sent: a.Sent ?? 0,
+                    Total: a.Total ?? 0,
+                    Conversations: a.Conversations ?? 0,
+                    MedianResponseSeconds: a.MedianResponseSeconds ?? 0,
+                    RepliedCount: a.RepliedCount ?? 0)).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox top-accounts");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox top accounts.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/top-accounts" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox top-accounts preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox top-accounts preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox top-accounts");
+            throw new DomainException("zernio_inbox_top_accounts_error", "Failed to fetch inbox top accounts from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxSourceBreakdownResponseDto> GetInboxSourceBreakdownAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["accountId"] = accountId
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/source-breakdown?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxSourceBreakdown>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxSourceBreakdownResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"), []);
+
+            return new ZernioInboxSourceBreakdownResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                (raw.Sources ?? []).Select(s => new ZernioInboxSourceBreakdownRowDto(
+                    Source: s.Source ?? string.Empty,
+                    Received: s.Received ?? 0,
+                    Sent: s.Sent ?? 0,
+                    Read: s.Read ?? 0,
+                    ByPlatform: (s.ByPlatform ?? []).Select(bp => new ZernioInboxSourcePlatformDto(
+                        Platform: bp.Platform ?? string.Empty,
+                        Received: bp.Received ?? 0,
+                        Sent: bp.Sent ?? 0,
+                        Read: bp.Read ?? 0)).ToList())).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox source-breakdown");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox source breakdown.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/source-breakdown" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox source-breakdown preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox source-breakdown preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox source-breakdown");
+            throw new DomainException("zernio_inbox_source_breakdown_error", "Failed to fetch inbox source breakdown from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxResponseTimeResponseDto> GetInboxResponseTimeAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["accountId"] = accountId
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/response-time?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxResponseTime>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxResponseTimeResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                    new ZernioInboxResponseTimeSummaryDto(0, 0, 0, 0, 0, 0, 0), []);
+
+            return new ZernioInboxResponseTimeResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                new ZernioInboxResponseTimeSummaryDto(
+                    SampleSize: raw.Summary?.SampleSize ?? 0,
+                    MedianSeconds: raw.Summary?.MedianSeconds ?? 0,
+                    P90Seconds: raw.Summary?.P90Seconds ?? 0,
+                    P99Seconds: raw.Summary?.P99Seconds ?? 0,
+                    MeanSeconds: raw.Summary?.MeanSeconds ?? 0,
+                    FastestSeconds: raw.Summary?.FastestSeconds ?? 0,
+                    SlowestSeconds: raw.Summary?.SlowestSeconds ?? 0),
+                (raw.Histogram ?? []).Select(h => new ZernioInboxResponseHistogramBucketDto(
+                    Bucket: h.Bucket ?? string.Empty,
+                    LowerSeconds: h.LowerSeconds ?? 0,
+                    UpperSeconds: h.UpperSeconds ?? 0,
+                    Count: h.Count ?? 0)).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox response-time");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox response time.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/response-time" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox response-time preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox response-time preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox response-time");
+            throw new DomainException("zernio_inbox_response_time_error", "Failed to fetch inbox response time from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxHeatmapResponseDto> GetInboxHeatmapAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        string? action = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["accountId"] = accountId,
+                ["source"] = source,
+                ["action"] = action
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/heatmap?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxHeatmap>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxHeatmapResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"), []);
+
+            return new ZernioInboxHeatmapResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                (raw.Buckets ?? []).Select(b => new ZernioInboxHeatmapBucketDto(
+                    Dow: b.Dow ?? 0,
+                    Hour: b.Hour ?? 0,
+                    Received: b.Received ?? 0,
+                    Sent: b.Sent ?? 0,
+                    Read: b.Read ?? 0)).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox heatmap");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox heatmap.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/heatmap" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox heatmap preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox heatmap preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox heatmap");
+            throw new DomainException("zernio_inbox_heatmap_error", "Failed to fetch inbox heatmap from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxConversationsListResponseDto> ListInboxConversationsAnalyticsAsync(
+        DateTime fromDate,
+        DateTime? toDate = null,
+        string? profileId = null,
+        string? platform = null,
+        string? accountId = null,
+        string? source = null,
+        int? limit = null,
+        int? page = null,
+        string? sortBy = null,
+        string? order = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+                ["profileId"] = profileId,
+                ["platform"] = platform,
+                ["accountId"] = accountId,
+                ["source"] = source,
+                ["limit"] = limit?.ToString(),
+                ["page"] = page?.ToString(),
+                ["sortBy"] = sortBy,
+                ["order"] = order
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/conversations?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxConversationsList>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxConversationsListResponseDto(true, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"), [],
+                    new ZernioInboxPaginationDto(1, limit ?? 50, 0, 0, false));
+
+            return new ZernioInboxConversationsListResponseDto(
+                raw.Success ?? true,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                (raw.Items ?? []).Select(i => new ZernioInboxConversationListItemDto(
+                    ConversationId: i.ConversationId ?? string.Empty,
+                    Mongoid: i.Mongoid,
+                    AccountId: i.AccountId ?? string.Empty,
+                    Platform: i.Platform ?? string.Empty,
+                    ParticipantName: i.ParticipantName,
+                    ParticipantUsername: i.ParticipantUsername,
+                    ParticipantPicture: i.ParticipantPicture,
+                    LastMessage: i.LastMessage,
+                    TotalMessages: i.TotalMessages ?? 0,
+                    Received: i.Received ?? 0,
+                    Sent: i.Sent ?? 0,
+                    Read: i.Read ?? 0,
+                    Failed: i.Failed ?? 0,
+                    FirstMessagedAt: i.FirstMessagedAt ?? DateTime.MinValue,
+                    LastMessagedAt: i.LastMessagedAt ?? DateTime.MinValue)).ToList(),
+                new ZernioInboxPaginationDto(
+                    Page: raw.Pagination?.Page ?? 1,
+                    Limit: raw.Pagination?.Limit ?? 50,
+                    Total: raw.Pagination?.Total ?? 0,
+                    TotalPages: raw.Pagination?.TotalPages ?? 0,
+                    HasMore: raw.Pagination?.HasMore ?? false));
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox conversations list");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox conversations.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/conversations" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox conversations list preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox conversations preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing inbox conversations");
+            throw new DomainException("zernio_inbox_conversations_list_error", "Failed to list inbox conversations from Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioInboxConversationDetailDto> GetInboxConversationAnalyticsAsync(
+        string conversationId,
+        DateTime fromDate,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var config = _analyticsApi.Configuration;
+            var baseUrl = config.BasePath.TrimEnd('/');
+
+            var queryParams = new Dictionary<string, string?>
+            {
+                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+                ["toDate"] = toDate?.ToString("yyyy-MM-dd")
+            };
+
+            var query = string.Join("&",
+                queryParams.Where(kv => kv.Value is not null)
+                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+            var encodedId = Uri.EscapeDataString(conversationId);
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/conversations/{encodedId}?{query}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+            httpResponse.EnsureSuccessStatusCode();
+
+            var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+            var raw = System.Text.Json.JsonSerializer.Deserialize<ZernioRawInboxConversationDetail>(json, _jsonOptions);
+
+            if (raw is null)
+                return new ZernioInboxConversationDetailDto(true, conversationId, null, string.Empty, fromDate.ToString("yyyy-MM-dd"), (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                    new ZernioInboxConversationSummaryDto(0, 0, 0, 0, 0, DateTime.MinValue, DateTime.MinValue), [], []);
+
+            return new ZernioInboxConversationDetailDto(
+                raw.Success ?? true,
+                raw.ConversationId ?? conversationId,
+                raw.Mongoid,
+                raw.Platform ?? string.Empty,
+                raw.From ?? fromDate.ToString("yyyy-MM-dd"),
+                raw.To ?? (toDate ?? DateTime.UtcNow).ToString("yyyy-MM-dd"),
+                new ZernioInboxConversationSummaryDto(
+                    Received: raw.Summary?.Received ?? 0,
+                    Sent: raw.Summary?.Sent ?? 0,
+                    Read: raw.Summary?.Read ?? 0,
+                    Failed: raw.Summary?.Failed ?? 0,
+                    TotalMessages: raw.Summary?.TotalMessages ?? 0,
+                    FirstMessagedAt: raw.Summary?.FirstMessagedAt ?? DateTime.MinValue,
+                    LastMessagedAt: raw.Summary?.LastMessagedAt ?? DateTime.MinValue),
+                (raw.Timeseries ?? []).Select(t => new ZernioInboxDailyTotalsDto(t.Date ?? string.Empty, t.Sent ?? 0, t.Received ?? 0, t.Read ?? 0, t.Failed ?? 0)).ToList(),
+                (raw.BySource ?? []).Select(s => new ZernioInboxBySourceRowDto(Source: s.Source ?? string.Empty, Count: s.Count ?? 0)).ToList());
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered for inbox conversation analytics");
+            throw new ZernioBillingRequiredException(
+                "Analytics add-on is required to access inbox conversation analytics.",
+                reason: "analytics_addon_required",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { endpoint = "inbox/conversations/{id}" });
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 412)
+        {
+            _logger.LogWarning(ex, "Zernio inbox conversation analytics preconditions failed");
+            throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox conversation analytics preconditions failed.", "https://zernio.com/dashboard/billing");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching inbox conversation analytics");
+            throw new DomainException("zernio_inbox_conversation_analytics_error", "Failed to fetch inbox conversation analytics from Zernio", ex);
+        }
+    }
+
     private sealed class ZernioRawPostListResponse
     {
         public List<ZernioRawPost>? Posts { get; set; }
@@ -6034,5 +6599,201 @@ public sealed class ZernioClient : IZernioClient
         public string? ProfileId { get; set; }
         public long? FollowersCount { get; set; }
         public DateTime? FollowersLastUpdated { get; set; }
+    }
+
+    private sealed class ZernioRawInboxVolume
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public ZernioRawInboxVolumeSummary? Summary { get; set; }
+        public List<ZernioRawInboxDailyTotals>? Timeseries { get; set; }
+        public List<ZernioRawInboxPlatformBreakdown>? ByPlatform { get; set; }
+    }
+
+    private sealed class ZernioRawInboxVolumeSummary
+    {
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+        public long? Failed { get; set; }
+        public long? UniqueConversations { get; set; }
+    }
+
+    private sealed class ZernioRawInboxDailyTotals
+    {
+        public string? Date { get; set; }
+        public long? Sent { get; set; }
+        public long? Received { get; set; }
+        public long? Read { get; set; }
+        public long? Failed { get; set; }
+    }
+
+    private sealed class ZernioRawInboxPlatformBreakdown
+    {
+        public string? Platform { get; set; }
+        public long? Sent { get; set; }
+        public long? Received { get; set; }
+        public long? Read { get; set; }
+        public long? Failed { get; set; }
+    }
+
+    private sealed class ZernioRawInboxTopAccounts
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public List<ZernioRawInboxTopAccount>? Accounts { get; set; }
+    }
+
+    private sealed class ZernioRawInboxTopAccount
+    {
+        public string? AccountId { get; set; }
+        public string? Platform { get; set; }
+        public string? DisplayName { get; set; }
+        public string? Username { get; set; }
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Total { get; set; }
+        public long? Conversations { get; set; }
+        public double? MedianResponseSeconds { get; set; }
+        public long? RepliedCount { get; set; }
+    }
+
+    private sealed class ZernioRawInboxSourceBreakdown
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public List<ZernioRawInboxSourceRow>? Sources { get; set; }
+    }
+
+    private sealed class ZernioRawInboxSourceRow
+    {
+        public string? Source { get; set; }
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+        public List<ZernioRawInboxSourcePlatform>? ByPlatform { get; set; }
+    }
+
+    private sealed class ZernioRawInboxSourcePlatform
+    {
+        public string? Platform { get; set; }
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+    }
+
+    private sealed class ZernioRawInboxResponseTime
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public ZernioRawInboxResponseTimeSummary? Summary { get; set; }
+        public List<ZernioRawInboxHistogramBucket>? Histogram { get; set; }
+    }
+
+    private sealed class ZernioRawInboxResponseTimeSummary
+    {
+        public long? SampleSize { get; set; }
+        public double? MedianSeconds { get; set; }
+        public double? P90Seconds { get; set; }
+        public double? P99Seconds { get; set; }
+        public double? MeanSeconds { get; set; }
+        public double? FastestSeconds { get; set; }
+        public double? SlowestSeconds { get; set; }
+    }
+
+    private sealed class ZernioRawInboxHistogramBucket
+    {
+        public string? Bucket { get; set; }
+        public double? LowerSeconds { get; set; }
+        public double? UpperSeconds { get; set; }
+        public long? Count { get; set; }
+    }
+
+    private sealed class ZernioRawInboxHeatmap
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public List<ZernioRawInboxHeatmapBucket>? Buckets { get; set; }
+    }
+
+    private sealed class ZernioRawInboxHeatmapBucket
+    {
+        public int? Dow { get; set; }
+        public int? Hour { get; set; }
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+    }
+
+    private sealed class ZernioRawInboxConversationsList
+    {
+        public bool? Success { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public List<ZernioRawInboxConversationItem>? Items { get; set; }
+        public ZernioRawInboxPagination? Pagination { get; set; }
+    }
+
+    private sealed class ZernioRawInboxConversationItem
+    {
+        public string? ConversationId { get; set; }
+        public string? Mongoid { get; set; }
+        public string? AccountId { get; set; }
+        public string? Platform { get; set; }
+        public string? ParticipantName { get; set; }
+        public string? ParticipantUsername { get; set; }
+        public string? ParticipantPicture { get; set; }
+        public string? LastMessage { get; set; }
+        public long? TotalMessages { get; set; }
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+        public long? Failed { get; set; }
+        public DateTime? FirstMessagedAt { get; set; }
+        public DateTime? LastMessagedAt { get; set; }
+    }
+
+    private sealed class ZernioRawInboxPagination
+    {
+        public int? Page { get; set; }
+        public int? Limit { get; set; }
+        public long? Total { get; set; }
+        public int? TotalPages { get; set; }
+        public bool? HasMore { get; set; }
+    }
+
+    private sealed class ZernioRawInboxConversationDetail
+    {
+        public bool? Success { get; set; }
+        public string? ConversationId { get; set; }
+        public string? Mongoid { get; set; }
+        public string? Platform { get; set; }
+        public string? From { get; set; }
+        public string? To { get; set; }
+        public ZernioRawInboxConversationSummary? Summary { get; set; }
+        public List<ZernioRawInboxDailyTotals>? Timeseries { get; set; }
+        public List<ZernioRawInboxBySourceRow>? BySource { get; set; }
+    }
+
+    private sealed class ZernioRawInboxConversationSummary
+    {
+        public long? Received { get; set; }
+        public long? Sent { get; set; }
+        public long? Read { get; set; }
+        public long? Failed { get; set; }
+        public long? TotalMessages { get; set; }
+        public DateTime? FirstMessagedAt { get; set; }
+        public DateTime? LastMessagedAt { get; set; }
+    }
+
+    private sealed class ZernioRawInboxBySourceRow
+    {
+        public string? Source { get; set; }
+        public long? Count { get; set; }
     }
 }

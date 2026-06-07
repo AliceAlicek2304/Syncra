@@ -34,7 +34,30 @@ function useDashboardData(workspaceId?: string) {
   const summary = useQuery({
     queryKey: ['dashboard-summary', workspaceId],
     enabled: Boolean(workspaceId),
-    queryFn: () => analyticsApi.getWorkspaceSummary(workspaceId!, 30),
+    queryFn: async () => {
+      const fromDate = new Date()
+      fromDate.setDate(fromDate.getDate() - 30)
+      const data = await analyticsApi.getDailyMetrics({ fromDate: fromDate.toISOString().split('T')[0] }, workspaceId!)
+      const breakdown = data.platformBreakdown || []
+      const totalReach = breakdown.reduce((acc, b) => acc + b.reach, 0)
+      const totalLikes = breakdown.reduce((acc, b) => acc + b.likes, 0)
+      const totalComments = breakdown.reduce((acc, b) => acc + b.comments, 0)
+      const totalShares = breakdown.reduce((acc, b) => acc + b.shares, 0)
+      const totalImpressions = breakdown.reduce((acc, b) => acc + b.impressions, 0)
+      const totalEngagements = totalLikes + totalComments + totalShares
+      const totalPosts = breakdown.reduce((acc, b) => acc + b.postCount, 0)
+      const engagementRate = totalImpressions > 0 ? (totalEngagements / totalImpressions) * 100 : 0
+      
+      return {
+        totalReach,
+        totalLikes,
+        totalComments,
+        totalShares,
+        totalEngagements,
+        engagementRate,
+        totalPosts,
+      }
+    },
     staleTime: 60_000,
   })
 

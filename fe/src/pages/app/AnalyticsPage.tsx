@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
 import PostDetailsPanel from '../../components/analytics/PostDetailsPanel'
+import { InboxAnalyticsPage } from '../../components/analytics/inbox/InboxAnalyticsPage'
 
 // Group raw postsPerWeek into the cadence ranges shown on the chart's x-axis.
 function cadenceBucket(postsPerWeek: number): { key: string; order: number } {
@@ -113,7 +114,7 @@ function ChartTooltip({ active, payload, label }: any) {
   )
 }
 
-function FollowerTooltip({ active, payload, label, accounts }: any) {
+function FollowerTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
 
   const rawDate = payload[0]?.payload?.fullDate ?? label
@@ -258,7 +259,6 @@ const METRIC_CONFIG: { key: EngagementMetricKey; label: string; icon: React.Reac
   { key: 'clicks', label: 'Clicks', icon: <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 1v7l2.5-2 1.5 3.5 1.5-.7L7 6l3-.5L3 1z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /></svg> },
 ]
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const HOUR_LABELS = ['12am', '3am', '6am', '9am', '12pm', '3pm', '6pm', '9pm']
 
 const formatShortDate = (value?: string) => {
   if (!value) return '—'
@@ -473,8 +473,6 @@ function EngagementOverTimeCard({
     top: number
   }>({ visible: false, dataIndex: 0, left: 0, top: 0 })
 
-  const totalPosts = platformTotals.posts
-
   const metricItems = useMemo(() => [
     { key: 'likes', label: 'Likes', icon: <Heart size={10} className="text-[#EF4444] fill-[#EF4444]" />, value: platformTotals.likes, color: '#EF4444' },
     { key: 'comments', label: 'Comments', icon: <MessageSquare size={10} className="text-[#3B82F6]" />, value: platformTotals.comments, color: '#3B82F6' },
@@ -678,41 +676,10 @@ const toLocalSlot = (dayOfWeek: number, hourUtc: number) => {
   return { localDay, localHour }
 }
 
-const formatSlotLabel = (slot: { dayOfWeek: number; hour: number }) => {
-  const day = DAY_LABELS[slot.dayOfWeek] ?? ''
-  const hour = slot.hour
-  const hourLabel = hour === 0
-    ? '12am'
-    : hour < 12
-      ? `${hour}am`
-      : hour === 12
-        ? '12pm'
-        : `${hour - 12}pm`
-  return `${day} ${hourLabel}`
-}
-
 export default function AnalyticsPage() {
   console.log('AnalyticsPage render')
-  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace()
+  const { workspaces, setActiveWorkspace } = useWorkspace()
   const heatmapContainerRef = useRef<HTMLDivElement>(null)
-  const [dynamicRectSize, setDynamicRectSize] = useState(14)
-
-  useEffect(() => {
-    if (!heatmapContainerRef.current) return
-    const obs = new ResizeObserver((entries) => {
-      const width = entries[0].contentRect.width
-      if (width > 0) {
-        // 24 columns resolution
-        const calculated = Math.floor(width / 30) 
-        setDynamicRectSize(Math.max(12, Math.min(18, calculated)))
-      }
-    })
-    obs.observe(heatmapContainerRef.current)
-    return () => obs.disconnect()
-  }, [])
-
-  const heatmapGap = Math.max(2, Math.floor(dynamicRectSize * 0.2))
-  const dynamicHeatmapHeight = dynamicRectSize * 7 + heatmapGap * 6 + 30 // +30 for month labels
 
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false)
   const [engagementMetric, setEngagementMetric] = useState<'likes' | 'comments' | 'shares' | 'views' | 'impressions' | 'reach' | 'saves' | 'clicks'>('likes')
@@ -1369,10 +1336,6 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
     ]
   }, [workspaces])
 
-  const sourceOptions = useMemo<FilterOption[]>(() => {
-    return [{ value: 'all', label: 'All sources' }]
-  }, [])
-
   const datePresetOptions = useMemo<FilterOption[]>(() => {
     return [
       { value: '7', label: 'Last 7 days' },
@@ -1442,8 +1405,10 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
           </button>
         </div>
 
-        {/* ── FILTER BAR ── */}
-        <div className="flex items-center flex-wrap gap-2 text-xs">
+        {activeTab === 'posting' ? (
+          <>
+            {/* ── FILTER BAR ── */}
+            <div className="flex items-center flex-wrap gap-2 text-xs">
           <FilterDropdown
             value={filterPlatform}
             onChange={handlePlatformChange}
@@ -1689,7 +1654,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                     <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                     <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={postsPerPlatformData.length === 1 ? 48 : undefined}>
-                      {postsPerPlatformData.map((entry: any, i: number) => (
+                      {postsPerPlatformData.map((_, i: number) => (
                         <Cell key={i} fill="url(#barGrad1)" />
                       ))}
                     </Bar>
@@ -1730,7 +1695,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                     <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                     <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={20}>
-                      {postsOverTimeData.map((entry: any, i: number) => (
+                      {postsOverTimeData.map((_, i: number) => (
                         <Cell key={i} fill="url(#barGrad2)" />
                       ))}
                     </Bar>
@@ -1812,8 +1777,8 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                     <YAxis tick={{ color: '#6B7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={6} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={metricPerPlatformData.length === 1 ? 48 : undefined}>
-                      {metricPerPlatformData.map((entry: any, i: number) => (
-                        <Cell key={i} fill={entry.fill || 'url(#barGrad3)'} />
+                      {metricPerPlatformData.map((data: any, i: number) => (
+                        <Cell key={i} fill={data.fill || 'url(#barGrad3)'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -2343,7 +2308,6 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
             </CardContent>
           </Card>
         </div>
-      </div>
 
       {/* Post Details Panel */}
       {selectedPostId && (() => {
@@ -2357,6 +2321,11 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
           />
         )
       })()}
+          </>
+        ) : (
+          <InboxAnalyticsPage />
+        )}
+      </div>
     </UITooltipProvider>
   )
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   X, ExternalLink, Loader2,
   Heart, MessageSquare, Share2, Bookmark, MousePointerClick,
-  Eye, BarChart3, Users, Percent,
+  Eye, BarChart3, Users,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -139,16 +139,16 @@ export default function PostDetailsPanel({ postId, workspaceId, summaryPost, onC
     if (fromSummary) return fromSummary
 
     return {
-      likes: postDetail?.likes ?? 0,
-      comments: postDetail?.comments ?? 0,
-      shares: postDetail?.shares ?? 0,
-      saves: postDetail?.saves ?? 0,
-      clicks: postDetail?.clicks ?? 0,
-      impressions: postDetail?.impressions ?? 0,
-      reach: postDetail?.reach ?? 0,
-      views: (postDetail as any)?.views ?? 0,
-      engagementRate: (postDetail as any)?.engagementRate ?? 0,
-      engagements: ((postDetail?.likes ?? 0) + (postDetail?.comments ?? 0) + (postDetail?.shares ?? 0)),
+      likes: postDetail?.analytics?.likes ?? 0,
+      comments: postDetail?.analytics?.comments ?? 0,
+      shares: postDetail?.analytics?.shares ?? 0,
+      saves: postDetail?.analytics?.saves ?? 0,
+      clicks: postDetail?.analytics?.clicks ?? 0,
+      impressions: postDetail?.analytics?.impressions ?? 0,
+      reach: postDetail?.analytics?.reach ?? 0,
+      views: postDetail?.analytics?.views ?? 0,
+      engagementRate: postDetail?.analytics?.engagementRate ?? 0,
+      engagements: ((postDetail?.analytics?.likes ?? 0) + (postDetail?.analytics?.comments ?? 0) + (postDetail?.analytics?.shares ?? 0)),
       source: 'detail' as const,
     }
   }, [summaryPost, postDetail])
@@ -157,7 +157,6 @@ export default function PostDetailsPanel({ postId, workspaceId, summaryPost, onC
   const summaryThumbnail = summaryPost?.post?.thumbnailUrl || postDetail?.thumbnailUrl
   const summaryPlatform = summaryPost?.post?.platform || postDetail?.platform
   const summaryPlatformUrl = summaryPost?.post?.platformPostUrl || postDetail?.platformPostUrl
-  const summaryPublishedAt = summaryPost?.post?.createdAt || summaryPost?.post?.scheduledAtUtc || postDetail?.publishedAt
 
   const formatTooltipDate = (value: string) => {
     const d = new Date(value + 'T00:00:00')
@@ -335,7 +334,7 @@ export default function PostDetailsPanel({ postId, workspaceId, summaryPost, onC
                           />
                           <YAxis tick={{ fontSize: 9, fill: '#999' }} />
                           <RechartsTooltip
-                            labelFormatter={formatTooltipDate}
+                            labelFormatter={(label) => typeof label === 'string' ? formatTooltipDate(label) : String(label)}
                             contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid #e5e7eb' }}
                           />
                           <Legend wrapperStyle={{ fontSize: 10 }} />
@@ -372,7 +371,7 @@ export default function PostDetailsPanel({ postId, workspaceId, summaryPost, onC
                           />
                           <YAxis tick={{ fontSize: 9, fill: '#999' }} />
                           <RechartsTooltip
-                            labelFormatter={formatTooltipDate}
+                            labelFormatter={(label) => typeof label === 'string' ? formatTooltipDate(label) : String(label)}
                             contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid #e5e7eb' }}
                           />
                           <Legend wrapperStyle={{ fontSize: 10 }} />

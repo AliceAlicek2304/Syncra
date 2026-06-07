@@ -46,7 +46,7 @@ describe('useAnalyticsSummary — Analytics page load contract', () => {
     await waitFor(() => {
       expect(analyticsApi.getDailyMetrics).toHaveBeenCalledTimes(1)
       expect(analyticsApi.getBestTime).toHaveBeenCalledTimes(1)
-      expect(analyticsApi.getAnalyticsList).toHaveBeenCalledTimes(1)
+      expect(analyticsApi.getAnalyticsList).toHaveBeenCalledTimes(2)
       expect(analyticsApi.getFollowerStats).toHaveBeenCalledTimes(1)
       expect(analyticsApi.getContentDecay).toHaveBeenCalledTimes(1)
       expect(analyticsApi.getPostingFrequency).toHaveBeenCalledTimes(1)
@@ -54,12 +54,12 @@ describe('useAnalyticsSummary — Analytics page load contract', () => {
 
     // 1. daily-metrics — only fromDate, no toDate/source
     expect(analyticsApi.getDailyMetrics).toHaveBeenCalledWith(
-      { fromDate: expectedFromDateStr },
+      { fromDate: expectedFromDateStr, platform: undefined },
       'ws-1'
     )
 
-    // 2. best-time — no params
-    expect(analyticsApi.getBestTime).toHaveBeenCalledWith('ws-1')
+    // 2. best-time — no platform
+    expect(analyticsApi.getBestTime).toHaveBeenCalledWith('ws-1', undefined)
 
     // 3. analytics (top-posts) — only the 4 contract params
     expect(analyticsApi.getAnalyticsList).toHaveBeenCalledWith('ws-1', {
@@ -67,6 +67,16 @@ describe('useAnalyticsSummary — Analytics page load contract', () => {
       order: 'desc',
       limit: 10,
       fromDate: expectedFromDateStr,
+      platform: undefined,
+    })
+
+    // analytics (summary) — limit 100
+    expect(analyticsApi.getAnalyticsList).toHaveBeenCalledWith('ws-1', {
+      sortBy: 'engagement',
+      order: 'desc',
+      limit: 100,
+      fromDate: expectedFromDateStr,
+      platform: undefined,
     })
 
     // 4. follower-stats — only fromDate
@@ -91,15 +101,23 @@ describe('useAnalyticsSummary — Analytics page load contract', () => {
     })
 
     expect(analyticsApi.getDailyMetrics).toHaveBeenCalledWith(
-      { fromDate: expectedFromDateStr },
+      { fromDate: expectedFromDateStr, platform: undefined },
       null
     )
-    expect(analyticsApi.getBestTime).toHaveBeenCalledWith(null)
+    expect(analyticsApi.getBestTime).toHaveBeenCalledWith(null, undefined)
     expect(analyticsApi.getAnalyticsList).toHaveBeenCalledWith(null, {
       sortBy: 'engagement',
       order: 'desc',
       limit: 10,
       fromDate: expectedFromDateStr,
+      platform: undefined,
+    })
+    expect(analyticsApi.getAnalyticsList).toHaveBeenCalledWith(null, {
+      sortBy: 'engagement',
+      order: 'desc',
+      limit: 100,
+      fromDate: expectedFromDateStr,
+      platform: undefined,
     })
     expect(analyticsApi.getFollowerStats).toHaveBeenCalledWith(null, {
       fromDate: expectedFromDateStr,

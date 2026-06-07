@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import type { HeatmapSlotDto } from '../api/analytics'
+import type { BestTimeSlotDto } from '../api/analytics'
 import styles from './Heatmap.module.css'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const TICKS = [0, 3, 6, 9, 12, 15, 18, 21]
 
 interface HeatmapProps {
-  slots?: HeatmapSlotDto[]
+  slots?: BestTimeSlotDto[]
 }
 
 interface HoverCell {
@@ -33,7 +33,7 @@ export default function Heatmap({ slots = [] }: HeatmapProps) {
 
     slots.forEach((slot) => {
       const { localDay, localHour } = toLocalSlot(slot.dayOfWeek, slot.hour)
-      grid[localDay][localHour] += Math.max(0, slot.score)
+      grid[localDay][localHour] += Math.max(0, slot.avgEngagement)
     })
 
     return grid

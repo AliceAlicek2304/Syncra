@@ -32,6 +32,8 @@ async function mockHook(overrides: Record<string, unknown>) {
     setHeatmapPlatform: vi.fn(),
     dailyMetrics: null,
     topPosts: [],
+    analyticsListSummary: null,
+    analyticsListSummaryPosts: [],
     bestTime: null,
     followerStats: null,
     contentDecay: null,
