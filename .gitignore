@@ -130,6 +130,8 @@ appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 appsettings.*.json
+**/appsettings.json
+**/appsettings.Development.json
 
 # ===========================
 # Media / Uploads

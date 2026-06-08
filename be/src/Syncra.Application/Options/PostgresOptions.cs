@@ -8,7 +8,14 @@ public class PostgresOptions
     public string Database { get; set; } = "syncra_dev";
     public string Username { get; set; } = "postgres";
     public string Password { get; set; } = string.Empty;
+    public bool UseSsl { get; set; } = true;
 
-    public string ConnectionString =>
-        $"Host={Host};Port={Port};Database={Database};Username={Username};Password={Password}";
+    public string ConnectionString
+    {
+        get
+        {
+            var sslPart = UseSsl ? ";SSL Mode=Require;Trust Server Certificate=true" : "";
+            return $"Host={Host};Port={Port};Database={Database};Username={Username};Password={Password}{sslPart}";
+        }
+    }
 }
