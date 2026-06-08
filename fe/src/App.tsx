@@ -96,18 +96,18 @@ function Homepage() {
       <Testimonials />
       <TrustBadges />
       <Footer />
-      
+
       {isLoginOpen && (
-        <LoginModal 
-          onClose={handleCloseLogin} 
-          onSuccess={handleLoginSuccess} 
+        <LoginModal
+          onClose={handleCloseLogin}
+          onSuccess={handleLoginSuccess}
         />
       )}
-      
+
       {isSignupOpen && (
-        <SignupModal 
-          onClose={handleCloseSignup} 
-          onSuccess={handleSignupSuccess} 
+        <SignupModal
+          onClose={handleCloseSignup}
+          onSuccess={handleSignupSuccess}
         />
       )}
     </div>
@@ -129,7 +129,7 @@ function AnimatedRoutes() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/social-accounts/select" element={<SocialAccountsSelect />} />
 
-        
+
         <Route path="/app" element={
           <ProtectedRoute>
             <BillingProvider>
@@ -158,7 +158,7 @@ function AnimatedRoutes() {
           <Route path="inbox/messages" element={<PageWrapper><MessagesPage /></PageWrapper>} />
           <Route path="inbox/comments" element={<PageWrapper><CommentsPage /></PageWrapper>} />
         </Route>
-        
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
@@ -185,7 +185,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <WorkspaceProvider>
-            <BrowserRouter basename="/Syncra/">
+            <BrowserRouter basename="/">
               <AnimatedRoutes />
             </BrowserRouter>
           </WorkspaceProvider>
