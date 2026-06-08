@@ -32,8 +32,9 @@ public class RecentActivityDto
 
 public class EngagementDto
 {
-    public List<int> Likes { get; set; } = new();
-    public List<int> Shares { get; set; } = new();
+    public List<int> Published { get; set; } = new();
+    public List<int> Scheduled { get; set; } = new();
+    public List<int> Failed { get; set; } = new();
 }
 
 public class RevenueByPlanDto

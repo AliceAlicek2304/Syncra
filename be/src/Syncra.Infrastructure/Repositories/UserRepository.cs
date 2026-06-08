@@ -30,4 +30,9 @@ public class UserRepository : Repository<User>, IUserRepository
             .Include(u => u.Profile)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.ToListAsync(cancellationToken);
+    }
 }

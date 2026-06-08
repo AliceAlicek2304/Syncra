@@ -33,4 +33,11 @@ public class SubscriptionRepository : Repository<Subscription>, ISubscriptionRep
     {
         return await _dbSet.FirstOrDefaultAsync(s => s.Provider == provider && s.ProviderSubscriptionId == providerSubscriptionId);
     }
+
+    public async Task<IReadOnlyList<Subscription>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(s => s.Plan)
+            .ToListAsync(cancellationToken);
+    }
 }

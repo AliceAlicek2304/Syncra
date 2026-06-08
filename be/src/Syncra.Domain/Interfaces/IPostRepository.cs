@@ -48,4 +48,9 @@ public interface IPostRepository
     Task<Post?> GetByIdWithPlatformTargetsAsync(Guid id);
     Task<Post?> GetByZernioPostIdAsync(string zernioPostId);
     void AddPlatformTarget(PostPlatformTarget target);
+    
+    Task<Dictionary<string, List<int>>> GetPostsByPlatformMonthlyAsync(
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default);
 }

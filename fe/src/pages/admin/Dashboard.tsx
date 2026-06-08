@@ -41,12 +41,7 @@ const fallbackMock = {
     youtube: [35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90],
   },
   engagementByPlatform: {
-    twitter: { likes: [1200, 1350, 1280, 1420, 1560, 1680, 1800, 1920, 2040, 2160, 2280, 2400], shares: [80, 95, 88, 102, 115, 128, 140, 152, 164, 176, 188, 200] },
-    facebook: { likes: [2500, 2650, 2580, 2720, 2860, 3000, 3140, 3280, 3420, 3560, 3700, 3840], shares: [150, 165, 158, 172, 185, 198, 210, 222, 234, 246, 258, 270] },
-    instagram: { likes: [1800, 1950, 1880, 2020, 2160, 2300, 2440, 2580, 2720, 2860, 3000, 3140], shares: [120, 135, 128, 142, 155, 168, 180, 192, 204, 216, 228, 240] },
-    linkedin: { likes: [800, 950, 880, 1020, 1160, 1300, 1440, 1580, 1720, 1860, 2000, 2140], shares: [60, 75, 68, 82, 95, 108, 120, 132, 144, 156, 168, 180] },
-    tiktok: { likes: [3500, 3650, 3580, 3720, 3860, 4000, 4140, 4280, 4420, 4560, 4700, 4840], shares: [200, 215, 208, 222, 235, 248, 260, 272, 284, 296, 308, 320] },
-    youtube: { likes: [1500, 1650, 1580, 1720, 1860, 2000, 2140, 2280, 2420, 2560, 2700, 2840], shares: [100, 115, 108, 122, 135, 148, 160, 172, 184, 196, 208, 220] },
+    all: { published: [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285], scheduled: [85, 92, 98, 105, 112, 118, 125, 132, 138, 145, 152, 158], failed: [5, 8, 6, 10, 7, 9, 8, 12, 10, 11, 9, 8] },
   },
   revenueByPlan: {
     starter: [1200, 1350, 1280, 1420, 1560, 1680, 1800, 1920, 2040, 2160, 2280, 2400],
@@ -83,9 +78,9 @@ export default function AdminDashboard() {
     return fallbackMock.postsByPlatform
   }, [data])
 
-  const engagementByPlatform = useMemo(() => {
-    if (data?.overview?.engagementByPlatform) return data.overview.engagementByPlatform
-    return fallbackMock.engagementByPlatform
+  const postStatusTrends = useMemo(() => {
+    if (data?.overview?.engagementByPlatform?.all) return data.overview.engagementByPlatform.all
+    return { published: [], scheduled: [], failed: [] }
   }, [data])
 
   const revenueByPlan = useMemo(() => {
@@ -103,32 +98,6 @@ export default function AdminDashboard() {
     return fallbackMock.errors
   }, [data])
 
-  const currentEngagement = useMemo(() => {
-    if (selectedPlatform === 'all') {
-      // Sum data across all platforms for each month
-      const allLikes: number[] = []
-      const allShares: number[] = []
-      const platformKeys = Object.keys(engagementByPlatform) as (keyof typeof engagementByPlatform)[]
-      
-      for (let i = 0; i < 12; i++) {
-        let monthLikes = 0
-        let monthShares = 0
-        platformKeys.forEach(key => {
-          const platformData = engagementByPlatform[key]
-          if (platformData && platformData.likes[i] !== undefined) {
-            monthLikes += platformData.likes[i]
-          }
-          if (platformData && platformData.shares[i] !== undefined) {
-            monthShares += platformData.shares[i]
-          }
-        })
-        allLikes.push(monthLikes)
-        allShares.push(monthShares)
-      }
-      return { likes: allLikes, shares: allShares }
-    }
-    return engagementByPlatform[selectedPlatform as keyof typeof engagementByPlatform] || { likes: [], shares: [] }
-  }, [engagementByPlatform, selectedPlatform])
 
   const currentPosts = useMemo(() => {
     if (selectedPlatform === 'all') {
@@ -257,24 +226,22 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 13, color: 'var(--color-body)' }}>
-                Lượt thích (12 tháng)
-                {selectedPlatform !== 'all' && ` - ${PLATFORMS.find(p => p.id === selectedPlatform)?.name}`}
+                Bài viết đã đăng (12 tháng)
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{(currentEngagement.likes?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.published?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
             </div>
             <div style={{ color: '#939084' }}>Tổng quan</div>
           </div>
-          <TrendChart data={currentEngagement.likes.length > 0 ? currentEngagement.likes : [4500, 5200, 4800, 5600, 6100, 6800, 7200, 7800, 8200, 8900, 9400, 10200]} />
+          <TrendChart data={postStatusTrends.published?.length > 0 ? postStatusTrends.published : [0]} />
         </div>
 
         <div className={styles.card}>
           <div style={{ fontSize: 13, color: 'var(--color-body)' }}>
-            Lượt chia sẻ (12 tháng)
-            {selectedPlatform !== 'all' && ` - ${PLATFORMS.find(p => p.id === selectedPlatform)?.name}`}
+            Bài viết thất bại (12 tháng)
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{(currentEngagement.shares?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.failed?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
           <div style={{ height: 8 }} />
-          <TrendChart data={currentEngagement.shares.length > 0 ? currentEngagement.shares : [180, 210, 195, 240, 275, 310, 340, 380, 410, 450, 490, 540]} />
+          <TrendChart data={postStatusTrends.failed?.length > 0 ? postStatusTrends.failed : [0]} />
         </div>
       </div>
 
@@ -340,8 +307,8 @@ export default function AdminDashboard() {
           <div style={{ height: 12 }} />
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tổng lượt tương tác</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{((currentEngagement.likes?.reduce((a:number,b:number)=>a+b,0) ?? 0) + (currentEngagement.shares?.reduce((a:number,b:number)=>a+b,0) ?? 0)).toLocaleString()}</div>
+              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tổng bài viết đã đăng</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{(postStatusTrends.published?.reduce((a:number,b:number)=>a+b,0) ?? 0).toLocaleString()}</div>
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Lỗi đăng bài gần đây</div>

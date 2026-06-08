@@ -130,13 +130,7 @@ public sealed class GetAdminOverviewQueryHandler
             overview.NewAccounts24h = newAccounts;
 
             // Get revenue by plan from subscriptions
-            var allSubscriptions = new List<Subscription>();
-            foreach (var workspace in allWorkspaces)
-            {
-                var sub = await _subscriptionRepository.GetByWorkspaceIdAsync(workspace.Id);
-                if (sub != null)
-                    allSubscriptions.Add(sub);
-            }
+            var allSubscriptions = await _subscriptionRepository.GetAllAsync(cancellationToken);
             
             var activeSubscriptions = allSubscriptions
                 .Where(s => s.Status == Domain.Enums.SubscriptionStatus.Active)
@@ -144,39 +138,82 @@ public sealed class GetAdminOverviewQueryHandler
 
             var revenueByPlan = new RevenueByPlanDto
             {
-                Starter = Enumerable.Repeat(0, 12).ToList(),
-                Pro = Enumerable.Repeat(0, 12).ToList(),
-                Enterprise = Enumerable.Repeat(0, 12).ToList()
+                Starter = new List<int>(),
+                Pro = new List<int>(),
+                Enterprise = new List<int>()
             };
 
-            foreach (var sub in activeSubscriptions)
+            // Calculate monthly revenue for the last 12 months
+            for (int i = 11; i >= 0; i--)
             {
-                var monthlyRevenue = sub.Plan?.PriceMonthly ?? 0;
-                for (int i = 0; i < 12; i++)
+                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                
+                var monthlyStarterRevenue = 0;
+                var monthlyProRevenue = 0;
+                var monthlyEnterpriseRevenue = 0;
+
+                foreach (var sub in activeSubscriptions)
                 {
-                    if (sub.Plan?.Name?.ToLower().Contains("starter") == true)
-                        revenueByPlan.Starter[i] += (int)monthlyRevenue;
-                    else if (sub.Plan?.Name?.ToLower().Contains("pro") == true)
-                        revenueByPlan.Pro[i] += (int)monthlyRevenue;
-                    else if (sub.Plan?.Name?.ToLower().Contains("enterprise") == true)
-                        revenueByPlan.Enterprise[i] += (int)monthlyRevenue;
+                    // Check if subscription was active during this month
+                    var wasActiveInMonth = (sub.StartsAtUtc <= monthEnd) && 
+                                          (!sub.EndsAtUtc.HasValue || sub.EndsAtUtc.Value >= monthStart);
+                    
+                    if (wasActiveInMonth)
+                    {
+                        var monthlyRevenue = sub.Plan?.PriceMonthly ?? 0;
+                        if (sub.Plan?.Name?.ToLower().Contains("starter") == true)
+                            monthlyStarterRevenue += (int)monthlyRevenue;
+                        else if (sub.Plan?.Name?.ToLower().Contains("pro") == true)
+                            monthlyProRevenue += (int)monthlyRevenue;
+                        else if (sub.Plan?.Name?.ToLower().Contains("enterprise") == true)
+                            monthlyEnterpriseRevenue += (int)monthlyRevenue;
+                    }
                 }
+
+                revenueByPlan.Starter.Add(monthlyStarterRevenue);
+                revenueByPlan.Pro.Add(monthlyProRevenue);
+                revenueByPlan.Enterprise.Add(monthlyEnterpriseRevenue);
             }
 
             overview.RevenueByPlan = revenueByPlan;
 
-            // Get user conversion - simplified for now
+            // Get user conversion - using actual data
+            var allUsers = await _userRepository.GetAllAsync(cancellationToken);
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-            var newUsers = 0; // Would need proper implementation
-            var activeUsers = 0; // Would need proper implementation
-            var totalUsers = 0; // Would need proper implementation
-            var nonActiveUsers = totalUsers - activeUsers;
+            
+            var monthlyNewUsers = new List<int>();
+            var monthlyActiveUsers = new List<int>();
+            var monthlyNonActiveUsers = new List<int>();
+            
+            for (int i = 11; i >= 0; i--)
+            {
+                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                
+                // New users in this month
+                var newUsersInMonth = allUsers.Count(u => u.CreatedAtUtc >= monthStart && u.CreatedAtUtc <= monthEnd);
+                monthlyNewUsers.Add(newUsersInMonth);
+                
+                // Active users (logged in within last 30 days)
+                var activeUsersInMonth = allUsers.Count(u => 
+                    u.LastLoginAtUtc.HasValue && 
+                    u.LastLoginAtUtc.Value >= thirtyDaysAgo &&
+                    u.CreatedAtUtc <= monthEnd);
+                monthlyActiveUsers.Add(activeUsersInMonth);
+                
+                // Non-active users
+                var nonActiveUsersInMonth = allUsers.Count(u => 
+                    (!u.LastLoginAtUtc.HasValue || u.LastLoginAtUtc.Value < thirtyDaysAgo) &&
+                    u.CreatedAtUtc <= monthEnd);
+                monthlyNonActiveUsers.Add(nonActiveUsersInMonth);
+            }
 
             overview.UserConversion = new UserConversionDto
             {
-                NewUsers = Enumerable.Repeat(newUsers / 30, 12).Select(x => (int)x).ToList(),
-                ActiveUsers = Enumerable.Repeat(activeUsers, 12).ToList(),
-                NonActiveUsers = Enumerable.Repeat(nonActiveUsers, 12).ToList()
+                NewUsers = monthlyNewUsers,
+                ActiveUsers = monthlyActiveUsers,
+                NonActiveUsers = monthlyNonActiveUsers
             };
 
             // Get recent errors from failed posts
@@ -199,61 +236,80 @@ public sealed class GetAdminOverviewQueryHandler
             }
             overview.Errors = recentErrors.OrderByDescending(e => e.When).Take(5).ToList();
 
-            // Try to get analytics from Zernio
+            // Get posts by platform from database
             try
             {
-                // Get all workspace IDs
-                var workspaceIds = allWorkspaces.Select(w => w.Id).ToList();
-                var profiles = await _zernioProfileRepository.GetByWorkspaceIdsAsync(workspaceIds);
-                if (profiles.Any())
+                var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
+                var postsByPlatform = await _postRepository.GetPostsByPlatformMonthlyAsync(
+                    twelveMonthsAgo,
+                    DateTime.UtcNow,
+                    cancellationToken);
+                
+                if (postsByPlatform.Any())
                 {
-                    var profile = profiles.First();
-                    var analytics = await _zernioClient.GetDailyMetricsAsync(
-                        profile.ZernioProfileId,
-                        DateTime.UtcNow.AddMonths(-12),
-                        null,
-                        null,
-                        null,
-                        null,
-                        cancellationToken);
-
-                    if (analytics?.PlatformBreakdown != null)
-                    {
-                        // Process analytics data for posts by platform
-                        var postsByPlatform = new Dictionary<string, List<int>>();
-                        var engagementByPlatform = new Dictionary<string, EngagementDto>();
-
-                        // Initialize platforms
-                        foreach (var platformData in analytics.PlatformBreakdown)
-                        {
-                            var platform = platformData.Platform.ToLower();
-                            if (!postsByPlatform.ContainsKey(platform))
-                            {
-                                postsByPlatform[platform] = new List<int>();
-                                engagementByPlatform[platform] = new EngagementDto();
-                            }
-                        }
-
-                        // Fill with monthly data (simplified - using same values for all months)
-                        foreach (var platformData in analytics.PlatformBreakdown)
-                        {
-                            var platform = platformData.Platform.ToLower();
-                            for (int i = 0; i < 12; i++)
-                            {
-                                postsByPlatform[platform].Add((int)platformData.PostCount);
-                                engagementByPlatform[platform].Likes.Add((int)platformData.Likes);
-                                engagementByPlatform[platform].Shares.Add((int)platformData.Shares);
-                            }
-                        }
-
-                        overview.PostsByPlatform = postsByPlatform;
-                        overview.EngagementByPlatform = engagementByPlatform;
-                    }
+                    overview.PostsByPlatform = postsByPlatform;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to get analytics from Zernio for admin overview");
+                _logger.LogWarning(ex, "Failed to get posts by platform for admin overview");
+            }
+
+            // Get post status trends (published, scheduled, failed) from database
+            try
+            {
+                var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
+                var allPosts = new List<Post>();
+                foreach (var workspace in allWorkspaces)
+                {
+                    var posts = await _postRepository.GetByWorkspaceIdAsync(workspace.Id);
+                    allPosts.AddRange(posts);
+                }
+
+                var monthlyPublished = new List<int>();
+                var monthlyScheduled = new List<int>();
+                var monthlyFailed = new List<int>();
+
+                for (int i = 11; i >= 0; i--)
+                {
+                    var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
+                    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+                    var publishedInMonth = allPosts.Count(p => 
+                        p.Status == PostStatus.Published && 
+                        p.PublishedAtUtc.HasValue &&
+                        p.PublishedAtUtc.Value >= monthStart && 
+                        p.PublishedAtUtc.Value <= monthEnd);
+                    monthlyPublished.Add(publishedInMonth);
+
+                    var scheduledInMonth = allPosts.Count(p => 
+                        p.Status == PostStatus.Scheduled && 
+                        !p.ScheduledAt.IsNone &&
+                        p.ScheduledAt.UtcValue >= monthStart && 
+                        p.ScheduledAt.UtcValue <= monthEnd);
+                    monthlyScheduled.Add(scheduledInMonth);
+
+                    var failedInMonth = allPosts.Count(p => 
+                        p.Status == PostStatus.Failed && 
+                        p.PublishLastAttemptAtUtc.HasValue &&
+                        p.PublishLastAttemptAtUtc.Value >= monthStart && 
+                        p.PublishLastAttemptAtUtc.Value <= monthEnd);
+                    monthlyFailed.Add(failedInMonth);
+                }
+
+                overview.EngagementByPlatform = new Dictionary<string, EngagementDto>
+                {
+                    ["all"] = new EngagementDto
+                    {
+                        Published = monthlyPublished,
+                        Scheduled = monthlyScheduled,
+                        Failed = monthlyFailed
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get post status trends for admin overview");
             }
 
             return Result.Success(overview);
