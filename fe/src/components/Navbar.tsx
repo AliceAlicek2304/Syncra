@@ -90,14 +90,14 @@ export default function Navbar() {
                 <button className="flex items-center gap-3 text-left focus:outline-none hover:opacity-90 group transition-all">
                   <Avatar className="h-9 w-9 border border-brand-border group-hover:border-brand-primary transition-colors">
                     {user.avatarUrl ? (
-                      <AvatarImage src={user.avatarUrl} alt={user.displayName || user.email} />
+                      <AvatarImage src={user.avatarUrl} alt={user.displayName ?? user.email ?? 'User'} />
                     ) : null}
                     <AvatarFallback className="bg-brand-primary/10 text-brand-primary font-bold">
-                      {(user.displayName || user.email).charAt(0).toUpperCase()}
+                      {(user.displayName ?? user.email ?? '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="leading-tight">
-                    <div className="text-sm font-semibold text-brand-ink max-w-[120px] truncate">{user.displayName || user.email}</div>
+                    <div className="text-sm font-semibold text-brand-ink max-w-[120px] truncate">{user.displayName ?? user.email ?? 'User'}</div>
                     <div className="text-[10px] text-brand-body-mid font-medium uppercase tracking-wider">Free Plan</div>
                   </div>
                 </button>

@@ -255,6 +255,7 @@ export default function SocialAccounts() {
                             src={getSocialAvatarUrl(account)}
                             alt={account.displayName}
                             className={styles.avatar}
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className={styles.avatarFallback}>

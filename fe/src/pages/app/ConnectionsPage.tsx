@@ -906,6 +906,7 @@ export default function ConnectionsPage() {
                       src={getSocialAvatarUrl(account)}
                       alt=""
                       className={styles.cardAvatar}
+                      referrerPolicy="no-referrer"
                     />
                     <div
                       className={styles.cardPlatformBadge}

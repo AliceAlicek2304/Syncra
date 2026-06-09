@@ -95,7 +95,7 @@ export function AccountSelectionSection({
                       
                       <div className={styles.avatarContainer}>
                         {getSocialAvatarUrl(account) ? (
-                          <img src={getSocialAvatarUrl(account)} alt={account.displayName} className={styles.avatar} />
+                          <img src={getSocialAvatarUrl(account)} alt={account.displayName} className={styles.avatar} referrerPolicy="no-referrer" />
                         ) : (
                           <div className={styles.avatarFallback}>{initials}</div>
                         )}

@@ -13,10 +13,9 @@ export default defineConfig({
   base: '/',
   server: {
     proxy: {
-      '/Syncra/api': {
+      '/api': {
         target: 'http://localhost:5260',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/Syncra\/api/, '/api'),
         ws: true,
       }
     }

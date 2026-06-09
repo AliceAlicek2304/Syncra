@@ -23,7 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       try {
         const userData = await authApi.getMe()
-        setUser(userData)
+        if (userData && typeof userData === 'object' && typeof userData.email === 'string') {
+          setUser(userData)
+        } else {
+          console.error('Invalid user data from /auth/me:', userData)
+          localStorage.removeItem('syncra_access_token')
+          localStorage.removeItem('syncra_workspace_id')
+          setUser(null)
+        }
       } catch (error) {
         console.error('Failed to hydrate session:', error)
         localStorage.removeItem('syncra_access_token')
