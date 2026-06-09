@@ -24,7 +24,9 @@ public sealed class GetWorkspacesQueryHandler : IRequestHandler<GetWorkspacesQue
 
         var workspaceIds = workspaceList.Select(w => w.Id).ToList();
         var profiles = await _zernioProfileRepository.GetByWorkspaceIdsAsync(workspaceIds);
-        var profileLookup = profiles.ToDictionary(p => p.WorkspaceId, p => p.ZernioProfileId);
+        var profileLookup = profiles
+            .GroupBy(p => p.WorkspaceId)
+            .ToDictionary(g => g.Key, g => g.First().ZernioProfileId);
 
         return workspaceList.Select(w => new WorkspaceDto(
             w.Id,

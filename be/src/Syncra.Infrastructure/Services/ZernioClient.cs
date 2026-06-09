@@ -6796,4 +6796,162 @@ public sealed class ZernioClient : IZernioClient
         public string? Source { get; set; }
         public long? Count { get; set; }
     }
+
+    // ── Webhook Management Methods ─────────────────────────────────────
+
+    public async Task<ZernioWebhookListResponseDto> ListWebhooksAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var config = _postsApi.Configuration;
+        var baseUrl = config.BasePath.TrimEnd('/');
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/webhooks/settings");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.AccessToken);
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(15);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var raw = JsonSerializer.Deserialize<ZernioRawWebhookListResponse>(json, _jsonOptions);
+
+        var webhooks = raw?.Webhooks?
+            .Select(w => new ZernioWebhookSettingsDto(
+                w._id ?? string.Empty,
+                w.Name ?? string.Empty,
+                w.Url ?? string.Empty,
+                w.Secret,
+                w.Events ?? new List<string>(),
+                w.IsActive,
+                w.LastFiredAt,
+                w.FailureCount))
+            .ToList() ?? new List<ZernioWebhookSettingsDto>();
+
+        return new ZernioWebhookListResponseDto(webhooks);
+    }
+
+    public async Task<ZernioWebhookResponseDto> CreateWebhookAsync(
+        ZernioWebhookCreateRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var config = _postsApi.Configuration;
+        var baseUrl = config.BasePath.TrimEnd('/');
+
+        var body = new
+        {
+            name = request.Name,
+            url = request.Url,
+            secret = request.Secret,
+            events = request.Events,
+            isActive = request.IsActive
+        };
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/webhooks/settings");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.AccessToken);
+        httpRequest.Content = new StringContent(
+            JsonSerializer.Serialize(body, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(15);
+        using var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+        var responseJson = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                "Failed to create Zernio webhook. Status: {Status}, Response: {Response}",
+                httpResponse.StatusCode, responseJson);
+            return new ZernioWebhookResponseDto(false, null);
+        }
+
+        var raw = JsonSerializer.Deserialize<ZernioRawWebhookResponse>(responseJson, _jsonOptions);
+        var webhook = MapRawWebhook(raw?.Webhook);
+        return new ZernioWebhookResponseDto(raw?.Success ?? false, webhook);
+    }
+
+    public async Task<ZernioWebhookResponseDto> UpdateWebhookAsync(
+        ZernioWebhookUpdateRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var config = _postsApi.Configuration;
+        var baseUrl = config.BasePath.TrimEnd('/');
+
+        var body = new Dictionary<string, object>
+        {
+            ["_id"] = request.Id
+        };
+        if (request.Name != null) body["name"] = request.Name;
+        if (request.Url != null) body["url"] = request.Url;
+        if (request.Secret != null) body["secret"] = request.Secret;
+        if (request.Events != null) body["events"] = request.Events;
+        if (request.IsActive != null) body["isActive"] = request.IsActive.Value;
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/v1/webhooks/settings");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.AccessToken);
+        httpRequest.Content = new StringContent(
+            JsonSerializer.Serialize(body, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(15);
+        using var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+        var responseJson = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                "Failed to update Zernio webhook. Status: {Status}, Response: {Response}",
+                httpResponse.StatusCode, responseJson);
+            return new ZernioWebhookResponseDto(false, null);
+        }
+
+        var raw = JsonSerializer.Deserialize<ZernioRawWebhookResponse>(responseJson, _jsonOptions);
+        var webhook = MapRawWebhook(raw?.Webhook);
+        return new ZernioWebhookResponseDto(raw?.Success ?? false, webhook);
+    }
+
+    // ── Webhook private helpers ────────────────────────────────────────
+
+    private static ZernioWebhookSettingsDto? MapRawWebhook(ZernioRawWebhookSettings? raw)
+    {
+        if (raw == null) return null;
+        return new ZernioWebhookSettingsDto(
+            raw._id ?? string.Empty,
+            raw.Name ?? string.Empty,
+            raw.Url ?? string.Empty,
+            raw.Secret,
+            raw.Events ?? new List<string>(),
+            raw.IsActive,
+            raw.LastFiredAt,
+            raw.FailureCount);
+    }
+
+    private sealed class ZernioRawWebhookListResponse
+    {
+        public List<ZernioRawWebhookSettings>? Webhooks { get; set; }
+    }
+
+    private sealed class ZernioRawWebhookResponse
+    {
+        public bool Success { get; set; }
+        public ZernioRawWebhookSettings? Webhook { get; set; }
+    }
+
+    private sealed class ZernioRawWebhookSettings
+    {
+        public string? _id { get; set; }
+        public string? Name { get; set; }
+        public string? Url { get; set; }
+        public string? Secret { get; set; }
+        public List<string>? Events { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime? LastFiredAt { get; set; }
+        public int FailureCount { get; set; }
+    }
 }

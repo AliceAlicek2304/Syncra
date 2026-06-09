@@ -982,4 +982,38 @@ public sealed record InboxAnalyticsFilters(
     string? SortBy,
     string? Order);
 
+// ── Webhook Management DTOs ─────────────────────────────────────────
+
+public sealed record ZernioWebhookSettingsDto(
+    string Id,
+    string Name,
+    string Url,
+    string? Secret,
+    List<string> Events,
+    bool IsActive,
+    DateTime? LastFiredAt,
+    int FailureCount);
+
+public sealed record ZernioWebhookListResponseDto(
+    List<ZernioWebhookSettingsDto> Webhooks);
+
+public sealed record ZernioWebhookCreateRequestDto(
+    string Name,
+    string Url,
+    string? Secret,
+    List<string> Events,
+    bool IsActive = true);
+
+public sealed record ZernioWebhookUpdateRequestDto(
+    string Id,
+    string? Name = null,
+    string? Url = null,
+    string? Secret = null,
+    List<string>? Events = null,
+    bool? IsActive = null);
+
+public sealed record ZernioWebhookResponseDto(
+    bool Success,
+    ZernioWebhookSettingsDto? Webhook);
+
 

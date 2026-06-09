@@ -147,6 +147,7 @@ public static class DependencyInjection
         services.AddScoped<ProcessZernioWebhookJob>();
         services.AddScoped<CancelScheduledPostsForDisconnectedAccountJob>();
         services.AddScoped<InboxBackfillJob>();
+        services.AddHostedService<ZernioWebhookRegistrationService>();
         return services;
     }
 }

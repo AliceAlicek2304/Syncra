@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -37,17 +38,20 @@ public sealed class ZernioWebhookController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IDistributedLockService _lockService;
     private readonly IBackgroundJobClient _backgroundJobs;
+    private readonly IZernioClient _zernioClient;
     private readonly ILogger<ZernioWebhookController> _logger;
 
     public ZernioWebhookController(
         AppDbContext db,
         IDistributedLockService lockService,
         IBackgroundJobClient backgroundJobs,
+        IZernioClient zernioClient,
         ILogger<ZernioWebhookController> logger)
     {
         _db = db;
         _lockService = lockService;
         _backgroundJobs = backgroundJobs;
+        _zernioClient = zernioClient;
         _logger = logger;
     }
 
@@ -62,10 +66,6 @@ public sealed class ZernioWebhookController : ControllerBase
             return BadRequest($"Invalid or missing {EventIdHeader} header.");
         }
 
-        var eventType = Request.Headers.TryGetValue(EventTypeHeader, out var eventTypeHeaderValue)
-            ? eventTypeHeaderValue.ToString()
-            : "unknown";
-
         // ── 2. Acquire Redis distributed lock (T-25-01-03) ──────────────────
         var lockKey = $"{LockKeyPrefix}{eventId}";
         await using var distributedLock = await _lockService.TryAcquireAsync(lockKey, LockTimeout, cancellationToken);
@@ -75,7 +75,6 @@ public sealed class ZernioWebhookController : ControllerBase
             _logger.LogInformation(
                 "Zernio webhook lock contention for event {EventId} — another instance is processing it.",
                 eventId);
-            // Return 200 to stop Zernio from retrying an event that is already being handled.
             return Ok();
         }
 
@@ -91,7 +90,7 @@ public sealed class ZernioWebhookController : ControllerBase
             return Ok();
         }
 
-        // ── 4. Parse raw body to extract account.profileId ──────────────────
+        // ── 4. Parse raw body ──────────────────────────────────────────────
         Request.Body.Position = 0;
         JsonElement body;
         try
@@ -105,6 +104,17 @@ public sealed class ZernioWebhookController : ControllerBase
             return BadRequest("Invalid JSON payload.");
         }
 
+        // ── 5. Extract event type from header, fallback to body's 'event' field ──
+        var eventType = Request.Headers.TryGetValue(EventTypeHeader, out var eventTypeHeaderValue)
+            ? eventTypeHeaderValue.ToString()
+            : "unknown";
+
+        if (eventType == "unknown" && body.TryGetProperty("event", out var eventElement))
+        {
+            eventType = eventElement.GetString() ?? "unknown";
+        }
+
+        // ── 6. Extract account.profileId ──────────────────────────────────
         string? profileId = null;
         if (body.TryGetProperty("account", out var accountElement)
             && accountElement.TryGetProperty("profileId", out var profileIdElement))
@@ -117,24 +127,34 @@ public sealed class ZernioWebhookController : ControllerBase
             _logger.LogWarning(
                 "Zernio webhook event {EventId} missing account.profileId — cannot resolve workspace.",
                 eventId);
-            // Return 200 to prevent Zernio from retrying unresolvable events.
             return Ok();
         }
 
-        // ── 5. Resolve workspace via ZernioProfile ───────────────────────────
+        // ── 7. Resolve workspace via ZernioProfile ───────────────────────────
         var profile = await _db.ZernioProfiles
             .FirstOrDefaultAsync(p => p.ZernioProfileId == profileId, cancellationToken);
 
         if (profile == null)
         {
-            _logger.LogWarning(
-                "Zernio webhook event {EventId}: no ZernioProfile found for profileId {ProfileId} — returning 200 to stop retries.",
+            profile = await AutoProvisionProfileAsync(profileId, cancellationToken);
+
+            if (profile == null)
+            {
+                _logger.LogWarning(
+                    "Zernio webhook event {EventId}: no ZernioProfile found for profileId {ProfileId} and auto-provision failed — returning 200.",
+                    eventId,
+                    profileId);
+                return Ok();
+            }
+
+            _logger.LogInformation(
+                "Zernio webhook event {EventId}: auto-provisioned ZernioProfile {ProfileId} for workspace {WorkspaceId}.",
                 eventId,
-                profileId);
-            return Ok();
+                profileId,
+                profile.WorkspaceId);
         }
 
-        // ── 6. Persist webhook event in Pending status ───────────────────────
+        // ── 8. Persist webhook event in Pending status ───────────────────────
         var rawBody = body.GetRawText();
         var webhookEvent = ZernioWebhookEvent.Create(profile.WorkspaceId, eventType, rawBody);
         webhookEvent.Id = eventId;
@@ -146,14 +166,13 @@ public sealed class ZernioWebhookController : ControllerBase
         }
         catch (DbUpdateException)
         {
-            // Unique constraint violation — another instance already persisted this event.
             _logger.LogInformation(
                 "Zernio webhook event {EventId} — duplicate key constraint hit; another instance handled it.",
                 eventId);
             return Ok();
         }
 
-        // ── 7. Enqueue background job and return 200 OK immediately (T-25-01-02) ──
+        // ── 9. Enqueue background job and return 200 OK immediately (T-25-01-02) ──
         _backgroundJobs.Enqueue<ProcessZernioWebhookJob>(
             job => job.ExecuteAsync(eventId, CancellationToken.None));
 
@@ -163,5 +182,69 @@ public sealed class ZernioWebhookController : ControllerBase
             eventType);
 
         return Ok();
+    }
+
+    private async Task<ZernioProfile?> AutoProvisionProfileAsync(string profileId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profileDto = await _zernioClient.GetProfileAsync(profileId, cancellationToken);
+            if (profileDto == null) return null;
+
+            var user = await _db.Users.FirstOrDefaultAsync(cancellationToken);
+            if (user == null)
+            {
+                _logger.LogWarning("Cannot auto-provision: no user found in database to own the new workspace.");
+                return null;
+            }
+
+            var ownerUserId = user.Id;
+            var name = profileDto.Name;
+            var slug = GenerateSlug(name);
+
+            var existingSlug = await _db.Workspaces
+                .AnyAsync(w => w.Slug == slug, cancellationToken);
+            if (existingSlug)
+            {
+                slug = $"{slug}-{Guid.NewGuid().ToString()[..6]}";
+            }
+
+            var workspace = Workspace.Create(ownerUserId, name, slug);
+            workspace.AddMember(ownerUserId, "owner");
+
+            _db.Workspaces.Add(workspace);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            var profile = ZernioProfile.Create(
+                workspace.Id,
+                profileDto.Id,
+                profileDto.Name,
+                "zernio");
+
+            _db.ZernioProfiles.Add(profile);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Auto-provisioned new workspace {WorkspaceId} ({Name}) with ZernioProfile {ProfileId}.",
+                workspace.Id,
+                name,
+                profileId);
+
+            return profile;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to auto-provision workspace for ZernioProfile {ProfileId}.", profileId);
+            return null;
+        }
+    }
+
+    private static string GenerateSlug(string name)
+    {
+        var slug = name.Trim().ToLowerInvariant();
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"[^a-z0-9\-]", "");
+        slug = Regex.Replace(slug, @"-{2,}", "-").Trim('-');
+        return slug.Length > 0 ? slug : "workspace";
     }
 }

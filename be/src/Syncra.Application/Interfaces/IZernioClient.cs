@@ -607,4 +607,17 @@ public interface IZernioClient
         DateTime fromDate,
         DateTime? toDate = null,
         CancellationToken cancellationToken = default);
+
+    // ── Webhook Management methods ─────────────────────────────────
+
+    Task<ZernioWebhookListResponseDto> ListWebhooksAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioWebhookResponseDto> CreateWebhookAsync(
+        ZernioWebhookCreateRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioWebhookResponseDto> UpdateWebhookAsync(
+        ZernioWebhookUpdateRequestDto request,
+        CancellationToken cancellationToken = default);
 }

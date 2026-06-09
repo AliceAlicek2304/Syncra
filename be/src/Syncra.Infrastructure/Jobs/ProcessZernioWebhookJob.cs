@@ -169,7 +169,7 @@ public sealed class ProcessZernioWebhookJob
                         break;
                 }
             }
-            else if (webhookEvent.EventType is "comment.received" or "review.new")
+            else if (webhookEvent.EventType is "comment.received" or "review.new" or "review.updated")
             {
                 if (!root.TryGetProperty("account", out var inboxAccount))
                 {

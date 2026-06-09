@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Options;
+using Syncra.Application.Options;
 
 namespace Syncra.Api.Filters;
 
@@ -17,16 +19,15 @@ namespace Syncra.Api.Filters;
 public sealed class ZernioWebhookSignatureFilter : IAsyncActionFilter
 {
     private const string SignatureHeader = "X-Zernio-Signature";
-    private const string WebhookSecretConfigKey = "Zernio:WebhookSecret";
 
     private readonly string _webhookSecret;
     private readonly ILogger<ZernioWebhookSignatureFilter> _logger;
 
-    public ZernioWebhookSignatureFilter(IConfiguration configuration, ILogger<ZernioWebhookSignatureFilter> logger)
+    public ZernioWebhookSignatureFilter(IOptions<ZernioOptions> options, ILogger<ZernioWebhookSignatureFilter> logger)
     {
-        _webhookSecret = configuration[WebhookSecretConfigKey]
+        _webhookSecret = options.Value.WebhookSecret
             ?? throw new InvalidOperationException(
-                $"Zernio webhook secret is not configured. Set '{WebhookSecretConfigKey}' in application configuration.");
+                $"Zernio webhook secret is not configured. Set 'Zernio:WebhookSecret' in application configuration.");
         _logger = logger;
     }
 

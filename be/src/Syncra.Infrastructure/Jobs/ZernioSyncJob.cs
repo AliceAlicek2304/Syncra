@@ -66,6 +66,18 @@ public class ZernioSyncJob
                     localPost.MarkZernioFailed(zernioPost.PublishedAt ?? now, "Marked as failed via sync job.");
                     hasChanges = true;
                 }
+                else if (zernioStatus == "scheduled" && localPost.Status != PostStatus.Scheduled)
+                {
+                    _logger.LogInformation("Post {PostId} status changed to Scheduled on Zernio. Updating local DB.", localPost.Id);
+                    localPost.TransitionTo(PostStatus.Scheduled);
+                    hasChanges = true;
+                }
+                else if (zernioStatus == "cancelled" && !localPost.IsDeleted)
+                {
+                    _logger.LogInformation("Post {PostId} cancelled on Zernio. Updating local DB.", localPost.Id);
+                    localPost.MarkAsDeleted();
+                    hasChanges = true;
+                }
 
                 // Also update platform targets
                 foreach (var zernioTarget in zernioPost.Platforms)
