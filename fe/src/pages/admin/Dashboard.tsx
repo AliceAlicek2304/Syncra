@@ -1,9 +1,13 @@
 import styles from './AdminLayout.module.css'
 import dashStyles from './AdminDashboard.module.css'
 import TrendChart from './components/TrendChart'
+import BarChart from './components/BarChart'
+import DonutChart from './components/DonutChart'
+import Sparkline from './components/Sparkline'
+import ProgressRing from './components/ProgressRing'
 import { useAdminOverview } from '../../hooks/useAdminOverview'
 import { useMemo, useState } from 'react'
-import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord } from 'react-icons/fa'
+import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord, FaArrowUp, FaArrowDown, FaChartLine, FaUsers, FaDollarSign, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 
 const PLATFORMS = [
   { id: 'twitter', name: 'Twitter/X', icon: FaTwitter, color: '#1DA1F2' },
@@ -62,6 +66,7 @@ const fallbackMock = {
 export default function AdminDashboard() {
   const { data, isLoading, isError } = useAdminOverview()
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
+  const [timePeriod, setTimePeriod] = useState<string>('12m')
 
   const metrics = useMemo(() => {
     if (data?.overview?.metrics) return data.overview.metrics
@@ -175,97 +180,193 @@ export default function AdminDashboard() {
       </div>
 
       <div className={dashStyles.metricsRow}>
-        {metrics.map((m:any) => (
-          <div key={m.id} className={dashStyles.metricCard}>
-            <div className={dashStyles.metricTitle}>{m.title}</div>
-            <div className={dashStyles.metricValue}>{m.value}</div>
-            <div className={dashStyles.metricSpark} aria-hidden />
-          </div>
-        ))}
+        {metrics.map((m:any) => {
+          const sparklineData = m.id === 'posts' ? [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285] : 
+                             m.id === 'scheduled' ? [85, 92, 98, 105, 112, 118, 125, 132, 138, 145, 152, 158] : 
+                             m.id === 'accounts' ? [45, 52, 58, 65, 72, 78, 85, 92, 98, 105, 112, 118] : 
+                             [12, 15, 18, 22, 28, 35, 42, 50, 58, 65, 72, 78];
+          
+          const firstValue = sparklineData[0] ?? 0;
+          const lastValue = sparklineData[sparklineData.length - 1] ?? 0;
+          let growthRate = '0%';
+          
+          if (firstValue === 0 && lastValue === 0) {
+            growthRate = '0%';
+          } else if (firstValue === 0) {
+            growthRate = lastValue > 0 ? `+${lastValue}` : '0';
+          } else {
+            const growth = ((lastValue - firstValue) / firstValue * 100);
+            const sign = growth > 0 ? '+' : '';
+            growthRate = `${sign}${growth.toFixed(1)}%`;
+          }
+          
+          const growthColor = growthRate.includes('+') ? '#4FFF4F' : growthRate.includes('-') ? '#FF4F4F' : '#939084';
+          
+          return (
+            <div key={m.id} className={dashStyles.metricCard} style={{ 
+              background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <div className={dashStyles.metricTitle}>{m.title}</div>
+                {m.id === 'posts' && <FaChartLine color="#FF4F4F" size={18} />}
+                {m.id === 'scheduled' && <FaCheckCircle color="#4FFF4F" size={18} />}
+                {m.id === 'accounts' && <FaUsers color="#4F8FFF" size={18} />}
+                {m.id === 'workspaces' && <FaDollarSign color="#FFC84F" size={18} />}
+              </div>
+              <div className={dashStyles.metricValue}>{m.value}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <Sparkline 
+                  data={sparklineData}
+                  color={m.id === 'posts' ? '#FF4F4F' : m.id === 'scheduled' ? '#4FFF4F' : m.id === 'accounts' ? '#4F8FFF' : '#FFC84F'} 
+                />
+                <span style={{ fontSize: 11, fontWeight: 600, color: growthColor }}>{growthRate}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ height: 20 }} />
 
+      {/* Time Period Filter */}
+      <div className={styles.card} style={{ marginBottom: 20, padding: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: '#605d52', fontWeight: 600 }}>Thời gian:</span>
+          {['7d', '30d', '90d', '12m'].map((period) => (
+            <button
+              key={period}
+              onClick={() => setTimePeriod(period)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: timePeriod === period ? '2px solid var(--color-primary)' : '1px solid #e5e5e5',
+                background: timePeriod === period ? 'var(--color-primary)' : '#fff',
+                color: timePeriod === period ? '#fff' : '#333',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              {period === '7d' ? '7 ngày' : period === '30d' ? '30 ngày' : period === '90d' ? '90 ngày' : '12 tháng'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-        <div className={styles.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>
+              <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>
                 Bài viết theo nền tảng (12 tháng)
                 {selectedPlatform !== 'all' && ` - ${PLATFORMS.find(p => p.id === selectedPlatform)?.name}`}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{metrics.find((m:any)=>m.id==='posts')?.value ?? '—'}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{metrics.find((m:any)=>m.id==='posts')?.value ?? '—'}</div>
             </div>
-            <div style={{ color: '#939084' }}>Tổng số bài viết</div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, color: '#939084' }}>Tổng số bài viết</div>
+              <Sparkline data={currentPosts.length > 0 ? currentPosts : [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285]} color="#FF4F4F" />
+            </div>
           </div>
           <TrendChart data={currentPosts.length > 0 ? currentPosts : [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285]} />
         </div>
 
         <div style={{ display: 'grid', gap: 12 }}>
-          <div className={styles.card}>
-            <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tài khoản MXH mới</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{data?.overview?.newAccounts24h ?? '—'}</div>
-            <div style={{ marginTop: 8, color: '#939084' }}>24 giờ qua</div>
+          <div className={styles.card} style={{ 
+            background: 'linear-gradient(135deg, #4FFF4F 0%, #3FCC3F 100%)',
+            color: '#fff'
+          }}>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Tài khoản MXH mới</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{data?.overview?.newAccounts24h ?? '—'}</div>
+            <div style={{ marginTop: 8, fontSize: 11, opacity: 0.8 }}>24 giờ qua</div>
           </div>
 
-          <div className={styles.card}>
-            <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Top Workspaces</div>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              {(data?.workspaces?.slice(0,5) ?? [{name:'Acme', members:24},{name:'Beta', members:18}]).map((w:any, idx:number) => (
-                <li key={idx} style={{ padding: '8px 0' }}>{w.name} — {w.members ?? w.memberCount ?? '-'} thành viên</li>
-              ))}
-            </ul>
+          <div className={styles.card} style={{ background: 'linear-gradient(135deg, #4F8FFF 0%, #3F70CC 100%)', color: '#fff' }}>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Tỷ lệ thành công</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>
+              {postStatusTrends.published?.length > 0 
+                ? ((postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) / (postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) + postStatusTrends.failed.reduce((a:number,b:number)=>a+b,0)) * 100).toFixed(1))
+                : '0'}%
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11, opacity: 0.8 }}>12 tháng qua</div>
           </div>
         </div>
       </div>
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className={styles.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>
-                Bài viết đã đăng (12 tháng)
-              </div>
+              <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Bài viết đã đăng</div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.published?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
             </div>
-            <div style={{ color: '#939084' }}>Tổng quan</div>
+            <ProgressRing value={postStatusTrends.published?.slice(-1)?.[0] ?? 0} max={500} color="#4FFF4F" />
           </div>
-          <TrendChart data={postStatusTrends.published?.length > 0 ? postStatusTrends.published : [0]} />
+          <BarChart data={postStatusTrends.published?.length > 0 ? postStatusTrends.published : [0]} colors={postStatusTrends.published?.map(() => '#4FFF4F') ?? []} />
         </div>
 
-        <div className={styles.card}>
-          <div style={{ fontSize: 13, color: 'var(--color-body)' }}>
-            Bài viết thất bại (12 tháng)
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Bài viết lên lịch</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.scheduled?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
+            </div>
+            <ProgressRing value={postStatusTrends.scheduled?.slice(-1)?.[0] ?? 0} max={200} color="#4F8FFF" />
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.failed?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
-          <div style={{ height: 8 }} />
-          <TrendChart data={postStatusTrends.failed?.length > 0 ? postStatusTrends.failed : [0]} />
+          <BarChart data={postStatusTrends.scheduled?.length > 0 ? postStatusTrends.scheduled : [0]} colors={postStatusTrends.scheduled?.map(() => '#4F8FFF') ?? []} />
+        </div>
+
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Bài viết thất bại</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.failed?.slice(-1)?.[0] ?? '—').toLocaleString()}</div>
+            </div>
+            <ProgressRing value={postStatusTrends.failed?.slice(-1)?.[0] ?? 0} max={50} color="#FF4F4F" />
+          </div>
+          <BarChart data={postStatusTrends.failed?.length > 0 ? postStatusTrends.failed : [0]} colors={postStatusTrends.failed?.map(() => '#FF4F4F') ?? []} />
         </div>
       </div>
 
       <div style={{ height: 20 }} />
 
-      {/* Revenue by Plan Chart */}
-      <div className={styles.card}>
-        <h3 style={{ marginTop: 0 }}>Doanh thu theo gói (12 tháng)</h3>
-        <div style={{ height: 200 }}>
-          <TrendChart data={revenueByPlan.starter} />
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        {/* Revenue by Plan Chart */}
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 16 }}>Doanh thu theo gói (12 tháng)</h3>
+          <div style={{ height: 200 }}>
+            <TrendChart data={revenueByPlan.starter} />
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Starter</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFC84F' }}>${(revenueByPlan.starter.slice(-1)[0] * 12).toLocaleString()}</div>
+              <Sparkline data={revenueByPlan.starter} color="#FFC84F" />
+            </div>
+            <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Pro</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#4F8FFF' }}>${(revenueByPlan.pro.slice(-1)[0] * 12).toLocaleString()}</div>
+              <Sparkline data={revenueByPlan.pro} color="#4F8FFF" />
+            </div>
+            <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Enterprise</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#8F4FFF' }}>${(revenueByPlan.enterprise.slice(-1)[0] * 12).toLocaleString()}</div>
+              <Sparkline data={revenueByPlan.enterprise} color="#8F4FFF" />
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Starter</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>${(revenueByPlan.starter.slice(-1)[0] * 12).toLocaleString()}</div>
-          </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Pro</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>${(revenueByPlan.pro.slice(-1)[0] * 12).toLocaleString()}</div>
-          </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Enterprise</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>${(revenueByPlan.enterprise.slice(-1)[0] * 12).toLocaleString()}</div>
-          </div>
+
+        {/* Platform Distribution */}
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 16 }}>Phân bố nền tảng</h3>
+          <DonutChart 
+            data={(Object.values(postsByPlatform) as number[][]).map((arr) => arr.reduce((a:number,b:number)=>a+b,0))} 
+            labels={Object.keys(postsByPlatform).map((k:string) => PLATFORMS.find(p => p.id === k)?.name || k)}
+            colors={Object.keys(postsByPlatform).map((k:string) => PLATFORMS.find(p => p.id === k)?.color || '#999')}
+          />
         </div>
       </div>
 
@@ -273,26 +374,62 @@ export default function AdminDashboard() {
 
       {/* User Conversion Chart */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className={styles.card}>
-          <h3 style={{ marginTop: 0 }}>Chuyển đổi người dùng (12 tháng)</h3>
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ marginTop: 0 }}>Chuyển đổi người dùng</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FaUsers color="#4F8FFF" size={20} />
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{userConversion.newUsers.slice(-1)[0]}</div>
+            </div>
+          </div>
           <TrendChart data={userConversion.newUsers} />
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: '#605d52' }}>Người dùng mới</div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{userConversion.newUsers.slice(-1)[0]}</div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 16 }}>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Người dùng mới</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#4F8FFF' }}>{userConversion.newUsers.slice(-1)[0]}</div>
+              <Sparkline data={userConversion.newUsers} color="#4F8FFF" />
+            </div>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Tăng trưởng</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#4FFF4F' }}>
+                {(() => {
+                  const data = userConversion.newUsers;
+                  if (!data || data.length < 2) return 'N/A';
+                  
+                  const firstValue = data[0] ?? 0;
+                  const lastValue = data[data.length - 1] ?? 0;
+                  
+                  // If no data or both are 0
+                  if (firstValue === 0 && lastValue === 0) return '0%';
+                  
+                  // If starting from 0, can't calculate percentage - show absolute change
+                  if (firstValue === 0) {
+                    return lastValue > 0 ? `+${lastValue}` : '0';
+                  }
+                  
+                  // Calculate total growth from first to last
+                  const totalGrowth = ((lastValue - firstValue) / firstValue * 100);
+                  const sign = totalGrowth > 0 ? '+' : '';
+                  return `${sign}${totalGrowth.toFixed(1)}%`;
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className={styles.card}>
-          <h3 style={{ marginTop: 0 }}>Hoạt động người dùng</h3>
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 12 }}>Hoạt động người dùng</h3>
           <TrendChart data={userConversion.activeUsers} />
           <div style={{ marginTop: 12, display: 'flex', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, color: '#605d52' }}>Đang hoạt động</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{userConversion.activeUsers.slice(-1)[0]}</div>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Đang hoạt động</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#4FFF4F' }}>{userConversion.activeUsers.slice(-1)[0]}</div>
+              <Sparkline data={userConversion.activeUsers} color="#4FFF4F" />
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: '#605d52' }}>Không hoạt động</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{userConversion.nonActiveUsers.slice(-1)[0]}</div>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Không hoạt động</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#FF4F4F' }}>{userConversion.nonActiveUsers.slice(-1)[0]}</div>
+              <Sparkline data={userConversion.nonActiveUsers} color="#FF4F4F" />
             </div>
           </div>
         </div>
@@ -301,31 +438,59 @@ export default function AdminDashboard() {
       <div style={{ height: 20 }} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-        <div className={styles.card}>
-          <h3 style={{ marginTop: 0 }}>Bài viết theo nền tảng (tuần)</h3>
-          <TrendChart data={postsByPlatform.facebook ?? [200, 215, 230, 245, 260, 275, 290, 305, 320, 335, 350, 365]} />
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 12 }}>Bài viết theo nền tảng</h3>
+          <BarChart 
+            data={postsByPlatform.facebook ?? [200, 215, 230, 245, 260, 275, 290, 305, 320, 335, 350, 365]} 
+            colors={['#1877F2', '#1DA1F2', '#E4405F', '#0A66C2', '#000000', '#FF0000', '#BD081C', '#0088cc']}
+          />
           <div style={{ height: 12 }} />
           <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
               <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tổng bài viết đã đăng</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{(postStatusTrends.published?.reduce((a:number,b:number)=>a+b,0) ?? 0).toLocaleString()}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#4FFF4F' }}>{(postStatusTrends.published?.reduce((a:number,b:number)=>a+b,0) ?? 0).toLocaleString()}</div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Lỗi đăng bài gần đây</div>
-              <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                {recentErrors.map((e:any) => (
-                  <li key={e.id} style={{ padding: '6px 0', fontSize: 12 }}>{e.id} — {e.message} <span style={{ color: '#939084' }}>({e.when})</span></li>
-                ))}
-              </ul>
+            <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
+              <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tỷ lệ thành công</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#4F8FFF' }}>
+                {postStatusTrends.published?.length > 0 
+                  ? ((postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) / (postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) + postStatusTrends.failed.reduce((a:number,b:number)=>a+b,0)) * 100).toFixed(1))
+                  : '0'}%
+              </div>
             </div>
           </div>
         </div>
 
-        <div className={styles.card}>
-          <h3 style={{ marginTop: 0 }}>Top Workspaces</h3>
+        <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 12 }}>Top Workspaces</h3>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {(data?.workspaces?.slice(0,6) ?? [{name:'Acme', members:24},{name:'Beta', members:18},{name:'Gamma', members:14}]).map((w:any, idx:number) => (
-              <li key={idx} style={{ padding: '8px 0', display:'flex', justifyContent:'space-between' }}>{w.name}<span style={{ color:'#939084' }}>{w.members ?? w.memberCount ?? '-'}</span></li>
+            {(data?.workspaces?.slice(0,6) ?? [{name:'Acme', members:24},{name:'Beta', members:18},{name:'Gamma', members:14},{name:'Delta', members:12},{name:'Epsilon', members:10},{name:'Zeta', members:8}]).map((w:any, idx:number) => (
+              <li key={idx} style={{ 
+                padding: '10px 0', 
+                display:'flex', 
+                justifyContent:'space-between', 
+                alignItems: 'center',
+                borderBottom: idx < 5 ? '1px solid #e5e5e5' : 'none'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ 
+                    width: 32, 
+                    height: 32, 
+                    borderRadius: '50%', 
+                    background: `linear-gradient(135deg, ${['#FF4F4F', '#4FFF4F', '#4F8FFF', '#FFC84F', '#8F4FFF', '#FF4FFF'][idx]} 0%, ${['#FF3F3F', '#3FCC3F', '#3F70CC', '#FFB83F', '#7F3FCC', '#FF3FFF'][idx]} 100%)`,
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: 12
+                  }}>
+                    {idx + 1}
+                  </div>
+                  <span>{w.name}</span>
+                </div>
+                <span style={{ color:'#939084', fontWeight: 600 }}>{w.members ?? w.memberCount ?? '-'}</span>
+              </li>
             ))}
           </ul>
         </div>
