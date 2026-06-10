@@ -8,5 +8,6 @@ public record WorkspaceDto(
     DateTime CreatedAtUtc,
     string? ZernioProfileId = null,
     string? Color = null,
-    string? Description = null
+    string? Description = null,
+    IReadOnlyList<string> ZernioProfileIds = null!
 );

@@ -257,22 +257,22 @@ function FilterDropdown({
 
 
 export default function MessagesPage() {
-  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const { activeWorkspace, profiles, activeProfile, setActiveProfile } = useWorkspace();
   const { error: showError } = useToast();
-  const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>(activeWorkspace?.id || 'all');
+  const [filterProfileId, setFilterProfileId] = useState<string>(activeProfile?.id || 'all');
 
   useEffect(() => {
-    if (activeWorkspace?.id) {
-      setFilterWorkspaceId(activeWorkspace.id);
+    if (activeProfile?.id) {
+      setFilterProfileId(activeProfile.id);
     }
-  }, [activeWorkspace?.id]);
+  }, [activeProfile?.id]);
 
   // ── States ────────────────────────────────────────────────────────────────
-  const [conversations, setConversations] = useState<(InboxConversationDto & { workspaceId?: string })[]>([]);
+  const [conversations, setConversations] = useState<(InboxConversationDto & { profileId?: string })[]>([]);
   const [messages, setMessages] = useState<InboxMessageDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [conversationDetails, setConversationDetails] = useState<InboxConversationDetailsDto | null>(null);
-  const [socialAccounts, setSocialAccounts] = useState<(SocialAccountDto & { workspaceId?: string })[]>([]);
+  const [socialAccounts, setSocialAccounts] = useState<(SocialAccountDto & { profileId?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -331,23 +331,23 @@ export default function MessagesPage() {
     socialAccountsRef.current = socialAccounts;
   }, [socialAccounts]);
 
-  const filterWorkspaceIdRef = useRef(filterWorkspaceId);
+  const filterProfileIdRef = useRef(filterProfileId);
   useEffect(() => {
-    filterWorkspaceIdRef.current = filterWorkspaceId;
-  }, [filterWorkspaceId]);
+    filterProfileIdRef.current = filterProfileId;
+  }, [filterProfileId]);
 
-  const workspacesRef = useRef(workspaces);
+  const profilesRef = useRef(profiles);
   useEffect(() => {
-    workspacesRef.current = workspaces;
-  }, [workspaces]);
+    profilesRef.current = profiles;
+  }, [profiles]);
 
-  const activeWorkspaceRef = useRef(activeWorkspace);
+  const activeProfileRef = useRef(activeProfile);
   useEffect(() => {
-    activeWorkspaceRef.current = activeWorkspace;
-  }, [activeWorkspace]);
+    activeProfileRef.current = activeProfile;
+  }, [activeProfile]);
 
   const activeChat = conversations.find(c => c.id === selectedId);
-  const activeChatWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
+  const activeChatProfileId = activeChat?.profileId || activeProfile?.id;
   const activeSocialAccount = socialAccounts.find(sa => sa.id === activeChat?.socialAccountId);
   const activeZernioAccountId = activeSocialAccount?.externalAccountId || '';
   const isReactionSupported = activeChat
@@ -357,23 +357,23 @@ export default function MessagesPage() {
     ? TELEGRAM_REACTION_EMOJI
     : WHATSAPP_REACTION_EMOJI;
 
-  const convoWorkspaceId = activeChat?.workspaceId || activeWorkspace?.id;
+  const convoProfileId = activeChat?.profileId || activeProfile?.id;
 
   // ── Load Social Accounts & Conversations ────────────────────────────────
   useEffect(() => {
-    if (workspaces.length === 0) return;
+    if (profiles.length === 0 || !activeWorkspace) return;
 
     const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        if (filterWorkspaceId === 'all') {
-          const accountsPromises = workspaces.map(async w => {
-            const list = await socialAccountsApi.listSocialAccounts(w.id);
-            return list.map(sa => ({ ...sa, workspaceId: w.id }));
+        if (filterProfileId === 'all') {
+          const accountsPromises = profiles.map(async w => {
+            const list = await socialAccountsApi.listSocialAccounts(activeWorkspace.id, w.id);
+            return list.map(sa => ({ ...sa, profileId: w.id }));
           });
-          const convsPromises = workspaces.map(async w => {
-            const list = await inboxApi.getConversations(w.id);
-            return list.map(c => ({ ...c, workspaceId: w.id }));
+          const convsPromises = profiles.map(async w => {
+            const list = await inboxApi.getConversations(activeWorkspace.id, w.id);
+            return list.map(c => ({ ...c, profileId: w.id }));
           });
 
           const [accountsLists, convsLists] = await Promise.all([
@@ -390,11 +390,11 @@ export default function MessagesPage() {
             setSelectedId(mergedConvs[0].id);
           }
         } else {
-          const accounts = await socialAccountsApi.listSocialAccounts(filterWorkspaceId);
-          setSocialAccounts(accounts.map(sa => ({ ...sa, workspaceId: filterWorkspaceId })));
+          const accounts = await socialAccountsApi.listSocialAccounts(activeWorkspace.id, filterProfileId);
+          setSocialAccounts(accounts.map(sa => ({ ...sa, profileId: filterProfileId })));
 
-          const convs = await inboxApi.getConversations(filterWorkspaceId);
-          setConversations(convs.map(c => ({ ...c, workspaceId: filterWorkspaceId })));
+          const convs = await inboxApi.getConversations(activeWorkspace.id, filterProfileId);
+          setConversations(convs.map(c => ({ ...c, profileId: filterProfileId })));
           if (convs.length > 0) {
             setSelectedId(convs[0].id);
           }
@@ -407,20 +407,21 @@ export default function MessagesPage() {
     };
 
     fetchInitialData();
-  }, [filterWorkspaceId, workspaces]);
+  }, [filterProfileId, profiles, activeWorkspace]);
 
   const refreshConversationsOnly = async () => {
+    if (!activeWorkspace) return;
     try {
-      let convs: (InboxConversationDto & { workspaceId?: string })[] = [];
-      if (filterWorkspaceIdRef.current === 'all') {
-        const lists = await Promise.all(workspacesRef.current.map(async w => {
-          const list = await inboxApi.getConversations(w.id);
-          return list.map(c => ({ ...c, workspaceId: w.id }));
+      let convs: (InboxConversationDto & { profileId?: string })[] = [];
+      if (filterProfileIdRef.current === 'all') {
+        const lists = await Promise.all(profilesRef.current.map(async w => {
+          const list = await inboxApi.getConversations(activeWorkspace.id, w.id);
+          return list.map(c => ({ ...c, profileId: w.id }));
         }));
         convs = lists.flat();
       } else {
-        const list = await inboxApi.getConversations(filterWorkspaceIdRef.current);
-        convs = list.map(c => ({ ...c, workspaceId: filterWorkspaceIdRef.current }));
+        const list = await inboxApi.getConversations(activeWorkspace.id, filterProfileIdRef.current);
+        convs = list.map(c => ({ ...c, profileId: filterProfileIdRef.current }));
       }
       setConversations(convs);
     } catch (err) {
@@ -429,13 +430,14 @@ export default function MessagesPage() {
   };
 
   const refreshMessagesAndDetails = async (convoId: string, options?: { showLoader?: boolean }) => {
+    if (!activeWorkspace) return;
     const showLoader = options?.showLoader ?? false;
     
     const currentConvo = conversationsRef.current.find(c => c.id === convoId);
     if (!currentConvo) return;
 
-    const currentConvoWorkspaceId = currentConvo.workspaceId || activeWorkspaceRef.current?.id;
-    if (!currentConvoWorkspaceId) return;
+    const currentConvoProfileId = currentConvo.profileId || activeProfileRef.current?.id;
+    if (!currentConvoProfileId) return;
 
     if (showLoader) {
       setIsLoadingMessages(true);
@@ -443,7 +445,7 @@ export default function MessagesPage() {
     
     try {
       // 1. Fetch messages first and set immediately (gets from local DB, fast)
-      const msgList = await inboxApi.getMessages(currentConvoWorkspaceId, convoId);
+      const msgList = await inboxApi.getMessages(activeWorkspace.id, convoId, { profileId: currentConvoProfileId });
       setMessages(msgList);
       
       // Turn off loader immediately after setting messages so user has instant feedback
@@ -453,7 +455,7 @@ export default function MessagesPage() {
 
       // Mark as read locally and API ONLY if not already read
       if (currentConvo && (!currentConvo.isRead || currentConvo.unreadCount > 0)) {
-        await inboxApi.markAsRead(currentConvoWorkspaceId, convoId);
+        await inboxApi.markAsRead(activeWorkspace.id, convoId);
         setConversations(prev =>
           prev.map(c => (c.id === convoId ? { ...c, isRead: true, unreadCount: 0 } : c))
         );
@@ -463,7 +465,7 @@ export default function MessagesPage() {
       const currentSa = socialAccountsRef.current.find(sa => sa.id === currentConvo.socialAccountId);
       if (currentSa?.externalAccountId) {
         const details = await inboxApi.getConversationDetails(
-          currentConvoWorkspaceId,
+          activeWorkspace.id,
           convoId,
           currentSa.externalAccountId
         );
@@ -488,11 +490,11 @@ export default function MessagesPage() {
       return;
     }
     refreshMessagesAndDetails(selectedId, { showLoader: true });
-  }, [selectedId, activeWorkspace?.id]);
+  }, [selectedId, activeProfile?.id]);
 
   // ── SignalR real-time updates & Fallback Polling ────────────────────────
   useEffect(() => {
-    if (!convoWorkspaceId) return;
+    if (!convoProfileId) return;
 
     const handleUpdate = async () => {
       await refreshConversationsOnly();
@@ -515,7 +517,7 @@ export default function MessagesPage() {
     const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
     const defaultBaseUrl = `${window.location.origin}${import.meta.env.BASE_URL || '/'}api/v1`;
     const apiBaseUrl = (configuredBaseUrl || defaultBaseUrl).replace(/\/+$/, '');
-    const hubUrl = `${apiBaseUrl}/hubs/notifications?workspaceId=${convoWorkspaceId}`;
+    const hubUrl = `${apiBaseUrl}/hubs/notifications?workspaceId=${activeWorkspace?.id || convoProfileId}`;
 
     const connection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
@@ -543,10 +545,10 @@ export default function MessagesPage() {
       connection.off('inbox.itemCreated', handleInboxItemCreated);
       void connection.stop();
     };
-  }, [convoWorkspaceId]);
+  }, [convoProfileId]);
 
   const handleSend = async () => {
-    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
+    if (!activeWorkspace || !activeChatProfileId || !selectedId || !activeZernioAccountId) return;
     if (!inputText.trim() && !pendingFile) return;
 
     setIsSending(true);
@@ -557,7 +559,7 @@ export default function MessagesPage() {
       if (pendingFile) {
         setIsUploading(true);
         try {
-          const result = await mediaApi.uploadMedia(activeChatWorkspaceId, pendingFile);
+          const result = await mediaApi.uploadMedia(activeWorkspace.id, pendingFile);
           attachmentPublicUrl = result.publicUrl;
           attachmentMimeType = result.mimeType;
         } finally {
@@ -582,7 +584,7 @@ export default function MessagesPage() {
         payload.attachmentType = type;
       }
 
-      await inboxApi.sendMessage(activeChatWorkspaceId, selectedId, payload);
+      await inboxApi.sendMessage(activeWorkspace.id, selectedId, payload);
       setInputText('');
       setPendingFile(null);
       setPreviewUrl('');
@@ -592,20 +594,20 @@ export default function MessagesPage() {
         textareaRef.current.style.height = 'auto';
       }
 
-      const refreshedMsgs = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
+      const refreshedMsgs = await inboxApi.getMessages(activeWorkspace.id, selectedId, { profileId: activeChatProfileId });
       setMessages(refreshedMsgs);
 
-      // Refresh conversations: if filterWorkspaceId is 'all', refresh all; else refresh the active chat workspace
-      let refreshedConvs: (InboxConversationDto & { workspaceId?: string })[] = [];
-      if (filterWorkspaceId === 'all') {
-        const lists = await Promise.all(workspaces.map(async w => {
-          const list = await inboxApi.getConversations(w.id);
-          return list.map(c => ({ ...c, workspaceId: w.id }));
+      // Refresh conversations: if filterProfileId is 'all', refresh all; else refresh the active chat profile
+      let refreshedConvs: (InboxConversationDto & { profileId?: string })[] = [];
+      if (filterProfileId === 'all') {
+        const lists = await Promise.all(profiles.map(async w => {
+          const list = await inboxApi.getConversations(activeWorkspace.id, w.id);
+          return list.map(c => ({ ...c, profileId: w.id }));
         }));
         refreshedConvs = lists.flat();
       } else {
-        const list = await inboxApi.getConversations(activeChatWorkspaceId);
-        refreshedConvs = list.map(c => ({ ...c, workspaceId: activeChatWorkspaceId }));
+        const list = await inboxApi.getConversations(activeWorkspace.id, activeChatProfileId);
+        refreshedConvs = list.map(c => ({ ...c, profileId: activeChatProfileId }));
       }
       setConversations(refreshedConvs);
     } catch (err: any) {
@@ -641,28 +643,28 @@ export default function MessagesPage() {
 
   // ── Conversation status toggle (Archive/Unarchive) ──────────────────────
   const handleToggleArchive = async () => {
-    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId || !conversationDetails) return;
+    if (!activeWorkspace || !activeChatProfileId || !selectedId || !activeZernioAccountId || !conversationDetails) return;
 
     const nextStatus = conversationDetails.status === 'archived' ? 'active' : 'archived';
     setIsArchiving(true);
     try {
-      await inboxApi.updateConversationStatus(activeChatWorkspaceId, selectedId, {
+      await inboxApi.updateConversationStatus(activeWorkspace.id, selectedId, {
         accountId: activeZernioAccountId,
         status: nextStatus
       });
 
       setConversationDetails(prev => prev ? { ...prev, status: nextStatus } : null);
 
-      let refreshedConvs: (InboxConversationDto & { workspaceId?: string })[] = [];
-      if (filterWorkspaceId === 'all') {
-        const lists = await Promise.all(workspaces.map(async w => {
-          const list = await inboxApi.getConversations(w.id);
-          return list.map(c => ({ ...c, workspaceId: w.id }));
+      let refreshedConvs: (InboxConversationDto & { profileId?: string })[] = [];
+      if (filterProfileId === 'all') {
+        const lists = await Promise.all(profiles.map(async w => {
+          const list = await inboxApi.getConversations(activeWorkspace.id, w.id);
+          return list.map(c => ({ ...c, profileId: w.id }));
         }));
         refreshedConvs = lists.flat();
       } else {
-        const list = await inboxApi.getConversations(activeChatWorkspaceId);
-        refreshedConvs = list.map(c => ({ ...c, workspaceId: activeChatWorkspaceId }));
+        const list = await inboxApi.getConversations(activeWorkspace.id, activeChatProfileId);
+        refreshedConvs = list.map(c => ({ ...c, profileId: activeChatProfileId }));
       }
       setConversations(refreshedConvs);
     } catch (err) {
@@ -679,11 +681,11 @@ export default function MessagesPage() {
   };
 
   const handleSaveEdit = async (messageId: string) => {
-    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId || !editingText.trim()) return;
+    if (!activeWorkspace || !activeChatProfileId || !selectedId || !activeZernioAccountId || !editingText.trim()) return;
 
     setIsEditing(messageId);
     try {
-      await inboxApi.editMessage(activeChatWorkspaceId, selectedId, messageId, {
+      await inboxApi.editMessage(activeWorkspace.id, selectedId, messageId, {
         accountId: activeZernioAccountId,
         text: editingText.trim()
       });
@@ -691,7 +693,7 @@ export default function MessagesPage() {
       setEditingMessageId(null);
       setEditingText('');
 
-      const refreshed = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
+      const refreshed = await inboxApi.getMessages(activeWorkspace.id, selectedId, { profileId: activeChatProfileId });
       setMessages(refreshed);
     } catch (err) {
       console.error('Failed to edit message', err);
@@ -715,7 +717,7 @@ export default function MessagesPage() {
     activeChat ? DELETE_ONE_WAY_PLATFORMS.has(activeChat.platform.toLowerCase()) : false;
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
+    if (!activeChatProfileId || !selectedId || !activeZernioAccountId) return;
     // Zernio API yêu cầu conversationId là ObjectId 24-char hex của Zernio,
     // KHÔNG phải Syncra DB id hay platform-native id (số 17 chữ số).
     const zernioConvoId = activeChat?.zernioConversationId;
@@ -731,7 +733,7 @@ export default function MessagesPage() {
   };
 
   const performDelete = async (messageId: string, zernioConvoId: string) => {
-    if (!activeChatWorkspaceId || !selectedId) return;
+    if (!activeWorkspace || !activeChatProfileId || !selectedId) return;
 
     // Optimistic UI: ẩn tin nhắn ngay để UX mượt.
     const previousMessages = messages;
@@ -739,7 +741,7 @@ export default function MessagesPage() {
     setIsDeleting(messageId);
 
     try {
-      await inboxApi.deleteMessage(activeChatWorkspaceId, zernioConvoId, messageId, activeZernioAccountId);
+      await inboxApi.deleteMessage(activeWorkspace.id, zernioConvoId, messageId, activeZernioAccountId);
     } catch (err) {
       console.error('Failed to delete message', err);
       showError(DELETE_ERROR_MESSAGE);
@@ -762,7 +764,7 @@ export default function MessagesPage() {
 
   // ── Emoji Reactions ─────────────────────────────────────────────────────
   const handleAddReaction = async (messageId: string, emoji: string) => {
-    if (!activeChatWorkspaceId || !selectedId || !activeZernioAccountId) return;
+    if (!activeWorkspace || !activeChatProfileId || !selectedId || !activeZernioAccountId) return;
     // Zernio API yêu cầu conversationId là ObjectId 24-char hex của Zernio,
     // KHÔNG phải Syncra DB id hay platform-native id (số 17 chữ số).
     const zernioConvoId = activeChat?.zernioConversationId;
@@ -794,13 +796,13 @@ export default function MessagesPage() {
       const hasExisting = !!msg?.reactions?.some(r => r.emoji && r.emoji !== emoji);
       if (hasExisting) {
         try {
-          await inboxApi.removeReaction(activeChatWorkspaceId, zernioConvoId, messageId, activeZernioAccountId);
+          await inboxApi.removeReaction(activeWorkspace.id, zernioConvoId, messageId, activeZernioAccountId);
         } catch {
           // Có thể user chưa react lần nào — bỏ qua lỗi 404.
         }
       }
 
-      await inboxApi.addReaction(activeChatWorkspaceId, zernioConvoId, messageId, {
+      await inboxApi.addReaction(activeWorkspace.id, zernioConvoId, messageId, {
         accountId: activeZernioAccountId,
         emoji
       });
@@ -810,7 +812,7 @@ export default function MessagesPage() {
     } finally {
       // Sync UI với server state thật (covers optimistic removal khi fail).
       try {
-        const refreshed = await inboxApi.getMessages(activeChatWorkspaceId, selectedId);
+        const refreshed = await inboxApi.getMessages(activeWorkspace.id, selectedId, { profileId: activeChatProfileId });
         setMessages(refreshed);
       } catch {
         // ignore
@@ -822,8 +824,8 @@ export default function MessagesPage() {
   const handleCreateConvo = async () => {
     const selectedSa = socialAccounts.find(sa => sa.id === newChatAccount);
     if (!selectedSa) return;
-    const accountWorkspaceId = selectedSa.workspaceId || activeWorkspace?.id;
-    if (!accountWorkspaceId || !newChatRecipient || !newChatMessage.trim()) return;
+    const accountProfileId = selectedSa.profileId || activeProfile?.id;
+    if (!activeWorkspace || !accountProfileId || !newChatRecipient || !newChatMessage.trim()) return;
 
     setIsCreatingConvo(true);
     try {
@@ -838,23 +840,23 @@ export default function MessagesPage() {
         payload.participantId = newChatRecipient.trim();
       }
 
-      const result = await inboxApi.createConversation(accountWorkspaceId, payload);
+      const result = await inboxApi.createConversation(activeWorkspace.id, payload);
       
       setIsNewChatOpen(false);
       setNewChatRecipient('');
       setNewChatMessage('');
 
-      // Refresh conversations: if filterWorkspaceId is 'all', refresh all; else refresh the account workspace
-      let refreshed: (InboxConversationDto & { workspaceId?: string })[] = [];
-      if (filterWorkspaceId === 'all') {
-        const lists = await Promise.all(workspaces.map(async w => {
-          const list = await inboxApi.getConversations(w.id);
-          return list.map(c => ({ ...c, workspaceId: w.id }));
+      // Refresh conversations: if filterProfileId is 'all', refresh all; else refresh the account profile
+      let refreshed: (InboxConversationDto & { profileId?: string })[] = [];
+      if (filterProfileId === 'all') {
+        const lists = await Promise.all(profiles.map(async w => {
+          const list = await inboxApi.getConversations(activeWorkspace.id, w.id);
+          return list.map(c => ({ ...c, profileId: w.id }));
         }));
         refreshed = lists.flat();
       } else {
-        const list = await inboxApi.getConversations(accountWorkspaceId);
-        refreshed = list.map(c => ({ ...c, workspaceId: accountWorkspaceId }));
+        const list = await inboxApi.getConversations(activeWorkspace.id, accountProfileId);
+        refreshed = list.map(c => ({ ...c, profileId: accountProfileId }));
       }
       setConversations(refreshed);
       
@@ -870,7 +872,7 @@ export default function MessagesPage() {
   };
 
   // ── Filters & Rendering Lists ───────────────────────────────────────────
-  // Tất cả filter (platform / workspace / account) chỉ hiển thị options thuộc
+  // Tất cả filter (platform / profile / account) chỉ hiển thị options thuộc
   // platform mà Zernio hỗ trợ cho tính năng Messages (DM/inbox).
   const platformOptions: FilterOption[] = [
     { value: 'all', label: 'All platforms' },
@@ -881,9 +883,9 @@ export default function MessagesPage() {
     })),
   ];
 
-  const workspaceOptions: FilterOption[] = [
-    { value: 'all', label: 'All workspaces' },
-    ...workspaces.map(w => ({
+  const profileOptions: FilterOption[] = [
+    { value: 'all', label: 'All profiles' },
+    ...profiles.map(w => ({
       value: w.id,
       label: w.name
     }))
@@ -896,8 +898,8 @@ export default function MessagesPage() {
         const platform = sa.platform.toLowerCase();
         const isSupported = MESSAGES_SUPPORTED_PLATFORMS.has(platform);
         const matchesPlatform = filterPlatform === 'all' || platform === filterPlatform;
-        const matchesWorkspace = filterWorkspaceId === 'all' || sa.workspaceId === filterWorkspaceId;
-        return isSupported && matchesPlatform && matchesWorkspace;
+        const matchesProfile = filterProfileId === 'all' || sa.profileId === filterProfileId;
+        return isSupported && matchesPlatform && matchesProfile;
       })
       .map(sa => ({
         value: sa.id,
@@ -917,7 +919,7 @@ export default function MessagesPage() {
   const filteredConversations = conversations.filter(c => {
     // Loại bỏ luôn conversation thuộc platform không Zernio-supported
     if (!MESSAGES_SUPPORTED_PLATFORMS.has(c.platform.toLowerCase())) return false;
-    if (filterWorkspaceId !== 'all' && c.workspaceId !== filterWorkspaceId) return false;
+    if (filterProfileId !== 'all' && c.profileId !== filterProfileId) return false;
     if (filterPlatform !== 'all' && c.platform !== filterPlatform) return false;
     if (filterAccount !== 'all' && c.socialAccountId !== filterAccount) return false;
     
@@ -956,18 +958,18 @@ export default function MessagesPage() {
               label="All platforms"
             />
             <FilterDropdown
-              value={filterWorkspaceId}
+              value={filterProfileId}
               onChange={(val) => {
-                setFilterWorkspaceId(val);
+                setFilterProfileId(val);
                 if (val !== 'all') {
-                  const ws = workspaces.find(w => w.id === val);
+                  const ws = profiles.find(w => w.id === val);
                   if (ws) {
-                    setActiveWorkspace(ws);
+                    setActiveProfile(ws);
                   }
                 }
               }}
-              options={workspaceOptions}
-              label="All workspaces"
+              options={profileOptions}
+              label="All profiles"
             />
             <FilterDropdown
               value={filterAccount}

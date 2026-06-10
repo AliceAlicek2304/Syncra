@@ -67,8 +67,21 @@ public sealed class ConnectController : ControllerBase
             // Call Zernio API to complete selection
             var selectResponse = await _zernioClient.SelectFacebookConnectPageAsync(request, cancellationToken);
 
-            var zernioProfile = await _db.ZernioProfiles
-                .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+            // Try to get explicit ProfileId from context (set by ProfileResolutionMiddleware)
+            var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+            ZernioProfile? zernioProfile = null;
+
+            if (explicitProfileId != null)
+            {
+                zernioProfile = await _db.ZernioProfiles
+                    .FirstOrDefaultAsync(p => p.Id == explicitProfileId && p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+            }
+
+            if (zernioProfile is null)
+            {
+                zernioProfile = await _db.ZernioProfiles
+                    .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+            }
 
             if (zernioProfile is null)
             {

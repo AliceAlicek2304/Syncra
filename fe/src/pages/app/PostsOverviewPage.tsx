@@ -54,6 +54,9 @@ const StatusBadge = ({ status }: { status: Post['status'] }) => {
 
 export default function PostsOverviewPage() {
   const { workspaces, activeWorkspace } = useWorkspace()
+  const workspaceColorMap = new Map(workspaces.map(w => [w.id, w.color]))
+  const workspaceNameMap = new Map(workspaces.map(w => [w.id, w.name]))
+  const workspaceId = activeWorkspace?.id || workspaces[0]?.id || ''
   const { user } = useAuth()
   const { openCreatePost, openEditPost } = useCreatePostModal()
   const { success: showSuccess, error: showError } = useToast()
@@ -71,23 +74,15 @@ export default function PostsOverviewPage() {
   const menuRef = useRef<HTMLDivElement>(null)
   
   // ─── Filter & View States ───
+  const { profiles, activeProfile } = useWorkspace()
   const [statusFilter, setStatusFilter] = useState<string>('All posts')
   const [platformFilter, setPlatformFilter] = useState<string>('All platforms')
-  const [workspaceFilter, setWorkspaceFilter] = useState<string>('All workspaces')
-  const selectedWorkspace = workspaceFilter !== 'All workspaces'
-    ? workspaces.find(w => w.name === workspaceFilter)
+  const [profileFilter, setProfileFilter] = useState<string>('All profiles')
+  const selectedProfile = profileFilter !== 'All profiles'
+    ? profiles.find(p => p.name === profileFilter)
     : undefined
-  const workspaceId = selectedWorkspace?.id || activeWorkspace?.id
-  const workspaceNameMap = React.useMemo(() => {
-    const map = new Map<string, string>()
-    workspaces.forEach(w => map.set(w.id, w.name))
-    return map
-  }, [workspaces])
-  const workspaceColorMap = React.useMemo(() => {
-    const map = new Map<string, string>()
-    workspaces.forEach(w => map.set(w.id, w.color || '#fdba74'))
-    return map
-  }, [workspaces])
+  const profileId = selectedProfile?.id || activeProfile?.id
+
   const [userFilter, setUserFilter] = useState<string>('All users')
   const [dateFilter, setDateFilter] = useState<string>('All dates')
   const [customStartDate, setCustomStartDate] = useState<string>('')
@@ -148,18 +143,18 @@ export default function PostsOverviewPage() {
 
   // ─── Fetch Active Connected Profiles ───
   const { data: socialAccountsPage } = useQuery<ReturnType<typeof socialAccountsApi.getSocialAccounts> extends Promise<infer R> ? R : never>({
-    queryKey: ['social-accounts', workspaceId],
+    queryKey: ['social-accounts', workspaceId, profileId],
     enabled: Boolean(workspaceId),
-    queryFn: () => socialAccountsApi.getSocialAccounts(workspaceId!),
+    queryFn: () => socialAccountsApi.getSocialAccounts(workspaceId, undefined, profileFilter === 'All profiles' ? '' : profileId),
   })
   const socialAccounts: SocialAccountDto[] = socialAccountsPage?.items ?? []
 
   // ─── Fetch Posts from API ───
   const statusParam = statusFilter !== 'All posts' ? statusFilter.toLowerCase() : undefined
   const { data: postsPage, isLoading: isPostsLoading } = useQuery({
-    queryKey: ['posts', workspaceId, statusParam],
+    queryKey: ['posts', workspaceId, profileId, statusParam],
     enabled: Boolean(workspaceId),
-    queryFn: () => postsApi.getPosts(workspaceId!, statusParam ? { status: statusParam } : undefined),
+    queryFn: () => postsApi.getPosts(workspaceId, statusParam ? { status: statusParam } : undefined, profileFilter === 'All profiles' ? '' : profileId),
   })
   const apiPosts: Post[] = postsPage?.items ?? []
 
@@ -862,31 +857,31 @@ export default function PostsOverviewPage() {
             )}
           </div>
 
-          {/* Workspace Filter */}
+          {/* Profile Filter */}
           <div className={styles.dropdownWrapper}>
             <button 
               className={styles.filterDropdownBtn}
-              onClick={() => toggleDropdown('workspace')}
+              onClick={() => toggleDropdown('profile')}
             >
-              <span>{workspaceFilter}</span>
+              <span>{profileFilter}</span>
               <ChevronDown size={14} />
             </button>
-            {activeDropdown === 'workspace' && (
+            {activeDropdown === 'profile' && (
               <div className={styles.dropdownMenu}>
                 <button 
-                  className={`${styles.dropdownItem} ${workspaceFilter === 'All workspaces' ? styles.activeDropdownItem : ''}`}
-                  onClick={() => { setWorkspaceFilter('All workspaces'); setActiveDropdown(null); }}
+                  className={`${styles.dropdownItem} ${profileFilter === 'All profiles' ? styles.activeDropdownItem : ''}`}
+                  onClick={() => { setProfileFilter('All profiles'); setActiveDropdown(null); }}
                 >
-                  All workspaces
+                  All profiles
                 </button>
-                {workspaces.map(w => (
+                {profiles.map(p => (
                   <button 
-                    key={w.id}
-                    className={`${styles.dropdownItem} ${workspaceFilter === w.name ? styles.activeDropdownItem : ''}`}
-                    onClick={() => { setWorkspaceFilter(w.name); setActiveDropdown(null); setCurrentPage(1); }}
+                    key={p.id}
+                    className={`${styles.dropdownItem} ${profileFilter === p.name ? styles.activeDropdownItem : ''}`}
+                    onClick={() => { setProfileFilter(p.name); setActiveDropdown(null); setCurrentPage(1); }}
                   >
-                    <span className={styles.workspaceDot} style={{ background: w.color || '#fdba74' }} />
-                    {w.name}
+                    <span className={styles.workspaceDot} style={{ background: p.color || '#818cf8' }} />
+                    {p.name}
                   </button>
                 ))}
               </div>

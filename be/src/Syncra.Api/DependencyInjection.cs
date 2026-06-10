@@ -49,8 +49,9 @@
                     }
                 });
 
-                // Add X-Workspace-Id support to all endpoints
+                // Add X-Workspace-Id and X-Profile-Id support to all endpoints
                 c.OperationFilter<SwaggerFilters.WorkspaceHeaderFilter>();
+                c.OperationFilter<SwaggerFilters.ProfileHeaderFilter>();
                 
                 // Add Idempotency-Key support for mutating endpoints
                 c.OperationFilter<SwaggerFilters.IdempotencyHeaderFilter>();

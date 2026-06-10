@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, ChevronUp, Check, X, Info, Copy, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, ArrowRight, Pencil, HelpCircle
+  Plus, ChevronDown, ChevronUp, Check, X, Info, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
 import type { SocialAccountDto } from '../../api/socialAccounts';
+import type { Profile } from '../../api/types';
 import { socialAccountsApi } from '../../api/socialAccounts';
 import { getSocialAvatarUrl, getFbPageAvatarUrl } from '../../utils/social';
 import { postsApi } from '../../api/posts';
@@ -375,57 +376,10 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
   );
 }
 
-function DeleteWorkspaceConfirmModal({ workspace, onClose, onConfirm, isPending }: {
-  workspace: { id: string; name: string; color?: string };
-  onClose: () => void;
-  onConfirm: () => void;
-  isPending: boolean;
-}) {
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.disconnectModalCard} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.disconnectModalContent}>
-          <div className={styles.disconnectModalHeader}>
-            <div className={styles.disconnectHeaderLeft}>
-              <Trash2 size={20} className={styles.disconnectIcon} />
-              <h2 className={styles.disconnectModalTitle}>Delete workspace</h2>
-            </div>
-            <button className={styles.modalCloseBtn} onClick={onClose} disabled={isPending}>
-              <X size={16} />
-            </button>
-          </div>
-          <div className={styles.disconnectModalBody}>
-            <p className={styles.disconnectText}>
-              Are you sure you want to delete{' '}
-              <span className={styles.handleDot} style={{ backgroundColor: workspace.color || '#fdba74', display: 'inline-block', margin: '0 4px' }} />
-              <strong>{workspace.name}</strong>? This will also remove all connections in this workspace.
-            </p>
-          </div>
-          <div className={styles.disconnectModalFooter}>
-            <button className={styles.disconnectCancelBtn} onClick={onClose} disabled={isPending}>
-              Cancel
-            </button>
-            <button className={styles.disconnectConfirmBtn} onClick={onConfirm} disabled={isPending}>
-              {isPending ? (
-                <span className={styles.btnLoadingWrap}>
-                  <Loader2 size={13} className={styles.btnSpinner} />
-                  <span>Deleting...</span>
-                </span>
-              ) : (
-                'Delete'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function ConnectionsPage() {
   const queryClient = useQueryClient();
-  const { workspaces, activeWorkspace, isLoading: isWorkspaceLoading } = useWorkspace();
+  const { workspaces, activeWorkspace, profiles, activeProfile, isLoading: isWorkspaceLoading } = useWorkspace();
   const { success: showSuccess, error: showError } = useToast();
 
   const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
@@ -433,39 +387,46 @@ export default function ConnectionsPage() {
   const [accountToDisconnect, setAccountToDisconnect] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const [disconnectPreCheckLoad, setDisconnectPreCheckLoad] = useState<string | null>(null);
-  const [workspaceToDelete, setWorkspaceToDelete] = useState<typeof workspaces[0] | null>(null);
   const [expandedPlatformId, setExpandedPlatformId] = useState<string | null>(null);
-  const [quickCreatePlatformId, setQuickCreatePlatformId] = useState<string | null>(null);
-  const [quickCreateName, setQuickCreateName] = useState<string>('');
 
   // Drawers open state
-  const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = useState(false);
+  const [isNewProfileOpen, setIsNewProfileOpen] = useState(false);
   const [isNewConnectionOpen, setIsNewConnectionOpen] = useState(false);
 
   // Form states
-  const [newWorkspaceName, setNewWorkspaceName] = useState('');
-  const [newWorkspaceDescription, setNewWorkspaceDescription] = useState('');
-  const [newWorkspaceColor, setNewWorkspaceColor] = useState('#fda4af'); // Rose color as default indicator
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileColor, setNewProfileColor] = useState('#fda4af');
 
-  // Edit Workspace state
-  const [editingWorkspace, setEditingWorkspace] = useState<typeof workspaces[0] | null>(null);
-  const [editWorkspaceName, setEditWorkspaceName] = useState('');
-  const [editWorkspaceDescription, setEditWorkspaceDescription] = useState('');
-  const [editWorkspaceColor, setEditWorkspaceColor] = useState('');
+  // Edit Profile state
+  const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [editProfileName, setEditProfileName] = useState('');
+  const [editProfileColor, setEditProfileColor] = useState('');
+  const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
-  const closeWorkspaceDrawer = () => {
-    setIsNewWorkspaceOpen(false);
-    setNewWorkspaceName('');
-    setNewWorkspaceDescription('');
-    setNewWorkspaceColor('#fda4af');
+
+
+  const closeProfileDrawer = () => {
+    setIsNewProfileOpen(false);
+    setNewProfileName('');
+    setNewProfileColor('#fda4af');
+  };
+
+  const closeEditProfileDrawer = () => {
+    setEditingProfile(null);
+    setEditProfileName('');
+    setEditProfileColor('');
+  };
+
+  const closeDeleteProfileModal = () => {
+    setProfileToDelete(null);
   };
 
   // New Connection selection states
-  const [selectedWorkspaceForConnection, setSelectedWorkspaceForConnection] = useState<string>('');
-  const [isConnWorkspaceDropdownOpen, setIsConnWorkspaceDropdownOpen] = useState(false);
+  const [selectedProfileForConnection, setSelectedProfileForConnection] = useState<string>('');
+  const [isProfileConnDropdownOpen, setIsProfileConnWorkspaceDropdownOpen] = useState(false);
 
   // Filters state
-  const [selectedWorkspaceFilter, setSelectedWorkspaceFilter] = useState<string>('all');
+  const [selectedProfileFilter, setSelectedProfileFilter] = useState<string>('all');
   const [selectedPlatformFilter, setSelectedPlatformFilter] = useState<string>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
 
@@ -475,7 +436,7 @@ export default function ConnectionsPage() {
   }, {});
 
   // Filter dropdown visibility
-  const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
@@ -485,7 +446,7 @@ export default function ConnectionsPage() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsWorkspaceDropdownOpen(false);
+        setIsProfileDropdownOpen(false);
         setIsPlatformDropdownOpen(false);
         setIsStatusDropdownOpen(false);
       }
@@ -494,169 +455,119 @@ export default function ConnectionsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Sync selectedWorkspaceForConnection with active workspace when drawer opens
+  // Sync selectedProfileForConnection with active profile when drawer opens
   useEffect(() => {
-    if (activeWorkspace) {
-      setSelectedWorkspaceForConnection(activeWorkspace.id);
-    } else if (workspaces.length > 0) {
-      setSelectedWorkspaceForConnection(workspaces[0].id);
+    if (activeProfile) {
+      setSelectedProfileForConnection(activeProfile.id);
+    } else if (profiles.length > 0) {
+      setSelectedProfileForConnection(profiles[0].id);
     }
-  }, [activeWorkspace, workspaces, isNewConnectionOpen]);
+  }, [activeProfile, profiles, isNewConnectionOpen]);
 
-  // Reset expanded platform and quick create input when drawer closes or workspace changes
+  // Reset expanded platform when drawer closes or profile changes
   useEffect(() => {
     setExpandedPlatformId(null);
-    setQuickCreatePlatformId(null);
-    setQuickCreateName('');
-  }, [isNewConnectionOpen, selectedWorkspaceForConnection]);
+  }, [isNewConnectionOpen, selectedProfileForConnection]);
 
-  // Set workspace filter from localStorage if returning from a quick create connect redirect
-  useEffect(() => {
-    const pendingWsId = localStorage.getItem('filter_workspace_after_connect');
-    if (pendingWsId) {
-      setSelectedWorkspaceFilter(pendingWsId);
-      localStorage.removeItem('filter_workspace_after_connect');
-    }
-  }, []);
-
-  // Fetch connections for selected workspace or all workspaces
+  // Fetch connections for selected profile or all profiles
   const { data: connections = [], isLoading: isConnectionsLoading } = useQuery<
     (SocialAccountDto & { workspace: typeof workspaces[0] })[]
   >({
     queryKey: ['connections-list'],
     queryFn: async () => {
-      const promises = workspaces.map(async (ws) => {
-        try {
-          const result = await socialAccountsApi.getSocialAccounts(ws.id);
-          return result.items.map(acc => ({ ...acc, workspace: ws }));
-        } catch (err) {
-          console.error(`Error loading social accounts for workspace ${ws.name}`, err);
-          return [];
-        }
-      });
-      const results = await Promise.all(promises);
-      return results.flat();
+      // Fetch all accounts for the current workspace. 
+      // Note: We still pass workspace ID to the underlying API but we filter by Profile in the UI/BE.
+      const ws = activeWorkspace || workspaces[0];
+      if (!ws) return [];
+      
+      try {
+        const result = await socialAccountsApi.getSocialAccounts(ws.id);
+        return result.items.map(acc => ({ ...acc, workspace: ws }));
+      } catch (err) {
+        console.error(`Error loading social accounts`, err);
+        return [];
+      }
     },
     staleTime: 30_000,
     enabled: workspaces.length > 0,
-  });  // Helper to choose a random color avoiding existing workspace colors if possible
-  const getRandomWorkspaceColor = (): string => {
-    const defaultPalette = ['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'];
-    const usedColors = new Set(workspaces.map(w => w.color?.toLowerCase()).filter(Boolean));
-    const availableColors = defaultPalette.filter(c => !usedColors.has(c.toLowerCase()));
-    const selectFrom = availableColors.length > 0 ? availableColors : defaultPalette;
-    return selectFrom[Math.floor(Math.random() * selectFrom.length)];
-  };
+  });
 
-  // Mutation for inline quick workspace creation
-  const quickCreateWorkspaceMutation = useMutation({
-    mutationFn: async (vars: { name: string; color: string; platformId: string }) => {
-      return workspacesApi.createWorkspace({
-        name: vars.name,
-        color: vars.color,
-      });
+  // Create Profile Mutation
+  const createProfileMutation = useMutation({
+    mutationFn: async (data: { name: string; color?: string }) => {
+      return workspacesApi.createProfile(data);
     },
-    onSuccess: (newWorkspace, variables) => {
-      showSuccess(`Workspace "${newWorkspace.name}" created successfully`);
-      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      
-      // Store in localStorage to auto filter once return from redirect
-      localStorage.setItem('filter_workspace_after_connect', newWorkspace.id);
-      
-      // Reset inline inputs
-      setQuickCreatePlatformId(null);
-      setQuickCreateName('');
-      
-      // Redirect to OAuth
-      void handleConnectPlatform(variables.platformId, newWorkspace.id);
+    onSuccess: (newProfile) => {
+      showSuccess(`Profile "${newProfile.name}" created successfully`);
+      void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
+      closeProfileDrawer();
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to create workspace';
+      const msg = err?.response?.data?.message || 'Failed to create profile';
       showError(msg);
     }
   });
 
-  const handleQuickCreateWorkspace = (platformId: string) => {
-    if (!quickCreateName.trim()) {
-      showError('Please enter a workspace name');
-      return;
-    }
-    const color = getRandomWorkspaceColor();
-    quickCreateWorkspaceMutation.mutate({
-      name: quickCreateName.trim(),
-      color,
-      platformId
-    });
-  };
-
-  // Create Workspace Mutation
-  const createWorkspaceMutation = useMutation({
-    mutationFn: async (data: { name: string; color?: string; description?: string }) => {
-      return workspacesApi.createWorkspace(data);
-    },
-    onSuccess: (newWorkspace) => {
-      showSuccess(`Workspace "${newWorkspace.name}" created successfully`);
-      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      setSelectedWorkspaceFilter(newWorkspace.id);
-      closeWorkspaceDrawer();
-    },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to create workspace';
-      showError(msg);
-    }
-  });
-
-  const handleCreateWorkspace = (e: React.FormEvent) => {
+  const handleCreateProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newWorkspaceName.trim()) {
-      showError('Please enter a workspace name');
+    if (!newProfileName.trim()) {
+      showError('Please enter a profile name');
       return;
     }
 
-    const color = newWorkspaceColor === '#fda4af' ? undefined : newWorkspaceColor;
-
-    createWorkspaceMutation.mutate({
-      name: newWorkspaceName,
-      color,
-      description: newWorkspaceDescription.trim() || undefined,
+    createProfileMutation.mutate({
+      name: newProfileName,
+      color: newProfileColor === '#fda4af' ? undefined : newProfileColor,
     });
   };
 
-  // Update Workspace Mutation
-  const updateWorkspaceMutation = useMutation({
-    mutationFn: async ({ id, name, description, color }: { id: string; name: string; description?: string; color?: string }) => {
-      return workspacesApi.updateWorkspace(id, { name, description, color });
+  // Edit Profile Mutation
+  const editProfileMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name: string; color?: string } }) => {
+      return workspacesApi.updateProfile(id, data);
     },
     onSuccess: () => {
-      showSuccess('Workspace updated successfully');
-      setEditingWorkspace(null);
-      setEditWorkspaceName('');
-      setEditWorkspaceDescription('');
-      setEditWorkspaceColor('');
-      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      showSuccess('Profile updated successfully');
+      closeEditProfileDrawer();
+      void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to update workspace';
+      const msg = err?.response?.data?.message || 'Failed to update profile';
       showError(msg);
     }
   });
 
-  // Delete Workspace Mutation
-  const deleteWorkspaceMutation = useMutation({
+  // Delete Profile Mutation
+  const deleteProfileMutation = useMutation({
     mutationFn: async (id: string) => {
-      return workspacesApi.deleteWorkspace(id);
+      return workspacesApi.deleteProfile(id);
     },
     onSuccess: () => {
-      showSuccess('Workspace deleted');
-      setWorkspaceToDelete(null);
-      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+      showSuccess('Profile deleted');
+      closeDeleteProfileModal();
+      void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to delete workspace';
+      const msg = err?.response?.data?.message || 'Failed to delete profile';
       showError(msg);
     }
   });
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile) return;
+    if (!editProfileName.trim()) {
+      showError('Profile name is required');
+      return;
+    }
+    editProfileMutation.mutate({
+      id: editingProfile.id,
+      data: {
+        name: editProfileName.trim(),
+        color: editProfileColor === editingProfile.color || editProfileColor === '#fda4af' ? undefined : editProfileColor,
+      },
+    });
+  };
 
   // Disconnect Connection Mutation
   const disconnectMutation = useMutation({
@@ -758,33 +669,6 @@ export default function ConnectionsPage() {
     }
   };
 
-  const handleEditWorkspace = (ws: typeof workspaces[0]) => {
-    setEditingWorkspace(ws);
-    setEditWorkspaceName(ws.name);
-    setEditWorkspaceDescription(ws.description ?? '');
-    setEditWorkspaceColor(ws.color ?? '#fda4af');
-  };
-
-  const handleDeleteWorkspace = (ws: typeof workspaces[0]) => {
-    if (workspaces.length <= 1) return;
-    setWorkspaceToDelete(ws);
-  };
-
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingWorkspace) return;
-    if (!editWorkspaceName.trim()) {
-      showError('Workspace name is required');
-      return;
-    }
-    updateWorkspaceMutation.mutate({
-      id: editingWorkspace.id,
-      name: editWorkspaceName.trim(),
-      description: editWorkspaceDescription.trim() || undefined,
-      color: editWorkspaceColor || undefined,
-    });
-  };
-
   // Handle platform connection
   const handleConnectPlatform = async (platformId: string, overrideWorkspaceId?: string) => {
     const config = ALL_PLATFORMS.find(p => p.id === platformId);
@@ -793,7 +677,7 @@ export default function ConnectionsPage() {
       return;
     }
     
-    const wsId = overrideWorkspaceId || selectedWorkspaceForConnection;
+    const wsId = overrideWorkspaceId || selectedProfileForConnection;
     if (!wsId) {
       showError("Please select a workspace first.");
       return;
@@ -819,10 +703,10 @@ export default function ConnectionsPage() {
 
   // Filter connections
   const filteredConnections = connections.filter(conn => {
-    const matchesWorkspace = selectedWorkspaceFilter === 'all' || conn.workspace.id === selectedWorkspaceFilter;
+    const matchesProfile = selectedProfileFilter === 'all' || conn.zernioProfileId === selectedProfileFilter;
     const matchesPlatform = selectedPlatformFilter === 'all' || conn.platform.toLowerCase() === selectedPlatformFilter.toLowerCase();
     const matchesStatus = selectedStatusFilter === 'all' || (selectedStatusFilter === 'connected' ? conn.isActive : !conn.isActive);
-    return matchesWorkspace && matchesPlatform && matchesStatus;
+    return matchesProfile && matchesPlatform && matchesStatus;
   });
 
   const renderedCards = ALL_PLATFORMS.flatMap((platform) => {
@@ -832,7 +716,7 @@ export default function ConnectionsPage() {
 
     if (platformConnections.length === 0) {
       if (selectedStatusFilter === 'connected') return [];
-      if (selectedWorkspaceFilter === 'all') return [];
+      if (selectedProfileFilter === 'all') return [];
 
       return [(
         <div key={`empty-${platform.id}`} className={styles.card}>
@@ -869,8 +753,8 @@ export default function ConnectionsPage() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               disabled={connectingPlatform === platform.id}
               onClick={() => {
-                if (selectedWorkspaceFilter !== 'all') {
-                  handleConnectPlatform(platform.id, selectedWorkspaceFilter);
+                if (selectedProfileFilter !== 'all') {
+                  handleConnectPlatform(platform.id, selectedProfileFilter);
                 } else {
                   setIsNewConnectionOpen(true);
                 }
@@ -952,23 +836,9 @@ export default function ConnectionsPage() {
             <div className={styles.connectionMeta}>
               {account.displayName || account.externalAccountId} • {displayDate}
             </div>
-            <div
-              className={styles.handleBlock}
-              onClick={() => setSelectedWorkspaceFilter(account.workspace.id)}
-              title={`Filter by workspace: ${account.workspace.name}`}
-            >
+            <div className={styles.handleBlock}>
               <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#fdba74' }} />
               <span className={styles.handleText}>{account.workspace.name}</span>
-              <button
-                className={styles.copyBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopyId(account.workspace.name);
-                }}
-                title="Copy workspace name"
-              >
-                <Copy size={12} />
-              </button>
             </div>
           </div>
 
@@ -1001,22 +871,17 @@ export default function ConnectionsPage() {
     });
   });
 
-  const hasActiveFilters = selectedWorkspaceFilter !== 'all' || selectedPlatformFilter !== 'all' || selectedStatusFilter !== 'all';
+  const hasActiveFilters = selectedProfileFilter !== 'all' || selectedPlatformFilter !== 'all' || selectedStatusFilter !== 'all';
 
   const resetFilters = () => {
-    setSelectedWorkspaceFilter('all');
+    setSelectedProfileFilter('all');
     setSelectedPlatformFilter('all');
     setSelectedStatusFilter('all');
   };
 
-  const getWorkspaceName = (id: string) => {
-    if (id === 'all') return 'All workspaces';
-    return workspaces.find(w => w.id === id)?.name || id;
-  };
-
-  const handleCopyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    showSuccess("Copied ID to clipboard");
+  const getProfileName = (id: string) => {
+    if (id === 'all') return 'All profiles';
+    return profiles.find(p => p.id === id)?.name || id;
   };
 
   return (
@@ -1025,7 +890,7 @@ export default function ConnectionsPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Connections</h1>
-          <p className={styles.subtitle}>Manage workspaces and platform integrations</p>
+          <p className={styles.subtitle}>Manage profiles and platform integrations</p>
         </div>
         <div className={styles.headerActions}>
           <button
@@ -1037,9 +902,9 @@ export default function ConnectionsPage() {
           </button>
           <button
             className={styles.newProfileBtn}
-            onClick={() => setIsNewWorkspaceOpen(true)}
+            onClick={() => setIsNewProfileOpen(true)}
           >
-            New Workspace
+            New Profile
           </button>
         </div>
       </div>
@@ -1049,78 +914,85 @@ export default function ConnectionsPage() {
         <div className={styles.filterLeft}>
           <span className={styles.filterLabel}>Platforms</span>
 
-          {/* Workspace Filter Dropdown */}
+          {/* Profile Filter Dropdown */}
           <div className={styles.dropdownContainer}>
             <button
               className={styles.dropdownTrigger}
-              onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
             >
               <span className={styles.workspaceOptRow}>
-                {selectedWorkspaceFilter !== 'all' ? (
-                  <span className={styles.workspaceDot} style={{ backgroundColor: workspaces.find(w => w.id === selectedWorkspaceFilter)?.color || '#fdba74' }} />
+                {selectedProfileFilter !== 'all' ? (
+                  <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileFilter)?.color || '#fdba74' }} />
                 ) : null}
-                <span>{getWorkspaceName(selectedWorkspaceFilter)}</span>
+                <span>{getProfileName(selectedProfileFilter)}</span>
               </span>
               <ChevronDown size={14} />
             </button>
-            {isWorkspaceDropdownOpen && (
+            {isProfileDropdownOpen && (
               <div className={styles.dropdownMenu}>
                 <button
-                  className={`${styles.dropdownItem} ${selectedWorkspaceFilter === 'all' ? styles.activeItem : ''}`}
+                  className={`${styles.dropdownItem} ${selectedProfileFilter === 'all' ? styles.activeItem : ''}`}
                   onClick={() => {
-                    setSelectedWorkspaceFilter('all');
-                    setIsWorkspaceDropdownOpen(false);
+                    setSelectedProfileFilter('all');
+                    setIsProfileDropdownOpen(false);
                   }}
                 >
-                  <span>All workspaces</span>
-                  {selectedWorkspaceFilter === 'all' && <Check size={14} />}
+                  <span>All profiles</span>
+                  {selectedProfileFilter === 'all' && <Check size={14} />}
                 </button>
-                {workspaces.map(ws => (
-                  <div key={ws.id} className={styles.workspaceItem}>
+                <div className={styles.dropdownDivider} />
+                {profiles.map(profile => (
+                  <div key={profile.id} className={styles.workspaceItem}>
                     <button
-                      className={`${styles.workspaceItemBtn} ${selectedWorkspaceFilter === ws.id ? styles.activeItem : ''}`}
+                      className={`${styles.workspaceItemBtn} ${selectedProfileFilter === profile.id ? styles.activeItem : ''}`}
                       onClick={() => {
-                        setSelectedWorkspaceFilter(ws.id);
-                        setIsWorkspaceDropdownOpen(false);
+                        setSelectedProfileFilter(profile.id);
+                        setIsProfileDropdownOpen(false);
                       }}
                     >
-                        <div className={styles.workspaceOptRow}>
-                        <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
-                        <span className={styles.workspaceOptName}>{ws.name}</span>
-                        {ws.role === 'owner' && <span className={styles.defaultBadge}>default</span>}
+                      <div className={styles.workspaceOptRow}>
+                        <span className={styles.workspaceDot} style={{ backgroundColor: profile.color || '#818cf8' }} />
+                        <span className={styles.workspaceOptName}>{profile.name}</span>
                       </div>
+                      {selectedProfileFilter === profile.id && <Check size={14} className={styles.workspaceActionCheck} />}
                     </button>
                     <div className={styles.workspaceItemActions}>
-                      {selectedWorkspaceFilter === ws.id && <Check size={14} className={styles.workspaceActionCheck} />}
                       <button
                         className={styles.workspaceActionBtn}
-                        onClick={(e) => { e.stopPropagation(); handleEditWorkspace(ws); }}
-                        title="Edit workspace"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsProfileDropdownOpen(false);
+                          setEditingProfile(profile);
+                          setEditProfileName(profile.name);
+                          setEditProfileColor(profile.color || '#fda4af');
+                        }}
+                        title="Edit profile"
                       >
                         <Pencil size={13} />
                       </button>
-                      {workspaces.length > 1 && (
-                        <button
-                          className={`${styles.workspaceActionBtn} ${styles.workspaceActionBtnDanger}`}
-                          onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(ws); }}
-                          title="Delete workspace"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                      <button
+                        className={`${styles.workspaceActionBtn} ${styles.workspaceActionBtnDanger}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsProfileDropdownOpen(false);
+                          setProfileToDelete(profile);
+                        }}
+                        title="Delete profile"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
                 ))}
-                <div className={styles.dropdownDivider} />
                 <button
                   className={styles.dropdownAddBtn}
                   onClick={() => {
-                    setIsWorkspaceDropdownOpen(false);
-                    setIsNewWorkspaceOpen(true);
+                    setIsProfileDropdownOpen(false);
+                    setIsNewProfileOpen(true);
                   }}
                 >
                   <Plus size={14} />
-                  <span>Create new workspace...</span>
+                  <span>Create new profile...</span>
                 </button>
               </div>
             )}
@@ -1251,58 +1123,46 @@ export default function ConnectionsPage() {
         </div>
       )}
 
-      {/* DRAWER 1: Create New Workspace Drawer */}
-      {isNewWorkspaceOpen && (
-        <div className={styles.drawerBackdrop} onClick={() => closeWorkspaceDrawer()}>
+      {/* DRAWER 1: Create New Profile Drawer */}
+      {isNewProfileOpen && (
+        <div className={styles.drawerBackdrop} onClick={() => closeProfileDrawer()}>
           <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
               <div>
-                <h2 className={styles.drawerTitle}>Create new workspace</h2>
-                <p className={styles.drawerSubtitle}>Add a new workspace to organize your social accounts.</p>
+                <h2 className={styles.drawerTitle}>Create new profile</h2>
+                <p className={styles.drawerSubtitle}>Add a new Zernio profile to manage your social accounts.</p>
               </div>
-              <button className={styles.drawerCloseBtn} onClick={() => closeWorkspaceDrawer()}>
+              <button className={styles.drawerCloseBtn} onClick={() => closeProfileDrawer()}>
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateWorkspace} className={styles.drawerForm}>
+            <form onSubmit={handleCreateProfile} className={styles.drawerForm}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Workspace Name</label>
+                <label className={styles.formLabel}>Profile Name</label>
                 <input
                   type="text"
                   className={styles.formInput}
                   placeholder="e.g., Personal, Business, Agency"
-                  value={newWorkspaceName}
-                  onChange={(e) => setNewWorkspaceName(e.target.value)}
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
                   maxLength={50}
                   required
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Description</label>
-                <textarea
-                  className={styles.formTextarea}
-                  placeholder="Optional description"
-                  value={newWorkspaceDescription}
-                  onChange={(e) => setNewWorkspaceDescription(e.target.value)}
-                  rows={4}
-                  maxLength={200}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Color</label>
                 <div className={styles.colorPickerContainer}>
-                  <div className={styles.colorBox} style={{ backgroundColor: newWorkspaceColor }} />
+                  <div className={styles.colorBox} style={{ backgroundColor: newProfileColor }} />
                   <div className={styles.colorPalette}>
                     {['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'].map(color => (
                       <button
                         key={color}
                         type="button"
-                        className={`${styles.colorPaletteBtn} ${newWorkspaceColor === color ? styles.colorPaletteBtnActive : ''}`}
+                        className={`${styles.colorPaletteBtn} ${newProfileColor === color ? styles.colorPaletteBtnActive : ''}`}
                         style={{ backgroundColor: color }}
-                        onClick={() => setNewWorkspaceColor(color)}
+                        onClick={() => setNewProfileColor(color)}
                       />
                     ))}
                   </div>
@@ -1313,97 +1173,14 @@ export default function ConnectionsPage() {
                 <button
                   type="submit"
                   className={styles.drawerSubmitBtn}
-                  disabled={createWorkspaceMutation.isPending}
+                  disabled={createProfileMutation.isPending}
                 >
-                  {createWorkspaceMutation.isPending ? 'Creating...' : 'Create Workspace'}
+                  {createProfileMutation.isPending ? 'Creating...' : 'Create Profile'}
                 </button>
                 <button
                   type="button"
                   className={styles.drawerCancelBtn}
-                  onClick={() => closeWorkspaceDrawer()}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* DRAWER 1.5: Edit Workspace Drawer */}
-      {editingWorkspace && (
-        <div className={styles.drawerBackdrop} onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}>
-          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.drawerHeader}>
-              <div>
-                <h2 className={styles.drawerTitle}>Edit workspace</h2>
-                <p className={styles.drawerSubtitle}>Update the name, description, or color of your workspace.</p>
-              </div>
-              <button
-                className={styles.drawerCloseBtn}
-                onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className={styles.drawerForm}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Workspace Name</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="e.g., Personal, Business, Agency"
-                  value={editWorkspaceName}
-                  onChange={(e) => setEditWorkspaceName(e.target.value)}
-                  maxLength={50}
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Description</label>
-                <textarea
-                  className={styles.formTextarea}
-                  placeholder="Optional description"
-                  value={editWorkspaceDescription}
-                  onChange={(e) => setEditWorkspaceDescription(e.target.value)}
-                  rows={3}
-                  maxLength={200}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Color</label>
-                <div className={styles.colorPickerContainer}>
-                  <div className={styles.colorBox} style={{ backgroundColor: editWorkspaceColor || '#fda4af' }} />
-                  <div className={styles.colorPalette}>
-                    {['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'].map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        className={`${styles.colorPaletteBtn} ${editWorkspaceColor === color ? styles.colorPaletteBtnActive : ''}`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => setEditWorkspaceColor(color)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.drawerFooter}>
-                <button
-                  type="submit"
-                  className={styles.drawerSubmitBtn}
-                  disabled={updateWorkspaceMutation.isPending}
-                >
-                  {updateWorkspaceMutation.isPending ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.drawerCancelBtn}
-                  onClick={() => { setEditingWorkspace(null); setEditWorkspaceName(''); setEditWorkspaceDescription(''); setEditWorkspaceColor(''); }}
+                  onClick={() => closeProfileDrawer()}
                 >
                   Cancel
                 </button>
@@ -1428,55 +1205,44 @@ export default function ConnectionsPage() {
             </div>
 
             <div className={styles.drawerBody}>
-              {/* Workspace Selection */}
+              {/* Profile Selection */}
               <div className={styles.formGroup} style={{ position: 'relative' }}>
                 <label className={styles.formLabel}>Profile</label>
                 <button
                   className={styles.drawerDropdownTrigger}
-                  onClick={() => setIsConnWorkspaceDropdownOpen(!isConnWorkspaceDropdownOpen)}
+                  onClick={() => setIsProfileConnWorkspaceDropdownOpen(!isProfileConnDropdownOpen)}
                 >
                   <span className={styles.workspaceOptRow}>
-                    {selectedWorkspaceForConnection ? (
-                      <span className={styles.workspaceDot} style={{ backgroundColor: workspaces.find(w => w.id === selectedWorkspaceForConnection)?.color || '#fdba74' }} />
+                    {selectedProfileForConnection ? (
+                      <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileForConnection)?.color || '#fdba74' }} />
                     ) : null}
                     <span>
-                      {selectedWorkspaceForConnection
-                        ? workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name
-                        : 'Select a workspace'}
+                      {selectedProfileForConnection
+                        ? profiles.find(p => p.id === selectedProfileForConnection)?.name
+                        : 'Select a profile'}
                     </span>
                   </span>
                   <ChevronDown size={14} />
                 </button>
 
-                {isConnWorkspaceDropdownOpen && (
+                {isProfileConnDropdownOpen && (
                   <div className={styles.drawerDropdownMenu}>
-                    {workspaces.map(ws => (
+                    {profiles.map(p => (
                       <button
-                        key={ws.id}
-                        className={`${styles.dropdownItem} ${selectedWorkspaceForConnection === ws.id ? styles.activeItem : ''}`}
+                        key={p.id}
+                        className={`${styles.dropdownItem} ${selectedProfileForConnection === p.id ? styles.activeItem : ''}`}
                         onClick={() => {
-                          setSelectedWorkspaceForConnection(ws.id);
-                          setIsConnWorkspaceDropdownOpen(false);
+                          setSelectedProfileForConnection(p.id);
+                          setIsProfileConnWorkspaceDropdownOpen(false);
                         }}
                       >
                         <div className={styles.workspaceOptRow}>
-                          <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
-                          <span>{ws.name}</span>
+                          <span className={styles.workspaceDot} style={{ backgroundColor: p.color || '#fdba74' }} />
+                          <span>{p.name}</span>
                         </div>
-                        {selectedWorkspaceForConnection === ws.id && <Check size={14} />}
+                        {selectedProfileForConnection === p.id && <Check size={14} />}
                       </button>
                     ))}
-                    <div className={styles.dropdownDivider} />
-                    <button
-                      className={styles.dropdownAddBtn}
-                      onClick={() => {
-                        setIsConnWorkspaceDropdownOpen(false);
-                        setIsNewWorkspaceOpen(true);
-                      }}
-                    >
-                      <Plus size={14} />
-                      <span>Create new workspace...</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -1484,23 +1250,23 @@ export default function ConnectionsPage() {
               {/* Platforms List Section */}
               <div className={styles.platformsSection}>
                 <div className={styles.platformsListContainer}>
-                  {!selectedWorkspaceForConnection && (
+                  {!selectedProfileForConnection && (
                     <div className={styles.platformsListBlurOverlay}>
                       <div className={styles.blurCard}>
-                        <h4 className={styles.blurCardTitle}>Select a workspace first</h4>
-                        <p className={styles.blurCardText}>Pick a workspace above to choose what to connect.</p>
+                        <h4 className={styles.blurCardTitle}>Select a profile first</h4>
+                        <p className={styles.blurCardText}>Pick a profile above to choose what to connect.</p>
                       </div>
                     </div>
                   )}
 
-                  <div className={`${styles.platformsList} ${!selectedWorkspaceForConnection ? styles.platformsListBlur : ''}`}>
+                  <div className={`${styles.platformsList} ${!selectedProfileForConnection ? styles.platformsListBlur : ''}`}>
                     {PLATFORM_GROUPS.map(group => {
                       const sortedIds = [...group.platformIds].sort((a, b) => {
-                        const aConnected = selectedWorkspaceForConnection && connections.some(
-                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === a
+                        const aConnected = selectedProfileForConnection && connections.some(
+                          conn => conn.zernioProfileId === selectedProfileForConnection && conn.platform.toLowerCase() === a
                         );
-                        const bConnected = selectedWorkspaceForConnection && connections.some(
-                          conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === b
+                        const bConnected = selectedProfileForConnection && connections.some(
+                          conn => conn.zernioProfileId === selectedProfileForConnection && conn.platform.toLowerCase() === b
                         );
                         if (aConnected && !bConnected) return 1;
                         if (!aConnected && bConnected) return -1;
@@ -1514,19 +1280,15 @@ export default function ConnectionsPage() {
                           {sortedIds.map((platformId) => {
                             const platform = platformsById[platformId];
                             if (!platform) return null;
-                            const isDisabled = !selectedWorkspaceForConnection || !platform.isSupported;
+                            const isDisabled = !selectedProfileForConnection || !platform.isSupported;
                             
-                            const isConnected = selectedWorkspaceForConnection && connections.some(
-                              conn => conn.workspace.id === selectedWorkspaceForConnection && conn.platform.toLowerCase() === platform.id
+                            const isConnected = selectedProfileForConnection && connections.some(
+                              conn => conn.zernioProfileId === selectedProfileForConnection && conn.platform.toLowerCase() === platform.id
                             );
 
                             if (isConnected) {
                               const isExpanded = expandedPlatformId === platform.id;
-                              const currentWorkspaceName = workspaces.find(w => w.id === selectedWorkspaceForConnection)?.name || '';
-                              const eligibleWorkspaces = workspaces.filter(ws => 
-                                ws.id !== selectedWorkspaceForConnection && 
-                                !connections.some(conn => conn.workspace.id === ws.id && conn.platform.toLowerCase() === platform.id)
-                              );
+                              const currentProfileName = profiles.find(p => p.id === selectedProfileForConnection)?.name || '';
                               
                               return (
                                 <div key={platform.id} className={`${styles.platformListItemContainer} ${isExpanded ? styles.expanded : ''}`}>
@@ -1552,73 +1314,8 @@ export default function ConnectionsPage() {
                                   {isExpanded && (
                                     <div className={styles.platformListItemContent}>
                                       <p className={styles.connectedExplanation}>
-                                        {platform.label} is connected to <strong>{currentWorkspaceName}</strong>. Each workspace holds one {platform.label} account. To add another, connect it to a different workspace:
+                                        {platform.label} is connected to <strong>{currentProfileName}</strong>. Each profile holds one {platform.label} account.
                                       </p>
-                                      
-                                      <div className={styles.eligibleWorkspacesList}>
-                                        {eligibleWorkspaces.map(ws => (
-                                          <button
-                                            key={ws.id}
-                                            type="button"
-                                            className={styles.eligibleWorkspaceBtn}
-                                            onClick={() => handleConnectPlatform(platform.id, ws.id)}
-                                            disabled={connectingPlatform === platform.id}
-                                          >
-                                            <div className={styles.workspaceOptRow}>
-                                              <span className={styles.workspaceDot} style={{ backgroundColor: ws.color || '#fdba74' }} />
-                                              <span className={styles.workspaceName}>{ws.name}</span>
-                                            </div>
-                                            <ArrowRight size={14} className={styles.eligibleWorkspaceArrow} />
-                                          </button>
-                                        ))}
-                                        
-                                        {quickCreatePlatformId === platform.id ? (
-                                          <div className={styles.quickCreateInputContainer}>
-                                            <Plus size={14} className={styles.quickCreatePlusActive} />
-                                            <input
-                                              type="text"
-                                              className={styles.quickCreateInput}
-                                              placeholder="New workspace..."
-                                              value={quickCreateName}
-                                              onChange={(e) => setQuickCreateName(e.target.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleQuickCreateWorkspace(platform.id);
-                                                } else if (e.key === 'Escape') {
-                                                  setQuickCreatePlatformId(null);
-                                                }
-                                              }}
-                                              autoFocus
-                                            />
-                                            {quickCreateName.trim() && (
-                                              <button
-                                                type="button"
-                                                className={styles.quickCreateSubmitBtn}
-                                                onClick={() => handleQuickCreateWorkspace(platform.id)}
-                                                disabled={quickCreateWorkspaceMutation.isPending}
-                                              >
-                                                {quickCreateWorkspaceMutation.isPending ? (
-                                                  <Loader2 size={14} className={styles.btnSpinner} />
-                                                ) : (
-                                                  <ArrowRight size={14} />
-                                                )}
-                                              </button>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <button
-                                            type="button"
-                                            className={styles.quickCreateWorkspaceBtn}
-                                            onClick={() => {
-                                              setQuickCreatePlatformId(platform.id);
-                                              setQuickCreateName('');
-                                            }}
-                                          >
-                                            <Plus size={14} className={styles.quickCreatePlus} />
-                                            <span>New workspace...</span>
-                                          </button>
-                                        )}
-                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1630,7 +1327,7 @@ export default function ConnectionsPage() {
                                 key={platform.id}
                                 type="button"
                                 className={styles.platformListItem}
-                                onClick={() => handleConnectPlatform(platform.id)}
+                                onClick={() => handleConnectPlatform(platform.id, selectedProfileForConnection)}
                                 disabled={isDisabled || connectingPlatform === platform.id}
                               >
                                 <div className={styles.platformListLeft}>
@@ -1665,6 +1362,114 @@ export default function ConnectionsPage() {
                   })}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER 1.75: Edit Profile Drawer */}
+      {editingProfile && (
+        <div className={styles.drawerBackdrop} onClick={() => closeEditProfileDrawer()}>
+          <div className={styles.drawerCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.drawerHeader}>
+              <div>
+                <h2 className={styles.drawerTitle}>Edit profile</h2>
+                <p className={styles.drawerSubtitle}>Update the name or color of your Zernio profile.</p>
+              </div>
+              <button className={styles.drawerCloseBtn} onClick={() => closeEditProfileDrawer()}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className={styles.drawerForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Profile Name</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g., Personal, Business, Agency"
+                  value={editProfileName}
+                  onChange={(e) => setEditProfileName(e.target.value)}
+                  maxLength={50}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Color</label>
+                <div className={styles.colorPickerContainer}>
+                  <div className={styles.colorBox} style={{ backgroundColor: editProfileColor || '#fda4af' }} />
+                  <div className={styles.colorPalette}>
+                    {['#fda4af', '#f0abfc', '#c084fc', '#818cf8', '#93c5fd', '#86efac', '#fde047', '#fdba74'].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`${styles.colorPaletteBtn} ${editProfileColor === color ? styles.colorPaletteBtnActive : ''}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setEditProfileColor(color)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.drawerFooter}>
+                <button
+                  type="submit"
+                  className={styles.drawerSubmitBtn}
+                  disabled={editProfileMutation.isPending}
+                >
+                  {editProfileMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.drawerCancelBtn}
+                  onClick={() => closeEditProfileDrawer()}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Profile Confirm Modal */}
+      {profileToDelete && (
+        <div className={styles.modalBackdrop} onClick={() => closeDeleteProfileModal()}>
+          <div className={styles.disconnectModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.disconnectModalContent}>
+              <div className={styles.disconnectModalHeader}>
+                <div className={styles.disconnectHeaderLeft}>
+                  <Trash2 size={20} className={styles.disconnectIcon} />
+                  <h2 className={styles.disconnectModalTitle}>Delete profile</h2>
+                </div>
+                <button className={styles.modalCloseBtn} onClick={() => closeDeleteProfileModal()} disabled={deleteProfileMutation.isPending}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div className={styles.disconnectModalBody}>
+                <p className={styles.disconnectText}>
+                  Are you sure you want to delete{' '}
+                  <strong>{profileToDelete.name}</strong>? This action cannot be undone.
+                </p>
+              </div>
+              <div className={styles.disconnectModalFooter}>
+                <button className={styles.disconnectCancelBtn} onClick={() => closeDeleteProfileModal()} disabled={deleteProfileMutation.isPending}>
+                  Cancel
+                </button>
+                <button className={styles.disconnectConfirmBtn} onClick={() => deleteProfileMutation.mutate(profileToDelete.id)} disabled={deleteProfileMutation.isPending}>
+                  {deleteProfileMutation.isPending ? (
+                    <span className={styles.btnLoadingWrap}>
+                      <Loader2 size={13} className={styles.btnSpinner} />
+                      <span>Deleting...</span>
+                    </span>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -1850,17 +1655,7 @@ export default function ConnectionsPage() {
         />
       )}
 
-      {/* Delete Workspace Confirm Modal */}
-      {workspaceToDelete && (
-        <DeleteWorkspaceConfirmModal
-          workspace={workspaceToDelete}
-          onClose={() => setWorkspaceToDelete(null)}
-          onConfirm={() => {
-            deleteWorkspaceMutation.mutate(workspaceToDelete.id);
-          }}
-          isPending={deleteWorkspaceMutation.isPending}
-        />
-      )}
+
     </div>
   );
 }

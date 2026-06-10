@@ -6,6 +6,7 @@ namespace Syncra.Application.Features.Posts.Queries;
 
 public record GetPostsQuery(
     Guid WorkspaceId,
+    Guid? ProfileId = null,
     string? Status = null,
     DateTime? ScheduledFromUtc = null,
     DateTime? ScheduledToUtc = null,

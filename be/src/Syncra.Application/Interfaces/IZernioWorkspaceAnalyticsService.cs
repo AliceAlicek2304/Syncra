@@ -8,11 +8,13 @@ public interface IZernioWorkspaceAnalyticsService
     Task<Result<WorkspaceAnalyticsSummaryDto>> GetSummaryAsync(
         Guid workspaceId,
         int date = 30,
+        string? profileId = null,
         CancellationToken cancellationToken = default);
 
     Task<Result<HeatmapDto>> GetHeatmapAsync(
         Guid workspaceId,
         int date = 90,
         string? platform = null,
+        string? profileId = null,
         CancellationToken cancellationToken = default);
 }

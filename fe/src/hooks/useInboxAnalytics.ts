@@ -72,7 +72,7 @@ const noAutoRefetch = {
   refetchOnReconnect: false,
 } as const;
 
-export function useInboxAnalytics() {
+export function useInboxAnalytics({ profileId }: { profileId?: string } = {}) {
   const [presetDays, setPresetDays] = useState<InboxAnalyticsPresetDays>(30);
   const [platform, setPlatform] = useState<string | undefined>(undefined);
   const [source, setSource] = useState<InboxMessageSource | 'all'>('all');
@@ -80,6 +80,8 @@ export function useInboxAnalytics() {
 
   const toDate = useMemo(() => toIsoDate(new Date()), []);
   const fromDate = useMemo(() => computeFromDate(presetDays), [presetDays]);
+
+  const resolvedProfileId = profileId === 'all' ? undefined : (profileId || undefined);
 
   const filters = useMemo<InboxFilters>(
     () => ({
@@ -93,7 +95,7 @@ export function useInboxAnalytics() {
   );
 
   const volumeQuery = useQuery({
-    queryKey: ['inbox-analytics-volume', fromDate, toDate, platform ?? 'all', source],
+    queryKey: ['inbox-analytics-volume', fromDate, toDate, platform ?? 'all', source, resolvedProfileId ?? 'all'],
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.getVolume({
@@ -101,11 +103,12 @@ export function useInboxAnalytics() {
       toDate,
       ...(platform ? { platform } : {}),
       ...(source && source !== 'all' ? { source } : {}),
+      profileId: resolvedProfileId,
     }),
   });
 
   const topAccountsQuery = useQuery({
-    queryKey: ['inbox-analytics-top-accounts', fromDate, toDate, platform ?? 'all', source],
+    queryKey: ['inbox-analytics-top-accounts', fromDate, toDate, platform ?? 'all', source, resolvedProfileId ?? 'all'],
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.getTopAccounts({
@@ -114,33 +117,36 @@ export function useInboxAnalytics() {
       limit: 10,
       ...(platform ? { platform } : {}),
       ...(source && source !== 'all' ? { source } : {}),
+      profileId: resolvedProfileId,
     }),
   });
 
   const sourceBreakdownQuery = useQuery({
-    queryKey: ['inbox-analytics-source-breakdown', fromDate, toDate, platform ?? 'all'],
+    queryKey: ['inbox-analytics-source-breakdown', fromDate, toDate, platform ?? 'all', resolvedProfileId ?? 'all'],
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.getSourceBreakdown({
       fromDate,
       toDate,
       ...(platform ? { platform } : {}),
+      profileId: resolvedProfileId,
     }),
   });
 
   const responseTimeQuery = useQuery({
-    queryKey: ['inbox-analytics-response-time', fromDate, toDate, platform ?? 'all'],
+    queryKey: ['inbox-analytics-response-time', fromDate, toDate, platform ?? 'all', resolvedProfileId ?? 'all'],
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.getResponseTime({
       fromDate,
       toDate,
       ...(platform ? { platform } : {}),
+      profileId: resolvedProfileId,
     }),
   });
 
   const heatmapQuery = useQuery({
-    queryKey: ['inbox-analytics-heatmap', fromDate, toDate, platform ?? 'all', heatmapAction],
+    queryKey: ['inbox-analytics-heatmap', fromDate, toDate, platform ?? 'all', heatmapAction, resolvedProfileId ?? 'all'],
     staleTime: 5 * 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.getHeatmap({
@@ -148,11 +154,12 @@ export function useInboxAnalytics() {
       toDate,
       ...(platform ? { platform } : {}),
       action: heatmapAction,
+      profileId: resolvedProfileId,
     }),
   });
 
   const conversationsQuery = useQuery({
-    queryKey: ['inbox-analytics-conversations', fromDate, toDate, platform ?? 'all', source],
+    queryKey: ['inbox-analytics-conversations', fromDate, toDate, platform ?? 'all', source, resolvedProfileId ?? 'all'],
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: () => inboxAnalyticsApi.listConversations({
@@ -164,6 +171,7 @@ export function useInboxAnalytics() {
       order: 'desc',
       ...(platform ? { platform } : {}),
       ...(source && source !== 'all' ? { source } : {}),
+      profileId: resolvedProfileId,
     }),
   });
 

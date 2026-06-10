@@ -64,9 +64,7 @@ public sealed class SocialAccountsController : ControllerBase
         var safePageSize = Math.Clamp(pageSize, 1, 200);
 
         // Sync profilePicture from Zernio so avatars are always up-to-date
-        var zernioProfile = await _db.ZernioProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+        var zernioProfile = await ResolveZernioProfileAsync(workspaceId.Value, cancellationToken);
 
         Dictionary<string, ZernioAccountDto>? zernioByExternalId = null;
 
@@ -115,6 +113,11 @@ public sealed class SocialAccountsController : ControllerBase
         var baseQuery = _db.SocialAccounts
             .AsNoTracking()
             .Where(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive);
+
+        if (zernioProfile != null)
+        {
+            baseQuery = baseQuery.Where(sa => sa.ZernioProfileId == zernioProfile.Id);
+        }
 
         var totalItems = await baseQuery.CountAsync(cancellationToken);
         var totalPages = safePageSize > 0 ? (int)Math.Ceiling((double)totalItems / safePageSize) : 0;
@@ -263,9 +266,7 @@ public sealed class SocialAccountsController : ControllerBase
             return BadRequest(new { code = "invalid_state", message = "OAuth state token is invalid or has expired." });
         }
 
-        var zernioProfile = await _db.ZernioProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.WorkspaceId == resolvedWorkspaceId.Value && p.IsActive, cancellationToken);
+        var zernioProfile = await ResolveZernioProfileAsync(resolvedWorkspaceId.Value, cancellationToken);
 
         if (zernioProfile is null)
         {
@@ -299,8 +300,7 @@ public sealed class SocialAccountsController : ControllerBase
             return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
         }
 
-        var zernioProfile = await _db.ZernioProfiles
-            .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId.Value && p.IsActive, cancellationToken);
+        var zernioProfile = await ResolveZernioProfileAsync(workspaceId.Value, cancellationToken);
 
         if (zernioProfile is null)
         {
@@ -315,6 +315,14 @@ public sealed class SocialAccountsController : ControllerBase
             selectedId: request.SelectedId,
             selectedName: request.SelectedName,
             cancellationToken: cancellationToken);
+
+        // Try to get explicit ProfileId from context (set by ProfileResolutionMiddleware)
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        if (explicitProfileId != null)
+        {
+            var p = await _db.ZernioProfiles.FindAsync(explicitProfileId.Value);
+            if (p != null) zernioProfile = p;
+        }
 
         // Create or reactivate local SocialAccount
         var existing = await _db.SocialAccounts
@@ -399,12 +407,19 @@ public sealed class SocialAccountsController : ControllerBase
             return BadRequest(new { code = "invalid_state", message = "OAuth state token is invalid or has expired." });
         }
 
-        var zernioProfile = await _db.ZernioProfiles
-            .FirstOrDefaultAsync(p => p.WorkspaceId == resolvedWorkspaceId.Value && p.IsActive, cancellationToken);
+        var zernioProfile = await ResolveZernioProfileAsync(resolvedWorkspaceId.Value, cancellationToken);
 
         if (zernioProfile is null)
         {
             return NotFound(new { code = "not_found", message = "Zernio profile not found for this workspace." });
+        }
+
+        // Try to get explicit ProfileId from context (set by ProfileResolutionMiddleware)
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        if (explicitProfileId != null)
+        {
+            var p = await _db.ZernioProfiles.FindAsync(explicitProfileId.Value);
+            if (p != null) zernioProfile = p;
         }
 
         // Create or reactivate local SocialAccount
@@ -789,8 +804,7 @@ public sealed class SocialAccountsController : ControllerBase
         Guid workspaceId,
         CancellationToken cancellationToken)
     {
-        var profile = await _db.ZernioProfiles
-            .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId && p.IsActive, cancellationToken);
+        var profile = await ResolveZernioProfileAsync(workspaceId, cancellationToken);
 
         if (profile is not null)
         {
@@ -827,6 +841,40 @@ public sealed class SocialAccountsController : ControllerBase
             provisioned.Id, workspaceId);
 
         return newProfile;
+    }
+
+    private async Task<ZernioProfile?> ResolveZernioProfileAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        // 1. Try to get explicit ProfileId from context (set by ProfileResolutionMiddleware)
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+
+        if (explicitProfileId != null)
+        {
+            return await _db.ZernioProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == explicitProfileId && p.WorkspaceId == workspaceId && p.IsActive, cancellationToken);
+        }
+
+        // 2. Fallback to default logic if no explicit profile is provided
+        var profiles = await _db.ZernioProfiles
+            .AsNoTracking()
+            .Where(p => p.WorkspaceId == workspaceId && p.IsActive)
+            .ToListAsync(cancellationToken);
+
+        if (profiles.Count == 0)
+            return null;
+
+        if (profiles.Count > 1)
+        {
+            _logger.LogWarning(
+                "Workspace {WorkspaceId} has {Count} active Zernio profiles — using first for social account resolution.",
+                workspaceId,
+                profiles.Count);
+        }
+
+        return profiles[0];
     }
 
     private async Task<Guid?> VerifyAndConsumeStateTokenAsync(

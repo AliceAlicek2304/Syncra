@@ -32,6 +32,7 @@ public sealed class GetWorkspaceHeatmapQueryHandler
             request.WorkspaceId,
             request.Date,
             request.Platform,
+            request.ProfileId,
             cancellationToken);
     }
 }

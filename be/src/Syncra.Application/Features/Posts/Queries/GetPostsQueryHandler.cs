@@ -24,30 +24,76 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
 
     public async Task<PaginatedResult<PostDto>> Handle(GetPostsQuery request, CancellationToken cancellationToken)
     {
-        var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
-        if (profile is null)
+        var profiles = await ResolveProfilesAsync(request, cancellationToken);
+        if (profiles.Count == 0)
             return new PaginatedResult<PostDto>([], 1, request.PageSize, 0, 0);
 
         var page = request.Page > 0 ? request.Page : 1;
         var pageSize = request.PageSize > 0 && request.PageSize <= 100 ? request.PageSize : 20;
 
-        var result = await _zernioClient.ListPostsAsync(
-            page: page,
-            limit: pageSize,
+        // Multi-profile: fetch enough from each to merge in memory
+        int? fetchPage = profiles.Count > 1 ? 1 : page;
+        int? fetchLimit = profiles.Count > 1 ? page * pageSize : pageSize;
+
+        var tasks = profiles.Select(p => _zernioClient.ListPostsAsync(
+            profileId: p.ZernioProfileId,
+            page: fetchPage,
+            limit: fetchLimit,
             status: request.Status?.ToLowerInvariant(),
             sortBy: "scheduled-desc",
             dateFrom: request.ScheduledFromUtc,
             dateTo: request.ScheduledToUtc,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken));
 
-        var items = result.Posts.Select(p => MapToDto(p, request.WorkspaceId)).ToList();
+        var results = await Task.WhenAll(tasks);
+
+        if (profiles.Count == 1)
+        {
+            var single = results[0];
+            var singleItems = single.Posts.Select(p => MapToDto(p, request.WorkspaceId)).ToList();
+            return new PaginatedResult<PostDto>(
+                Items: singleItems,
+                Page: single.Page,
+                PageSize: single.Limit,
+                TotalItems: single.Total,
+                TotalPages: single.Pages);
+        }
+
+        // Merge all posts, deduplicate by Zernio post ID, sort by scheduled-desc, then paginate
+        var allPosts = results
+            .SelectMany(r => r.Posts)
+            .GroupBy(p => p.Id)
+            .Select(g => g.First())
+            .OrderByDescending(p => p.ScheduledFor ?? DateTime.MinValue)
+            .ToList();
+
+        var totalItems = allPosts.Count;
+        var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        var pagedPosts = allPosts
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var items = pagedPosts.Select(p => MapToDto(p, request.WorkspaceId)).ToList();
 
         return new PaginatedResult<PostDto>(
             Items: items,
-            Page: result.Page,
-            PageSize: result.Limit,
-            TotalItems: result.Total,
-            TotalPages: result.Pages);
+            Page: page,
+            PageSize: pageSize,
+            TotalItems: totalItems,
+            TotalPages: totalPages);
+    }
+
+    private async Task<IReadOnlyList<Domain.Entities.ZernioProfile>> ResolveProfilesAsync(
+        GetPostsQuery request, CancellationToken cancellationToken)
+    {
+        if (request.ProfileId.HasValue)
+        {
+            var profile = await _zernioProfileRepository.GetByIdAsync(request.ProfileId.Value, cancellationToken);
+            return profile is not null ? [profile] : [];
+        }
+
+        return await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
     }
 
     private static PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId)

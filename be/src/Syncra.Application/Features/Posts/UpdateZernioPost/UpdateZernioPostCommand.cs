@@ -16,5 +16,6 @@ public sealed record UpdateZernioPostCommand(
     IReadOnlyList<PlatformContentDto>? PlatformContents,
     string PostId,
     Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
-    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
+    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null,
+    Guid? ProfileId = null
 ) : IRequest<PostDto>;

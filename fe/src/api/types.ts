@@ -40,6 +40,16 @@ export interface Workspace {
   description?: string;
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  zernioProfileId: string;
+  color?: string;
+  avatarUrl?: string;
+  isActive: boolean;
+  createdAtUtc: string;
+}
+
 export interface WorkspaceResponse {
   workspaces: Workspace[];
 }

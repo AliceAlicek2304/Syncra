@@ -32,7 +32,7 @@ public sealed class AnalyticsExportService : IAnalyticsExportService
         var days = (int)Math.Ceiling((endUtc - startUtc).TotalDays);
         if (days < 1) days = 1;
 
-        var summaryResult = await _analyticsService.GetSummaryAsync(workspaceId, days, cancellationToken);
+        var summaryResult = await _analyticsService.GetSummaryAsync(workspaceId, days, cancellationToken: cancellationToken);
         if (summaryResult.IsFailure)
         {
             _logger.LogError("Failed to fetch analytics summary: {Error}", summaryResult.Error);

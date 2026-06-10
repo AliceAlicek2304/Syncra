@@ -14,7 +14,6 @@ namespace Syncra.Infrastructure.Services;
 public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCacheService
 {
     private readonly ConcurrentDictionary<string, Entry> _cache = new();
-
     public Task<ZernioInboxCommentsPageDto?> GetAsync(
         Guid workspaceId,
         string? cursor,
@@ -24,9 +23,10 @@ public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCach
         string? sortOrder,
         string? platform,
         string? accountId,
+        string? profileId = null,
         CancellationToken cancellationToken = default)
     {
-        var key = BuildKey(workspaceId, cursor, minComments, since, sortBy, sortOrder, platform, accountId);
+        var key = BuildKey(workspaceId, cursor, minComments, since, sortBy, sortOrder, platform, accountId, profileId);
 
         if (_cache.TryGetValue(key, out var entry) && entry.ExpiresAtUtc > DateTime.UtcNow)
         {
@@ -52,9 +52,10 @@ public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCach
         string? platform,
         string? accountId,
         TimeSpan ttl,
+        string? profileId = null,
         CancellationToken cancellationToken = default)
     {
-        var key = BuildKey(workspaceId, cursor, minComments, since, sortBy, sortOrder, platform, accountId);
+        var key = BuildKey(workspaceId, cursor, minComments, since, sortBy, sortOrder, platform, accountId, profileId);
         var entry = new Entry(page, DateTime.UtcNow.Add(ttl));
         _cache[key] = entry;
         return Task.CompletedTask;
@@ -81,7 +82,8 @@ public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCach
         string? sortBy,
         string? sortOrder,
         string? platform,
-        string? accountId)
+        string? accountId,
+        string? profileId)
     {
         return string.Join("|",
             workspaceId.ToString("N"),
@@ -91,7 +93,8 @@ public sealed class InMemoryInboxCommentListCacheService : IInboxCommentListCach
             sortBy ?? string.Empty,
             sortOrder ?? string.Empty,
             platform ?? string.Empty,
-            accountId ?? string.Empty);
+            accountId ?? string.Empty,
+            profileId ?? string.Empty);
     }
 
     private sealed record Entry(ZernioInboxCommentsPageDto Page, DateTime ExpiresAtUtc);

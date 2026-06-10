@@ -2,6 +2,12 @@ using MediatR;
 using Syncra.Application.DTOs.Inbox;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
+using Syncra.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Syncra.Application.Features.Inbox.Queries;
 
@@ -29,21 +35,44 @@ public sealed class GetInboxCommentsQueryHandler
         _listCache = listCache;
         _profileRepository = profileRepository;
     }
-
     public async Task<InboxCommentedPostsResponseDto> Handle(
         GetInboxCommentsQuery request,
         CancellationToken cancellationToken)
     {
         var limit = request.Limit;
-
         var profileId = request.ProfileId;
-        if (string.IsNullOrEmpty(profileId))
+        var targetProfiles = new List<ZernioProfile>();
+
+        if (!string.IsNullOrEmpty(profileId) && profileId != "all")
         {
-            var profile = await _profileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
-            profileId = profile?.ZernioProfileId;
+            if (Guid.TryParse(profileId, out var profileGuid))
+            {
+                var profile = await _profileRepository.GetByIdAsync(profileGuid, cancellationToken);
+                if (profile != null)
+                {
+                    targetProfiles.Add(profile);
+                }
+            }
+            else
+            {
+                var allActive = await _profileRepository.GetAllActiveAsync();
+                var matched = allActive.FirstOrDefault(p => p.ZernioProfileId == profileId);
+                if (matched != null)
+                {
+                    targetProfiles.Add(matched);
+                }
+            }
+        }
+        else
+        {
+            var activeProfiles = await _profileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
+            if (activeProfiles != null)
+            {
+                targetProfiles.AddRange(activeProfiles);
+            }
         }
 
-        if (string.IsNullOrEmpty(profileId))
+        if (!targetProfiles.Any())
         {
             return await ReadFromLocalDbAsync(request, limit, cancellationToken);
         }
@@ -57,28 +86,93 @@ public sealed class GetInboxCommentsQueryHandler
             request.SortOrder,
             request.Platform,
             request.AccountId,
-            cancellationToken);
+            profileId: request.ProfileId,
+            cancellationToken: cancellationToken);
 
         if (cached != null)
         {
             return await MapLivePageToResponseAsync(cached, request, cancellationToken);
         }
 
-        var live = await _zernioClient.ListInboxCommentsAsync(
-            profileId,
-            request.Since,
-            request.Cursor,
-            request.Platform,
-            request.AccountId,
-            request.MinComments,
-            request.SortBy,
-            request.SortOrder,
-            limit,
-            cancellationToken);
+        // Fetch comments in parallel for all target profiles
+        var fetchTasks = targetProfiles.Select(async profile =>
+        {
+            try
+            {
+                var page = await _zernioClient.ListInboxCommentsAsync(
+                    profile.ZernioProfileId,
+                    request.Since,
+                    request.Cursor,
+                    request.Platform,
+                    request.AccountId,
+                    request.MinComments,
+                    request.SortBy,
+                    request.SortOrder,
+                    limit,
+                    cancellationToken);
+                return page;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        });
+
+        var fetchResults = await Task.WhenAll(fetchTasks);
+
+        var allItems = new List<ZernioInboxCommentItemDto>();
+        var failedAccounts = new List<ZernioInboxFailedAccountDto>();
+        int accountsQueried = 0;
+        int accountsFailed = 0;
+        bool hasMore = false;
+
+        foreach (var page in fetchResults)
+        {
+            if (page == null) continue;
+            
+            allItems.AddRange(page.Items);
+            if (page.HasMore)
+            {
+                hasMore = true;
+            }
+
+            if (page.Meta != null)
+            {
+                accountsQueried += page.Meta.AccountsQueried;
+                accountsFailed += page.Meta.AccountsFailed;
+                if (page.Meta.FailedAccounts != null)
+                {
+                    failedAccounts.AddRange(page.Meta.FailedAccounts);
+                }
+            }
+        }
+
+        var sortedItems = allItems.OrderByDescending(item => item.CreatedTime).ToList();
+        var paginatedItems = sortedItems.Take(limit).ToList();
+
+        string? nextCursor = null;
+        if ((hasMore || sortedItems.Count > limit) && paginatedItems.Any())
+        {
+            nextCursor = paginatedItems[^1].CreatedTime.ToString("O");
+        }
+
+        var meta = new ZernioInboxCommentMetaDto(
+            AccountsQueried: accountsQueried,
+            AccountsFailed: accountsFailed,
+            FailedAccounts: failedAccounts,
+            LastUpdated: DateTime.UtcNow
+        );
+
+        var mergedPage = new ZernioInboxCommentsPageDto(
+            Items: paginatedItems,
+            HasMore: hasMore || sortedItems.Count > limit,
+            NextCursor: nextCursor,
+            Meta: meta
+        );
 
         await _listCache.SetAsync(
             request.WorkspaceId,
-            live,
+            mergedPage,
             request.Cursor,
             request.MinComments,
             request.Since,
@@ -87,9 +181,10 @@ public sealed class GetInboxCommentsQueryHandler
             request.Platform,
             request.AccountId,
             CacheTtl,
-            cancellationToken);
+            profileId: request.ProfileId,
+            cancellationToken: cancellationToken);
 
-        return await MapLivePageToResponseAsync(live, request, cancellationToken);
+        return await MapLivePageToResponseAsync(mergedPage, request, cancellationToken);
     }
 
     private static bool NeedsLiveFetch(GetInboxCommentsQuery q) =>

@@ -1,11 +1,9 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Syncra.Api.Filters;
-using Syncra.Application.DTOs;
 using Syncra.Application.Features.Workspaces.Commands;
 using Syncra.Application.Features.Workspaces.Queries;
 using Syncra.Shared.Extensions;
-using MediatR;
 
 namespace Syncra.Api.Controllers;
 
@@ -19,18 +17,6 @@ public class WorkspacesController : ControllerBase
     public WorkspacesController(IMediator mediator)
     {
         _mediator = mediator;
-    }
-
-    [HttpPost]
-    [ServiceFilter(typeof(IdempotencyFilter))]
-    public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceDto dto, CancellationToken cancellationToken)
-    {
-        var userId = User.GetUserId();
-        if (userId == null) return Unauthorized();
-
-        var command = new CreateWorkspaceCommand(userId.Value, dto.Name, dto.Color, dto.Description);
-        var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetWorkspaces), new { }, result);
     }
 
     [HttpGet]

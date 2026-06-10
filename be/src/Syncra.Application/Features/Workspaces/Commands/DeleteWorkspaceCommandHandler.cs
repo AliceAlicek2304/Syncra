@@ -36,13 +36,12 @@ public sealed class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorksp
             throw new UnauthorizedAccessException("Only the owner can delete the workspace.");
         }
 
-        var zernioProfile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+        var profiles = await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
 
-        if (zernioProfile is not null)
+        if (profiles.Count > 0)
         {
-            await _zernioClient.DeleteProfileAsync(
-                zernioProfile.ZernioProfileId,
-                cancellationToken);
+            await Task.WhenAll(profiles.Select(p =>
+                _zernioClient.DeleteProfileAsync(p.ZernioProfileId, cancellationToken)));
         }
 
         await _workspaceRepository.DeleteAsync(request.WorkspaceId);

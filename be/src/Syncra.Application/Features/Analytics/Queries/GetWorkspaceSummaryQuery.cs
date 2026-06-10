@@ -4,4 +4,4 @@ using Syncra.Domain.Common;
 
 namespace Syncra.Application.Features.Analytics.Queries;
 
-public record GetWorkspaceSummaryQuery(Guid WorkspaceId, int Date) : IRequest<Result<WorkspaceAnalyticsSummaryDto>>;
+public record GetWorkspaceSummaryQuery(Guid WorkspaceId, int Date, string? ProfileId = null) : IRequest<Result<WorkspaceAnalyticsSummaryDto>>;

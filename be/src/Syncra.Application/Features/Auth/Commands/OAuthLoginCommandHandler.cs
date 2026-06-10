@@ -17,6 +17,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
     private readonly IUserRepository _userRepository;
     private readonly IExternalLoginRepository _externalLoginRepository;
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly IZernioProfileRepository _zernioProfileRepository;
+    private readonly IZernioClient _zernioClient;
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -29,6 +31,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         IUserRepository userRepository,
         IExternalLoginRepository externalLoginRepository,
         IWorkspaceRepository workspaceRepository,
+        IZernioProfileRepository zernioProfileRepository,
+        IZernioClient zernioClient,
         IUserSessionRepository userSessionRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IUnitOfWork unitOfWork,
@@ -40,6 +44,8 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         _userRepository = userRepository;
         _externalLoginRepository = externalLoginRepository;
         _workspaceRepository = workspaceRepository;
+        _zernioProfileRepository = zernioProfileRepository;
+        _zernioClient = zernioClient;
         _userSessionRepository = userSessionRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _unitOfWork = unitOfWork;
@@ -173,6 +179,21 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         workspace.AddMember(user.Id, "owner");
 
         await _workspaceRepository.AddAsync(workspace);
+        await _unitOfWork.SaveChangesAsync(default);
+
+        var provisioned = await _zernioClient.ProvisionProfileAsync(
+            workspaceId: workspace.Id.ToString(),
+            name: "Default",
+            cancellationToken: default);
+
+        var profile = ZernioProfile.Create(
+            workspaceId: workspace.Id,
+            zernioProfileId: provisioned.Id,
+            displayName: provisioned.Name,
+            platform: "zernio");
+
+        await _zernioProfileRepository.AddAsync(profile);
+        await _unitOfWork.SaveChangesAsync(default);
     }
 
     private static string GenerateSlug(string name)

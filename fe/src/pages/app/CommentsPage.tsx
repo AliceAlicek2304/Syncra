@@ -24,6 +24,7 @@ interface PostGroup {
   isAd?: boolean
   adId?: string
   placement?: string
+  profileId?: string
 }
 
 const HANOI_TZ = 'Asia/Ho_Chi_Minh';
@@ -267,11 +268,8 @@ const platformOptions: FilterOption[] = [
 ];
 
 export default function CommentsPage() {
-  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace()
-  const workspaceId = activeWorkspace?.id
-
-  const [socialAccounts, setSocialAccounts] = useState<SocialAccountDto[]>([])
-
+  const { activeWorkspace, profiles, activeProfile, setActiveProfile } = useWorkspace()
+  const [socialAccounts, setSocialAccounts] = useState<(SocialAccountDto & { profileId?: string })[]>([])
   const [posts, setPosts] = useState<PostGroup[]>([])
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   
@@ -292,7 +290,7 @@ export default function CommentsPage() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
-  const [filterWorkspace, setFilterWorkspace] = useState('all')
+  const [filterProfile, setFilterProfile] = useState('all')
   const [filterAccount, setFilterAccount] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
 
@@ -301,10 +299,20 @@ export default function CommentsPage() {
   // Track latest posts state for SignalR/Polling without reconnects
   const postsRef = useRef(posts);
   const justClickedReplyRef = useRef(false);
+  const filterProfileRef = useRef(filterProfile);
+  const profilesRef = useRef(profiles);
 
   useEffect(() => {
     postsRef.current = posts;
   }, [posts]);
+
+  useEffect(() => {
+    filterProfileRef.current = filterProfile;
+  }, [filterProfile]);
+
+  useEffect(() => {
+    profilesRef.current = profiles;
+  }, [profiles]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg)
@@ -316,16 +324,26 @@ export default function CommentsPage() {
 
   // 1. Fetch posts list
   const refreshPosts = async (autoSelect = false) => {
-    if (!workspaceId) return
+    if (!activeWorkspace || profilesRef.current.length === 0) return
     try {
-      const responseData = await inboxApi.getComments(workspaceId, { limit: 100 })
-      const list = responseData.data || []
+      const currentFilterProfile = filterProfileRef.current;
+      const responseData = await inboxApi.getComments(
+        activeWorkspace.id,
+        {
+          limit: 100,
+          profileId: currentFilterProfile === 'all' ? '' : currentFilterProfile
+        }
+      );
+      const list = responseData.data || [];
       
       const groupMap = new Map<string, PostGroup>()
       
       list.forEach(c => {
         if (!c.id) return;
         if (!groupMap.has(c.id)) {
+          const matchedAccount = socialAccounts.find(sa => sa.externalAccountId === c.accountId);
+          const postProfileId = matchedAccount?.profileId || activeProfile?.id;
+          
           groupMap.set(c.id, {
             id: c.id,
             title: c.content || 'Untitled Post',
@@ -339,7 +357,8 @@ export default function CommentsPage() {
             commentCount: c.commentCount || 0,
             isAd: c.isAd,
             adId: c.adId,
-            placement: c.placement
+            placement: c.placement,
+            profileId: postProfileId
           })
         } else {
           const group = groupMap.get(c.id)!
@@ -353,7 +372,7 @@ export default function CommentsPage() {
           }
         }
       })
-      
+
       const sortedGroups = Array.from(groupMap.values())
         .filter(g => g.commentCount > 0)
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -371,16 +390,18 @@ export default function CommentsPage() {
 
   // 2. Fetch live comments for selected post
   const refreshLiveComments = async (postId = selectedPostId, forceFresh = false, bypassCache = false) => {
-    if (!workspaceId || !postId) {
+    if (!activeWorkspace || !postId) {
       setLiveComments([])
       return
     }
     const currentPost = postsRef.current.find(p => p.id === postId)
     if (!currentPost) return
     try {
-      const response = await inboxApi.getPostComments(workspaceId, currentPost.id, currentPost.zernioAccountId, { 
+      const postProfileId = currentPost.profileId || activeProfile?.id
+      const response = await inboxApi.getPostComments(activeWorkspace.id, currentPost.id, currentPost.zernioAccountId, { 
         limit: 100,
-        forceRefresh: bypassCache
+        forceRefresh: bypassCache,
+        profileId: postProfileId
       })
       const serverComments = response.comments || []
       if (forceFresh) {
@@ -400,33 +421,59 @@ export default function CommentsPage() {
     refreshLiveComments(selectedPostId, true, true).finally(() => setIsLoadingLive(false))
   }
 
+  // Reset filterProfile when Workspace changes
+  useEffect(() => {
+    setFilterProfile('all')
+  }, [activeWorkspace?.id])
+
   // Initial Load of Posts
   useEffect(() => {
-    if (!workspaceId) return
+    if (!activeWorkspace || profiles.length === 0) return
     setIsLoadingPosts(true)
     refreshPosts(true).finally(() => setIsLoadingPosts(false))
-  }, [workspaceId])
+  }, [activeWorkspace?.id, filterProfile, profiles])
 
+  // Load Social Accounts
   useEffect(() => {
-    if (!workspaceId) {
-      setSocialAccounts([]);
-      return;
+    if (!activeWorkspace || profiles.length === 0) {
+      setSocialAccounts([])
+      return
     }
-    socialAccountsApi.listSocialAccounts(workspaceId)
-      .then(setSocialAccounts)
-      .catch(err => console.error('Failed to load social accounts', err))
-  }, [workspaceId])
+    const fetchAccounts = async () => {
+      try {
+        if (filterProfile === 'all') {
+          const promises = profiles.map(async p => {
+            try {
+              const list = await socialAccountsApi.listSocialAccounts(activeWorkspace.id, p.id);
+              return list.map(sa => ({ ...sa, profileId: p.id }));
+            } catch (err) {
+              console.error(`Failed to load social accounts for profile ${p.name}`, err);
+              return [];
+            }
+          });
+          const results = await Promise.all(promises);
+          setSocialAccounts(results.flat());
+        } else {
+          const accounts = await socialAccountsApi.listSocialAccounts(activeWorkspace.id, filterProfile);
+          setSocialAccounts(accounts.map(sa => ({ ...sa, profileId: filterProfile })));
+        }
+      } catch (err) {
+        console.error('Failed to load social accounts', err)
+      }
+    }
+    fetchAccounts()
+  }, [activeWorkspace, filterProfile, profiles])
 
   // Initial Load of Live Comments on Select
   useEffect(() => {
-    if (!workspaceId || !selectedPostId) {
+    if (!activeWorkspace || !selectedPostId) {
       setLiveComments([])
       return
     }
     setIsLoadingLive(true)
     setLiveComments([])
     refreshLiveComments(selectedPostId, true).finally(() => setIsLoadingLive(false))
-  }, [workspaceId, selectedPostId])
+  }, [activeWorkspace?.id, selectedPostId])
 
   // Auto-adjust selectedPostId when posts or filters change
   useEffect(() => {
@@ -450,7 +497,7 @@ export default function CommentsPage() {
 
   // SignalR & Polling for Real-Time Updates
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!activeWorkspace) return;
 
     // 1. Fallback Polling every 10 seconds
     const interval = setInterval(async () => {
@@ -467,7 +514,7 @@ export default function CommentsPage() {
     const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
     const defaultBaseUrl = `${window.location.origin}${import.meta.env.BASE_URL || '/'}api/v1`;
     const apiBaseUrl = (configuredBaseUrl || defaultBaseUrl).replace(/\/+$/, '');
-    const hubUrl = `${apiBaseUrl}/hubs/notifications?workspaceId=${workspaceId}`;
+    const hubUrl = `${apiBaseUrl}/hubs/notifications?workspaceId=${activeWorkspace.id}`;
 
     const connection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
@@ -498,11 +545,11 @@ export default function CommentsPage() {
       connection.off('inbox.itemCreated', handleInboxItemCreated);
       void connection.stop();
     };
-  }, [workspaceId, selectedPostId]);
+  }, [activeWorkspace?.id, selectedPostId]);
 
   // Actions with Optimistic UI & Rollback
   const handleLikeComment = async (commentId: string, isCurrentlyLiked: boolean, likeUri?: string) => {
-    if (!workspaceId) return;
+    if (!activeWorkspace) return;
     
     setLikeLoadingId(commentId);
 
@@ -520,7 +567,7 @@ export default function CommentsPage() {
 
     try {
       if (isCurrentlyLiked) {
-        await inboxApi.unlikeComment(workspaceId, commentId, likeUri)
+        await inboxApi.unlikeComment(activeWorkspace.id, commentId, likeUri)
         // Clear likeUri
         setLiveComments(prev => prev.map(c => {
           if (c.id === commentId) {
@@ -529,7 +576,7 @@ export default function CommentsPage() {
           return c
         }));
       } else {
-        const response = await inboxApi.likeComment(workspaceId, commentId)
+        const response = await inboxApi.likeComment(activeWorkspace.id, commentId)
         // Save likeUri returned from server (especially for Bluesky)
         if (response.likeUri) {
           setLiveComments(prev => prev.map(c => {
@@ -562,7 +609,7 @@ export default function CommentsPage() {
   }
 
   const handleHideComment = async (commentId: string, isCurrentlyHidden: boolean) => {
-    if (!workspaceId) return;
+    if (!activeWorkspace) return;
 
     setHideLoadingId(commentId);
 
@@ -574,10 +621,10 @@ export default function CommentsPage() {
 
     try {
       if (isCurrentlyHidden) {
-        await inboxApi.unhideComment(workspaceId, commentId)
+        await inboxApi.unhideComment(activeWorkspace.id, commentId)
         triggerToast('Comment unhidden')
       } else {
-        await inboxApi.hideComment(workspaceId, commentId)
+        await inboxApi.hideComment(activeWorkspace.id, commentId)
         triggerToast('Comment hidden')
       }
     } catch (err: any) {
@@ -595,7 +642,7 @@ export default function CommentsPage() {
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!workspaceId) return;
+    if (!activeWorkspace) return;
     
     const originalComments = [...liveComments];
     setDeleteLoadingId(commentId);
@@ -604,7 +651,7 @@ export default function CommentsPage() {
     setLiveComments(prev => prev.filter(c => c.id !== commentId));
     
     try {
-      await inboxApi.deleteComment(workspaceId, commentId)
+      await inboxApi.deleteComment(activeWorkspace.id, commentId)
       triggerToast('Comment deleted')
     } catch (err: any) {
       const errMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to delete comment';
@@ -618,7 +665,7 @@ export default function CommentsPage() {
   }
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || !workspaceId || !activePost) return
+    if (!replyText.trim() || !activeWorkspace || !activePost) return
     const targetCommentId = replyingToCommentId || activePost.id
     
     const currentReplyText = replyText;
@@ -651,7 +698,7 @@ export default function CommentsPage() {
     setIsReplying(true);
 
     try {
-      const response = await inboxApi.replyToComment(workspaceId, targetCommentId, currentReplyText)
+      const response = await inboxApi.replyToComment(activeWorkspace.id, targetCommentId, currentReplyText)
       triggerToast('Comment posted successfully!')
       
       const realComment: ZernioPostCommentItemDto = {
@@ -724,7 +771,7 @@ export default function CommentsPage() {
   };
 
   const handleSendPrivateReply = async () => {
-    if (!workspaceId || !privateReplyComment || !privateReplyMessage.trim()) return;
+    if (!activeWorkspace || !privateReplyComment || !privateReplyMessage.trim()) return;
 
     setIsPrivateReplying(true);
     try {
@@ -762,7 +809,7 @@ export default function CommentsPage() {
         }));
       }
 
-      await inboxApi.sendPrivateReplyToComment(workspaceId, privateReplyComment.id, request);
+      await inboxApi.sendPrivateReplyToComment(activeWorkspace.id, privateReplyComment.id, request);
       triggerToast('Gửi tin nhắn riêng thành công');
       
       setLiveComments(prev => {
@@ -816,11 +863,11 @@ export default function CommentsPage() {
     return 0;
   });
 
-  const workspaceOptions: FilterOption[] = [
-    { value: 'all', label: 'All workspaces' },
-    ...workspaces.map(w => ({
-      value: w.id,
-      label: w.name
+  const profileOptions: FilterOption[] = [
+    { value: 'all', label: 'All profiles' },
+    ...profiles.map(p => ({
+      value: p.id,
+      label: p.name
     }))
   ];
 
@@ -878,18 +925,18 @@ export default function CommentsPage() {
 
             {/* Profile Filter Dropdown */}
             <FilterDropdown
-              value={filterWorkspace}
+              value={filterProfile}
               onChange={(val) => {
-                setFilterWorkspace(val);
+                setFilterProfile(val);
                 if (val !== 'all') {
-                  const ws = workspaces.find(w => w.id === val);
-                  if (ws) {
-                    setActiveWorkspace(ws);
+                  const p = profiles.find(p => p.id === val);
+                  if (p) {
+                    setActiveProfile(p);
                   }
                 }
               }}
-              options={workspaceOptions}
-              label="All workspaces"
+              options={profileOptions}
+              label="All profiles"
             />
 
             {/* Account Filter Dropdown */}

@@ -678,7 +678,7 @@ const toLocalSlot = (dayOfWeek: number, hourUtc: number) => {
 
 export default function AnalyticsPage() {
   console.log('AnalyticsPage render')
-  const { workspaces, setActiveWorkspace } = useWorkspace()
+  const { activeWorkspace, profiles, setActiveProfile } = useWorkspace()
   const heatmapContainerRef = useRef<HTMLDivElement>(null)
 
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false)
@@ -706,7 +706,7 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<'posting' | 'inbox'>('posting')
 
   const [filterPlatform, setFilterPlatform] = useState('all')
-  const [filterWorkspace, setFilterWorkspace] = useState<string>('all')
+  const [filterProfile, setFilterProfile] = useState<string>('all')
 
   const {
     presetDays,
@@ -731,8 +731,9 @@ export default function AnalyticsPage() {
     dataUpdatedAt,
     refresh,
   } = useAnalyticsSummary({
-    workspaceId: filterWorkspace,
+    workspaceId: activeWorkspace?.id,
     platform: filterPlatform === 'all' ? undefined : filterPlatform,
+    profileId: filterProfile,
   })
 
   const { lastSyncText, nextSyncText } = useSyncClock(dataUpdatedAt)
@@ -1326,15 +1327,15 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
     ]
   }, [])
 
-  const workspaceOptions = useMemo<FilterOption[]>(() => {
+  const profileOptions = useMemo<FilterOption[]>(() => {
     return [
-      { value: 'all', label: 'All workspaces' },
-      ...workspaces.map((w) => ({
-        value: w.id,
-        label: w.name,
+      { value: 'all', label: 'All profiles' },
+      ...profiles.map((p) => ({
+        value: p.id,
+        label: p.name,
       }))
     ]
-  }, [workspaces])
+  }, [profiles])
 
   const datePresetOptions = useMemo<FilterOption[]>(() => {
     return [
@@ -1417,16 +1418,16 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
           />
 
           <FilterDropdown
-            value={filterWorkspace}
+            value={filterProfile}
             onChange={(val) => {
-              setFilterWorkspace(val)
+              setFilterProfile(val)
               if (val !== 'all') {
-                const ws = workspaces.find((w) => w.id === val)
-                if (ws) setActiveWorkspace(ws)
+                const profile = profiles.find((pr) => pr.id === val)
+                if (profile) setActiveProfile(profile)
               }
             }}
-            options={workspaceOptions}
-            label="All workspaces"
+            options={profileOptions}
+            label="All profiles"
           />
 
           <FilterDropdown
@@ -2315,7 +2316,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
         return (
           <PostDetailsPanel
             postId={selectedPostId}
-            workspaceId={filterWorkspace === 'all' ? undefined : filterWorkspace}
+            workspaceId={filterProfile === 'all' ? undefined : filterProfile}
             summaryPost={matchedSummaryPost}
             onClose={() => setSelectedPostId(null)}
           />
@@ -2323,7 +2324,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
       })()}
           </>
         ) : (
-          <InboxAnalyticsPage />
+          <InboxAnalyticsPage profileId={filterProfile} />
         )}
       </div>
     </UITooltipProvider>

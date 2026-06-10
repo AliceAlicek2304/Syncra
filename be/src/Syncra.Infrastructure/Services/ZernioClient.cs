@@ -1026,6 +1026,7 @@ public sealed class ZernioClient : IZernioClient
         string? search = null,
         string? sortBy = null,
         string? accountId = null,
+        string? profileId = null,
         DateTime? dateFrom = null,
         DateTime? dateTo = null,
         CancellationToken cancellationToken = default)
@@ -1043,6 +1044,7 @@ public sealed class ZernioClient : IZernioClient
                 ["search"] = search,
                 ["sortBy"] = sortBy ?? "scheduled-desc",
                 ["accountId"] = accountId,
+                ["profileId"] = profileId,
                 ["dateFrom"] = dateFrom?.ToString("o"),
                 ["dateTo"] = dateTo?.ToString("o")
             };
