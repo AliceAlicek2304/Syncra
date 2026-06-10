@@ -51,6 +51,7 @@ public interface IZernioClient
         string profileId,
         string platform,
         string tempToken,
+        string? userProfile = null,
         CancellationToken cancellationToken = default);
 
     Task<ZernioTikTokCreatorInfoDto> GetTikTokCreatorInfoAsync(
@@ -64,6 +65,7 @@ public interface IZernioClient
         string tempToken,
         string selectedId,
         string? selectedName,
+        object? userProfile = null,
         CancellationToken cancellationToken = default);
 
     Task<ZernioCreatePostResult> CreatePostAsync(

@@ -18,7 +18,7 @@ import logo from '../../assets/syncra-logo.png'
 const NAV_ITEMS = [
   { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
-  { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'AI Repurpose', badge: 'NEW' },
+  { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'Repurpose'},
   { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
   { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
 ]

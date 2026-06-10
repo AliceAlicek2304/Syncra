@@ -29,6 +29,9 @@ public sealed class ZernioClient : IZernioClient
     private readonly ILogger<ZernioClient> _logger;
     private readonly ZernioOptions _options;
 
+    // Cache to prevent duplicate GetPendingOAuthData calls in React StrictMode/parallel requests
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime Expiry, Zernio.Model.GetPendingOAuthData200Response Data)> _pendingDataCache = new();
+
     public ZernioClient(
         IOptions<ZernioOptions> options,
         IHttpClientFactory httpClientFactory,
@@ -376,6 +379,7 @@ public sealed class ZernioClient : IZernioClient
         string profileId,
         string platform,
         string tempToken,
+        string? userProfile = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -385,7 +389,7 @@ public sealed class ZernioClient : IZernioClient
             return normalizedPlatform switch
             {
                 "facebook" => await ListFacebookPagesAsync(profileId, tempToken, cancellationToken),
-                "linkedin" => await ListLinkedInOrganizationsAsync(profileId, tempToken, cancellationToken),
+                "linkedin" => await ListLinkedInOrganizationsAsync(profileId, tempToken, userProfile, cancellationToken),
                 "googlebusiness" => await ListGoogleBusinessLocationsAsync(profileId, tempToken, cancellationToken),
                 "pinterest" => await ListPinterestBoardsAsync(profileId, tempToken, cancellationToken),
                 "snapchat" => await ListSnapchatProfilesAsync(profileId, tempToken, cancellationToken),
@@ -414,6 +418,7 @@ public sealed class ZernioClient : IZernioClient
         string tempToken,
         string selectedId,
         string? selectedName,
+        object? userProfile = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -423,7 +428,7 @@ public sealed class ZernioClient : IZernioClient
             return normalizedPlatform switch
             {
                 "facebook" => await SelectFacebookPageAsync(profileId, tempToken, selectedId, selectedName, cancellationToken),
-                "linkedin" => await SelectLinkedInOrganizationAsync(profileId, tempToken, selectedId, cancellationToken),
+                "linkedin" => await SelectLinkedInOrganizationAsync(profileId, tempToken, selectedId, userProfile, cancellationToken),
                 "googlebusiness" => await SelectGoogleBusinessLocationAsync(profileId, tempToken, selectedId, cancellationToken),
                 "pinterest" => await SelectPinterestBoardAsync(profileId, tempToken, selectedId, selectedName, cancellationToken),
                 "snapchat" => await SelectSnapchatProfileAsync(profileId, tempToken, selectedId, cancellationToken),
@@ -5680,12 +5685,95 @@ public sealed class ZernioClient : IZernioClient
     }
 
     private async Task<IReadOnlyList<ZernioSelectOptionDto>> ListLinkedInOrganizationsAsync(
-        string profileId, string tempToken, CancellationToken cancellationToken)
+        string profileId, string tempToken, string? userProfileJson, CancellationToken cancellationToken)
     {
-        var response = await _connectApi.ListLinkedInOrganizationsAsync(tempToken, orgIds: null, cancellationToken);
-        return (response.Organizations ?? [])
-            .Select(o => new ZernioSelectOptionDto(o.Id, o.VanityName ?? o.Id, o.LogoUrl))
-            .ToList();
+        _logger.LogInformation("ListLinkedInOrganizationsAsync: profileId={ProfileId}, tempToken={TempToken}", profileId, tempToken);
+        Zernio.Model.GetPendingOAuthData200Response pendingData = null;
+        var now = DateTime.UtcNow;
+
+        // Clean up expired cache items
+        foreach (var key in _pendingDataCache.Keys)
+        {
+            if (_pendingDataCache.TryGetValue(key, out var val) && val.Expiry < now)
+            {
+                _pendingDataCache.TryRemove(key, out _);
+            }
+        }
+
+        try
+        {
+            if (_pendingDataCache.TryGetValue(tempToken, out var cached) && cached.Expiry >= now)
+            {
+                pendingData = cached.Data;
+            }
+            else
+            {
+                pendingData = await _connectApi.GetPendingOAuthDataAsync(tempToken, cancellationToken);
+                _pendingDataCache[tempToken] = (now.AddSeconds(15), pendingData);
+            }
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogWarning(ex, "Failed to get pending OAuth data for LinkedIn. Checking if personal account.");
+        }
+
+        if (pendingData != null)
+        {
+            var orgs = pendingData.Organizations ?? new();
+            if (orgs.Count == 0)
+            {
+                return Array.Empty<ZernioSelectOptionDto>();
+            }
+
+            var orgNames = orgs.ToDictionary(o => o.Id, o => o.Name ?? o.VanityName ?? o.Id);
+            var orgIds = string.Join(",", orgs.Select(o => o.Id));
+
+            var response = await _connectApi.ListLinkedInOrganizationsAsync(tempToken, orgIds: orgIds, cancellationToken);
+            return (response.Organizations ?? [])
+                .Select(o => new ZernioSelectOptionDto(
+                    o.Id,
+                    orgNames.TryGetValue(o.Id, out var displayName) ? displayName : (o.VanityName ?? o.Id),
+                    o.LogoUrl))
+                .ToList();
+        }
+
+        // Check if we have userProfileJson from frontend redirect URL query param
+        if (!string.IsNullOrWhiteSpace(userProfileJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(userProfileJson);
+                var root = doc.RootElement;
+                string? id = null;
+                string? displayName = null;
+                string? profilePicture = null;
+
+                if (root.TryGetProperty("id", out var idProp)) id = idProp.GetString();
+                if (root.TryGetProperty("displayName", out var nameProp)) displayName = nameProp.GetString();
+                if (displayName == null && root.TryGetProperty("username", out var userProp)) displayName = userProp.GetString();
+                if (root.TryGetProperty("profilePicture", out var picProp)) profilePicture = picProp.GetString();
+
+                if (!string.IsNullOrEmpty(id))
+                {
+                    return new List<ZernioSelectOptionDto>
+                    {
+                        new ZernioSelectOptionDto(
+                            Id: "personal",
+                            Name: (displayName ?? "LinkedIn Personal Account") + " (Personal)",
+                            AvatarUrl: profilePicture)
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse userProfileJson: {Json}", userProfileJson);
+            }
+        }
+
+        return new List<ZernioSelectOptionDto>
+        {
+            new ZernioSelectOptionDto("personal", "LinkedIn Personal Profile (Default)")
+        };
     }
 
     private async Task<IReadOnlyList<ZernioSelectOptionDto>> ListGoogleBusinessLocationsAsync(
@@ -5739,13 +5827,31 @@ public sealed class ZernioClient : IZernioClient
     }
 
     private async Task<ZernioSelectResultDto> SelectLinkedInOrganizationAsync(
-        string profileId, string tempToken, string organizationId, CancellationToken cancellationToken)
+        string profileId, string tempToken, string organizationId, object? userProfile, CancellationToken cancellationToken)
     {
-        var request = new SelectLinkedInOrganizationRequest(
-            profileId: profileId,
-            tempToken: tempToken,
-            selectedOrganization: new { id = organizationId }
-        );
+        SelectLinkedInOrganizationRequest request;
+        var profileObj = userProfile ?? new { };
+
+        if (organizationId == "personal")
+        {
+            request = new SelectLinkedInOrganizationRequest(
+                profileId: profileId,
+                tempToken: tempToken,
+                userProfile: profileObj,
+                accountType: SelectLinkedInOrganizationRequest.AccountTypeEnum.Personal
+            );
+        }
+        else
+        {
+            request = new SelectLinkedInOrganizationRequest(
+                profileId: profileId,
+                tempToken: tempToken,
+                userProfile: profileObj,
+                accountType: SelectLinkedInOrganizationRequest.AccountTypeEnum.Organization,
+                selectedOrganization: new { id = organizationId }
+            );
+        }
+
         var response = await _connectApi.SelectLinkedInOrganizationAsync(request, cancellationToken);
         return new ZernioSelectResultDto(
             response.Account.AccountId,

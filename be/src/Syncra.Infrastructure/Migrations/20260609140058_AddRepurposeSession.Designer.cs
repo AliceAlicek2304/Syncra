@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncra.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609140058_AddRepurposeSession")]
+    partial class AddRepurposeSession
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1806,10 +1809,6 @@ namespace Syncra.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
-
-                    b.Property<string>("SupportingSourcesJson")
-                        .HasColumnType("text")
-                        .HasColumnName("supporting_sources_json");
 
                     b.Property<string>("TargetPlatforms")
                         .IsRequired()

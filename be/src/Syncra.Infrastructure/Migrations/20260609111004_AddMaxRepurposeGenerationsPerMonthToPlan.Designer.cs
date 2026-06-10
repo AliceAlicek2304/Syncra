@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncra.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609111004_AddMaxRepurposeGenerationsPerMonthToPlan")]
+    partial class AddMaxRepurposeGenerationsPerMonthToPlan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1689,159 +1692,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeAtom", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("platform");
-
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("session_id");
-
-                    b.Property<string>("SuggestedCTA")
-                        .HasColumnType("text")
-                        .HasColumnName("suggested_cta");
-
-                    b.Property<string>("SuggestedHashtags")
-                        .HasColumnType("text")
-                        .HasColumnName("suggested_hashtags");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("repurpose_atoms", (string)null);
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ContentLength")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("content_length");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<bool>("ExtractAtoms")
-                        .HasColumnType("boolean")
-                        .HasColumnName("extract_atoms");
-
-                    b.Property<string>("Language")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("language");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("SourceText")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("source_text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SupportingSourcesJson")
-                        .HasColumnType("text")
-                        .HasColumnName("supporting_sources_json");
-
-                    b.Property<string>("TargetPlatforms")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("target_platforms");
-
-                    b.Property<string>("Tone")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("tone");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId", "CreatedAtUtc");
-
-                    b.ToTable("repurpose_sessions", (string)null);
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.SocialAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2799,28 +2649,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeAtom", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.RepurposeSession", "Session")
-                        .WithMany("Atoms")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Session");
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
-                        .WithMany()
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workspace");
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.SocialAccount", b =>
                 {
                     b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
@@ -2950,11 +2778,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("PlatformTargets");
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.Navigation("Atoms");
                 });
 
             modelBuilder.Entity("Syncra.Domain.Entities.User", b =>

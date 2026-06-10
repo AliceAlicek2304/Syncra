@@ -17,6 +17,7 @@ using Syncra.Infrastructure.Jobs;
 using Syncra.Infrastructure.Storage;
 using StackExchange.Redis;
 using Syncra.Application.Interfaces;
+using IWebScraperService = Syncra.Application.Interfaces.IWebScraperService;
 
 namespace Syncra.Infrastructure;
 
@@ -63,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<ISocialAccountRepository, SocialAccountRepository>();
         services.AddScoped<IZernioProfileRepository, ZernioProfileRepository>();
         services.AddScoped<IInboxRepository, InboxRepository>();
+        services.AddScoped<IRepurposeRepository, RepurposeRepository>();
+        services.AddScoped<IWebScraperService, WebScraperService>();
         services.AddSingleton<Syncra.Application.Interfaces.IInboxCommentListCacheService,
                               Syncra.Infrastructure.Services.InMemoryInboxCommentListCacheService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -98,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IDistributedLockService, RedisDistributedLockService>();
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
+        services.AddScoped<IRepurposeCache, RepurposeCacheService>();
 
         // Wasabi S3-compatible media storage.
         // WasabiStorageService wraps AmazonS3Client which is thread-safe — registered as singleton.
@@ -127,6 +131,19 @@ public static class DependencyInjection
         });
         services.AddScoped<IOAuthProvider, GoogleAuthProvider>();
         services.AddScoped<IGoogleTokenService, GoogleTokenService>();
+
+        // Gemini AI provider
+        services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
+        services.AddScoped<IAIProvider, GeminiProvider>();
+
+        // Web scraper for repurpose URL fetching
+        services.AddHttpClient("WebScraper", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+        });
 
         // Postmark transactional email
         services.Configure<PostmarkOptions>(configuration.GetSection(PostmarkOptions.SectionName));

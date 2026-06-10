@@ -40,6 +40,9 @@ public class AppDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
+    public DbSet<RepurposeSession> RepurposeSessions => Set<RepurposeSession>();
+    public DbSet<RepurposeAtom> RepurposeAtoms => Set<RepurposeAtom>();
+
     public DbSet<InboxConversation> InboxConversations => Set<InboxConversation>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
     public DbSet<InboxCommentedPost> InboxCommentedPosts => Set<InboxCommentedPost>();

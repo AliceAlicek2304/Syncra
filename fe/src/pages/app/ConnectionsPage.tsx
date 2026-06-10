@@ -28,21 +28,15 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'facebook', label: 'Facebook', color: '#1877f2', isSupported: true },
   { id: 'youtube', label: 'YouTube', color: '#ff0000', isSupported: true },
   { id: 'linkedin', label: 'LinkedIn', color: '#0a66c2', isSupported: true },
-  { id: 'twitter', label: 'Twitter / X', color: '#201515', isSupported: true },
+  { id: 'twitter', label: 'Twitter / X', color: '#201515', isSupported: false },
   { id: 'threads', label: 'Threads', color: '#201515', isSupported: true },
   { id: 'bluesky', label: 'Bluesky', color: '#0085ff', isSupported: true },
   { id: 'pinterest', label: 'Pinterest', color: '#e60023', isSupported: true },
   { id: 'reddit', label: 'Reddit', color: '#ff4500', isSupported: true },
   { id: 'googlebusiness', label: 'Google Business', color: '#4285f4', isSupported: true },
-  { id: 'telegram', label: 'Telegram', color: '#0088cc', isSupported: true },
+  { id: 'telegram', label: 'Telegram', color: '#0088cc', isSupported: false },
   { id: 'discord', label: 'Discord', color: '#5865f2', isSupported: false },
   { id: 'whatsapp', label: 'WhatsApp', color: '#25d366', isSupported: true },
-  { id: 'metaads', label: 'Meta Ads', color: '#0081fb', isSupported: false },
-  { id: 'linkedinads', label: 'LinkedIn Ads', color: '#0a66c2', isSupported: false },
-  { id: 'pinterestads', label: 'Pinterest Ads', color: '#e60023', isSupported: false },
-  { id: 'tiktokads', label: 'TikTok Ads', color: '#ff0050', isSupported: false },
-  { id: 'googleads', label: 'Google Ads', color: '#4285f4', isSupported: false },
-  { id: 'xads', label: 'X Ads', color: '#201515', isSupported: false },
   { id: 'snapchat', label: 'Snapchat', color: '#fffc00', isSupported: true },
 ];
 
@@ -114,28 +108,11 @@ const PLATFORM_GROUPS: { title: string; platformIds: string[] }[] = [
       'whatsapp',
     ],
   },
-  {
-    title: 'Ads',
-    platformIds: [
-      'metaads',
-      'linkedinads',
-      'pinterestads',
-      'tiktokads',
-      'googleads',
-      'xads',
-    ],
-  },
 ];
 
 function PlatformIcon({ platform, size = 20 }: { platform: string; size?: number }) {
   const p = platform.toLowerCase();
   const mapped: Record<string, string> = {
-    metaads: 'facebook',
-    linkedinads: 'linkedin',
-    pinterestads: 'pinterest',
-    tiktokads: 'tiktok',
-    googleads: 'googlebusiness',
-    xads: 'twitter',
     'twitter/x': 'twitter',
   };
   return <ExtendedPlatformIcon platform={mapped[p] || p} size={size} />;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Check, ArrowRight, Loader2, AlertTriangle, Building2, Info, XCircle, Clock,
@@ -99,6 +99,51 @@ export default function SocialAccountsSelect() {
     denied: <XCircle size={32} />,
     expired: <Clock size={32} />,
   };
+
+  // ─ Submit selection ─────────────────────────────────────────────────────
+
+  const handleConfirm = useCallback(async (idOverride?: string) => {
+    const idToConfirm = idOverride || selectedId;
+    if (!idToConfirm || !activeWorkspace) return;
+
+    setIsSubmitting(true);
+    try {
+      if (platform.toLowerCase() === 'facebook') {
+        await api.post(`connect/facebook/select-page`, {
+          profileId,
+          pageId: idToConfirm,
+          tempToken,
+          userProfile: {
+            ...(userProfileObj || {}),
+            name: userProfileObj?.name || userProfileObj?.displayName || userProfileObj?.username || '',
+          },
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        });
+      } else {
+        await api.post(`social-accounts/${platform}/select-page`, {
+          selectedId: idToConfirm,
+          tempToken,
+          state,
+          userProfile: userProfileObj || {},
+        }, {
+          headers: {
+            'X-Workspace-Id': activeWorkspace.id
+          }
+        });
+      }
+      showSuccess(`${platform} account connected successfully`);
+      navigate('/app/connections', { replace: true });
+    } catch (err) {
+      const respErr = err as { response?: { data?: { message?: string } } };
+      const msg = respErr?.response?.data?.message || 'Failed to complete the connection.';
+      showError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [platform, profileId, tempToken, state, userProfileObj, selectedId, activeWorkspace, showSuccess, navigate, showError]);
 
   // ─ Handle direct connect or fetch pages ──────────────────────────────
 
@@ -216,18 +261,25 @@ export default function SocialAccountsSelect() {
           response = await api.get<PageItem[]>(
             `social-accounts/${platform}/pages`,
             {
-              params: { tempToken, state },
+              params: { tempToken, state, userProfile: userProfileParam },
               headers: { 'X-Workspace-Id': activeWorkspace.id }
             }
           );
         }
         const resData = response.data as any;
         const rawItems: any[] = resData.pages ? resData.pages : (resData.options ? resData.options : resData);
-        setItems(rawItems.map((item: any) => ({
+        const mappedItems = rawItems.map((item: any) => ({
           ...item,
           avatarUrl: item.picture?.data?.url || item.avatarUrl,
-        })));
-        setLoadState('loaded');
+        }));
+        setItems(mappedItems);
+
+        // Auto-connect LinkedIn Personal Profile if that's the only option
+        if (platform.toLowerCase() === 'linkedin' && mappedItems.length === 1 && mappedItems[0].id === 'personal') {
+          await handleConfirm(mappedItems[0].id);
+        } else {
+          setLoadState('loaded');
+        }
       } catch (err) {
         const respErr = err as { response?: { data?: { message?: string } } };
         setErrorInfo({
@@ -241,50 +293,7 @@ export default function SocialAccountsSelect() {
     };
 
     fetchPages();
-  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId, zernioError]);
-
-  // ─ Submit selection ─────────────────────────────────────────────────────
-
-  const handleConfirm = async () => {
-    if (!selectedId || !activeWorkspace) return;
-
-    setIsSubmitting(true);
-    try {
-      if (platform.toLowerCase() === 'facebook') {
-        await api.post(`connect/facebook/select-page`, {
-          profileId,
-          pageId: selectedId,
-          tempToken,
-          userProfile: {
-            ...(userProfileObj || {}),
-            name: userProfileObj?.name || userProfileObj?.displayName || userProfileObj?.username || '',
-          },
-        }, {
-          headers: {
-            'X-Workspace-Id': activeWorkspace.id
-          }
-        });
-      } else {
-        await api.post(`social-accounts/${platform}/select-page`, {
-          selectedId: selectedId,
-          tempToken,
-          state,
-        }, {
-          headers: {
-            'X-Workspace-Id': activeWorkspace.id
-          }
-        });
-      }
-      showSuccess(`${platform} account connected successfully`);
-      navigate('/app/connections', { replace: true });
-    } catch (err) {
-      const respErr = err as { response?: { data?: { message?: string } } };
-      const msg = respErr?.response?.data?.message || 'Failed to complete the connection.';
-      showError(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [platform, tempToken, state, activeWorkspace, workspaceLoading, isDirectConnect, accountId, username, navigate, showSuccess, profileId, zernioError, userProfileParam, handleConfirm]);
 
   const platformLabel = platform
     ? platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')

@@ -28,8 +28,10 @@ public static class DependencyInjection
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripeProductWebhookHandlers>();
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripePriceWebhookHandlers>();
         services.AddScoped<Payments.Handlers.IPaymentWebhookHandler, Payments.Handlers.StripeSubscriptionWebhookHandlers>();
-        services.AddScoped<Interfaces.IRepurposeService, Services.RepurposeService>();
+        services.AddScoped<Services.RepurposeService>();
+        services.AddScoped<Interfaces.IRepurposeService, Services.AIRepurposeService>();
         services.AddScoped<Interfaces.ITrendsService, Services.TrendsService>();
+        services.AddScoped<Interfaces.IPromptEngineeringService, Services.PromptEngineeringService>();
         return services;
     }
 }

@@ -15,4 +15,23 @@ public interface IRepurposeService
     Task<Result<RepurposeResult>> GenerateAsync(
         RepurposeRequest request,
         CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<RepurposeStreamEvent> GenerateStreamAsync(
+        Guid workspaceId,
+        RepurposeRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<RepurposeResult>> GetSessionAsync(
+        Guid workspaceId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<RepurposeSessionSummary>> GetSessionsAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> DeleteSessionAsync(
+        Guid workspaceId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
 }

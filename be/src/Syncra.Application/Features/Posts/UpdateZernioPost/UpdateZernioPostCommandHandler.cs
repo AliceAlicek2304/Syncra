@@ -119,9 +119,15 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
             .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
             .ToList();
 
+        // Truncate content to 90 characters if TikTok is in the platforms list (TikTok photo posts use content as slideshow title)
+        var tiktokPlatform = platforms.FirstOrDefault(p => p.Platform.Equals("TikTok", StringComparison.OrdinalIgnoreCase));
+        var zernioContent = tiktokPlatform != null && !string.IsNullOrEmpty(request.Content) && request.Content.Length > 90
+            ? request.Content.Substring(0, 90)
+            : request.Content ?? string.Empty;
+
         var zernioRequest = new ZernioCreatePostRequest(
             request.Title,
-            request.Content ?? string.Empty,
+            zernioContent,
             platforms,
             request.ScheduledAtUtc,
             request.PublishNow,

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Repurpose;
 using Syncra.Application.Interfaces;
@@ -173,6 +174,45 @@ public sealed class RepurposeService : IRepurposeService
             atoms.Count, request.Platforms.Count);
 
         return Task.FromResult(Result<RepurposeResult>.Success(new RepurposeResult(atoms)));
+    }
+
+    public async IAsyncEnumerable<RepurposeStreamEvent> GenerateStreamAsync(
+        Guid workspaceId,
+        RepurposeRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var result = await GenerateAsync(request, cancellationToken);
+        if (result.IsSuccess)
+        {
+            yield return new RepurposeStreamEvent("complete", result.Value!);
+        }
+        else
+        {
+            yield return new RepurposeStreamEvent("error", new { code = "generation_failed", message = result.Error });
+        }
+    }
+
+    public Task<Result<RepurposeResult>> GetSessionAsync(
+        Guid workspaceId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Result<RepurposeResult>.Failure("Sessions not supported in V1 service"));
+    }
+
+    public Task<IReadOnlyList<RepurposeSessionSummary>> GetSessionsAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<RepurposeSessionSummary>>(Array.Empty<RepurposeSessionSummary>());
+    }
+
+    public Task<Result<bool>> DeleteSessionAsync(
+        Guid workspaceId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Result<bool>.Failure("Sessions not supported in V1 service"));
     }
 
     private sealed record TemplateAtom(

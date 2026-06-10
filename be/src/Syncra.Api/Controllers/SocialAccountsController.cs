@@ -245,6 +245,7 @@ public sealed class SocialAccountsController : ControllerBase
         string platform,
         [FromQuery] string tempToken,
         [FromQuery] string state,
+        [FromQuery] string? userProfile,
         CancellationToken cancellationToken)
     {
         var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
@@ -276,6 +277,7 @@ public sealed class SocialAccountsController : ControllerBase
             profileId: zernioProfile.ZernioProfileId,
             platform: platform,
             tempToken: tempToken,
+            userProfile: userProfile,
             cancellationToken: cancellationToken);
 
         return Ok(new { platform = platform.ToLowerInvariant(), options });
@@ -314,6 +316,7 @@ public sealed class SocialAccountsController : ControllerBase
             tempToken: request.TempToken,
             selectedId: request.SelectedId,
             selectedName: request.SelectedName,
+            userProfile: request.UserProfile,
             cancellationToken: cancellationToken);
 
         // Create or reactivate local SocialAccount
@@ -868,7 +871,8 @@ public sealed class SocialAccountsController : ControllerBase
 public sealed record SelectPageRequest(
     string TempToken,
     string SelectedId,
-    string? SelectedName = null);
+    string? SelectedName = null,
+    object? UserProfile = null);
 
 public sealed record UpdateFacebookPageRequestDto(
     string SelectedPageId);

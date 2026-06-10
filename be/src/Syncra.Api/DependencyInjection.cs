@@ -63,6 +63,7 @@
             // Filters
             services.AddScoped<Filters.IdempotencyFilter>();
             services.AddScoped<Filters.ZernioWebhookSignatureFilter>();
+            services.AddScoped<Filters.RepurposePlanLimitFilter>();
             services.AddScoped<Controllers.PaymentWebhookOrchestrator>();
             services.AddScoped<Syncra.Application.Interfaces.INotificationDispatcher, Syncra.Api.Services.NotificationDispatcher>();
             services.AddScoped<Syncra.Application.Interfaces.IPostStatusNotifier, Syncra.Api.Services.PostStatusNotifier>();

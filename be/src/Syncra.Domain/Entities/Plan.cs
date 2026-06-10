@@ -10,6 +10,7 @@ public sealed class Plan : EntityBase
     public int MaxMembers { get; set; }
     public int MaxSocialAccounts { get; set; }
     public int MaxScheduledPostsPerMonth { get; set; }
+    public int MaxRepurposeGenerationsPerMonth { get; set; } = 15;
     public string? StripeProductId { get; set; }
     public string? StripeMonthlyPriceId { get; set; }
     public string? StripeYearlyPriceId { get; set; }

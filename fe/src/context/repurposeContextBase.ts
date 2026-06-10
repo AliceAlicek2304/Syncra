@@ -1,10 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
-/**
- * All 14 Zernio platform IDs available for repurpose content generation.
- * Uses lowercase Zernio API IDs for consistency across the frontend.
- */
 export type RepurposePlatform =
   | 'bluesky'
   | 'facebook'
@@ -22,6 +18,18 @@ export type RepurposePlatform =
   | 'youtube'
 export type AtomType = 'POST' | 'THREAD' | 'CAROUSEL' | 'INSIGHT' | 'TIP' | 'QUOTE'
 
+export type SourceStatus = 'processing' | 'ready' | 'error'
+
+export interface SupportingSource {
+  id: string
+  type: 'url' | 'file'
+  label: string
+  url?: string
+  fileName?: string
+  status: SourceStatus
+  error?: string
+}
+
 export interface RepurposeAtom {
   id: string
   type: AtomType
@@ -36,7 +44,34 @@ export interface RepurposeConfig {
     sourceText: string
     targetPlatforms: RepurposePlatform[]
     tone: string
+    contentLength: string
     extractAtoms: boolean
+    language: string
+    sources: SupportingSource[]
+}
+
+export interface RepurposeStreamState {
+    platformResults: Record<string, RepurposeAtom[]>
+    progress: number
+    isStreaming: boolean
+    error: string | null
+    metadata: Record<string, string>
+    partialResults: Record<string, RepurposeAtom[]>
+    liveTokenText: string
+    currentPlatform: string | null
+}
+
+export interface RepurposeSessionSummary {
+  id: string
+  sourceText: string
+  targetPlatforms: string
+  tone: string
+  status: string
+  language: string
+  contentLength: string
+  extractAtoms: boolean
+  createdAtUtc: string
+  supportingSourcesJson?: string
 }
 
 export interface RepurposeContextValue {
@@ -48,7 +83,15 @@ export interface RepurposeContextValue {
     setResults: Dispatch<SetStateAction<RepurposeAtom[]>>
     error: string | null
     setError: Dispatch<SetStateAction<string | null>>
+    streamState: RepurposeStreamState
     generate: () => Promise<void>
+    sessions: RepurposeSessionSummary[]
+    activeSessionId: string | null
+    switchSession: (sessionId: string) => Promise<void>
+    deleteSession: (sessionId: string) => Promise<void>
+    addSource: (source: SupportingSource) => void
+    removeSource: (id: string) => void
+    updateSource: (id: string, updates: Partial<SupportingSource>) => void
 }
 
 export const RepurposeContext = createContext<RepurposeContextValue | null>(null)
