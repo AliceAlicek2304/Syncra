@@ -9,6 +9,8 @@ public sealed class RepurposeAtom : EntityBase
     public string? Title { get; private set; }
     public string? SuggestedHashtags { get; private set; } 
     public string? SuggestedCTA { get; private set; }
+    public string? MediaUrl { get; private set; }
+    public string? MediaType { get; private set; }
 
     // Navigation property
     public RepurposeSession Session { get; set; } = null!;
@@ -22,7 +24,9 @@ public sealed class RepurposeAtom : EntityBase
         string content, 
         string? title = null, 
         string? suggestedHashtags = null,
-        string? suggestedCta = null)
+        string? suggestedCta = null,
+        string? mediaUrl = null,
+        string? mediaType = null)
     {
         return new RepurposeAtom
         {
@@ -33,6 +37,8 @@ public sealed class RepurposeAtom : EntityBase
             Title = title,
             SuggestedHashtags = suggestedHashtags,
             SuggestedCTA = suggestedCta,
+            MediaUrl = mediaUrl,
+            MediaType = mediaType,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };

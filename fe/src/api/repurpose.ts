@@ -8,6 +8,8 @@ export interface RepurposeAtomDto {
   platform: string
   suggestedHashtags: string[]
   suggestedCta?: string
+  mediaUrl?: string
+  mediaType?: string | null
 }
 
 export interface RepurposeResultDto {
@@ -44,6 +46,8 @@ export interface RepurposeGenerateRequest {
   language?: string
   supportingSources?: SupportingSourceRequest[]
   selectedPostIds?: string[]
+  generateMedia?: boolean
+  mediaType?: string | null
 }
 
 export interface SseEvent {

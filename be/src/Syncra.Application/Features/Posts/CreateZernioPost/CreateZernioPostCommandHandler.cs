@@ -89,7 +89,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
                 var storageKey = ExtractStorageKey(mediaItem.Url);
                 using var stream = await _storageService.OpenReadAsync(storageKey);
 
-                var resolvedMimeType = GetMimeType(mediaItem.Filename ?? mediaItem.Url ?? "file", mediaItem.MimeType);
+                var resolvedMimeType = GetMimeType(mediaItem.Filename ?? "file", mediaItem.Url, mediaItem.MimeType);
 
                 var presignResponse = await _zernioClient.GetMediaPresignedUrlAsync(
                     mediaItem.Filename ?? "file",
@@ -173,19 +173,32 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return PostMapper.ToDto(post);
+        return PostMapper.ToDto(post, _storageService);
     }
 
     private string ExtractStorageKey(string fileUrl)
     {
         var prefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
+        string key;
         if (!string.IsNullOrEmpty(_wasabiOptions.BucketName) && fileUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return fileUrl[prefix.Length..];
+        {
+            key = fileUrl[prefix.Length..];
+        }
+        else
+        {
+            key = System.IO.Path.GetFileName(fileUrl);
+        }
 
-        return System.IO.Path.GetFileName(fileUrl);
+        var queryIndex = key.IndexOf('?');
+        if (queryIndex >= 0)
+        {
+            key = key[..queryIndex];
+        }
+
+        return key;
     }
 
-    private static string GetMimeType(string filename, string? providedMimeType)
+    private static string GetMimeType(string filename, string? url, string? providedMimeType)
     {
         if (!string.IsNullOrWhiteSpace(providedMimeType) && 
             providedMimeType != "application/octet-stream")
@@ -194,6 +207,17 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         }
 
         var extension = System.IO.Path.GetExtension(filename).ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension) && !string.IsNullOrEmpty(url))
+        {
+            var cleanUrl = url;
+            var queryIndex = cleanUrl.IndexOf('?');
+            if (queryIndex >= 0)
+            {
+                cleanUrl = cleanUrl[..queryIndex];
+            }
+            extension = System.IO.Path.GetExtension(cleanUrl).ToLowerInvariant();
+        }
+
         return extension switch
         {
             ".jpg" or ".jpeg" => "image/jpeg",

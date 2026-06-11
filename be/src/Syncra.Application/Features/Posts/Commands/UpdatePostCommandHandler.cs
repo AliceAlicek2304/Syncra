@@ -1,5 +1,6 @@
 using MediatR;
 using Syncra.Application.DTOs.Posts;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
@@ -12,17 +13,20 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
     private readonly IMediaRepository _mediaRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly Syncra.Application.Interfaces.IZernioClient _zernioClient;
+    private readonly IStorageService _storageService;
 
     public UpdatePostCommandHandler(
         IPostRepository postRepository,
         IMediaRepository mediaRepository,
         IUnitOfWork unitOfWork,
-        Syncra.Application.Interfaces.IZernioClient zernioClient)
+        Syncra.Application.Interfaces.IZernioClient zernioClient,
+        IStorageService storageService)
     {
         _postRepository = postRepository;
         _mediaRepository = mediaRepository;
         _unitOfWork = unitOfWork;
         _zernioClient = zernioClient;
+        _storageService = storageService;
     }
 
     public async Task<PostDto?> Handle(UpdatePostCommand request, CancellationToken cancellationToken)
@@ -76,6 +80,6 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
             await _zernioClient.UpdatePostAsync(post.ZernioPostId, updateRequest, cancellationToken);
         }
 
-        return PostMapper.ToDto(post);
+        return PostMapper.ToDto(post, _storageService);
     }
 }

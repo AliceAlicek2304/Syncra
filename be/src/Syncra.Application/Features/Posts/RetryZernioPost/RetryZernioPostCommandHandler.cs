@@ -14,12 +14,18 @@ public class RetryZernioPostCommandHandler : IRequestHandler<RetryZernioPostComm
     private readonly IPostRepository _postRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IZernioClient _zernioClient;
+    private readonly IStorageService _storageService;
 
-    public RetryZernioPostCommandHandler(IPostRepository postRepository, IUnitOfWork unitOfWork, IZernioClient zernioClient)
+    public RetryZernioPostCommandHandler(
+        IPostRepository postRepository,
+        IUnitOfWork unitOfWork,
+        IZernioClient zernioClient,
+        IStorageService storageService)
     {
         _postRepository = postRepository;
         _unitOfWork = unitOfWork;
         _zernioClient = zernioClient;
+        _storageService = storageService;
     }
 
     public async Task<PostDto?> Handle(RetryZernioPostCommand request, CancellationToken cancellationToken)
@@ -45,6 +51,6 @@ public class RetryZernioPostCommandHandler : IRequestHandler<RetryZernioPostComm
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return PostMapper.ToDto(post);
+        return PostMapper.ToDto(post, _storageService);
     }
 }

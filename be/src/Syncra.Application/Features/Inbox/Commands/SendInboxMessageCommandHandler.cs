@@ -145,10 +145,23 @@ public sealed class SendInboxMessageCommandHandler
     private string ExtractStorageKey(string fileUrl)
     {
         var prefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
+        string key;
         if (!string.IsNullOrEmpty(_wasabiOptions.BucketName) && fileUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return fileUrl[prefix.Length..];
+        {
+            key = fileUrl[prefix.Length..];
+        }
+        else
+        {
+            key = System.IO.Path.GetFileName(fileUrl);
+        }
 
-        return System.IO.Path.GetFileName(fileUrl);
+        var queryIndex = key.IndexOf('?');
+        if (queryIndex >= 0)
+        {
+            key = key[..queryIndex];
+        }
+
+        return key;
     }
 
     private static string GetMimeType(string filename, string? providedMimeType)

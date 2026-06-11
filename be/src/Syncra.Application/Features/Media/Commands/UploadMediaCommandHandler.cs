@@ -53,6 +53,6 @@ public class UploadMediaCommandHandler : IRequestHandler<UploadMediaCommand, Med
         return ToDto(media);
     }
 
-    private static MediaDto ToDto(MediaEntity m) =>
-        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
+    private MediaDto ToDto(MediaEntity m) =>
+        new(m.Id, m.WorkspaceId, m.FileName, _storageService.GetPresignedUrl(m.FileUrl, 24), m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
 }

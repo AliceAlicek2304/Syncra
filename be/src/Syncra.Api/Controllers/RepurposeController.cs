@@ -107,7 +107,9 @@ public sealed class RepurposeController : ControllerBase
                 Language: request.Language ?? "en",
                 ContentLength: request.ContentLength ?? "medium",
                 SupportingSources: supportingSources,
-                SelectedPostIds: request.SelectedPostIds);
+                SelectedPostIds: request.SelectedPostIds,
+                GenerateMedia: request.GenerateMedia,
+                MediaType: request.MediaType);
 
             var result = await syncService.GenerateAsync(dtoRequest, cancellationToken);
 
@@ -152,7 +154,9 @@ public sealed class RepurposeController : ControllerBase
             Language: request.Language ?? "en",
             ContentLength: request.ContentLength ?? "medium",
             SupportingSources: supportingSources,
-            SelectedPostIds: request.SelectedPostIds);
+            SelectedPostIds: request.SelectedPostIds,
+            GenerateMedia: request.GenerateMedia,
+            MediaType: request.MediaType);
 
         try
         {
@@ -220,7 +224,9 @@ public sealed record RepurposeGenerateRequest(
     string? Language = null,
     string? ContentLength = null,
     IReadOnlyList<SupportingSourceRequest>? SupportingSources = null,
-    IReadOnlyList<Guid>? SelectedPostIds = null);
+    IReadOnlyList<Guid>? SelectedPostIds = null,
+    bool? GenerateMedia = null,
+    string? MediaType = null);
 
 public sealed record FetchUrlRequest(string Url);
 

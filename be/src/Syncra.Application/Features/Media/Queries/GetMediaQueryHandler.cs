@@ -1,5 +1,6 @@
 using MediatR;
 using Syncra.Application.DTOs.Media;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using MediaEntity = Syncra.Domain.Entities.Media;
 
@@ -8,10 +9,12 @@ namespace Syncra.Application.Features.Media.Queries;
 public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaListDto>
 {
     private readonly IMediaRepository _mediaRepository;
+    private readonly IStorageService _storageService;
 
-    public GetMediaQueryHandler(IMediaRepository mediaRepository)
+    public GetMediaQueryHandler(IMediaRepository mediaRepository, IStorageService storageService)
     {
         _mediaRepository = mediaRepository;
+        _storageService = storageService;
     }
 
     public async Task<MediaListDto> Handle(GetMediaQuery request, CancellationToken cancellationToken)
@@ -28,6 +31,6 @@ public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaListDto>
         return new MediaListDto(dtos, totalCount, request.Page, request.PageSize);
     }
 
-    private static MediaDto ToDto(MediaEntity m) =>
-        new(m.Id, m.WorkspaceId, m.FileName, m.FileUrl, m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
+    private MediaDto ToDto(MediaEntity m) =>
+        new(m.Id, m.WorkspaceId, m.FileName, _storageService.GetPresignedUrl(m.FileUrl, 24), m.MediaType, m.MimeType, m.SizeBytes, m.PostId, m.CreatedAtUtc);
 }

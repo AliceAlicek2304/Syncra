@@ -40,7 +40,11 @@ public class RetryZernioPostCommandTests : IDisposable
         var postRepository = new PostRepository(_db);
         var uow = new UnitOfWork(_db);
 
-        _handler = new RetryZernioPostCommandHandler(postRepository, uow, _zernioClientMock.Object);
+        var storageServiceMock = new Mock<IStorageService>();
+        storageServiceMock.Setup(s => s.GetPresignedUrl(It.IsAny<string>(), It.IsAny<double>()))
+            .Returns<string, double>((url, exp) => url);
+
+        _handler = new RetryZernioPostCommandHandler(postRepository, uow, _zernioClientMock.Object, storageServiceMock.Object);
     }
 
     public void Dispose()

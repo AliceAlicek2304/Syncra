@@ -10,10 +10,35 @@ export default function PlatformSelector() {
   const togglePlatform = (p: RepurposePlatform) => {
     setConfig(prev => {
       const active = prev.targetPlatforms.includes(p)
-      const next = active
-        ? prev.targetPlatforms.filter(t => t !== p)
-        : [...prev.targetPlatforms, p]
-      return { ...prev, targetPlatforms: next }
+      
+      let next: RepurposePlatform[]
+      if (prev.generateMedia) {
+        // Limit to at most 1 platform when media generation is active
+        next = active ? [] : [p]
+      } else {
+        next = active
+          ? prev.targetPlatforms.filter(t => t !== p)
+          : [...prev.targetPlatforms, p]
+      }
+
+      // Automatically adjust media type based on new platform constraints
+      let nextMediaType = prev.mediaType
+      if (prev.generateMedia && next.length > 0) {
+        const platform = next[0]
+        if (platform === 'youtube') {
+          nextMediaType = 'video'
+        } else if (platform === 'googlebusiness') {
+          nextMediaType = 'image'
+        } else if (!nextMediaType) {
+          nextMediaType = 'image' // Default to image
+        }
+      }
+
+      return {
+        ...prev,
+        targetPlatforms: next,
+        mediaType: nextMediaType,
+      }
     })
   }
 

@@ -8,7 +8,7 @@ import ResultCard from './ResultCard'
 import { cn } from '@/lib/utils'
 
 interface ResultsBentoGridProps {
-  onCreatePostToolbar?: (content: string) => void
+  onCreatePostToolbar?: (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => void
 }
 
 const CORE_TYPES: AtomType[] = ['POST', 'THREAD', 'CAROUSEL', 'INSIGHT']
@@ -118,8 +118,8 @@ export default function ResultsBentoGrid({ onCreatePostToolbar }: ResultsBentoGr
   const hasPartial = partialAtoms.length > 0
   const hasResults = results.length > 0 || hasPartial
 
-  const handleCreatePost = (content: string) => {
-    onCreatePostToolbar?.(content)
+  const handleCreatePost = (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => {
+    onCreatePostToolbar?.(content, platform, mediaUrl, mediaType)
   }
 
   const handleExport = () => {

@@ -224,10 +224,11 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
                 onDrop={() => actions.handleDropOnThumb(m.id)}
                 onDragEnd={actions.handleDragEnd}
               >
-                {m.type === 'image'
-                  ? <img src={m.url} alt={m.name} className={styles.mediaThumb} />
-                  : <div className={styles.mediaThumbVideo}>🎬 Video</div>
-                }
+                {m.type === 'image' ? (
+                  <img src={m.url} alt={m.name} className={styles.mediaThumb} />
+                ) : (
+                  <video src={m.url} className={styles.mediaThumb} autoPlay loop muted playsInline preload="metadata" />
+                )}
                 <div className={styles.thumbOverlay}>
                   <button
                     type="button"

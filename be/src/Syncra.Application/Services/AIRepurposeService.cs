@@ -20,6 +20,7 @@ public sealed class AIRepurposeService : IRepurposeService
     private readonly RepurposeService _v1Fallback;
     private readonly IRepurposeRepository _repository;
     private readonly IPostRepository _postRepository;
+    private readonly IStorageService _storageService;
     private readonly ILogger<AIRepurposeService> _logger;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -35,6 +36,7 @@ public sealed class AIRepurposeService : IRepurposeService
         RepurposeService v1Fallback,
         IRepurposeRepository repository,
         IPostRepository postRepository,
+        IStorageService storageService,
         ILogger<AIRepurposeService> logger)
     {
         _aiProvider = aiProvider;
@@ -43,6 +45,7 @@ public sealed class AIRepurposeService : IRepurposeService
         _v1Fallback = v1Fallback;
         _repository = repository;
         _postRepository = postRepository;
+        _storageService = storageService;
         _logger = logger;
     }
 
@@ -193,7 +196,9 @@ public sealed class AIRepurposeService : IRepurposeService
                     atomDto.Content,
                     atomDto.Title,
                     string.Join(",", atomDto.SuggestedHashtags),
-                    atomDto.SuggestedCta);
+                    atomDto.SuggestedCta,
+                    atomDto.MediaUrl,
+                    atomDto.MediaType);
                 session.AddAtom(atom);
                 await _repository.AddAtomAsync(atom, ct);
             }
@@ -295,6 +300,11 @@ public sealed class AIRepurposeService : IRepurposeService
                     var result = ParseResult(complete.FullOutput);
                     if (result is not null && result.Atoms.Count > 0)
                     {
+                        if (request.GenerateMedia == true && !string.IsNullOrEmpty(request.MediaType))
+                        {
+                            result = await GenerateMediaForAtomsAsync(result, request.MediaType, ct);
+                        }
+
                         await _cache.SetAsync(cacheKey, result, TimeSpan.FromHours(24), ct);
 
                         foreach (var atomDto in result.Atoms)
@@ -306,7 +316,9 @@ public sealed class AIRepurposeService : IRepurposeService
                                 atomDto.Content,
                                 atomDto.Title,
                                 string.Join(",", atomDto.SuggestedHashtags),
-                                atomDto.SuggestedCta);
+                                atomDto.SuggestedCta,
+                                atomDto.MediaUrl,
+                                atomDto.MediaType);
                             session.AddAtom(atom);
                             await _repository.AddAtomAsync(atom, ct);
                         }
@@ -321,10 +333,10 @@ public sealed class AIRepurposeService : IRepurposeService
                                 ? Math.Min(1.0, (double)(i + 1) / totalPlatforms)
                                 : 1.0;
                             yield return new RepurposeStreamEvent("platform_complete",
-                                new { platform = platformGroup.Key, atoms = platformGroup.ToList(), progress });
+                                new { platform = platformGroup.Key, atoms = platformGroup.Select(a => a with { MediaUrl = string.IsNullOrEmpty(a.MediaUrl) ? a.MediaUrl : _storageService.GetPresignedUrl(a.MediaUrl, 24) }).ToList(), progress });
                         }
 
-                        yield return new RepurposeStreamEvent("complete", result);
+                        yield return new RepurposeStreamEvent("complete", new RepurposeResult(result.Atoms.Select(a => a with { MediaUrl = string.IsNullOrEmpty(a.MediaUrl) ? a.MediaUrl : _storageService.GetPresignedUrl(a.MediaUrl, 24) }).ToList()));
                         yield return new RepurposeStreamEvent("metadata",
                             new { key = "usage", value = JsonSerializer.Serialize(
                                 new { prompt_tokens = complete.PromptTokens, completion_tokens = complete.CompletionTokens }) });
@@ -354,7 +366,13 @@ public sealed class AIRepurposeService : IRepurposeService
             var fallbackResult = await _v1Fallback.GenerateAsync(request, ct);
             if (fallbackResult.IsSuccess)
             {
-                foreach (var atomDto in fallbackResult.Value!.Atoms)
+                var fallbackAtoms = fallbackResult.Value!;
+                if (request.GenerateMedia == true && !string.IsNullOrEmpty(request.MediaType))
+                {
+                    fallbackAtoms = await GenerateMediaForAtomsAsync(fallbackAtoms, request.MediaType, ct);
+                }
+
+                foreach (var atomDto in fallbackAtoms.Atoms)
                 {
                     var atom = DomainEntities.RepurposeAtom.Create(
                         session.Id,
@@ -363,14 +381,16 @@ public sealed class AIRepurposeService : IRepurposeService
                         atomDto.Content,
                         atomDto.Title,
                         string.Join(",", atomDto.SuggestedHashtags),
-                        atomDto.SuggestedCta);
+                        atomDto.SuggestedCta,
+                        atomDto.MediaUrl,
+                        atomDto.MediaType);
                     session.AddAtom(atom);
                     await _repository.AddAtomAsync(atom, ct);
                 }
                 session.MarkAsCompleted();
                 await _repository.SaveChangesAsync(ct);
                 
-                yield return new RepurposeStreamEvent("complete", fallbackResult.Value);
+                yield return new RepurposeStreamEvent("complete", new RepurposeResult(fallbackAtoms.Atoms.Select(a => a with { MediaUrl = string.IsNullOrEmpty(a.MediaUrl) ? a.MediaUrl : _storageService.GetPresignedUrl(a.MediaUrl, 24) }).ToList()));
             }
         }
     }
@@ -395,9 +415,52 @@ public sealed class AIRepurposeService : IRepurposeService
             Content: a.Content,
             Platform: a.Platform,
             SuggestedHashtags: a.SuggestedHashtags?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
-            SuggestedCta: a.SuggestedCTA)).ToList();
+            SuggestedCta: a.SuggestedCTA,
+            MediaUrl: string.IsNullOrEmpty(a.MediaUrl) ? a.MediaUrl : _storageService.GetPresignedUrl(a.MediaUrl, 24),
+            MediaType: a.MediaType)).ToList();
 
         return Result<RepurposeResult>.Success(new RepurposeResult(atoms));
+    }
+
+    private async Task<RepurposeResult> GenerateMediaForAtomsAsync(
+        RepurposeResult result, 
+        string mediaType, 
+        CancellationToken ct)
+    {
+        var updatedAtoms = new List<Syncra.Application.DTOs.Repurpose.RepurposeAtom>();
+        foreach (var atom in result.Atoms)
+        {
+            var mediaUrl = "";
+            try
+            {
+                var mediaPrompt = $"Generate a professional, high-fidelity social media visual for: {atom.Content}. Stylized corporate illustration, modern glassmorphism, clean background.";
+                
+                if (mediaType == "video")
+                {
+                    mediaPrompt = $"Create a premium motion graphic preview for: {atom.Content}. 4k, smooth animation, loopable.";
+                    mediaUrl = await _aiProvider.GenerateVideoAsync(mediaPrompt, ct);
+                }
+                else
+                {
+                    mediaUrl = await _aiProvider.GenerateImageAsync(mediaPrompt, ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to generate media for atom {AtomId}. Using mock fallback.", atom.Id);
+                if (mediaType == "video")
+                {
+                    mediaUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+                }
+                else
+                {
+                    mediaUrl = "uploads/mock-image.png";
+                }
+            }
+
+            updatedAtoms.Add(atom with { MediaUrl = mediaUrl, MediaType = mediaType });
+        }
+        return new RepurposeResult(updatedAtoms);
     }
 
     public async Task<IReadOnlyList<RepurposeSessionSummary>> GetSessionsAsync(

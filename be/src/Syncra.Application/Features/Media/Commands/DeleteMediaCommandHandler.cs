@@ -48,11 +48,24 @@ public class DeleteMediaCommandHandler : IRequestHandler<DeleteMediaCommand>
     private string ExtractStorageKey(string fileUrl)
     {
         var prefix = $"{_wasabiOptions.ServiceUrl.TrimEnd('/')}/{_wasabiOptions.BucketName}/";
+        string key;
         if (!string.IsNullOrEmpty(_wasabiOptions.BucketName) && fileUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return fileUrl[prefix.Length..];
+        {
+            key = fileUrl[prefix.Length..];
+        }
+        else
+        {
+            // Fallback: use the last path segment (legacy local storage behaviour)
+            key = Path.GetFileName(fileUrl);
+        }
 
-        // Fallback: use the last path segment (legacy local storage behaviour)
-        return Path.GetFileName(fileUrl);
+        var queryIndex = key.IndexOf('?');
+        if (queryIndex >= 0)
+        {
+            key = key[..queryIndex];
+        }
+
+        return key;
     }
 }
 

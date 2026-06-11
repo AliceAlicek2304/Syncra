@@ -15,7 +15,7 @@ import NotificationBell from '../../components/NotificationBell'
 import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { to: string; icon: React.ReactNode; label: string; badge?: string }[] = [
   { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
   { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
   { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'Repurpose'},
@@ -269,6 +269,8 @@ export default function AppLayout() {
         onClose={closeCreatePost}
         onToast={(t) => t.type === 'success' ? success(t.message) : error(t.message)}
         initialContent={state.initialContent}
+        initialMedia={state.initialMedia}
+        initialPlatform={state.initialPlatform}
         initialDate={state.initialDate}
         editPost={state.editPost}
       />

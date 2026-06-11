@@ -23,6 +23,8 @@ export interface CreatePostModalProps {
   onClose: () => void
   onToast?: (t: Omit<ToastItem, 'id'>) => void
   initialContent?: string | null
+  initialMedia?: { url: string; type: 'image' | 'video'; name?: string }[] | null
+  initialPlatform?: string | null
   initialDate?: { year: number; month: number; day: number }
   editPost?: ScheduledPost | null
 }

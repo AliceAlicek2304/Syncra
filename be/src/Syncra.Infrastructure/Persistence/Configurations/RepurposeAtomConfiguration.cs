@@ -18,6 +18,8 @@ public class RepurposeAtomConfiguration : BaseEntityConfiguration<RepurposeAtom>
         builder.Property(e => e.Title).HasMaxLength(500).HasColumnName("title");
         builder.Property(e => e.SuggestedHashtags).HasColumnName("suggested_hashtags");
         builder.Property(e => e.SuggestedCTA).HasColumnName("suggested_cta");
+        builder.Property(e => e.MediaUrl).HasColumnName("media_url");
+        builder.Property(e => e.MediaType).HasColumnName("media_type").HasMaxLength(50);
 
         builder.HasIndex(e => e.SessionId);
     }

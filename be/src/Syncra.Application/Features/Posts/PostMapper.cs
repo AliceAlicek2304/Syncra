@@ -1,11 +1,12 @@
 using Syncra.Application.DTOs.Posts;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
 
 namespace Syncra.Application.Features.Posts;
 
 public static class PostMapper
 {
-    public static PostDto ToDto(Post post) =>
+    public static PostDto ToDto(Post post, IStorageService storageService) =>
         new(
             post.Id,
             post.WorkspaceId,
@@ -17,7 +18,7 @@ public static class PostMapper
             post.PublishedAtUtc,
             post.Media.Select(m => m.Id).ToList(),
             post.Media.Select(m => new PostMediaItemDto(
-                Url: m.FileUrl,
+                Url: storageService.GetPresignedUrl(m.FileUrl, 24),
                 Type: m.MediaType,
                 Filename: m.FileName,
                 MimeType: m.MimeType)).ToList(),

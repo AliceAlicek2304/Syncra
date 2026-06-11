@@ -30,8 +30,22 @@ export default function RepurposePage() {
     await generate()
   }
 
-  const handleCreatePost = (content: string) => {
-    openCreatePost({ initialContent: content, source: 'repurpose' })
+  const handleCreatePost = (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => {
+    let mediaName = 'AI_Media'
+    if (mediaUrl) {
+      const ext = mediaUrl.split('.').pop()?.split('?')[0]
+      if (ext && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'webm'].includes(ext.toLowerCase())) {
+        mediaName = `AI_Media.${ext}`
+      } else {
+        mediaName = mediaType === 'video' ? 'AI_Media.mp4' : 'AI_Media.png'
+      }
+    }
+    openCreatePost({
+      initialContent: content,
+      source: 'repurpose',
+      initialPlatform: platform,
+      initialMedia: mediaUrl ? [{ url: mediaUrl, type: mediaType === 'video' ? 'video' : 'image', name: mediaName }] : undefined
+    })
   }
 
   return (

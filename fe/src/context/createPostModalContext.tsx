@@ -5,7 +5,9 @@ export type CreatePostSource = 'direct' | 'idea' | 'coach' | 'repurpose' | 'comm
 
 export interface OpenCreatePostParams {
   initialContent?: string
+  initialMedia?: { url: string; type: 'image' | 'video'; name?: string }[] | null
   source?: CreatePostSource
+  initialPlatform?: string
   initialDate?: { year: number; month: number; day: number }
   editPost?: ScheduledPost
 }
@@ -13,7 +15,9 @@ export interface OpenCreatePostParams {
 export interface CreatePostModalState {
   isOpen: boolean
   initialContent?: string
+  initialMedia?: { url: string; type: 'image' | 'video'; name?: string }[] | null
   source: CreatePostSource
+  initialPlatform?: string
   initialDate?: { year: number; month: number; day: number }
   editPost?: ScheduledPost | null
 }
@@ -37,7 +41,9 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
     setState({
       isOpen: true,
       initialContent: params?.initialContent,
+      initialMedia: params?.initialMedia,
       source: params?.source ?? (params?.initialContent ? 'idea' : 'direct'),
+      initialPlatform: params?.initialPlatform,
       initialDate: params?.initialDate,
       editPost: null
     })
@@ -58,7 +64,9 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
       ...prev,
       isOpen: false,
       initialContent: undefined,
+      initialMedia: undefined,
       source: 'direct',
+      initialPlatform: undefined,
       initialDate: undefined,
       editPost: undefined
     }))

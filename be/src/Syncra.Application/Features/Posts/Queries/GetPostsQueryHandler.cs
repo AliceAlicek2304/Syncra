@@ -13,13 +13,16 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
 {
     private readonly IZernioClient _zernioClient;
     private readonly IZernioProfileRepository _zernioProfileRepository;
+    private readonly IStorageService _storageService;
 
     public GetPostsQueryHandler(
         IZernioClient zernioClient,
-        IZernioProfileRepository zernioProfileRepository)
+        IZernioProfileRepository zernioProfileRepository,
+        IStorageService storageService)
     {
         _zernioClient = zernioClient;
         _zernioProfileRepository = zernioProfileRepository;
+        _storageService = storageService;
     }
 
     public async Task<PaginatedResult<PostDto>> Handle(GetPostsQuery request, CancellationToken cancellationToken)
@@ -96,7 +99,7 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
         return await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
     }
 
-    private static PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId)
+    private PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId)
     {
         return new PostDto(
             Id: ObjectIdToGuid(zp.Id),
@@ -109,7 +112,7 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             PublishedAtUtc: zp.PublishedAt,
             MediaIds: (zp.ZernioMediaItems ?? []).Select(m => ObjectIdToGuid(m.Id)).ToList(),
             MediaItems: (zp.ZernioMediaItems ?? []).Select(m => new PostMediaItemDto(
-                Url: m.Url,
+                Url: _storageService.GetPresignedUrl(m.Url, 24),
                 Type: m.Type,
                 Filename: m.Filename,
                 MimeType: m.MimeType)).ToList(),

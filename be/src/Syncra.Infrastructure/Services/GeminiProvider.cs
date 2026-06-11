@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.IO;
 using Google.GenAI;
 using Google.GenAI.Types;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ namespace Syncra.Infrastructure.Services;
 public sealed class GeminiProvider : IAIProvider
 {
     private readonly GeminiOptions _options;
+    private readonly IStorageService _storageService;
     private readonly ILogger<GeminiProvider> _logger;
     private const int MaxRetries = 3;
 
@@ -20,9 +22,11 @@ public sealed class GeminiProvider : IAIProvider
 
     public GeminiProvider(
         IOptions<GeminiOptions> options,
+        IStorageService storageService,
         ILogger<GeminiProvider> logger)
     {
         _options = options.Value;
+        _storageService = storageService;
         _logger = logger;
     }
 
@@ -156,5 +160,119 @@ public sealed class GeminiProvider : IAIProvider
         }
 
         yield return new CompleteEvent(output, promptTokens, completionTokens);
+    }
+
+    public async Task<string> GenerateImageAsync(
+        string prompt,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            await using var client = new Client(apiKey: _options.ApiKey);
+            var config = new GenerateImagesConfig
+            {
+                NumberOfImages = 1,
+                AspectRatio = "1:1",
+                OutputMimeType = "image/png"
+            };
+
+            var response = await client.Models.GenerateImagesAsync(
+                model: "gemini-3.1-flash-image",
+                prompt: prompt,
+                config: config,
+                cancellationToken: ct
+            );
+
+            if (response.GeneratedImages == null || !response.GeneratedImages.Any())
+            {
+                throw new Exception("No images generated from Gemini image model");
+            }
+
+            var imageBytes = response.GeneratedImages.First().Image.ImageBytes;
+            
+            using var imageStream = new MemoryStream(imageBytes);
+            var uploadResult = await _storageService.SaveAsync(imageStream, $"repurpose-{Guid.NewGuid()}.png", "image/png");
+
+            return uploadResult.PublicUrl;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Gemini image generation failed");
+            throw;
+        }
+    }
+
+    public async Task<string> GenerateVideoAsync(
+        string prompt,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            await using var client = new Client(apiKey: _options.ApiKey);
+            
+            var source = new GenerateVideosSource { Prompt = prompt };
+            var config = new GenerateVideosConfig
+            {
+                AspectRatio = "16:9",
+                DurationSeconds = 6
+            };
+
+            var operation = await client.Models.GenerateVideosAsync(
+                model: "veo-3.1-lite-generate-preview",
+                source: source,
+                config: config,
+                cancellationToken: ct
+            );
+
+            var maxPoll = 12;
+            for (var i = 0; i < maxPoll; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                await Task.Delay(10000, ct);
+
+                operation = await client.Operations.GetAsync(operation, null, ct);
+                if (operation.Done == true)
+                {
+                    break;
+                }
+            }
+
+            if (operation.Done != true)
+            {
+                throw new TimeoutException("Video generation timed out on Veo model");
+            }
+
+            if (operation.Response?.GeneratedVideos == null || !operation.Response.GeneratedVideos.Any())
+            {
+                throw new Exception("No videos returned from Veo video model");
+            }
+
+            var tempFile = Path.GetTempFileName();
+
+            await client.Files.DownloadToFileAsync(
+                generatedVideo: operation.Response.GeneratedVideos.First(),
+                outputPath: tempFile,
+                cancellationToken: ct
+            );
+
+            using var fileStream = System.IO.File.OpenRead(tempFile);
+            var uploadResult = await _storageService.SaveAsync(fileStream, $"repurpose-{Guid.NewGuid()}.mp4", "video/mp4");
+
+            try
+            {
+                System.IO.File.Delete(tempFile);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete temp file: {TempFile}", tempFile);
+            }
+
+            return uploadResult.PublicUrl;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Veo video generation failed");
+            throw;
+        }
     }
 }

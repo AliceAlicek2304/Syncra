@@ -141,5 +141,47 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
         }
     }
 
+    public string GetPresignedUrl(string storageKeyOrUrl, double expirationHours = 2)
+    {
+        if (string.IsNullOrEmpty(storageKeyOrUrl)) return string.Empty;
+
+        // If it's already a full URL, extract the storage key
+        var key = storageKeyOrUrl;
+        var prefix = $"{_options.ServiceUrl.TrimEnd('/')}/{_options.BucketName}/";
+        if (storageKeyOrUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            key = storageKeyOrUrl[prefix.Length..];
+        }
+        else if (storageKeyOrUrl.StartsWith("http://") || storageKeyOrUrl.StartsWith("https://"))
+        {
+            // If it is another host's URL (e.g., Zernio URL), return it as-is
+            return storageKeyOrUrl;
+        }
+
+        // Strip any existing query parameters
+        var queryIndex = key.IndexOf('?');
+        if (queryIndex >= 0)
+        {
+            key = key[..queryIndex];
+        }
+
+        try
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _options.BucketName,
+                Key = key,
+                Expires = DateTime.UtcNow.AddHours(expirationHours),
+                Verb = HttpVerb.GET
+            };
+            return _s3Client.GetPreSignedURL(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate presigned URL for key {Key}.", key);
+            return storageKeyOrUrl;
+        }
+    }
+
     public void Dispose() => _s3Client.Dispose();
 }

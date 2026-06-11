@@ -39,6 +39,8 @@ export interface RepurposeAtom {
   platform: RepurposePlatform
   suggestedHashtags: string[]
   suggestedCTA?: string
+  mediaUrl?: string
+  mediaType?: 'image' | 'video' | null
 }
 
 export interface RepurposeConfig {
@@ -49,6 +51,8 @@ export interface RepurposeConfig {
     extractAtoms: boolean
     language: string
     sources: SupportingSource[]
+    generateMedia?: boolean
+    mediaType?: 'image' | 'video' | null
 }
 
 export interface RepurposeStreamState {

@@ -77,4 +77,9 @@ public class LocalMediaStorage : IStorageService
 
         return Task.FromResult<Stream>(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read));
     }
+
+    public string GetPresignedUrl(string storageKeyOrUrl, double expirationHours = 2)
+    {
+        return storageKeyOrUrl;
+    }
 }

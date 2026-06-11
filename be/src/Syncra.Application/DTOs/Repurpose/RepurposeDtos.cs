@@ -21,7 +21,9 @@ public sealed record RepurposeRequest(
     string Language = "en",
     string ContentLength = "medium",
     IReadOnlyList<SupportingSourceInfo>? SupportingSources = null,
-    IReadOnlyList<Guid>? SelectedPostIds = null);
+    IReadOnlyList<Guid>? SelectedPostIds = null,
+    bool? GenerateMedia = null,
+    string? MediaType = null);
 
 /// <summary>
 /// A single piece of repurposed content for a specific platform.
@@ -33,7 +35,9 @@ public sealed record RepurposeAtom(
     string Content,
     string Platform,
     IReadOnlyList<string> SuggestedHashtags,
-    string? SuggestedCta);
+    string? SuggestedCta,
+    string? MediaUrl = null,
+    string? MediaType = null);
 
 /// <summary>
 /// Result of a repurpose generation request.

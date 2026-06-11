@@ -427,7 +427,7 @@ export default function SocialAccountsSelect() {
                 </button>
                 <button
                   className={styles.btnPrimary}
-                  onClick={handleConfirm}
+                  onClick={() => handleConfirm()}
                   disabled={!selectedId || isSubmitting}
                 >
                   {isSubmitting ? (

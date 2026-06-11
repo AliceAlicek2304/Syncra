@@ -13,7 +13,7 @@ interface Props {
   index?: number
   variant?: 'insight'
   onCreatePost?: (content: string) => void
-  onCreatePostToolbar?: (content: string) => void
+  onCreatePostToolbar?: (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => void
 }
 
 const TYPE_CFG: Record<AtomType, { icon: ElementType; label: string }> = {
@@ -23,6 +23,21 @@ const TYPE_CFG: Record<AtomType, { icon: ElementType; label: string }> = {
   INSIGHT:  { icon: Lightbulb,   label: 'Insight' },
   TIP:      { icon: Zap,         label: 'Tip' },
   QUOTE:    { icon: Quote,       label: 'Quote' },
+}
+
+const resolveMediaUrl = (path: string) => {
+  if (!path) return ''
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+  
+  // Resolve base URL from VITE_API_BASE_URL (removing /api/v1 if it exists)
+  const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000'
+  const rootBase = apiBase.replace(/\/api\/v\d+$/, '')
+  
+  // Ensure we don't duplicate slashes
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${rootBase}${cleanPath}`
 }
 
 export default function ResultCard({ atom, index = 0, variant, onCreatePostToolbar }: Props) {
@@ -82,7 +97,7 @@ export default function ResultCard({ atom, index = 0, variant, onCreatePostToolb
               <Pencil size={11} />
             </button>
             <button
-              onClick={() => onCreatePostToolbar?.(editContent)}
+              onClick={() => onCreatePostToolbar?.(editContent, atom.platform, atom.mediaUrl, atom.mediaType)}
               className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1.5"
             >
               <PenTool size={11} />Create Post
@@ -105,6 +120,33 @@ export default function ResultCard({ atom, index = 0, variant, onCreatePostToolb
 
       {atom.title && <h3 className="text-sm font-bold text-foreground leading-tight tracking-tight">{atom.title}</h3>}
 
+      {/* Media Preview Container */}
+      {atom.mediaUrl && (
+        <div className="my-1 rounded-lg overflow-hidden border border-border bg-accent/5 max-h-[280px] flex items-center justify-center relative group/media transition-all duration-300 hover:shadow-sm pointer-events-auto">
+          {atom.mediaType === 'video' ? (
+            <video
+              src={resolveMediaUrl(atom.mediaUrl)}
+              controls
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full max-h-[280px] object-contain relative z-10 pointer-events-auto"
+              preload="metadata"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={resolveMediaUrl(atom.mediaUrl)}
+              alt={atom.title || "Repurposed Media"}
+              className="w-full max-h-[280px] object-cover hover:scale-[1.02] transition-transform duration-500"
+              loading="lazy"
+            />
+          )}
+        </div>
+      )}
+
       {editing ? (
         <div className="flex flex-col gap-2">
           <textarea
@@ -116,7 +158,7 @@ export default function ResultCard({ atom, index = 0, variant, onCreatePostToolb
           />
           <div className="flex gap-2">
             <button
-              onClick={() => onCreatePostToolbar?.(editContent)}
+              onClick={() => onCreatePostToolbar?.(editContent, atom.platform, atom.mediaUrl, atom.mediaType)}
               className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
             >
               <PenTool size={11} className="inline mr-1" />Create Post

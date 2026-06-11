@@ -1,5 +1,6 @@
 using MediatR;
 using Syncra.Application.DTOs.Posts;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 
@@ -10,15 +11,18 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
     private readonly IPostRepository _postRepository;
     private readonly IMediaRepository _mediaRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IStorageService _storageService;
 
     public CreatePostCommandHandler(
         IPostRepository postRepository,
         IMediaRepository mediaRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IStorageService storageService)
     {
         _postRepository = postRepository;
         _mediaRepository = mediaRepository;
         _unitOfWork = unitOfWork;
+        _storageService = storageService;
     }
 
     public async Task<PostDto> Handle(CreatePostCommand request, CancellationToken cancellationToken)
@@ -44,6 +48,6 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
         await _postRepository.AddAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return PostMapper.ToDto(post);
+        return PostMapper.ToDto(post, _storageService);
     }
 }

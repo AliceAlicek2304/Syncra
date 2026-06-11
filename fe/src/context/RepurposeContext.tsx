@@ -28,6 +28,8 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
         extractAtoms: false,
         language: 'en',
         sources: [],
+        generateMedia: false,
+        mediaType: null,
     })
     const [isGenerating, setIsGenerating] = useState(false)
     const [results, setResults] = useState<RepurposeAtom[]>([])
@@ -57,6 +59,9 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                 ...a,
                 platform: a.platform.toLowerCase() as RepurposeAtom['platform'],
                 type: a.type as RepurposeAtom['type'],
+                suggestedCTA: a.suggestedCta || (a as any).suggestedCTA,
+                mediaUrl: a.mediaUrl,
+                mediaType: a.mediaType as RepurposeAtom['mediaType'],
             }))
             setResults(mappedAtoms)
             setActiveSessionId(sessionId)
@@ -162,6 +167,8 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                     language: config.language,
                     supportingSources: supportingSources.length > 0 ? supportingSources : undefined,
                     selectedPostIds: selectedPostIds.length > 0 ? selectedPostIds : undefined,
+                    generateMedia: config.generateMedia,
+                    mediaType: config.generateMedia ? config.mediaType : undefined,
                 },
                 abortController.signal,
                 (event) => {
@@ -175,7 +182,7 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                             break
                         }
                         case 'partial_json': {
-                            const data = event.data as { atoms: RepurposeAtom[]; progress: number }
+                            const data = event.data as { atoms: any[]; progress: number }
                             const partialMap: Record<string, RepurposeAtom[]> = {}
                             for (const atom of data.atoms) {
                                 const platform = atom.platform.toLowerCase()
@@ -184,6 +191,9 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                                     ...atom,
                                     platform: platform as RepurposeAtom['platform'],
                                     type: atom.type as RepurposeAtom['type'],
+                                    suggestedCTA: atom.suggestedCta || atom.suggestedCTA,
+                                    mediaUrl: atom.mediaUrl,
+                                    mediaType: atom.mediaType as RepurposeAtom['mediaType'],
                                 })
                             }
                             setStreamState(prev => ({
@@ -211,12 +221,15 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                             break;
                         }
                         case 'platform_complete': {
-                            const data = event.data as { platform: string; atoms: RepurposeAtom[]; progress: number }
+                            const data = event.data as { platform: string; atoms: any[]; progress: number }
                             const platformKey = data.platform.toLowerCase()
                             const mappedAtoms = data.atoms.map(a => ({
                                 ...a,
                                 platform: a.platform.toLowerCase() as RepurposeAtom['platform'],
                                 type: a.type as RepurposeAtom['type'],
+                                suggestedCTA: a.suggestedCta || a.suggestedCTA,
+                                mediaUrl: a.mediaUrl,
+                                mediaType: a.mediaType as RepurposeAtom['mediaType'],
                             }))
                             setStreamState(prev => {
                                 const { [platformKey]: _, ...restPartial } = prev.partialResults
@@ -237,11 +250,14 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                             break
                         }
                         case 'complete': {
-                            const data = event.data as { atoms: RepurposeAtom[] }
+                            const data = event.data as { atoms: any[] }
                             const allAtoms = data.atoms.map(a => ({
                                 ...a,
                                 platform: a.platform.toLowerCase() as RepurposeAtom['platform'],
                                 type: a.type as RepurposeAtom['type'],
+                                suggestedCTA: a.suggestedCta || a.suggestedCTA,
+                                mediaUrl: a.mediaUrl,
+                                mediaType: a.mediaType as RepurposeAtom['mediaType'],
                             }))
                             setResults(allAtoms)
                             setStreamState(prev => ({
@@ -269,6 +285,9 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                     ...a,
                     platform: a.platform.toLowerCase() as RepurposeAtom['platform'],
                     type: a.type as RepurposeAtom['type'],
+                    suggestedCTA: a.suggestedCta || (a as any).suggestedCTA,
+                    mediaUrl: a.mediaUrl,
+                    mediaType: a.mediaType as RepurposeAtom['mediaType'],
                 }))
                 setResults(allAtoms)
                 setStreamState(prev => ({ ...prev, isStreaming: false, progress: 1 }))

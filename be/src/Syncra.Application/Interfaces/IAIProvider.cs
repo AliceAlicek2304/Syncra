@@ -10,6 +10,14 @@ public interface IAIProvider
         string userPrompt,
         AIProviderOptions? options = null,
         CancellationToken ct = default);
+
+    Task<string> GenerateImageAsync(
+        string prompt,
+        CancellationToken ct = default);
+
+    Task<string> GenerateVideoAsync(
+        string prompt,
+        CancellationToken ct = default);
 }
 
 public sealed record AIProviderOptions(

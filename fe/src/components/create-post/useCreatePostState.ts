@@ -78,7 +78,7 @@ function prepareTikTokSettings(data?: any) {
 }
 
 export function useCreatePostState(props: CreatePostModalProps) {
-  const { isOpen, onClose, onToast, initialContent, initialDate, editPost } = props
+  const { isOpen, onClose, onToast, initialContent, initialMedia, initialPlatform, initialDate, editPost } = props
   const { user } = useAuth()
 
   const isEditMode = !!editPost
@@ -116,7 +116,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }, [isOpen, activeWorkspace])
 
   // Fetch social accounts tagged with workspaceId
-  const { data: socialAccounts = [] } = useQuery({
+  const { data: socialAccounts = [], isFetched } = useQuery({
     queryKey: ['social-accounts-multiple', selectedWorkspaceIds],
     enabled: selectedWorkspaceIds.length > 0,
     queryFn: async () => {
@@ -132,10 +132,18 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   // Selected social accounts state
   const [selectedSocialAccountIds, setSelectedSocialAccountIds] = useState<string[]>([])
+  const didInitAccountsRef = useRef(false)
 
-  // Load account selections in edit mode
+  // Load account selections in edit mode or initialPlatform
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      didInitAccountsRef.current = false
+      return
+    }
+
+    if (didInitAccountsRef.current) return
+
+    if (isFetched) {
       if (editPost && editPost.platformTargets) {
         const zernioIds = editPost.platformTargets
           .map(t => t.zernioAccountId || (t as any).accountId)
@@ -148,13 +156,24 @@ export function useCreatePostState(props: CreatePostModalProps) {
         } else {
           setSelectedSocialAccountIds(zernioIds)
         }
+      } else if (initialPlatform) {
+        const normPlatform = initialPlatform.toLowerCase()
+        const mappedPlatform = normPlatform === 'x' ? 'twitter' : normPlatform
+        
+        // Find active social accounts matching the initial platform
+        const matchingAccounts = socialAccounts
+          .filter(a => a.isActive && a.platform.toLowerCase() === mappedPlatform)
+          .map(a => a.id)
+        
+        setSelectedSocialAccountIds(matchingAccounts)
       } else {
         setSelectedSocialAccountIds([])
       }
+      didInitAccountsRef.current = true
     }
-  }, [isOpen, editPost, socialAccounts])
+  }, [isOpen, editPost, socialAccounts, isFetched, initialPlatform])
 
-  // Load media in edit mode
+  // Load media in edit mode or initial media pass-through
   useEffect(() => {
     const editPostMedia = editPost?.media || editPost?.mediaItems
     if (isOpen && editPostMedia && editPostMedia.length > 0) {
@@ -166,10 +185,18 @@ export function useCreatePostState(props: CreatePostModalProps) {
         mimeType: item.mimeType,
       }))
       mediaHook.setMedia(loadedMedia)
+    } else if (isOpen && initialMedia && initialMedia.length > 0) {
+      const loadedMedia = initialMedia.map(item => ({
+        id: shortId(),
+        url: item.url,
+        type: item.type,
+        name: item.name || 'media',
+      }))
+      mediaHook.setMedia(loadedMedia)
     } else if (isOpen && !editPost) {
       mediaHook.resetMedia()
     }
-  }, [isOpen, editPost])
+  }, [isOpen, editPost, initialMedia])
 
   // Platform Grouping
   const [platformGroups, setPlatformGroups] = useState<{ name: string; accountIds: string[] }[]>([])
@@ -380,6 +407,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
           const dd = String(day).padStart(2, '0')
           initSchTime = `${year}-${mm}-${dd}T09:00`
         }
+
+        if (initialPlatform) {
+          const normPlatform = initialPlatform.toLowerCase();
+          const mappedPlatform = normPlatform === 'x' ? 'twitter' : normPlatform;
+          if ((PLATFORMS as { id: string }[]).some(p => p.id === mappedPlatform)) {
+            initPlatforms = [mappedPlatform as Platform]
+          }
+        }
       }
 
       setMainContent(nextContent)
@@ -467,6 +502,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setPlatformSpecificData({})
     initialSnapshotRef.current = null
     didInitRef.current = false
+    didInitAccountsRef.current = false
   }, [mediaHook, aiHook])
 
   const getIsDirty = useCallback(() => {
