@@ -92,6 +92,10 @@ public sealed class ProcessZernioWebhookJob
                     ? displayNameElement.GetString() ?? string.Empty
                     : string.Empty;
 
+                var accountProfileId = accountElement.TryGetProperty("profileId", out var accountProfileIdElement)
+                    ? accountProfileIdElement.GetString()
+                    : null;
+
                 if (string.IsNullOrWhiteSpace(platform) || string.IsNullOrWhiteSpace(externalAccountId))
                 {
                     _logger.LogWarning(
@@ -107,7 +111,7 @@ public sealed class ProcessZernioWebhookJob
                 {
                     case "account.connected":
                         await HandleAccountConnectedAsync(
-                            webhookEvent, platform, externalAccountId, displayName, cancellationToken);
+                            webhookEvent, platform, externalAccountId, displayName, accountProfileId, cancellationToken);
                         break;
 
                     case "account.disconnected":
@@ -326,6 +330,7 @@ public sealed class ProcessZernioWebhookJob
         string platform,
         string externalAccountId,
         string displayName,
+        string? profileId,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation(
@@ -334,11 +339,21 @@ public sealed class ProcessZernioWebhookJob
             platform,
             externalAccountId);
 
-        // Locate ZernioProfile for the workspace to associate the SocialAccount (T-25-02-01).
-        var profile = await _db.ZernioProfiles
-            .FirstOrDefaultAsync(
-                p => p.WorkspaceId == webhookEvent.WorkspaceId,
-                cancellationToken);
+        // Locate ZernioProfile by profileId from payload, fallback to workspaceId (T-25-02-01).
+        ZernioProfile? profile = null;
+        if (!string.IsNullOrWhiteSpace(profileId))
+        {
+            profile = await _db.ZernioProfiles
+                .FirstOrDefaultAsync(p => p.ZernioProfileId == profileId, cancellationToken);
+        }
+
+        if (profile == null)
+        {
+            profile = await _db.ZernioProfiles
+                .FirstOrDefaultAsync(
+                    p => p.WorkspaceId == webhookEvent.WorkspaceId,
+                    cancellationToken);
+        }
 
         if (profile == null)
         {

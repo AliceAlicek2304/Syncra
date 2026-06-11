@@ -12,7 +12,8 @@ public record CreateZernioPostDto(
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     IReadOnlyList<PlatformContentDto>? PlatformContents,
     Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
-    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
+    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null,
+    Guid? ProfileId = null
 );
 
 public record UpdateZernioPostDto(
@@ -25,7 +26,8 @@ public record UpdateZernioPostDto(
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     IReadOnlyList<PlatformContentDto>? PlatformContents,
     Syncra.Application.DTOs.Zernio.AllPlatformDataDto? PlatformSpecificData = null,
-    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null
+    Syncra.Application.DTOs.Zernio.TikTokSettingsDto? TiktokSettings = null,
+    Guid? ProfileId = null
 );
 
 public record PlatformContentDto(

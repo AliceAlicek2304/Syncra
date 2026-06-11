@@ -40,13 +40,18 @@ public sealed class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorksp
         workspace.Rename(request.Name);
         workspace.UpdateAppearance(request.Color, request.Description);
 
-        var zernioProfile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
-        if (zernioProfile is not null)
+        var profiles = await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
+
+        if (profiles.Count > 0)
         {
-            await _zernioClient.UpdateProfileAsync(
-                zernioProfile.ZernioProfileId,
-                request.Name,
-                cancellationToken);
+            await Task.WhenAll(profiles.Select(p =>
+                _zernioClient.UpdateProfileAsync(
+                    p.ZernioProfileId,
+                    request.Name,
+                    cancellationToken)));
+
+            foreach (var p in profiles)
+                p.Update(request.Name, p.AvatarUrl);
         }
 
         await _workspaceRepository.UpdateAsync(workspace);
@@ -58,8 +63,9 @@ public sealed class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorksp
             workspace.Slug.Value,
             workspace.OwnerUserId,
             workspace.CreatedAtUtc,
-            ZernioProfileId: zernioProfile?.ZernioProfileId,
+            ZernioProfileId: profiles.FirstOrDefault()?.ZernioProfileId,
             Color: workspace.Color,
-            Description: workspace.Description);
+            Description: workspace.Description,
+            ZernioProfileIds: profiles.Select(p => p.ZernioProfileId).ToList().AsReadOnly());
     }
 }

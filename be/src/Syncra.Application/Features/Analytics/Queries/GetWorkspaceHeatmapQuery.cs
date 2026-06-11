@@ -7,4 +7,5 @@ namespace Syncra.Application.Features.Analytics.Queries;
 public record GetWorkspaceHeatmapQuery(
     Guid WorkspaceId,
     int Date,
-    string? Platform = null) : IRequest<Result<HeatmapDto>>;
+    string? Platform = null,
+    string? ProfileId = null) : IRequest<Result<HeatmapDto>>;

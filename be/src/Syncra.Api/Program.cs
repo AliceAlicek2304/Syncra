@@ -90,6 +90,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<TenantResolutionMiddleware>();
+app.UseMiddleware<ProfileResolutionMiddleware>();
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/api/v1/hubs/notifications");

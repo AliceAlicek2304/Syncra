@@ -15,6 +15,8 @@ interface UseAnalyticsSummaryArgs {
   workspaceId?: string;
   /** Platform filter (e.g. 'facebook'). undefined / 'all' = all platforms. */
   platform?: string;
+  /** Zernio profile ID to scope analytics to a specific profile. */
+  profileId?: string | null;
 }
 
 const PRESET_OPTIONS = [
@@ -90,7 +92,7 @@ const noAutoRefetch = {
   refetchOnReconnect: false,
 } as const;
 
-export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSummaryArgs) {
+export function useAnalyticsSummary({ workspaceId, platform, profileId }: UseAnalyticsSummaryArgs) {
   const [presetDays, setPresetDays] = useState<AnalyticsPresetDays>(30);
   const [heatmapPlatform, setHeatmapPlatform] = useState<string | undefined>(undefined);
 
@@ -99,18 +101,21 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
   const platformParam = (!platform || platform === 'all') ? undefined : platform;
   const fromDate = useMemo(() => computeFromDate(presetDays), [presetDays]);
 
+  // Resolve profileId: 'all' → null (don't filter by profile)
+  const resolvedProfileId = profileId === 'all' ? undefined : (profileId || undefined);
+
   const dailyMetricsQuery = useQuery({
-    queryKey: ['analytics-daily-metrics', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
+    queryKey: ['analytics-daily-metrics', workspaceId ?? 'none', presetDays, platformParam ?? 'all', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 5 * 60_000,
     ...noAutoRefetch,
     queryFn: () => {
-      return analyticsApi.getDailyMetrics({ fromDate, platform: platformParam }, wsId)
+      return analyticsApi.getDailyMetrics({ fromDate, platform: platformParam, profileId: resolvedProfileId }, wsId)
     }
   });
 
   const topPostsQuery = useQuery({
-    queryKey: ['analytics-top-posts', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
+    queryKey: ['analytics-top-posts', workspaceId ?? 'none', presetDays, platformParam ?? 'all', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
     ...noAutoRefetch,
@@ -121,6 +126,7 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
         limit: 10,
         fromDate,
         platform: platformParam,
+        profileId: resolvedProfileId,
       });
       return list.posts ?? [];
     },
@@ -132,7 +138,7 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
    * likes/comments/shares/saves/views/impressions/reach/clicks are representative.
    */
   const analyticsListSummaryQuery = useQuery({
-    queryKey: ['analytics-list-summary', workspaceId ?? 'none', presetDays, platformParam ?? 'all'],
+    queryKey: ['analytics-list-summary', workspaceId ?? 'none', presetDays, platformParam ?? 'all', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 5 * 60_000,
     ...noAutoRefetch,
@@ -143,6 +149,7 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
         limit: 100,
         fromDate,
         platform: platformParam,
+        profileId: resolvedProfileId,
       });
       const posts = list.posts ?? [];
       const totals = posts.reduce(
@@ -168,38 +175,38 @@ export function useAnalyticsSummary({ workspaceId, platform }: UseAnalyticsSumma
   });
 
   const bestTimeQuery = useQuery({
-    queryKey: ['analytics-best-time', workspaceId ?? 'none', heatmapPlatform ?? 'all'],
+    queryKey: ['analytics-best-time', workspaceId ?? 'none', heatmapPlatform ?? 'all', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
     ...noAutoRefetch,
-    queryFn: (): Promise<BestTimeDto> => analyticsApi.getBestTime(wsId, heatmapPlatform),
+    queryFn: (): Promise<BestTimeDto> => analyticsApi.getBestTime(wsId, heatmapPlatform, resolvedProfileId),
   });
 
   const followerStatsQuery = useQuery({
-    queryKey: ['analytics-follower-stats', workspaceId ?? 'none', presetDays],
+    queryKey: ['analytics-follower-stats', workspaceId ?? 'none', presetDays, resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: (): Promise<ZernioFollowerStatsResponseDto> =>
-      analyticsApi.getFollowerStats(wsId, { fromDate }),
+      analyticsApi.getFollowerStats(wsId, { fromDate, profileId: resolvedProfileId }),
   });
 
   const contentDecayQuery = useQuery({
-    queryKey: ['analytics-content-decay', workspaceId ?? 'none'],
+    queryKey: ['analytics-content-decay', workspaceId ?? 'none', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: (): Promise<ZernioContentDecayResponseDto> =>
-      analyticsApi.getContentDecay(wsId),
+      analyticsApi.getContentDecay(wsId, resolvedProfileId),
   });
 
   const postingFrequencyQuery = useQuery({
-    queryKey: ['analytics-posting-frequency', workspaceId ?? 'none'],
+    queryKey: ['analytics-posting-frequency', workspaceId ?? 'none', resolvedProfileId ?? 'none'],
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
     ...noAutoRefetch,
     queryFn: (): Promise<ZernioPostingFrequencyResponseDto> =>
-      analyticsApi.getPostingFrequency(wsId),
+      analyticsApi.getPostingFrequency(wsId, resolvedProfileId),
   });
 
   // Use the first failed query's error as the page-level analytics error.

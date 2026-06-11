@@ -31,6 +31,7 @@ public sealed class GetWorkspaceSummaryQueryHandler
         return await _zernioAnalyticsService.GetSummaryAsync(
             request.WorkspaceId,
             request.Date,
+            request.ProfileId,
             cancellationToken);
     }
 }

@@ -8,7 +8,7 @@ import { TopAccountsTable } from './TopAccountsTable';
 import { OutboundBySourceChart } from './OutboundBySourceChart';
 import { InboxHeatmap } from './InboxHeatmap';
 
-export const InboxAnalyticsPage = () => {
+export const InboxAnalyticsPage = ({ profileId }: { profileId?: string }) => {
   const {
     volume,
     topAccounts,
@@ -17,12 +17,12 @@ export const InboxAnalyticsPage = () => {
     heatmap,
     loadingFlags,
     presetDays,
-  } = useInboxAnalytics();
+  } = useInboxAnalytics({ profileId });
 
   return (
     <div className="flex flex-col gap-6">
-      <InboxFilterBar />
-      <InboxBanner />
+      <InboxFilterBar profileId={profileId} />
+      <InboxBanner profileId={profileId} />
       
       <KpiStrip summary={volume?.summary ?? null} isLoading={loadingFlags.volume} />
       

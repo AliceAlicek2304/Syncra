@@ -198,6 +198,25 @@ function buildWorkspaceHeader(workspaceId?: string | null): Record<string, strin
   return undefined;
 }
 
+/**
+ * Helper: build the X-Profile-Id header for a request.
+ *
+ * - 'all' / null / undefined → send `X-Profile-Id: ''` to override any default from localStorage
+ * - string → send `X-Profile-Id: <id>` to scope to one profile
+ */
+function buildProfileHeader(profileId?: string | null): Record<string, string> | undefined {
+  if (profileId === 'all' || !profileId) return { 'X-Profile-Id': '' };
+  return { 'X-Profile-Id': profileId };
+}
+
+/**
+ * Helper: add profileId as a query param if provided.
+ */
+function maybeProfileId(profileId?: string | null): Record<string, string> | undefined {
+  if (profileId) return { profileId };
+  return undefined;
+}
+
 export const analyticsApi = {
   /**
    * GET /api/v1/analytics/daily-metrics?fromDate=YYYY-MM-DD
@@ -205,7 +224,7 @@ export const analyticsApi = {
    * Contract: ONLY `fromDate` is sent as a query param. No source/toDate.
    */
   getDailyMetrics: async (
-    params: { fromDate: string; platform?: string },
+    params: { fromDate: string; platform?: string; profileId?: string },
     workspaceId?: string | null
   ): Promise<ZernioDailyMetricsDto> => {
     try {
@@ -215,8 +234,12 @@ export const analyticsApi = {
           params: {
             fromDate: params.fromDate,
             ...(params.platform ? { platform: params.platform } : {}),
+            ...maybeProfileId(params.profileId),
           },
-          headers: buildWorkspaceHeader(workspaceId),
+          headers: {
+            ...buildWorkspaceHeader(workspaceId),
+            ...buildProfileHeader(params.profileId),
+          },
         }
       );
       return response.data;
@@ -236,13 +259,20 @@ export const analyticsApi = {
    */
   getBestTime: async (
     workspaceId?: string | null,
-    platform?: string
+    platform?: string,
+    profileId?: string
   ): Promise<BestTimeDto> => {
     const response = await api.get<BestTimeDto>(
       'analytics/best-time',
       {
-        params: platform ? { platform } : undefined,
-        headers: buildWorkspaceHeader(workspaceId),
+        params: {
+          ...(platform ? { platform } : {}),
+          ...maybeProfileId(profileId),
+        },
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(profileId),
+        },
       }
     );
     return response.data;
@@ -251,13 +281,17 @@ export const analyticsApi = {
   getPostAnalytics: async (
     workspaceId: string | null | undefined,
     postId: string,
-    dateDays: AnalyticsPresetDays
+    dateDays: AnalyticsPresetDays,
+    profileId?: string
   ): Promise<ZernioPostAnalyticsDto> => {
     const response = await api.get<ZernioPostAnalyticsDto>(
       `analytics`,
       {
-        params: { postId, date: dateDays },
-        headers: buildWorkspaceHeader(workspaceId)
+        params: { postId, date: dateDays, ...maybeProfileId(profileId) },
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(profileId),
+        },
       }
     );
 
@@ -278,13 +312,17 @@ export const analyticsApi = {
       limit: number;
       fromDate: string;
       platform?: string;
+      profileId?: string;
     }
   ): Promise<ZernioPostAnalyticsListDto> => {
     const response = await api.get<ZernioPostAnalyticsListDto>(
       `analytics`,
       {
         params,
-        headers: buildWorkspaceHeader(workspaceId),
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(params?.profileId),
+        },
       }
     );
 
@@ -298,13 +336,16 @@ export const analyticsApi = {
    */
   getFollowerStats: async (
     workspaceId?: string | null,
-    params?: { fromDate: string }
+    params?: { fromDate: string; profileId?: string }
   ): Promise<ZernioFollowerStatsResponseDto> => {
     const response = await api.get<ZernioFollowerStatsResponseDto>(
       'analytics/accounts/follower-stats',
       {
-        params: params ? { fromDate: params.fromDate } : undefined,
-        headers: buildWorkspaceHeader(workspaceId),
+        params: params ? { fromDate: params.fromDate, ...maybeProfileId(params.profileId) } : undefined,
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(params?.profileId),
+        },
       }
     );
     return response.data;
@@ -316,11 +357,18 @@ export const analyticsApi = {
    * Contract: NO query params.
    */
   getContentDecay: async (
-    workspaceId?: string | null
+    workspaceId?: string | null,
+    profileId?: string
   ): Promise<ZernioContentDecayResponseDto> => {
     const response = await api.get<ZernioContentDecayResponseDto>(
       'analytics/content-decay',
-      { headers: buildWorkspaceHeader(workspaceId) }
+      {
+        params: maybeProfileId(profileId),
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(profileId),
+        },
+      }
     );
     return response.data;
   },
@@ -331,11 +379,18 @@ export const analyticsApi = {
    * Contract: NO query params.
    */
   getPostingFrequency: async (
-    workspaceId?: string | null
+    workspaceId?: string | null,
+    profileId?: string
   ): Promise<ZernioPostingFrequencyResponseDto> => {
     const response = await api.get<ZernioPostingFrequencyResponseDto>(
       'analytics/posting-frequency',
-      { headers: buildWorkspaceHeader(workspaceId) }
+      {
+        params: maybeProfileId(profileId),
+        headers: {
+          ...buildWorkspaceHeader(workspaceId),
+          ...buildProfileHeader(profileId),
+        },
+      }
     );
     return response.data;
   },

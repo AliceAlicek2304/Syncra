@@ -356,10 +356,14 @@ export interface InboxSendCommentReplyResponse {
 
 export const inboxApi = {
   // 1. Existing Endpoints
-  getConversations: async (workspaceId: string): Promise<InboxConversationDto[]> => {
+  getConversations: async (workspaceId: string, profileId?: string): Promise<InboxConversationDto[]> => {
+    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+    if (profileId) {
+      headers['X-Profile-Id'] = profileId;
+    }
     const response = await api.get<InboxConversationDto[]>(
       `workspaces/${workspaceId}/inbox/conversations`,
-      { headers: { 'X-Workspace-Id': workspaceId } }
+      { headers }
     );
     return response.data;
   },
@@ -367,12 +371,16 @@ export const inboxApi = {
   getMessages: async (
     workspaceId: string,
     conversationId: string,
-    params?: { limit?: number; before?: string }
+    params?: { limit?: number; before?: string; profileId?: string }
   ): Promise<InboxMessageDto[]> => {
+    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+    if (params?.profileId) {
+      headers['X-Profile-Id'] = params.profileId;
+    }
     const response = await api.get<InboxMessageDto[]>(
       `workspaces/${workspaceId}/inbox/conversations/${conversationId}/messages`,
       {
-        headers: { 'X-Workspace-Id': workspaceId },
+        headers,
         params,
       }
     );
@@ -518,12 +526,16 @@ export const inboxApi = {
 
   getComments: async (
     workspaceId: string,
-    params?: { limit?: number; before?: string; platform?: string; accountId?: string }
+    params?: { limit?: number; before?: string; platform?: string; accountId?: string; profileId?: string }
   ): Promise<InboxCommentedPostsResponseDto> => {
+    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+    if (params?.profileId !== undefined) {
+      headers['X-Profile-Id'] = params.profileId;
+    }
     const response = await api.get<InboxCommentedPostsResponseDto>(
       `workspaces/${workspaceId}/inbox/comments`,
       {
-        headers: { 'X-Workspace-Id': workspaceId },
+        headers,
         params,
       }
     );
@@ -534,12 +546,16 @@ export const inboxApi = {
     workspaceId: string,
     postId: string,
     accountId: string,
-    params?: { subreddit?: string; limit?: number; cursor?: string; commentId?: string; forceRefresh?: boolean }
+    params?: { subreddit?: string; limit?: number; cursor?: string; commentId?: string; forceRefresh?: boolean; profileId?: string }
   ): Promise<ZernioPostCommentsResponseDto> => {
+    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+    if (params?.profileId !== undefined) {
+      headers['X-Profile-Id'] = params.profileId;
+    }
     const response = await api.get<ZernioPostCommentsResponseDto>(
       `workspaces/${workspaceId}/inbox/posts/${postId}/comments`,
       {
-        headers: { 'X-Workspace-Id': workspaceId },
+        headers,
         params: { accountId, ...params }
       }
     );

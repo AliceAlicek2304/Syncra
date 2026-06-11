@@ -198,6 +198,31 @@ public sealed class ZernioWebhookController : ControllerBase
                 return null;
             }
 
+            // ── Prefer existing workspace over creating a new one ──────────
+            var existingWorkspace = await _db.Workspaces
+                .FirstOrDefaultAsync(w => w.OwnerUserId == user.Id, cancellationToken);
+
+            if (existingWorkspace != null)
+            {
+                var profile = ZernioProfile.Create(
+                    existingWorkspace.Id,
+                    profileDto.Id,
+                    profileDto.Name,
+                    "zernio");
+
+                _db.ZernioProfiles.Add(profile);
+                await _db.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Auto-provisioned ZernioProfile {ProfileId} ({Name}) into existing workspace {WorkspaceId}.",
+                    profileId,
+                    profileDto.Name,
+                    existingWorkspace.Id);
+
+                return profile;
+            }
+
+            // ── Fallback: create new workspace + profile ──────────────────
             var ownerUserId = user.Id;
             var name = profileDto.Name;
             var slug = GenerateSlug(name);
@@ -215,13 +240,13 @@ public sealed class ZernioWebhookController : ControllerBase
             _db.Workspaces.Add(workspace);
             await _db.SaveChangesAsync(cancellationToken);
 
-            var profile = ZernioProfile.Create(
+            var newProfile = ZernioProfile.Create(
                 workspace.Id,
                 profileDto.Id,
                 profileDto.Name,
                 "zernio");
 
-            _db.ZernioProfiles.Add(profile);
+            _db.ZernioProfiles.Add(newProfile);
             await _db.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
@@ -230,7 +255,7 @@ public sealed class ZernioWebhookController : ControllerBase
                 name,
                 profileId);
 
-            return profile;
+            return newProfile;
         }
         catch (Exception ex)
         {

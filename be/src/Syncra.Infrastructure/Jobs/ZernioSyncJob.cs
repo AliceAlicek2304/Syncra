@@ -10,17 +10,20 @@ public class ZernioSyncJob
 {
     private readonly IZernioClient _zernioClient;
     private readonly IPostRepository _postRepository;
+    private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ZernioSyncJob> _logger;
 
     public ZernioSyncJob(
         IZernioClient zernioClient,
         IPostRepository postRepository,
+        IZernioProfileRepository zernioProfileRepository,
         IUnitOfWork unitOfWork,
         ILogger<ZernioSyncJob> logger)
     {
         _zernioClient = zernioClient;
         _postRepository = postRepository;
+        _zernioProfileRepository = zernioProfileRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -31,17 +34,40 @@ public class ZernioSyncJob
 
         try
         {
-            // Fetch recent posts from Zernio. Limit to 50 for now, sorted by updatedAt descending.
-            var response = await _zernioClient.ListPostsAsync(limit: 50, sortBy: "updatedAt:desc", cancellationToken: cancellationToken);
-
-            if (response == null || response.Posts == null || !response.Posts.Any())
+            var profiles = await _zernioProfileRepository.GetAllActiveAsync();
+            if (profiles.Count == 0)
             {
-                _logger.LogInformation("No posts returned from Zernio for synchronization.");
+                _logger.LogInformation("No active Zernio profiles found. Skipping sync.");
                 return;
             }
 
-            foreach (var zernioPost in response.Posts)
+            foreach (var profile in profiles)
             {
+                await SyncPostsForProfileAsync(profile.ZernioProfileId, cancellationToken);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Finished Zernio status synchronization job.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during Zernio status synchronization job.");
+            throw;
+        }
+    }
+
+    private async Task SyncPostsForProfileAsync(string profileId, CancellationToken cancellationToken)
+    {
+        // Fetch recent posts from Zernio scoped to this profile. Limit to 50, sorted by updatedAt descending.
+        var response = await _zernioClient.ListPostsAsync(limit: 50, sortBy: "updatedAt:desc", profileId: profileId, cancellationToken: cancellationToken);
+
+        if (response == null || response.Posts == null || !response.Posts.Any())
+        {
+            return;
+        }
+
+        foreach (var zernioPost in response.Posts)
+        {
                 var localPost = await _postRepository.GetByZernioPostIdAsync(zernioPost.Id);
 
                 if (localPost == null)
@@ -106,14 +132,5 @@ public class ZernioSyncJob
                     await _postRepository.UpdateAsync(localPost);
                 }
             }
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Finished Zernio status synchronization job.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred during Zernio status synchronization job.");
-            throw;
-        }
     }
 }

@@ -100,8 +100,10 @@ export const postsApi = {
     return response.data;
   },
 
-  getPosts: async (workspaceId: string, params?: GetPostsParams): Promise<PagedResult<Post>> => {
-    const response = await api.get<PagedResult<Post>>(`workspaces/${workspaceId}/posts`, { params });
+  getPosts: async (workspaceId: string, params?: GetPostsParams, profileId?: string): Promise<PagedResult<Post>> => {
+    const headers: Record<string, string> = {};
+    if (profileId !== undefined) headers['X-Profile-Id'] = profileId;
+    const response = await api.get<PagedResult<Post>>(`workspaces/${workspaceId}/posts`, { params, headers });
     return response.data;
   },
 

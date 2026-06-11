@@ -38,7 +38,16 @@ public sealed class GetInboxConversationsQueryHandler
         GetInboxConversationsQuery request,
         CancellationToken cancellationToken)
     {
-        var profile = await _profileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+        ZernioProfile? profile = null;
+        if (request.ProfileId.HasValue)
+        {
+            profile = await _profileRepository.GetByIdAsync(request.ProfileId.Value, cancellationToken);
+        }
+        else
+        {
+            profile = await _profileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+        }
+
         if (profile == null)
         {
             return Array.Empty<InboxConversationDto>();

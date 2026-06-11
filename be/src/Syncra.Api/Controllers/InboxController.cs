@@ -37,7 +37,8 @@ public class InboxController : ControllerBase
         Guid workspaceId,
         CancellationToken cancellationToken)
     {
-        var query = new GetInboxConversationsQuery(workspaceId);
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        var query = new GetInboxConversationsQuery(workspaceId, explicitProfileId);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
@@ -233,7 +234,8 @@ public class InboxController : ControllerBase
         CancellationToken cancellationToken)
     {
         // Use infrastructure directly via a simple handler pattern
-        var query = new GetInboxConversationsQuery(workspaceId);
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        var query = new GetInboxConversationsQuery(workspaceId, explicitProfileId);
         var conversations = await _mediator.Send(query, cancellationToken);
 
         var totalUnread = conversations.Sum(c => c.UnreadCount);
@@ -257,13 +259,16 @@ public class InboxController : ControllerBase
         [FromQuery] string? sortOrder = null,
         CancellationToken cancellationToken = default)
     {
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        var resolvedProfileId = profileId ?? explicitProfileId?.ToString();
+
         var query = new GetInboxCommentsQuery(
             workspaceId,
             limit,
             cursor,
             platform,
             accountId,
-            profileId,
+            resolvedProfileId,
             minComments,
             since,
             sortBy,

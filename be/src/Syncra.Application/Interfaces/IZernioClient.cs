@@ -119,6 +119,7 @@ public interface IZernioClient
         string? search = null,
         string? sortBy = null,
         string? accountId = null,
+        string? profileId = null,
         DateTime? dateFrom = null,
         DateTime? dateTo = null,
         CancellationToken cancellationToken = default);

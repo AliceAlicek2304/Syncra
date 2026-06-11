@@ -10,20 +10,43 @@ export function useUpdateProfile() {
     mutationFn: (data: Partial<User>) => usersApi.updateProfile(data),
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(['user'], updatedUser);
-      // Also update AuthContext if needed, but usually we just invalidate
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
   });
 }
 
-export function useUpdateWorkspace() {
+export function useCreateZernioProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name: string; color?: string; description?: string } }) =>
-      workspacesApi.updateWorkspace(id, data),
+    mutationFn: (data: { name: string; color?: string }) =>
+      workspacesApi.createProfile(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    },
+  });
+}
+
+export function useUpdateZernioProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string } }) =>
+      workspacesApi.updateProfile(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    },
+  });
+}
+
+export function useDeleteZernioProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      workspacesApi.deleteProfile(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
   });
 }

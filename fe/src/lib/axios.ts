@@ -40,10 +40,21 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  if (config.headers['X-Workspace-Id'] == null) {
+  if (config.headers['X-Workspace-Id'] === '') {
+    delete config.headers['X-Workspace-Id'];
+  } else if (config.headers['X-Workspace-Id'] == null) {
     const workspaceId = localStorage.getItem('syncra_workspace_id');
     if (workspaceId) {
       config.headers['X-Workspace-Id'] = workspaceId;
+    }
+  }
+
+  if (config.headers['X-Profile-Id'] === '') {
+    delete config.headers['X-Profile-Id'];
+  } else if (config.headers['X-Profile-Id'] == null) {
+    const profileId = localStorage.getItem('syncra_profile_id');
+    if (profileId) {
+      config.headers['X-Profile-Id'] = profileId;
     }
   }
 

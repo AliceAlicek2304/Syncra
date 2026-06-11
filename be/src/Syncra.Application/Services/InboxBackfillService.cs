@@ -49,27 +49,36 @@ public sealed class InboxBackfillService : IInboxBackfillService
             workspaceId,
             utcNow);
 
-        // ── 1. Resolve ZernioProfile ──────────────────────────────────────────
-        var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId);
-        if (profile is null || !profile.IsActive)
+        // ── 1. Resolve all active ZernioProfiles ──────────────────────────────
+        var profiles = await ResolveProfilesAsync(workspaceId);
+        if (profiles.Count == 0)
         {
             _logger.LogWarning(
-                "No active ZernioProfile found for workspace {WorkspaceId} — cannot backfill.",
+                "No active ZernioProfiles found for workspace {WorkspaceId} — cannot backfill.",
                 workspaceId);
             return Result.Failure("Zernio profile not found or inactive.");
         }
 
-        // ── 2. Backfill DMs (conversation headers only) ───────────────────────
-        await BackfillConversationsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
+        foreach (var profile in profiles)
+        {
+            _logger.LogInformation(
+                "Backfilling inbox for profile {ZernioProfileId} in workspace {WorkspaceId}.",
+                profile.ZernioProfileId,
+                workspaceId);
 
-        // ── 3. Backfill Comments ──────────────────────────────────────────────
-        await BackfillCommentsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
+            // ── 2. Backfill DMs (conversation headers only) ───────────────────
+            await BackfillConversationsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
 
-        // ── 4. Backfill Reviews ───────────────────────────────────────────────
-        await BackfillReviewsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
+            // ── 3. Backfill Comments ──────────────────────────────────────────
+            await BackfillCommentsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
+
+            // ── 4. Backfill Reviews ───────────────────────────────────────────
+            await BackfillReviewsAsync(profile.ZernioProfileId, workspaceId, utcNow, cancellationToken);
+        }
 
         _logger.LogInformation(
-            "Inbox backfill completed for workspace {WorkspaceId}.",
+            "Inbox backfill completed for {Count} profiles in workspace {WorkspaceId}.",
+            profiles.Count,
             workspaceId);
 
         return Result.Success();
@@ -299,7 +308,7 @@ public sealed class InboxBackfillService : IInboxBackfillService
     {
         try
         {
-            var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(workspaceId);
+            var profile = await ResolveProfileAsync(workspaceId);
             if (profile is null)
                 return;
 
@@ -437,4 +446,17 @@ public sealed class InboxBackfillService : IInboxBackfillService
 
         await _inboxRepository.AddReviewAsync(review);
     }
+
+    private async Task<IReadOnlyList<ZernioProfile>> ResolveProfilesAsync(Guid workspaceId)
+    {
+        var profiles = await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(workspaceId);
+
+        if (profiles.Count == 0)
+            return Array.Empty<ZernioProfile>();
+
+        return profiles;
+    }
+
+    private async Task<ZernioProfile?> ResolveProfileAsync(Guid workspaceId)
+        => (await ResolveProfilesAsync(workspaceId)).FirstOrDefault();
 }

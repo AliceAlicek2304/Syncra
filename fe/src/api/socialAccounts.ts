@@ -86,16 +86,19 @@ export const socialAccountsApi = {
   getSocialAccounts: async (
     workspaceId: string,
     params?: { page?: number; pageSize?: number },
+    profileId?: string
   ): Promise<PagedResult<SocialAccountDto>> => {
+    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+    if (profileId) headers['X-Profile-Id'] = profileId;
     const response = await api.get<PagedResult<SocialAccountDto>>('social-accounts', {
-      headers: { 'X-Workspace-Id': workspaceId },
+      headers,
       params,
     });
     return response.data;
   },
   /** Backward-compat helper: returns only the items array (all on page 1 with large pageSize). */
-  listSocialAccounts: async (workspaceId: string): Promise<SocialAccountDto[]> => {
-    const result = await socialAccountsApi.getSocialAccounts(workspaceId, { pageSize: 200 });
+  listSocialAccounts: async (workspaceId: string, profileId?: string): Promise<SocialAccountDto[]> => {
+    const result = await socialAccountsApi.getSocialAccounts(workspaceId, { pageSize: 200 }, profileId);
     return result.items;
   },
   getAccountHealth: async (workspaceId: string, accountId: string): Promise<AccountHealthDto> => {

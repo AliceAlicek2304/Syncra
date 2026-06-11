@@ -10,13 +10,8 @@ import type {
   HeatmapAction,
 } from '../types/inbox-analytics';
 
-// Routes are workspace-less — backend resolves from TenantResolutionMiddleware.
-// FE never passes X-Workspace-Id (axios interceptor would otherwise inject it).
-// We DO NOT call api.get with headers: buildWorkspaceHeader(...) because the
-// controller does not expect that path.
-
 export interface VolumeParams {
-  fromDate: string; // YYYY-MM-DD
+  fromDate: string;
   toDate: string;
   platform?: string;
   source?: string;
@@ -29,7 +24,7 @@ export interface TopAccountsParams {
   toDate: string;
   platform?: string;
   source?: string;
-  limit?: number; // 1..50
+  limit?: number;
   profileId?: string;
 }
 
@@ -65,8 +60,8 @@ export interface ConversationsListParams {
   platform?: string;
   accountId?: string;
   source?: string;
-  limit?: number; // 1..100, default 50
-  page?: number; // ≥1
+  limit?: number;
+  page?: number;
   sortBy?: 'lastMessagedAt' | 'firstMessagedAt' | 'totalMessages' | 'received' | 'sent' | 'read' | 'failed';
   order?: 'asc' | 'desc';
   profileId?: string;
@@ -88,11 +83,19 @@ function stripFalsy(params: Record<string, any>): Record<string, any> {
   return out;
 }
 
+function buildProfileHeader(profileId?: string | null): Record<string, string> | undefined {
+  if (profileId === 'all' || !profileId) return { 'X-Profile-Id': '' };
+  return { 'X-Profile-Id': profileId };
+}
+
 export const inboxAnalyticsApi = {
   getVolume: async (params: VolumeParams): Promise<ZernioInboxVolumeResponseDto> => {
     const response = await api.get<ZernioInboxVolumeResponseDto>(
       'inbox/analytics/volume',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -100,7 +103,10 @@ export const inboxAnalyticsApi = {
   getTopAccounts: async (params: TopAccountsParams): Promise<ZernioInboxTopAccountsResponseDto> => {
     const response = await api.get<ZernioInboxTopAccountsResponseDto>(
       'inbox/analytics/top-accounts',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -108,7 +114,10 @@ export const inboxAnalyticsApi = {
   getSourceBreakdown: async (params: SourceBreakdownParams): Promise<ZernioInboxSourceBreakdownResponseDto> => {
     const response = await api.get<ZernioInboxSourceBreakdownResponseDto>(
       'inbox/analytics/source-breakdown',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -116,7 +125,10 @@ export const inboxAnalyticsApi = {
   getResponseTime: async (params: ResponseTimeParams): Promise<ZernioInboxResponseTimeResponseDto> => {
     const response = await api.get<ZernioInboxResponseTimeResponseDto>(
       'inbox/analytics/response-time',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -124,7 +136,10 @@ export const inboxAnalyticsApi = {
   getHeatmap: async (params: HeatmapParams): Promise<ZernioInboxHeatmapResponseDto> => {
     const response = await api.get<ZernioInboxHeatmapResponseDto>(
       'inbox/analytics/heatmap',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -132,7 +147,10 @@ export const inboxAnalyticsApi = {
   listConversations: async (params: ConversationsListParams): Promise<ZernioInboxConversationsListResponseDto> => {
     const response = await api.get<ZernioInboxConversationsListResponseDto>(
       'inbox/analytics/conversations',
-      { params: stripFalsy(params) }
+      {
+        params: stripFalsy(params),
+        headers: buildProfileHeader(params.profileId),
+      }
     );
     return response.data;
   },
@@ -146,6 +164,7 @@ export const inboxAnalyticsApi = {
           toDate: params.toDate,
           profileId: params.profileId,
         }),
+        headers: buildProfileHeader(params.profileId),
       }
     );
     return response.data;

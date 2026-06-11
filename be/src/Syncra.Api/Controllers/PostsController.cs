@@ -55,8 +55,11 @@ public class PostsController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
+        var profileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+
         var query = new GetPostsQuery(
             workspaceId,
+            profileId,
             status,
             scheduledFromUtc,
             scheduledToUtc,

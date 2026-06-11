@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Settings, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock } from 'lucide-react'
+import { Settings, Sparkles, Save, ShieldCheck, User as UserIcon, Building, Lock, Plus, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { useUpdateProfile, useUpdateWorkspace } from '../../hooks/useSettings'
+import { useUpdateProfile, useUpdateZernioProfile, useCreateZernioProfile, useDeleteZernioProfile } from '../../hooks/useSettings'
 import Skeleton from '../../components/Skeleton'
 import RadarChart from '../../components/RadarChart'
 import BillingSection from '../../components/billing/BillingSection'
@@ -28,11 +28,15 @@ const workspaceSchema = z.object({
   name: z.string().min(2, 'Workspace name too short').max(100, 'Workspace name too long'),
 })
 
+
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth()
-  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace()
+  const { activeWorkspace, profiles, isLoading: workspaceLoading } = useWorkspace()
   const updateProfile = useUpdateProfile()
-  const updateWorkspace = useUpdateWorkspace()
+  const updateWorkspace = useUpdateZernioProfile()
+  const createProfile = useCreateZernioProfile()
+  const deleteProfile = useDeleteZernioProfile()
+  const [newZernioProfileName, setNewZernioProfileName] = useState('')
 
   const isLoading = authLoading || workspaceLoading;
 
@@ -59,8 +63,7 @@ export default function SettingsPage() {
 
   const onWorkspaceSubmit = (data: { name: string }) => {
     if (activeWorkspace) {
-      const color = workspaceColor === activeWorkspace.color || workspaceColor === '#fda4af' ? undefined : workspaceColor;
-      updateWorkspace.mutate({ id: activeWorkspace.id, data: { ...data, color } })
+      updateWorkspace.mutate({ id: activeWorkspace.id, data: { ...data } })
     }
   }
 
@@ -129,6 +132,60 @@ export default function SettingsPage() {
                   {updateProfile.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </motion.button>
               </form>
+            )}
+          </section>
+
+          {/* Zernio Profiles */}
+          <section className={`glass-card ${styles.section}`}>
+            <h2 className={styles.sectionTitle}><UserIcon size={18} /> Zernio Profiles</h2>
+            <p className={styles.sectionDesc}>Manage your Zernio profiles. Each profile can connect to different social accounts.</p>
+            {isLoading ? (
+              <div className={styles.form}><Skeleton height="100px" /></div>
+            ) : (
+              <div className={styles.form}>
+                <div className={styles.profileList}>
+                  {profiles.map(p => (
+                    <div key={p.id} className={styles.profileRow}>
+                      <span>{p.name}</span>
+                      <button
+                        className="btn-danger-outline"
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                        onClick={() => {
+                          if (confirm(`Delete profile "${p.name}"?`)) {
+                            deleteProfile.mutate(p.id)
+                          }
+                        }}
+                        disabled={profiles.length <= 1}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="New profile name"
+                    value={newZernioProfileName}
+                    onChange={(e) => setNewZernioProfileName(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.1 }}
+                    className="btn-primary"
+                    onClick={() => {
+                      if (!newZernioProfileName.trim()) return;
+                      createProfile.mutate({ name: newZernioProfileName.trim() })
+                      setNewZernioProfileName('')
+                    }}
+                    disabled={createProfile.isPending || !newZernioProfileName.trim()}
+                  >
+                    <Plus size={14} /> Add Profile
+                  </motion.button>
+                </div>
+              </div>
             )}
           </section>
 

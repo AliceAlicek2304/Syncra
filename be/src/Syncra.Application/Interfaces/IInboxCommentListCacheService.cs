@@ -13,6 +13,7 @@ public interface IInboxCommentListCacheService
         string? sortOrder,
         string? platform,
         string? accountId,
+        string? profileId = null,
         CancellationToken cancellationToken = default);
 
     Task SetAsync(
@@ -26,6 +27,7 @@ public interface IInboxCommentListCacheService
         string? platform,
         string? accountId,
         TimeSpan ttl,
+        string? profileId = null,
         CancellationToken cancellationToken = default);
 
     Task InvalidateAsync(

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MediatR;
 using Syncra.Application.Common.Interfaces;
 using Syncra.Application.DTOs.Auth;
@@ -15,6 +16,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository;
+    private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly IZernioProfileRepository _zernioProfileRepository;
+    private readonly IZernioClient _zernioClient;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITokenService _tokenService;
     private readonly IJwtOptions _jwtOptions;
@@ -25,6 +29,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         IRefreshTokenRepository refreshTokenRepository,
         IUserSessionRepository userSessionRepository,
         IEmailVerificationTokenRepository emailVerificationTokenRepository,
+        IWorkspaceRepository workspaceRepository,
+        IZernioProfileRepository zernioProfileRepository,
+        IZernioClient zernioClient,
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
         IJwtOptions jwtOptions,
@@ -34,6 +41,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         _refreshTokenRepository = refreshTokenRepository;
         _userSessionRepository = userSessionRepository;
         _emailVerificationTokenRepository = emailVerificationTokenRepository;
+        _workspaceRepository = workspaceRepository;
+        _zernioProfileRepository = zernioProfileRepository;
+        _zernioClient = zernioClient;
         _unitOfWork = unitOfWork;
         _tokenService = tokenService;
         _jwtOptions = jwtOptions;
@@ -61,6 +71,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
 
         await _userRepository.AddAsync(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Create default workspace + ZernioProfile for the new user
+        await CreateDefaultWorkspaceAsync(user, cancellationToken);
 
         // Generate verification token (32 random bytes, base64url encoded, per D-03 pattern)
         var verificationToken = GenerateToken();
@@ -105,6 +118,49 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc);
+    }
+
+    private async Task CreateDefaultWorkspaceAsync(User user, CancellationToken cancellationToken)
+    {
+        var emailPrefix = user.Email.Value.Split('@')[0];
+        var slug = GenerateSlug(emailPrefix);
+
+        var existing = await _workspaceRepository.GetBySlugAsync(slug);
+        if (existing != null)
+        {
+            slug = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
+        }
+
+        var workspace = Workspace.Create(user.Id, "Default", slug);
+        workspace.AddMember(user.Id, "owner");
+
+        await _workspaceRepository.AddAsync(workspace);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var provisioned = await _zernioClient.ProvisionProfileAsync(
+            workspaceId: workspace.Id.ToString(),
+            name: "Default",
+            cancellationToken: cancellationToken);
+
+        var profile = ZernioProfile.Create(
+            workspaceId: workspace.Id,
+            zernioProfileId: provisioned.Id,
+            displayName: provisioned.Name,
+            platform: "zernio");
+
+        await _zernioProfileRepository.AddAsync(profile);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string GenerateSlug(string name)
+    {
+        var slug = name.Trim().ToLowerInvariant();
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"[^a-z0-9\-]", "");
+        slug = Regex.Replace(slug, @"-{2,}", "-").Trim('-');
+        if (slug.Length == 0) return "workspace";
+        if (slug.Length < 3) slug = slug.PadRight(3, '0');
+        return slug;
     }
 
     private static string GenerateToken()

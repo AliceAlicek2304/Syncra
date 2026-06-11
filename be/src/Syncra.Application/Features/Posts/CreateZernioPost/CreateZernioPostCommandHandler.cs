@@ -64,7 +64,9 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             }
         }
 
-        var profile = await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+        var profile = request.ProfileId.HasValue
+            ? await _zernioProfileRepository.GetByIdAsync(request.ProfileId.Value, cancellationToken)
+            : await _zernioProfileRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
         if (profile is null)
         {
             throw new DomainException("zernio_profile_missing", "No Zernio profile exists for this workspace.");

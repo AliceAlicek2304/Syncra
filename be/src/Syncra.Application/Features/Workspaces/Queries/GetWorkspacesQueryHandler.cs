@@ -26,16 +26,21 @@ public sealed class GetWorkspacesQueryHandler : IRequestHandler<GetWorkspacesQue
         var profiles = await _zernioProfileRepository.GetByWorkspaceIdsAsync(workspaceIds);
         var profileLookup = profiles
             .GroupBy(p => p.WorkspaceId)
-            .ToDictionary(g => g.Key, g => g.First().ZernioProfileId);
+            .ToDictionary(g => g.Key, g => g.Select(p => p.ZernioProfileId).ToList());
 
-        return workspaceList.Select(w => new WorkspaceDto(
-            w.Id,
-            w.Name.Value,
-            w.Slug.Value,
-            w.OwnerUserId,
-            w.CreatedAtUtc,
-            ZernioProfileId: profileLookup.GetValueOrDefault(w.Id),
-            Color: w.Color,
-            Description: w.Description)).ToList();
+        return workspaceList.Select(w =>
+        {
+            var profileIds = profileLookup.GetValueOrDefault(w.Id) ?? new List<string>();
+            return new WorkspaceDto(
+                w.Id,
+                w.Name.Value,
+                w.Slug.Value,
+                w.OwnerUserId,
+                w.CreatedAtUtc,
+                ZernioProfileId: profileIds.FirstOrDefault(),
+                Color: w.Color,
+                Description: w.Description,
+                ZernioProfileIds: profileIds.AsReadOnly());
+        }).ToList();
     }
 }

@@ -115,7 +115,7 @@ const SOURCE_OPTIONS: { value: InboxMessageSource | 'all'; label: string }[] = [
   { value: 'platform', label: 'Platform' },
 ];
 
-export const InboxFilterBar = () => {
+export const InboxFilterBar = ({ profileId }: { profileId?: string }) => {
   const {
     presetOptions,
     presetDays,
@@ -127,7 +127,7 @@ export const InboxFilterBar = () => {
     rangeLabel,
     isFetching,
     refresh,
-  } = useInboxAnalytics();
+  } = useInboxAnalytics({ profileId });
 
   const dateOptions = presetOptions.map((o) => ({ value: String(o.days), label: o.label }));
   const platformOptions = [
@@ -189,9 +189,9 @@ export const InboxFilterBar = () => {
   );
 };
 
-export const InboxBanner = () => {
+export const InboxBanner = ({ profileId }: { profileId?: string }) => {
   const { inboxError, isNotConnected, isBillingGate, isScopeError, isError, refresh } =
-    useInboxAnalytics();
+    useInboxAnalytics({ profileId });
 
   if (!isError || !inboxError) return null;
 

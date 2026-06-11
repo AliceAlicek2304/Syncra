@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Plus, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import styles from './WorkspaceSelector.module.css';
 
@@ -12,8 +12,8 @@ function ColorDot({ color }: { color?: string }) {
   );
 }
 
-export default function WorkspaceSelector() {
-  const { workspaces, activeWorkspace, setActiveWorkspace, isLoading } = useWorkspace();
+export default function ProfileSelector() {
+  const { profiles, activeProfile, setActiveProfile, isLoading } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -37,44 +37,39 @@ export default function WorkspaceSelector() {
         className={styles.trigger}
         data-testid="workspace-selector"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Select workspace"
+        aria-label="Select profile"
       >
-        <ColorDot color={activeWorkspace?.color} />
+        <ColorDot color={activeProfile?.color} />
         <span className={styles.activeName}>
-          {activeWorkspace?.name || 'Select Workspace'}
+          {activeProfile?.name || 'Select Profile'}
         </span>
         <ChevronDown size={14} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} />
       </button>
 
       {isOpen && (
         <div className={styles.dropdown}>
-          <div className={styles.dropdownHeader}>Workspaces</div>
+          <div className={styles.dropdownHeader}>Profiles</div>
           <div className={styles.workspaceList}>
-            {workspaces.map((workspace) => (
+            {profiles.map((profile) => (
               <button
-                key={workspace.id}
+                key={profile.id}
                 data-testid="workspace-option"
                 className={`${styles.workspaceItem} ${
-                  activeWorkspace?.id === workspace.id ? styles.activeItem : ''
+                  activeProfile?.id === profile.id ? styles.activeItem : ''
                 }`}
                 onClick={() => {
-                  setActiveWorkspace(workspace);
+                  setActiveProfile(profile);
                   setIsOpen(false);
                 }}
               >
-                <ColorDot color={workspace.color} />
-                <span className={styles.workspaceName}>{workspace.name}</span>
-                {activeWorkspace?.id === workspace.id && (
+                <ColorDot color={profile.color} />
+                <span className={styles.workspaceName}>{profile.name}</span>
+                {activeProfile?.id === profile.id && (
                   <Check size={14} className={styles.checkIcon} />
                 )}
               </button>
             ))}
           </div>
-          <div className={styles.divider} />
-          <button className={styles.addBtn}>
-            <Plus size={14} />
-            <span>Create New</span>
-          </button>
         </div>
       )}
     </div>
