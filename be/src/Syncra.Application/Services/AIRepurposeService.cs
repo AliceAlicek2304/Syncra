@@ -7,6 +7,7 @@ using Syncra.Application.DTOs.AI;
 using Syncra.Application.DTOs.Repurpose;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Common;
+using Syncra.Domain.Interfaces;
 using DomainEntities = Syncra.Domain.Entities;
 
 namespace Syncra.Application.Services;
@@ -18,6 +19,7 @@ public sealed class AIRepurposeService : IRepurposeService
     private readonly IRepurposeCache _cache;
     private readonly RepurposeService _v1Fallback;
     private readonly IRepurposeRepository _repository;
+    private readonly IPostRepository _postRepository;
     private readonly ILogger<AIRepurposeService> _logger;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -32,6 +34,7 @@ public sealed class AIRepurposeService : IRepurposeService
         IRepurposeCache cache,
         RepurposeService v1Fallback,
         IRepurposeRepository repository,
+        IPostRepository postRepository,
         ILogger<AIRepurposeService> logger)
     {
         _aiProvider = aiProvider;
@@ -39,6 +42,7 @@ public sealed class AIRepurposeService : IRepurposeService
         _cache = cache;
         _v1Fallback = v1Fallback;
         _repository = repository;
+        _postRepository = postRepository;
         _logger = logger;
     }
 
@@ -46,7 +50,37 @@ public sealed class AIRepurposeService : IRepurposeService
         RepurposeRequest request,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = BuildCacheKey(request);
+        var selectedPostsText = "";
+        if (request.SelectedPostIds is { Count: > 0 })
+        {
+            var posts = await _postRepository.GetByIdsAsync(request.SelectedPostIds);
+            var sb = new StringBuilder();
+            foreach (var post in posts)
+            {
+                sb.AppendLine("---");
+                sb.AppendLine($"[Post Title: {post.Title.Value}]");
+                sb.AppendLine($"[Status: {post.Status}]");
+                if (post.PublishedAtUtc.HasValue)
+                {
+                    sb.AppendLine($"[Published: {post.PublishedAtUtc.Value:yyyy-MM-dd}]");
+                }
+                sb.AppendLine("[Content]");
+                sb.AppendLine(post.Content.Value);
+            }
+            if (sb.Length > 0)
+            {
+                sb.AppendLine("---");
+                selectedPostsText = sb.ToString();
+            }
+        }
+
+        var sourceTextWithPosts = string.IsNullOrWhiteSpace(request.SourceText)
+            ? selectedPostsText
+            : $"{request.SourceText}\n\n{selectedPostsText}";
+
+        var modifiedRequest = request with { SourceText = sourceTextWithPosts };
+
+        var cacheKey = BuildCacheKey(modifiedRequest);
 
         var cached = await _cache.GetAsync(cacheKey, cancellationToken);
         if (cached is not null)
@@ -57,7 +91,7 @@ public sealed class AIRepurposeService : IRepurposeService
 
         try
         {
-            var result = await GenerateWithAIAsync(request, cancellationToken);
+            var result = await GenerateWithAIAsync(modifiedRequest, cancellationToken);
             if (result is not null)
             {
                 await _cache.SetAsync(cacheKey, result, TimeSpan.FromHours(24), cancellationToken);
@@ -69,7 +103,7 @@ public sealed class AIRepurposeService : IRepurposeService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "AI repurpose failed, falling back to V1 templates");
-            return await _v1Fallback.GenerateAsync(request, cancellationToken);
+            return await _v1Fallback.GenerateAsync(modifiedRequest, cancellationToken);
         }
     }
 
@@ -78,13 +112,41 @@ public sealed class AIRepurposeService : IRepurposeService
         RepurposeRequest request,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
+        var selectedPostsText = "";
+        if (request.SelectedPostIds is { Count: > 0 })
+        {
+            var posts = await _postRepository.GetByIdsAsync(request.SelectedPostIds);
+            var sb = new StringBuilder();
+            foreach (var post in posts.Where(p => p.WorkspaceId == workspaceId))
+            {
+                sb.AppendLine("---");
+                sb.AppendLine($"[Post Title: {post.Title.Value}]");
+                sb.AppendLine($"[Status: {post.Status}]");
+                if (post.PublishedAtUtc.HasValue)
+                {
+                    sb.AppendLine($"[Published: {post.PublishedAtUtc.Value:yyyy-MM-dd}]");
+                }
+                sb.AppendLine("[Content]");
+                sb.AppendLine(post.Content.Value);
+            }
+            if (sb.Length > 0)
+            {
+                sb.AppendLine("---");
+                selectedPostsText = sb.ToString();
+            }
+        }
+
+        var sourceTextWithPosts = string.IsNullOrWhiteSpace(request.SourceText)
+            ? selectedPostsText
+            : $"{request.SourceText}\n\n{selectedPostsText}";
+
         var supportingSourcesJson = request.SupportingSources is { Count: > 0 }
             ? System.Text.Json.JsonSerializer.Serialize(request.SupportingSources)
             : null;
 
         var session = DomainEntities.RepurposeSession.Create(
             workspaceId, 
-            request.SourceText, 
+            sourceTextWithPosts, 
             request.Tone, 
             string.Join(",", request.Platforms),
             request.ContentLength,
@@ -97,7 +159,9 @@ public sealed class AIRepurposeService : IRepurposeService
 
         yield return new RepurposeStreamEvent("metadata", new { key = "session_id", value = session.Id.ToString() });
 
-        await foreach (var e in StreamEventsAsync(workspaceId, session, request, ct))
+        var modifiedRequest = request with { SourceText = sourceTextWithPosts };
+
+        await foreach (var e in StreamEventsAsync(workspaceId, session, modifiedRequest, ct))
         {
             yield return e;
         }

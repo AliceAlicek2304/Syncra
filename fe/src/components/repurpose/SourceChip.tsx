@@ -1,4 +1,4 @@
-import { File, Link, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
+import { File, Link, FileText, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
 import type { SupportingSource } from '../../context/repurposeContextBase'
 
 interface Props {
@@ -17,7 +17,7 @@ export default function SourceChip({ source, onRemove }: Props) {
 
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-border bg-accent/5 text-foreground shadow-sm">
-      {source.type === 'url' ? <Link size={10} /> : <File size={10} />}
+      {source.type === 'url' ? <Link size={10} /> : source.type === 'post' ? <FileText size={10} /> : <File size={10} />}
       <span className="max-w-[120px] truncate">{source.label}</span>
       {statusIcon()}
       <button

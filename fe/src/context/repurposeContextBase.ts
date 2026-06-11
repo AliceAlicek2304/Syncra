@@ -22,10 +22,11 @@ export type SourceStatus = 'processing' | 'ready' | 'error'
 
 export interface SupportingSource {
   id: string
-  type: 'url' | 'file'
+  type: 'url' | 'file' | 'post'
   label: string
   url?: string
   fileName?: string
+  postId?: string
   status: SourceStatus
   error?: string
 }

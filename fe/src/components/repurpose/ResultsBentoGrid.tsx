@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { AlertCircle, Download, Sparkles, Loader2, Lightbulb } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import type { RepurposePlatform, AtomType } from '../../context/repurposeContextBase'
+import type { RepurposePlatform, AtomType, RepurposeAtom } from '../../context/repurposeContextBase'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { ExtendedPlatformIcon } from '../create-post/platformIcons'
 import ResultCard from './ResultCard'
@@ -61,7 +61,7 @@ function LiveTokenPreview({ text }: { text: string }) {
   )
 }
 
-function PartialResultCard({ atom, index }: { atom: RepurposeAtom; index: number }) {
+function PartialResultCard({ atom }: { atom: RepurposeAtom }) {
   return (
     <div className="relative bg-card border border-border rounded-lg p-[18px] pb-4 pl-[22px] flex flex-col gap-2.5 overflow-hidden">
       <div className="absolute left-0 top-0 w-[3px] h-full rounded-l-lg opacity-40" style={{ background: '#a78bfa' }} />
@@ -223,8 +223,8 @@ export default function ResultsBentoGrid({ onCreatePostToolbar }: ResultsBentoGr
               {filteredCore.map((atom, i) => (
                 <ResultCard key={atom.id} atom={atom} index={i} onCreatePostToolbar={handleCreatePost} />
               ))}
-              {filteredPartialCore.map((atom, i) => (
-                <PartialResultCard key={`partial-${atom.id}`} atom={atom} index={filteredCore.length + i} />
+              {filteredPartialCore.map((atom) => (
+                <PartialResultCard key={`partial-${atom.id}`} atom={atom} />
               ))}
             </div>
           )}
@@ -242,8 +242,8 @@ export default function ResultsBentoGrid({ onCreatePostToolbar }: ResultsBentoGr
                 {filteredInsights.map((atom, i) => (
                   <ResultCard key={atom.id} atom={atom} index={i} variant="insight" onCreatePostToolbar={handleCreatePost} />
                 ))}
-                {filteredPartialInsights.map((atom, i) => (
-                  <PartialResultCard key={`partial-${atom.id}`} atom={atom} index={filteredInsights.length + i} />
+                {filteredPartialInsights.map((atom) => (
+                  <PartialResultCard key={`partial-${atom.id}`} atom={atom} />
                 ))}
               </div>
             </div>

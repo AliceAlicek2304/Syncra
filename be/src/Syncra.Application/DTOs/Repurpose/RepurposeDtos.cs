@@ -20,7 +20,8 @@ public sealed record RepurposeRequest(
     bool ExtractAtoms,
     string Language = "en",
     string ContentLength = "medium",
-    IReadOnlyList<SupportingSourceInfo>? SupportingSources = null);
+    IReadOnlyList<SupportingSourceInfo>? SupportingSources = null,
+    IReadOnlyList<Guid>? SelectedPostIds = null);
 
 /// <summary>
 /// A single piece of repurposed content for a specific platform.

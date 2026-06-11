@@ -107,6 +107,11 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
         window.history.replaceState({}, '', url)
 
         // Build combined text from sourceText + all ready supporting sources
+        const selectedPostIds = config.sources
+            .filter(s => s.status === 'ready' && s.type === 'post')
+            .map(s => s.postId)
+            .filter(Boolean) as string[]
+
         const readySourceTexts = config.sources
             .filter(s => s.status === 'ready' && (s.type === 'file' || s.type === 'url'))
             .map(s => {
@@ -119,8 +124,8 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
             ? (readySourceTexts ? `${config.sourceText}\n\n---\n\n${readySourceTexts}` : config.sourceText)
             : readySourceTexts
 
-        if (!combinedText.trim()) {
-            setError('Please add source content (paste text, upload files, or fetch from URL).')
+        if (!combinedText.trim() && selectedPostIds.length === 0) {
+            setError('Please add source content (paste text, upload files, fetch from URL, or select existing posts).')
             setIsGenerating(false)
             setStreamState(prev => ({ ...prev, isStreaming: false }))
             return
@@ -130,12 +135,12 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
             setError(`Input content exceeds the ${MAX_COMBINED_CHARS.toLocaleString()}-character limit. The text will be truncated; consider pasting only the most relevant parts.`)
         }
 
-        // Build supporting sources metadata for the request
+        // Build supporting sources metadata for the request (excluding posts)
         const supportingSources = config.sources
-            .filter(s => s.status === 'ready')
+            .filter(s => s.status === 'ready' && s.type !== 'post')
             .map(s => ({
                 id: s.id,
-                type: s.type,
+                type: s.type as 'url' | 'file',
                 label: s.label,
                 url: s.url,
                 fileName: s.fileName,
@@ -156,6 +161,7 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                     extractAtoms: config.extractAtoms,
                     language: config.language,
                     supportingSources: supportingSources.length > 0 ? supportingSources : undefined,
+                    selectedPostIds: selectedPostIds.length > 0 ? selectedPostIds : undefined,
                 },
                 abortController.signal,
                 (event) => {

@@ -36,13 +36,14 @@ export interface SupportingSourceRequest {
 }
 
 export interface RepurposeGenerateRequest {
-  sourceText: string
+  sourceText?: string
   platforms: string[]
   tone: string
   contentLength?: string
   extractAtoms: boolean
   language?: string
   supportingSources?: SupportingSourceRequest[]
+  selectedPostIds?: string[]
 }
 
 export interface SseEvent {

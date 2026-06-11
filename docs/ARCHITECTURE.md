@@ -1,133 +1,65 @@
-# Architecture
+# Syncra Architecture
 
-No application stack is selected yet.
+This document defines the architectural shape, boundary rules, and technology stack of the Syncra workspace automation platform.
 
-No application code exists yet. This document defines generic architecture
-questions and boundary rules that future implementation should adapt after a
-user-provided spec and stack decision exist.
+## Technology Stack
 
-## Discovery Before Shape
+Syncra is built as a split-client application with an ASP.NET Core backend and a Vite + React frontend.
 
-Before proposing implementation shape, identify:
+- **Backend**: ASP.NET Core 8.0 (C#)
+- **Frontend**: Vite + React + TypeScript (Vanilla CSS and Tailwind)
+- **Database**: PostgreSQL (Entity Framework Core)
+- **Caching**: Redis
+- **Background Jobs**: Hangfire (dev dashboard on `/hangfire`)
+- **Payments**: Stripe
+- **Monitoring/Logging**: Serilog + Sentry
+- **Local Dev Proxy**: ngrok (required for OAuth provider callback webhooks)
 
-- Product surfaces: browser, mobile, desktop, CLI, API, worker, or service.
-- Runtime stack: language, framework, database, queues, providers, and hosting.
-- Core domains: the product concepts that deserve stable names and contracts.
-- Boundary inputs: user input, API requests, webhooks, jobs, files, credentials,
-  provider payloads, and environment configuration.
-- Validation ladder: the smallest checks that can prove the selected stack.
+## Project Layering
 
-Record stack choices in `docs/decisions/` when they meaningfully constrain
-future work.
-
-## Default Layering
+The backend follows clean architecture guidelines:
 
 ```text
-domain
-  <- application
-      <- infrastructure
-          <- interface
-              <- app surfaces
+Syncra.Domain (Domain Entities & Enums)
+  ^
+  |
+Syncra.Application (Interfaces, DTOs, MediatR Commands/Queries, Services)
+  ^
+  |
+Syncra.Infrastructure (EF Core DbContext, Repositories, Jobs, Social/OAuth, Payments)
+  ^
+  |
+Syncra.Api (Controllers, Middlewares, Program.cs entrypoint)
 ```
 
-## Candidate Structure
-
-```text
-app/
-  domain/
-    entities/
-    value-objects/
-    repositories/
-    services/
-
-  application/
-    commands/
-    queries/
-    handlers/
-
-  infrastructure/
-    database/
-    logging/
-    notifications/
-
-  interface/
-    controllers/
-    dto/
-    presenters/
-    routes/
-    middlewares/
-
-surfaces/
-  browser/
-  mobile/
-  desktop/
-  cli/
-```
-
-This is a thinking template, not a scaffold. Create real folders only when a
-story enters implementation and the selected stack needs them.
-
-## Dependency Rule
-
-Inner layers must not depend on outer layers.
-
-| Layer | May depend on | Must not depend on |
-| --- | --- | --- |
-| domain | nothing project-external except tiny pure utilities | framework, database, UI, provider, process/env |
-| application | domain | framework, UI, provider, database concrete clients |
-| infrastructure | domain, application | interface controllers or UI |
-| interface | all backend layers | UI state or platform shell assumptions |
-| app surfaces | API contracts and app-facing clients | domain internals directly |
+### Dependency Rules
+- **Syncra.Domain** is the core and has zero dependencies on other layers or external frameworks.
+- **Syncra.Application** contains application-specific business rules. It depends on `Syncra.Domain` and exposes interfaces, but has no dependency on infrastructure or controllers.
+- **Syncra.Infrastructure** implements interfaces defined in Application, referencing database contexts, Hangfire jobs, external APIs (Stripe, OAuth).
+- **Syncra.Api** maps incoming HTTP requests to application commands/queries, configures CORS, handles JWT authentication, and coordinates program startup.
 
 ## Parse-First Boundary Rule
 
-Unknown data must be parsed at boundaries before it enters inner code.
+Unknown data must be parsed at boundaries before it enters inner application logic.
 
 Boundaries include:
-
-- HTTP request bodies, params, and query strings.
-- Session payloads and identity claims.
-- Environment variables.
-- Database rows returned from external clients.
-- Platform shell payloads.
-- Deep links, tokens, and signed URLs.
-- Provider webhooks, events, and async payloads.
+- HTTP request bodies, headers, and query parameters (validated in Controllers/MediatR pipelines).
+- OAuth Callback payloads (handled in `Syncra.Infrastructure.Social` and parsed into domain events/DTOs).
+- Webhook endpoints (validated via signatures before processing).
 
 Target flow:
-
 ```text
-unknown input
-  -> parser
-  -> typed DTO or command
-  -> application use case
-  -> domain object/value object
+Raw HTTP Request -> Controller (DTO validation) -> Command/Query -> Application Handler -> Domain Model
 ```
-
-Inner layers should work with meaningful product types such as `UserId`,
-`AccountId`, `WorkspaceId`, `Role`, `DateRange`, or domain-specific IDs,
-rather than repeatedly validating raw strings.
-
-## Command/Query Boundary
-
-If the product has both reads and writes, keep command/query separation clear at
-the code level even when the storage layer is simple:
-
-- Commands mutate state and own audit side effects.
-- Queries read state and format for consumers.
-- Shared domain rules live in domain/application, not controllers.
 
 ## Observability Contract
 
-The future server should emit one canonical JSON log line per request with:
+The backend incorporates logging via Serilog and Sentry. In production, requests should produce structured logs mapping:
+- `timestamp`
+- `level`
+- `request_id`
+- `user_id` (when authenticated)
+- `duration_ms`
+- `status_code`
 
-- timestamp
-- level
-- request_id
-- user_id when known
-- action
-- duration_ms
-- status_code
-- message
-
-Audit logs are product records. Application logs are operational records. Do not
-use one as a substitute for the other.
+Audit logs for platform updates are treated as first-class product records in the database, separated from developer-centric application debug logs.

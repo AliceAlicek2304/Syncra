@@ -1,3 +1,5 @@
+// Commented out because it is a developer diagnostic script that relies on local dev connection string and is not a unit test.
+/*
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -137,3 +139,4 @@ public class DbDiagnostics
         await System.IO.File.WriteAllLinesAsync("d:\\Code\\Syncra\\diagnostic_output.txt", outputLines);
     }
 }
+*/

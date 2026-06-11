@@ -75,11 +75,11 @@ public sealed class RepurposeController : ControllerBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(request.SourceText))
+        if (string.IsNullOrWhiteSpace(request.SourceText) && (request.SelectedPostIds == null || request.SelectedPostIds.Count == 0))
         {
             HttpContext.Response.StatusCode = 400;
             await HttpContext.Response.WriteAsJsonAsync(
-                new { code = "missing_source_text", message = "sourceText is required." }, cancellationToken);
+                new { code = "missing_source_text", message = "sourceText is required when no posts are selected." }, cancellationToken);
             return;
         }
 
@@ -100,13 +100,14 @@ public sealed class RepurposeController : ControllerBase
         if (!isSse && _repurposeService is IRepurposeService syncService)
         {
             var dtoRequest = new RepurposeRequest(
-                SourceText: request.SourceText,
+                SourceText: request.SourceText ?? string.Empty,
                 Platforms: request.Platforms,
                 Tone: request.Tone ?? "default",
                 ExtractAtoms: request.ExtractAtoms,
                 Language: request.Language ?? "en",
                 ContentLength: request.ContentLength ?? "medium",
-                SupportingSources: supportingSources);
+                SupportingSources: supportingSources,
+                SelectedPostIds: request.SelectedPostIds);
 
             var result = await syncService.GenerateAsync(dtoRequest, cancellationToken);
 
@@ -144,13 +145,14 @@ public sealed class RepurposeController : ControllerBase
         HttpContext.Response.Headers.Connection = "keep-alive";
 
         var aiRequest = new RepurposeRequest(
-            SourceText: request.SourceText,
+            SourceText: request.SourceText ?? string.Empty,
             Platforms: request.Platforms,
             Tone: request.Tone ?? "default",
             ExtractAtoms: request.ExtractAtoms,
             Language: request.Language ?? "en",
             ContentLength: request.ContentLength ?? "medium",
-            SupportingSources: supportingSources);
+            SupportingSources: supportingSources,
+            SelectedPostIds: request.SelectedPostIds);
 
         try
         {
@@ -211,13 +213,14 @@ public sealed class RepurposeController : ControllerBase
 }
 
 public sealed record RepurposeGenerateRequest(
-    string SourceText,
+    string? SourceText,
     IReadOnlyList<string> Platforms,
     string? Tone,
     bool ExtractAtoms,
     string? Language = null,
     string? ContentLength = null,
-    IReadOnlyList<SupportingSourceRequest>? SupportingSources = null);
+    IReadOnlyList<SupportingSourceRequest>? SupportingSources = null,
+    IReadOnlyList<Guid>? SelectedPostIds = null);
 
 public sealed record FetchUrlRequest(string Url);
 

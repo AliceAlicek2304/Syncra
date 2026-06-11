@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react'
-import { FileText, Link2, Upload, File, X, Loader2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { FileText, Link2, Upload, X, Loader2, History } from 'lucide-react'
 import { useRepurpose } from '../../context/repurposeContextBase'
-import type { SupportingSource } from '../../context/repurposeContextBase'
 import { cn } from '@/lib/utils'
 import { repurposeApi } from '../../api/repurpose'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import SourceChip from './SourceChip'
 import { MAX_COMBINED_CHARS } from '../../context/RepurposeContext'
+import { postsApi } from '../../api/posts'
+import type { Post } from '../../api/posts'
 
 const ACCEPTED_TYPES = '.txt,.md'
 const MAX_FILE_MB = 5
@@ -20,12 +21,55 @@ function nextSourceId(): string {
 export default function ContentSourceCard() {
   const { config, setConfig, addSource, removeSource, updateSource } = useRepurpose()
   const { activeWorkspace } = useWorkspace()
-  const [inputMode, setInputMode] = useState<'text' | 'url' | 'file'>('text')
+  const [inputMode, setInputMode] = useState<'text' | 'url' | 'file' | 'post'>('text')
   const [urlInput, setUrlInput] = useState('')
   const [isFetching, setIsFetching] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false)
+  const [postsSearchQuery, setPostsSearchQuery] = useState('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (inputMode === 'post' && activeWorkspace) {
+      const fetchPosts = async () => {
+        setIsLoadingPosts(true)
+        try {
+          const res = await postsApi.getPosts(activeWorkspace.id, { page: 1, pageSize: 50 })
+          setPosts(res.items || [])
+        } catch (err) {
+          console.error('Failed to fetch posts', err)
+        } finally {
+          setIsLoadingPosts(false)
+        }
+      }
+      fetchPosts()
+    }
+  }, [inputMode, activeWorkspace])
+
+  const handleTogglePost = (post: Post) => {
+    const existing = config.sources.find(s => s.type === 'post' && s.postId === post.id)
+    if (existing) {
+      removeSource(existing.id)
+    } else {
+      addSource({
+        id: nextSourceId(),
+        type: 'post',
+        label: post.title || post.content?.slice(0, 30) || 'Untitled Post',
+        postId: post.id,
+        status: 'ready',
+      })
+    }
+  }
+
+  const filteredPosts = posts.filter(post => {
+    const q = postsSearchQuery.toLowerCase()
+    return (
+      post.title?.toLowerCase().includes(q) ||
+      post.content?.toLowerCase().includes(q)
+    )
+  })
 
   const charCount = config.sourceText.length
   const wordCount = config.sourceText.trim() ? config.sourceText.trim().split(/\s+/).length : 0
@@ -123,12 +167,6 @@ export default function ContentSourceCard() {
     setConfig(prev => ({ ...prev, sourceText: '' }))
   }
 
-  const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
   const combinedChars = config.sourceText.length
     + readySources.reduce((sum, s) => sum + s.label.length, 0)
   const isOverLimit = combinedChars > MAX_COMBINED_CHARS
@@ -149,7 +187,7 @@ export default function ContentSourceCard() {
       </div>
 
       <div className="flex gap-1 px-4 pt-3 border-b border-border">
-        {(['text', 'url', 'file'] as const).map(mode => (
+        {(['text', 'url', 'file', 'post'] as const).map(mode => (
           <button
             key={mode}
             onClick={() => setInputMode(mode)}
@@ -163,7 +201,8 @@ export default function ContentSourceCard() {
             {mode === 'text' && <FileText size={12} />}
             {mode === 'url' && <Link2 size={12} />}
             {mode === 'file' && <Upload size={12} />}
-            {mode === 'text' ? 'Paste Text' : mode === 'url' ? 'From URL' : 'Upload File'}
+            {mode === 'post' && <History size={12} />}
+            {mode === 'text' ? 'Paste Text' : mode === 'url' ? 'From URL' : mode === 'file' ? 'Upload File' : 'Existing Posts'}
           </button>
         ))}
         {config.sourceText && inputMode !== 'file' && (
@@ -283,6 +322,65 @@ export default function ContentSourceCard() {
             className="hidden"
             onChange={handleFileChange}
           />
+        </div>
+      )}
+
+      {inputMode === 'post' && (
+        <div className="p-4 flex flex-col gap-3">
+          <input
+            type="text"
+            className="w-full bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none"
+            placeholder="Search past posts..."
+            value={postsSearchQuery}
+            onChange={(e) => setPostsSearchQuery(e.target.value)}
+          />
+
+          {isLoadingPosts ? (
+            <div className="flex items-center justify-center py-6 text-muted-foreground text-xs gap-1.5">
+              <Loader2 size={12} className="animate-spin" />
+              <span>Loading posts...</span>
+            </div>
+          ) : filteredPosts.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-xs">
+              No posts found.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto pr-1">
+              {filteredPosts.map(post => {
+                const isSelected = config.sources.some(s => s.type === 'post' && s.postId === post.id)
+                return (
+                  <div
+                    key={post.id}
+                    onClick={() => handleTogglePost(post)}
+                    className={cn(
+                      "flex items-center gap-2.5 p-2 rounded-md border border-border/60 hover:bg-accent/40 cursor-pointer transition-colors text-left",
+                      isSelected ? "border-primary bg-primary/5" : ""
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="rounded border-border text-primary focus:ring-primary size-3 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-foreground truncate">
+                        {post.title || 'Untitled Post'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {post.content || 'No content preview.'}
+                      </div>
+                    </div>
+                    {post.status && (
+                      <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[8px] font-bold uppercase shrink-0">
+                        {post.status}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
