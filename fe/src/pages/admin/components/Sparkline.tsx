@@ -9,8 +9,15 @@ export default function Sparkline({ data, color = '#FF4F4F', showTrend = true }:
   const firstValue = data[0] ?? 0
   const lastValue = data[data.length - 1] ?? 0
   const trend = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'flat'
-  const trendPercent = firstValue > 0 ? ((lastValue - firstValue) / firstValue * 100).toFixed(1) : '0'
   
+  let trendText = '0%'
+  if (firstValue === 0 && lastValue === 0) {
+    trendText = '0%'
+  } else if (firstValue === 0) {
+    trendText = `+${lastValue}`
+  } else {
+    trendText = `${Math.abs((lastValue - firstValue) / firstValue * 100).toFixed(1)}%`
+  }
   const chartData = {
     labels: data.map((_, i) => i),
     datasets: [
@@ -44,7 +51,7 @@ export default function Sparkline({ data, color = '#FF4F4F', showTrend = true }:
           color: trend === 'up' ? '#4FFF4F' : trend === 'down' ? '#FF4F4F' : '#939084',
           fontWeight: 600
         }}>
-          {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '—'} {Math.abs(parseFloat(trendPercent))}%
+          {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '—'} {trendText}
         </span>
       )}
     </div>

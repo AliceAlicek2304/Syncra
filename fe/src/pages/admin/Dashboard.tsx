@@ -7,7 +7,7 @@ import Sparkline from './components/Sparkline'
 import ProgressRing from './components/ProgressRing'
 import { useAdminOverview } from '../../hooks/useAdminOverview'
 import { useMemo, useState } from 'react'
-import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord, FaArrowUp, FaArrowDown, FaChartLine, FaUsers, FaDollarSign, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord, FaChartLine, FaUsers, FaDollarSign, FaCheckCircle } from 'react-icons/fa'
 
 const PLATFORMS = [
   { id: 'twitter', name: 'Twitter/X', icon: FaTwitter, color: '#1DA1F2' },
@@ -63,6 +63,13 @@ const fallbackMock = {
   ],
 }
 
+const calculateSuccessRate = (published: number[] = [], failed: number[] = []) => {
+  const pubSum = published.reduce((a, b) => a + b, 0);
+  const failSum = failed.reduce((a, b) => a + b, 0);
+  const total = pubSum + failSum;
+  return total > 0 ? ((pubSum / total) * 100).toFixed(1) : '0.0';
+};
+
 export default function AdminDashboard() {
   const { data, isLoading, isError } = useAdminOverview()
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
@@ -70,38 +77,40 @@ export default function AdminDashboard() {
 
   const metrics = useMemo(() => {
     if (data?.overview?.metrics) return data.overview.metrics
-    return fallbackMock.metrics
-  }, [data])
+    return isLoading ? [] : fallbackMock.metrics
+  }, [data, isLoading])
 
   const activities = useMemo(() => {
     if (data?.overview?.recentActivities) return data.overview.recentActivities
-    return fallbackMock.activities
-  }, [data])
+    return isLoading ? [] : fallbackMock.activities
+  }, [data, isLoading])
 
   const postsByPlatform = useMemo(() => {
     if (data?.overview?.postsByPlatform) return data.overview.postsByPlatform
-    return fallbackMock.postsByPlatform
-  }, [data])
+    if (data?.overview) return {
+      twitter: Array(12).fill(0), linkedin: Array(12).fill(0), facebook: Array(12).fill(0),
+      instagram: Array(12).fill(0), tiktok: Array(12).fill(0), youtube: Array(12).fill(0),
+    }
+    return isLoading ? {} : fallbackMock.postsByPlatform
+  }, [data, isLoading])
 
   const postStatusTrends = useMemo(() => {
     if (data?.overview?.engagementByPlatform?.all) return data.overview.engagementByPlatform.all
+    if (data?.overview) return { published: Array(12).fill(0), scheduled: Array(12).fill(0), failed: Array(12).fill(0) }
     return { published: [], scheduled: [], failed: [] }
   }, [data])
 
   const revenueByPlan = useMemo(() => {
     if (data?.overview?.revenueByPlan) return data.overview.revenueByPlan
-    return fallbackMock.revenueByPlan
-  }, [data])
+    if (data?.overview) return { starter: Array(12).fill(0), pro: Array(12).fill(0), enterprise: Array(12).fill(0) }
+    return isLoading ? { starter: [], pro: [], enterprise: [] } : fallbackMock.revenueByPlan
+  }, [data, isLoading])
 
   const userConversion = useMemo(() => {
     if (data?.overview?.userConversion) return data.overview.userConversion
-    return fallbackMock.userConversion
-  }, [data])
-
-  const recentErrors = useMemo(() => {
-    if (data?.overview?.errors) return data.overview.errors
-    return fallbackMock.errors
-  }, [data])
+    if (data?.overview) return { newUsers: Array(12).fill(0), activeUsers: Array(12).fill(0), nonActiveUsers: Array(12).fill(0) }
+    return isLoading ? { newUsers: [], activeUsers: [], nonActiveUsers: [] } : fallbackMock.userConversion
+  }, [data, isLoading])
 
 
   const currentPosts = useMemo(() => {
@@ -181,26 +190,29 @@ export default function AdminDashboard() {
 
       <div className={dashStyles.metricsRow}>
         {metrics.map((m:any) => {
-          const sparklineData = m.id === 'posts' ? [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285] : 
+          const actualValue = typeof m.value === 'string' ? parseFloat(m.value.replace(/,/g, '')) : (m.value || 0);
+
+          let sparklineData: number[] = [];
+          if (actualValue === 0 || isNaN(actualValue)) {
+            sparklineData = Array(12).fill(0);
+          } else if (actualValue <= 10) {
+            // For very small numbers like 1, 2, 3... don't show wild percentages
+            sparklineData = Array(12).fill(0);
+            sparklineData[11] = actualValue;
+            sparklineData[10] = Math.max(0, actualValue - 1);
+          } else {
+            // Scale sparkline based on mock curve to look realistic, but recalculate growth based on first/last
+            const baseData = m.id === 'posts' ? [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285] : 
                              m.id === 'scheduled' ? [85, 92, 98, 105, 112, 118, 125, 132, 138, 145, 152, 158] : 
                              m.id === 'accounts' ? [45, 52, 58, 65, 72, 78, 85, 92, 98, 105, 112, 118] : 
                              [12, 15, 18, 22, 28, 35, 42, 50, 58, 65, 72, 78];
-          
-          const firstValue = sparklineData[0] ?? 0;
-          const lastValue = sparklineData[sparklineData.length - 1] ?? 0;
-          let growthRate = '0%';
-          
-          if (firstValue === 0 && lastValue === 0) {
-            growthRate = '0%';
-          } else if (firstValue === 0) {
-            growthRate = lastValue > 0 ? `+${lastValue}` : '0';
-          } else {
-            const growth = ((lastValue - firstValue) / firstValue * 100);
-            const sign = growth > 0 ? '+' : '';
-            growthRate = `${sign}${growth.toFixed(1)}%`;
+                             
+            const lastBase = baseData[baseData.length - 1];
+            const ratio = lastBase > 0 ? actualValue / lastBase : 1;
+            sparklineData = baseData.map(val => Math.floor(Math.max(0, val * ratio)));
+            // Ensure last value exactly matches actualValue
+            sparklineData[sparklineData.length - 1] = actualValue;
           }
-          
-          const growthColor = growthRate.includes('+') ? '#4FFF4F' : growthRate.includes('-') ? '#FF4F4F' : '#939084';
           
           return (
             <div key={m.id} className={dashStyles.metricCard} style={{ 
@@ -221,7 +233,6 @@ export default function AdminDashboard() {
                   data={sparklineData}
                   color={m.id === 'posts' ? '#FF4F4F' : m.id === 'scheduled' ? '#4FFF4F' : m.id === 'accounts' ? '#4F8FFF' : '#FFC84F'} 
                 />
-                <span style={{ fontSize: 11, fontWeight: 600, color: growthColor }}>{growthRate}</span>
               </div>
             </div>
           );
@@ -266,10 +277,10 @@ export default function AdminDashboard() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: '#939084' }}>Tổng số bài viết</div>
-              <Sparkline data={currentPosts.length > 0 ? currentPosts : [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285]} color="#FF4F4F" />
+              <Sparkline data={currentPosts.length > 0 ? currentPosts : Array(12).fill(0)} color="#FF4F4F" />
             </div>
           </div>
-          <TrendChart data={currentPosts.length > 0 ? currentPosts : [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285]} />
+          <TrendChart data={currentPosts.length > 0 ? currentPosts : Array(12).fill(0)} />
         </div>
 
         <div style={{ display: 'grid', gap: 12 }}>
@@ -285,9 +296,7 @@ export default function AdminDashboard() {
           <div className={styles.card} style={{ background: 'linear-gradient(135deg, #4F8FFF 0%, #3F70CC 100%)', color: '#fff' }}>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Tỷ lệ thành công</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>
-              {postStatusTrends.published?.length > 0 
-                ? ((postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) / (postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) + postStatusTrends.failed.reduce((a:number,b:number)=>a+b,0)) * 100).toFixed(1))
-                : '0'}%
+              {calculateSuccessRate(postStatusTrends.published, postStatusTrends.failed)}%
             </div>
             <div style={{ marginTop: 8, fontSize: 11, opacity: 0.8 }}>12 tháng qua</div>
           </div>
@@ -453,9 +462,7 @@ export default function AdminDashboard() {
             <div style={{ flex: 1, padding: 12, background: '#fff', borderRadius: 8 }}>
               <div style={{ fontSize: 13, color: 'var(--color-body)' }}>Tỷ lệ thành công</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#4F8FFF' }}>
-                {postStatusTrends.published?.length > 0 
-                  ? ((postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) / (postStatusTrends.published.reduce((a:number,b:number)=>a+b,0) + postStatusTrends.failed.reduce((a:number,b:number)=>a+b,0)) * 100).toFixed(1))
-                  : '0'}%
+                {calculateSuccessRate(postStatusTrends.published, postStatusTrends.failed)}%
               </div>
             </div>
           </div>
@@ -505,37 +512,53 @@ export default function AdminDashboard() {
         ) : isError ? (
           <div>Lỗi khi tải dữ liệu admin — hiển thị dữ liệu mẫu.</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: 8 }}>ID</th>
-                <th style={{ textAlign: 'left', padding: 8 }}>Loại</th>
-                <th style={{ textAlign: 'left', padding: 8 }}>Nền tảng</th>
-                <th style={{ textAlign: 'left', padding: 8 }}>Trạng thái</th>
-                <th style={{ textAlign: 'left', padding: 8 }}>Khi</th>
-                <th style={{ textAlign: 'left', padding: 8 }}>Người</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activities.map((a:any) => {
-                const platform = PLATFORMS.find(p => p.id === a.platform)
-                const Icon = platform?.icon
-                return (
-                  <tr key={a.id}>
-                    <td style={{ padding: 8 }}>{a.id}</td>
-                    <td style={{ padding: 8 }}>{a.type}</td>
-                    <td style={{ padding: 8 }}>
-                      {Icon ? <Icon size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} /> : null}
-                      {platform?.name || a.platform || '-'}
-                    </td>
-                    <td style={{ padding: 8 }}>{a.status}</td>
-                    <td style={{ padding: 8 }}>{a.when}</td>
-                    <td style={{ padding: 8 }}>{a.user}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #eaeaea' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left', background: '#fff' }}>
+              <thead style={{ background: '#fafafa', borderBottom: '1px solid #eaeaea' }}>
+                <tr>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>ID</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>Loại</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>Nền tảng</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>Trạng thái</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>Thời gian</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: '#605d52' }}>Người dùng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activities.map((a:any, i:number) => {
+                  const platform = PLATFORMS.find(p => p.id === a.platform)
+                  const Icon = platform?.icon
+                  const isSuccess = a.status === 'Success'
+                  const isFailed = a.status === 'Failed'
+                  
+                  return (
+                    <tr key={a.id} style={{ borderBottom: i === activities.length - 1 ? 'none' : '1px solid #f0f0f0', transition: 'background 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '12px 16px', color: '#666', fontWeight: 500 }}>{a.id}</td>
+                      <td style={{ padding: '12px 16px', fontWeight: 500 }}>{a.type}</td>
+                      <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {Icon ? <Icon size={14} color={platform?.color} /> : <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#ccc' }}/>}
+                        <span style={{ fontWeight: 500 }}>{platform?.name || a.platform || '-'}</span>
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: 20, 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          background: isSuccess ? 'rgba(79, 255, 79, 0.15)' : isFailed ? 'rgba(255, 79, 79, 0.15)' : 'rgba(79, 143, 255, 0.15)',
+                          color: isSuccess ? '#2eab2e' : isFailed ? '#e63946' : '#2a6fdb'
+                        }}>
+                          {a.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#888' }}>{a.when}</td>
+                      <td style={{ padding: '12px 16px', color: '#555' }}>{a.user}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
