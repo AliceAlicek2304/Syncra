@@ -1,5 +1,0 @@
-# This directory is a Syncthing folder marker.
-# Do not delete.
-
-folderID: axvfu-ezblp
-created: 2026-05-15T10:35:48+07:00
