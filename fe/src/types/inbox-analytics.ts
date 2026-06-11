@@ -151,8 +151,8 @@ export interface ZernioInboxConversationListItemDto {
   sent: number;
   read: number;
   failed: number;
-  firstMessagedAt: string;
-  lastMessagedAt: string;
+  firstMessageAt: string;
+  lastMessageAt: string;
 }
 
 export interface ZernioInboxPaginationDto {
@@ -181,8 +181,8 @@ export interface ZernioInboxConversationSummaryDto {
   read: number;
   failed: number;
   totalMessages: number;
-  firstMessagedAt: string;
-  lastMessagedAt: string;
+  firstMessageAt: string;
+  lastMessageAt: string;
 }
 
 export interface ZernioInboxBySourceRowDto {

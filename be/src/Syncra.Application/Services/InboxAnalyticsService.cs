@@ -555,12 +555,12 @@ public sealed class InboxAnalyticsService : IInboxAnalyticsService
 
         var sorted = (sortBy?.ToLowerInvariant()) switch
         {
-            "lastmessagedat" => items.OrderBy(i => i.LastMessagedAt),
-            "firstmessagedat" => items.OrderBy(i => i.FirstMessagedAt),
+            "lastmessageat" => items.OrderBy(i => i.LastMessageAt),
+            "firstmessageat" => items.OrderBy(i => i.FirstMessageAt),
             "totalmessages" => items.OrderBy(i => i.TotalMessages),
             "received" => items.OrderBy(i => i.Received),
             "sent" => items.OrderBy(i => i.Sent),
-            _ => items.OrderBy(i => i.LastMessagedAt)
+            _ => items.OrderBy(i => i.LastMessageAt)
         };
 
         return descending ? sorted.Reverse().ToList() : sorted.ToList();

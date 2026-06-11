@@ -62,7 +62,7 @@ export interface ConversationsListParams {
   source?: string;
   limit?: number;
   page?: number;
-  sortBy?: 'lastMessagedAt' | 'firstMessagedAt' | 'totalMessages' | 'received' | 'sent' | 'read' | 'failed';
+  sortBy?: 'lastMessageAt' | 'firstMessageAt' | 'totalMessages' | 'received' | 'sent' | 'read' | 'failed';
   order?: 'asc' | 'desc';
   profileId?: string;
 }

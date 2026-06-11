@@ -935,8 +935,8 @@ public sealed record ZernioInboxConversationListItemDto(
     long Sent,
     long Read,
     long Failed,
-    DateTime FirstMessagedAt,
-    DateTime LastMessagedAt);
+    DateTime FirstMessageAt,
+    DateTime LastMessageAt);
 
 public sealed record ZernioInboxPaginationDto(
     int Page,
@@ -962,8 +962,8 @@ public sealed record ZernioInboxConversationSummaryDto(
     long Read,
     long Failed,
     long TotalMessages,
-    DateTime FirstMessagedAt,
-    DateTime LastMessagedAt);
+    DateTime FirstMessageAt,
+    DateTime LastMessageAt);
 
 public sealed record ZernioInboxBySourceRowDto(
     string Source,

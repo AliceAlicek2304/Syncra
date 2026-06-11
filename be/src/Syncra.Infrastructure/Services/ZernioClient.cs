@@ -783,7 +783,7 @@ public sealed class ZernioClient : IZernioClient
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to upload media to Zernio. Status: {StatusCode}, Error: {Error}", 
+            _logger.LogError("Failed to upload media to Zernio. Status: {StatusCode}, Error: {Error}",
                 response.StatusCode, errorContent);
             throw new DomainException("zernio_upload_error", $"Failed to upload media to Zernio. Status: {response.StatusCode}. Error: {errorContent}");
         }
@@ -1055,7 +1055,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/posts?{query}");
@@ -1147,20 +1147,20 @@ public sealed class ZernioClient : IZernioClient
         {
             "twitter" => request.PlatformSpecificData?.Twitter,
             "threads" => request.PlatformSpecificData?.Threads,
-            "facebook" => request.PlatformSpecificData?.Facebook 
+            "facebook" => request.PlatformSpecificData?.Facebook
                 ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
-            "instagram" => request.PlatformSpecificData?.Instagram 
+            "instagram" => request.PlatformSpecificData?.Instagram
                 ?? new InstagramPlatformDataDto(),
-            "linkedin" => request.PlatformSpecificData?.LinkedIn 
+            "linkedin" => request.PlatformSpecificData?.LinkedIn
                 ?? new LinkedInPlatformDataDto(),
-            "pinterest" => request.PlatformSpecificData?.Pinterest 
+            "pinterest" => request.PlatformSpecificData?.Pinterest
                 ?? new PinterestPlatformDataDto(Title: request.Title ?? "", BoardId: ""),
-            "youtube" => request.PlatformSpecificData?.YouTube 
+            "youtube" => request.PlatformSpecificData?.YouTube
                 ?? new YouTubePlatformDataDto(Title: request.Title ?? ""),
             "googlebusiness" => request.PlatformSpecificData?.GoogleBusiness,
             "telegram" => request.PlatformSpecificData?.Telegram,
             "snapchat" => request.PlatformSpecificData?.Snapchat,
-            "reddit" => request.PlatformSpecificData?.Reddit 
+            "reddit" => request.PlatformSpecificData?.Reddit
                 ?? new RedditPlatformDataDto(Subreddit: "", Title: request.Title ?? ""),
             "bluesky" => request.PlatformSpecificData?.Bluesky,
             "discord" => request.PlatformSpecificData?.Discord,
@@ -1497,7 +1497,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/content-decay?{query}");
@@ -2501,7 +2501,7 @@ public sealed class ZernioClient : IZernioClient
         var requestedBreakdowns = breakdown.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                                            .Select(b => b.ToLowerInvariant())
                                            .ToList();
-        
+
         var validBreakdowns = new[] { "age", "gender", "country" };
         var invalidBreakdowns = requestedBreakdowns.Except(validBreakdowns).ToList();
         if (invalidBreakdowns.Any())
@@ -2598,7 +2598,7 @@ public sealed class ZernioClient : IZernioClient
                 if (!string.IsNullOrWhiteSpace(errorContentString))
                 {
                     var errorBody = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(errorContentString);
-                    if (errorBody.TryGetProperty("scopeStatus", out var scopeStatus) && 
+                    if (errorBody.TryGetProperty("scopeStatus", out var scopeStatus) &&
                         scopeStatus.TryGetProperty("requiresReauthorization", out var reqAuth) && reqAuth.GetBoolean())
                     {
                         reauthUrl = scopeStatus.TryGetProperty("reauthorizeUrl", out var urlProp) ? urlProp.GetString() : null;
@@ -3433,7 +3433,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics?{query}");
@@ -3564,7 +3564,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics?{query}");
@@ -4245,7 +4245,8 @@ public sealed class ZernioClient : IZernioClient
 
             if (request.Buttons != null)
             {
-                sdkRequest.Buttons = request.Buttons.Select(b => {
+                sdkRequest.Buttons = request.Buttons.Select(b =>
+                {
                     var btn = new Zernio.Model.SendInboxMessageRequestButtonsInner
                     {
                         Title = b.Title
@@ -4330,7 +4331,7 @@ public sealed class ZernioClient : IZernioClient
                 cancellationToken);
 
             var rawData = response.Data;
-            
+
             var participants = (rawData.Participants ?? [])
                 .Select(p => new InboxParticipantDto(p.Id, p.Name))
                 .ToList();
@@ -4400,7 +4401,7 @@ public sealed class ZernioClient : IZernioClient
             }
 
             var response = await _messagesApi.CreateInboxConversationAsync(sdkRequest, cancellationToken);
-            
+
             return new InboxCreateConversationResponseDto(
                 response.Data?.MessageId ?? string.Empty,
                 response.Data?.ConversationId ?? string.Empty,
@@ -5422,8 +5423,8 @@ public sealed class ZernioClient : IZernioClient
                         .Select(d => new ZernioFollowerStatsDataPointDto(d.Date, d.Followers))
                         .ToList());
 
-            var dateRange = response.DateRange != null 
-                ? new ZernioFollowerStatsDateRangeDto(response.DateRange.From, response.DateRange.To) 
+            var dateRange = response.DateRange != null
+                ? new ZernioFollowerStatsDateRangeDto(response.DateRange.From, response.DateRange.To)
                 : null;
 
             return new ZernioFollowerStatsResponseDto(
@@ -5962,7 +5963,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/volume?{query}");
@@ -6039,7 +6040,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/top-accounts?{query}");
@@ -6116,7 +6117,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/source-breakdown?{query}");
@@ -6192,7 +6193,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/response-time?{query}");
@@ -6276,7 +6277,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/heatmap?{query}");
@@ -6338,35 +6339,46 @@ public sealed class ZernioClient : IZernioClient
         string? order = null,
         CancellationToken cancellationToken = default)
     {
+        var config = _analyticsApi.Configuration;
+        var baseUrl = config.BasePath.TrimEnd('/');
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
+            ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
+            ["profileId"] = profileId,
+            ["platform"] = platform,
+            ["accountId"] = accountId,
+            ["source"] = source,
+            ["limit"] = limit?.ToString(),
+            ["page"] = page?.ToString(),
+            ["sortBy"] = sortBy,
+            ["order"] = order
+        };
+
+        var query = string.Join("&",
+            queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+                .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+
+        var requestUrl = $"{baseUrl}/v1/analytics/inbox/conversations?{query}";
+        _logger.LogInformation("Zernio request: {Url}", requestUrl);
+
         try
         {
-            var config = _analyticsApi.Configuration;
-            var baseUrl = config.BasePath.TrimEnd('/');
-
-            var queryParams = new Dictionary<string, string?>
-            {
-                ["fromDate"] = fromDate.ToString("yyyy-MM-dd"),
-                ["toDate"] = toDate?.ToString("yyyy-MM-dd"),
-                ["profileId"] = profileId,
-                ["platform"] = platform,
-                ["accountId"] = accountId,
-                ["source"] = source,
-                ["limit"] = limit?.ToString(),
-                ["page"] = page?.ToString(),
-                ["sortBy"] = sortBy,
-                ["order"] = order
-            };
-
-            var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
-                    .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/v1/analytics/inbox/conversations?{query}");
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.AccessToken);
 
             using var httpClient = _httpClientFactory.CreateClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);
             var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Zernio API {StatusCode} for inbox conversations. URL: {Url}. Body: {Body}",
+                    (int)httpResponse.StatusCode, requestUrl, errorBody);
+            }
+
             httpResponse.EnsureSuccessStatusCode();
 
             var json = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -6394,8 +6406,8 @@ public sealed class ZernioClient : IZernioClient
                     Sent: i.Sent ?? 0,
                     Read: i.Read ?? 0,
                     Failed: i.Failed ?? 0,
-                    FirstMessagedAt: i.FirstMessagedAt ?? DateTime.MinValue,
-                    LastMessagedAt: i.LastMessagedAt ?? DateTime.MinValue)).ToList(),
+                    FirstMessageAt: i.FirstMessageAt ?? DateTime.MinValue,
+                    LastMessageAt: i.LastMessageAt ?? DateTime.MinValue)).ToList(),
                 new ZernioInboxPaginationDto(
                     Page: raw.Pagination?.Page ?? 1,
                     Limit: raw.Pagination?.Limit ?? 50,
@@ -6417,9 +6429,14 @@ public sealed class ZernioClient : IZernioClient
             _logger.LogWarning(ex, "Zernio inbox conversations list preconditions failed");
             throw new ZernioAnalyticsScopeException("inbox", "Zernio inbox conversations preconditions failed.", "https://zernio.com/dashboard/billing");
         }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode >= 400 && (int?)ex.StatusCode < 500)
+        {
+            throw new DomainException("zernio_inbox_conversations_list_error",
+                $"Zernio returned {(int?)ex.StatusCode} for inbox conversations.", ex);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Zernio API error listing inbox conversations");
+            _logger.LogError(ex, "Zernio API error listing inbox conversations. URL: {Url}", requestUrl);
             throw new DomainException("zernio_inbox_conversations_list_error", "Failed to list inbox conversations from Zernio", ex);
         }
     }
@@ -6442,7 +6459,7 @@ public sealed class ZernioClient : IZernioClient
             };
 
             var query = string.Join("&",
-                queryParams.Where(kv => kv.Value is not null)
+                queryParams.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
                     .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
 
             var encodedId = Uri.EscapeDataString(conversationId);
@@ -6474,8 +6491,8 @@ public sealed class ZernioClient : IZernioClient
                     Read: raw.Summary?.Read ?? 0,
                     Failed: raw.Summary?.Failed ?? 0,
                     TotalMessages: raw.Summary?.TotalMessages ?? 0,
-                    FirstMessagedAt: raw.Summary?.FirstMessagedAt ?? DateTime.MinValue,
-                    LastMessagedAt: raw.Summary?.LastMessagedAt ?? DateTime.MinValue),
+                    FirstMessageAt: raw.Summary?.FirstMessageAt ?? DateTime.MinValue,
+                    LastMessageAt: raw.Summary?.LastMessageAt ?? DateTime.MinValue),
                 (raw.Timeseries ?? []).Select(t => new ZernioInboxDailyTotalsDto(t.Date ?? string.Empty, t.Sent ?? 0, t.Received ?? 0, t.Read ?? 0, t.Failed ?? 0)).ToList(),
                 (raw.BySource ?? []).Select(s => new ZernioInboxBySourceRowDto(Source: s.Source ?? string.Empty, Count: s.Count ?? 0)).ToList());
         }
@@ -6862,8 +6879,8 @@ public sealed class ZernioClient : IZernioClient
         public long? Sent { get; set; }
         public long? Read { get; set; }
         public long? Failed { get; set; }
-        public DateTime? FirstMessagedAt { get; set; }
-        public DateTime? LastMessagedAt { get; set; }
+        public DateTime? FirstMessageAt { get; set; }
+        public DateTime? LastMessageAt { get; set; }
     }
 
     private sealed class ZernioRawInboxPagination
@@ -6895,8 +6912,8 @@ public sealed class ZernioClient : IZernioClient
         public long? Read { get; set; }
         public long? Failed { get; set; }
         public long? TotalMessages { get; set; }
-        public DateTime? FirstMessagedAt { get; set; }
-        public DateTime? LastMessagedAt { get; set; }
+        public DateTime? FirstMessageAt { get; set; }
+        public DateTime? LastMessageAt { get; set; }
     }
 
     private sealed class ZernioRawInboxBySourceRow

@@ -167,7 +167,7 @@ export function useInboxAnalytics({ profileId }: { profileId?: string } = {}) {
       toDate,
       limit: 50,
       page: 1,
-      sortBy: 'lastMessagedAt',
+      sortBy: 'lastMessageAt',
       order: 'desc',
       ...(platform ? { platform } : {}),
       ...(source && source !== 'all' ? { source } : {}),
