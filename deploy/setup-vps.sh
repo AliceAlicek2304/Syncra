@@ -36,10 +36,15 @@ fi
 echo "=== Step 2: Create directories ==="
 mkdir -p "$BACKEND_DIR" "$FRONTEND_DIR" "$UPLOADS_DIR" "$LOGS_DIR"
 
-echo "=== Step 3: Start Redis ==="
-cd "$SYNCRA_DIR"
-cp "$(dirname "$0")/docker-compose.yml" "$SYNCRA_DIR/docker-compose.yml"
-docker compose up -d redis
+echo "=== Step 3: Redis check ==="
+if systemctl is-active --quiet redis-server 2>/dev/null; then
+    echo "Redis native service already running — skipping Docker Redis"
+else
+    echo "Starting Redis via Docker..."
+    cd "$SYNCRA_DIR"
+    cp "$(dirname "$0")/docker-compose.yml" "$SYNCRA_DIR/docker-compose.yml"
+    docker compose up -d redis
+fi
 
 echo "=== Step 4: Setup nginx ==="
 cp "$(dirname "$0")/nginx-syncra.conf" /etc/nginx/sites-available/syncra

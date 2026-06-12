@@ -1,7 +1,7 @@
 [Unit]
 Description=Syncra API
-After=network.target docker.service
-Wants=docker.service
+After=network.target redis-server.service
+Wants=redis-server.service
 
 [Service]
 Type=simple
