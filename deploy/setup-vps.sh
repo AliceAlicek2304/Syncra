@@ -7,6 +7,8 @@ FRONTEND_DIR="$SYNCRA_DIR/frontend"
 UPLOADS_DIR="$SYNCRA_DIR/uploads"
 LOGS_DIR="/var/log/syncra"
 
+ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+
 echo "=== Step 1: Install dependencies ==="
 apt update
 
@@ -60,9 +62,6 @@ echo "=== Step 5: Setup systemd service ==="
 cp "$(dirname "$0")/syncra-api.service" /etc/systemd/system/syncra-api.service
 systemctl daemon-reload
 systemctl enable syncra-api
-
-echo "=== Step 6: Deploy appsettings ==="
-cp "$(dirname "$0")/appsettings.Production.json" "$BACKEND_DIR/appsettings.Production.json"
 
 echo ""
 echo "=== Bootstrap complete! ==="

@@ -6,7 +6,7 @@ Wants=redis-server.service
 [Service]
 Type=simple
 WorkingDirectory=/var/www/Syncra/backend
-ExecStart=/usr/bin/dotnet Syncra.Api.dll
+ExecStart=/usr/share/dotnet/dotnet Syncra.Api.dll
 Restart=always
 RestartSec=10
 KillSignal=SIGINT
