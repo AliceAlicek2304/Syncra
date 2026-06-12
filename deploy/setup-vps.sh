@@ -58,7 +58,15 @@ nginx -t
 systemctl enable nginx
 systemctl restart nginx
 
-echo "=== Step 5: Setup systemd service ==="
+echo "=== Step 5: Install certbot for SSL ==="
+if ! command -v certbot &>/dev/null; then
+    apt install -y certbot python3-certbot-nginx
+    echo "Certbot installed. Run: certbot --nginx -d syncra.vn -d www.syncra.vn"
+else
+    echo "Certbot already installed"
+fi
+
+echo "=== Step 6: Setup systemd service ==="
 cp "$(dirname "$0")/syncra-api.service" /etc/systemd/system/syncra-api.service
 systemctl daemon-reload
 systemctl enable syncra-api
