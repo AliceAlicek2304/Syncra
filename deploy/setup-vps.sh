@@ -9,7 +9,21 @@ LOGS_DIR="/var/log/syncra"
 
 echo "=== Step 1: Install dependencies ==="
 apt update
-apt install -y nginx docker.io docker-compose-plugin
+
+# Install nginx if missing
+if ! command -v nginx &>/dev/null; then
+    apt install -y nginx
+fi
+
+# Install Docker if missing
+if ! command -v docker &>/dev/null; then
+    apt install -y docker.io
+fi
+
+# Install docker-compose plugin if missing
+if ! docker compose version &>/dev/null 2>&1; then
+    apt install -y docker-compose-plugin
+fi
 
 if ! command -v dotnet &>/dev/null; then
     echo "Installing .NET 8 runtime..."
