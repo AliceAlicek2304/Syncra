@@ -647,18 +647,24 @@ export default function ConnectionsPage() {
   };
 
   // Handle platform connection
-  const handleConnectPlatform = async (platformId: string, overrideWorkspaceId?: string) => {
+  const handleConnectPlatform = async (platformId: string, overrideProfileId?: string) => {
     const config = ALL_PLATFORMS.find(p => p.id === platformId);
     if (!config?.isSupported) {
       showError(`${config?.label || platformId} integration is coming soon! Under development.`);
       return;
     }
     
-    const wsId = overrideWorkspaceId || selectedProfileForConnection;
-    if (!wsId) {
+    if (!activeWorkspace) {
       showError("Please select a workspace first.");
       return;
     }
+
+    const profileId = overrideProfileId || selectedProfileForConnection;
+    if (!profileId || profileId === 'all') {
+      showError("Please select a profile first.");
+      return;
+    }
+
     setConnectingPlatform(platformId);
     try {
       const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select`;
@@ -666,7 +672,10 @@ export default function ConnectionsPage() {
         `social-accounts/connect-url/${platformId}`,
         {
           params: { redirectUrl: callbackUrl },
-          headers: { 'X-Workspace-Id': wsId },
+          headers: { 
+            'X-Workspace-Id': activeWorkspace.id,
+            'X-Profile-Id': profileId
+          },
         }
       );
       setIsNewConnectionOpen(false);

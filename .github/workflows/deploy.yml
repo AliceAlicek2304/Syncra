@@ -44,6 +44,16 @@ jobs:
             mkdir -p /var/www/Syncra/backend
             mkdir -p /var/www/Syncra/frontend
 
+      - name: Copy nginx config
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "deploy/nginx-syncra.conf"
+          target: "/tmp/"
+          strip_components: 1
+
       - name: Copy backend
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -94,5 +104,6 @@ jobs:
               fi
             done
 
+            mv /tmp/nginx-syncra.conf /etc/nginx/sites-available/syncra
             nginx -t && systemctl reload nginx
             echo "Deploy complete!"
