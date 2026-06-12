@@ -77,6 +77,13 @@ Continuity.md
 AGENTS.md
 
 # ===========================
+# VPS deployment dirs (inside git clone)
+# ===========================
+backend/
+frontend/
+uploads/
+
+# ===========================
 # OS
 # ===========================
 .DS_Store

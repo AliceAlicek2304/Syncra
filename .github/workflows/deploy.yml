@@ -62,15 +62,6 @@ jobs:
           source: "fe/dist/"
           target: "/var/www/Syncra/frontend/"
 
-      - name: Copy appsettings
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "deploy/appsettings.Production.json"
-          target: "/var/www/Syncra/backend/"
-
       - name: Restart & verify
         uses: appleboy/ssh-action@v1.0.3
         with:
