@@ -31,6 +31,7 @@ import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminUserGrowth from './pages/admin/UserGrowth'
 import PostAnalytics from './pages/admin/PostAnalytics'
+import RevenueAnalytics from './pages/admin/RevenueAnalytics'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
 import { useNavigate } from 'react-router-dom'
@@ -136,6 +137,7 @@ function AnimatedRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUserGrowth />} />
           <Route path="posts" element={<PostAnalytics />} />
+          <Route path="revenue" element={<RevenueAnalytics />} />
         </Route>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />

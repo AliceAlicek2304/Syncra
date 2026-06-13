@@ -13,6 +13,10 @@ export const adminApi = {
     const res = await api.get('/admin/posts-analytics')
     return res.data
   },
+  getRevenueAnalytics: async () => {
+    const res = await api.get('/admin/revenue-analytics')
+    return res.data
+  },
   listJobs: async () => {
     const res = await api.get('/admin/jobs')
     return res.data

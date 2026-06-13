@@ -37,4 +37,11 @@ public class AdminController : ControllerBase
         var result = await _mediator.Send(new Syncra.Application.Features.Admin.Queries.PostAnalytics.GetPostAnalyticsQuery(), cancellationToken);
         return result.ToActionResult();
     }
+
+    [HttpGet("revenue-analytics")]
+    public async Task<IActionResult> GetRevenueAnalytics(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new Syncra.Application.Features.Admin.Queries.RevenueAnalytics.GetRevenueAnalyticsQuery(), cancellationToken);
+        return result.ToActionResult();
+    }
 }

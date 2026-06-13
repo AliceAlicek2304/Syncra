@@ -37,7 +37,7 @@ public class SubscriptionRepository : Repository<Subscription>, ISubscriptionRep
     public async Task<IReadOnlyList<Subscription>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Include(s => s.Plan)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 }
