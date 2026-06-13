@@ -5,6 +5,14 @@ export const adminApi = {
     const res = await api.get('/admin/overview')
     return res.data
   },
+  getUserGrowth: async () => {
+    const res = await api.get('/admin/users-growth')
+    return res.data
+  },
+  getPostAnalytics: async () => {
+    const res = await api.get('/admin/posts-analytics')
+    return res.data
+  },
   listJobs: async () => {
     const res = await api.get('/admin/jobs')
     return res.data

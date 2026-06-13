@@ -9,7 +9,11 @@ type MenuItem = {
 }
 
 const menu: MenuItem[] = [
-  { title: 'Dashboard', children: [{ title: 'Overview', to: '/admin' }] },
+  { title: 'Dashboard', children: [
+    { title: 'Tổng quan (Overview)', to: '/admin' },
+    { title: 'Người dùng & Tài khoản', to: '/admin/users' },
+    { title: 'Phân tích bài đăng', to: '/admin/posts' }
+  ] },
 ]
 
 export default function AdminSidebar() {
