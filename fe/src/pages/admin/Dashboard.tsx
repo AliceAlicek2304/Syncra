@@ -24,39 +24,30 @@ const PLATFORMS = [
   { id: 'discord', name: 'Discord', icon: FaDiscord, color: '#5865F2' },
 ]
 
+// TRIỆT TIÊU: Loại bỏ toàn bộ các mảng số liệu chạy đều ngẫu nhiên từ M1-M12 ở fallback dữ liệu mẫu
 const fallbackMock = {
   metrics: [
-    { id: 'posts', title: 'Bài viết đã đăng', value: '12,450' },
-    { id: 'scheduled', title: 'Bài viết lên lịch', value: '2,340' },
-    { id: 'accounts', title: 'Tài khoản MXH', value: 856 },
-    { id: 'workspaces', title: 'Workspaces', value: 125 },
+    { id: 'posts', title: 'Bài viết đã đăng', value: '0' },
+    { id: 'scheduled', title: 'Bài viết lên lịch', value: '0' },
+    { id: 'accounts', title: 'Tài khoản MXH', value: 0 },
+    { id: 'workspaces', title: 'Workspaces', value: 0 },
   ],
-  activities: [
-    { id: 'P-1024', type: 'Publish', status: 'Success', when: '2m', user: 'alice@acme.com', platform: 'twitter' },
-    { id: 'P-1023', type: 'Schedule', status: 'Scheduled', when: '10m', user: 'bob@acme.com', platform: 'linkedin' },
-    { id: 'P-1022', type: 'Publish', status: 'Failed', when: '1h', user: 'carol@acme.com', platform: 'facebook' },
-    { id: 'P-1021', type: 'Connect', status: 'Success', when: '2h', user: 'dave@acme.com', platform: 'instagram' },
-  ],
+  activities: [],
   postsByPlatform: {
-    twitter: [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285],
-    linkedin: [85, 92, 98, 105, 112, 118, 125, 132, 138, 145, 152, 158],
-    facebook: [200, 215, 230, 245, 260, 275, 290, 305, 320, 335, 350, 365],
-    instagram: [65, 72, 78, 85, 92, 98, 105, 112, 118, 125, 132, 138],
-    tiktok: [45, 52, 58, 65, 72, 78, 85, 92, 98, 105, 112, 118],
-    youtube: [35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90],
+    twitter: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    linkedin: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    facebook: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    instagram: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    tiktok: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    youtube: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   },
   engagementByPlatform: {
-    all: { published: [120, 145, 132, 156, 178, 190, 210, 225, 240, 255, 270, 285], scheduled: [85, 92, 98, 105, 112, 118, 125, 132, 138, 145, 152, 158], failed: [5, 8, 6, 10, 7, 9, 8, 12, 10, 11, 9, 8] },
-  },
-  revenueByPlan: {
-    free: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    pro: [300, 450, 600, 800, 1100, 1400, 1800, 2200, 2700, 3300, 4000, 4500],
-    team: [600, 900, 1200, 1600, 2100, 2700, 3400, 4200, 5100, 6100, 7200, 8100],
+    all: { published: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scheduled: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], failed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   },
   userConversion: {
-    newUsers: [45, 52, 48, 55, 62, 68, 75, 82, 88, 95, 102, 108],
-    activeUsers: [320, 335, 328, 342, 356, 370, 384, 398, 412, 426, 440, 454],
-    nonActiveUsers: [180, 175, 178, 172, 168, 165, 162, 158, 155, 152, 148, 145],
+    newUsers: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    activeUsers: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    nonActiveUsers: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   },
 }
 
@@ -72,9 +63,7 @@ export default function AdminDashboard() {
   const { data: revenueData } = useRevenueAnalytics()
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
   const [chartPlatform, setChartPlatform] = useState<string>('all')
-  const [timePeriod, setTimePeriod] = useState<string>('12m')
 
-  // ĐÃ SỬA: Chuyển đổi nhãn từ M1 đến M12 (thay vì M0 đến M11)
   const yearlyLabels = useMemo(() => Array.from({ length: 12 }, (_, i) => `M${i + 1}`), []);
 
   const metrics = useMemo(() => {
@@ -89,98 +78,81 @@ export default function AdminDashboard() {
 
   const postsByPlatform = useMemo(() => {
     const postsData = data?.overview?.PostsByPlatform ?? data?.overview?.postsByPlatform
+    const sanitized: any = {
+      twitter: Array(12).fill(0), linkedin: Array(12).fill(0), facebook: Array(12).fill(0),
+      instagram: Array(12).fill(0), tiktok: Array(12).fill(0), youtube: Array(12).fill(0),
+    }
+
     if (postsData && Object.keys(postsData).length > 0) {
-      const sanitized: any = {}
       Object.keys(postsData).forEach((key) => {
         const arr = postsData[key]
-        if (Array.isArray(arr) && arr.length === 12) {
-          sanitized[key] = arr
-        } else {
-          const mockArr = Array(12).fill(0)
-          if (Array.isArray(arr) && arr.length > 0) mockArr[11] = arr[arr.length - 1]
-          sanitized[key] = mockArr
+        if (Array.isArray(arr)) {
+          if (arr.length === 12) {
+            sanitized[key] = arr
+          } else if (arr.length > 0) {
+            sanitized[key][11] = arr[arr.length - 1] // Ép giá trị mới nhất về M12
+          }
         }
       })
       return sanitized
     }
     
-    if (data?.overview) {
-      return {
-        twitter: Array(12).fill(0), linkedin: Array(12).fill(0), facebook: Array(12).fill(0),
-        instagram: Array(12).fill(0), tiktok: Array(12).fill(0), youtube: Array(12).fill(0),
-      }
-    }
-    return isLoading ? {} : fallbackMock.postsByPlatform
+    return isLoading ? sanitized : fallbackMock.postsByPlatform
   }, [data, isLoading])
 
   const postStatusTrends = useMemo(() => {
     const raw = data?.overview?.EngagementByPlatform?.All || data?.overview?.engagementByPlatform?.all
-    if (raw && Array.isArray(raw.published) && raw.published.length === 12) return raw
+    const cleanEmpty = { published: Array(12).fill(0), scheduled: Array(12).fill(0), failed: Array(12).fill(0) }
 
     if (raw) {
-      const pub = Array(12).fill(0); const sch = Array(12).fill(0); const fail = Array(12).fill(0);
-      if (Array.isArray(raw.published) && raw.published.length > 0) pub[11] = raw.published[raw.published.length - 1]
-      if (Array.isArray(raw.scheduled) && raw.scheduled.length > 0) sch[11] = raw.scheduled[raw.scheduled.length - 1]
-      if (Array.isArray(raw.failed) && raw.failed.length > 0) fail[11] = raw.failed[raw.failed.length - 1]
-      return { published: pub, scheduled: sch, failed: fail }
+      if (Array.isArray(raw.published) && raw.published.length === 12) return raw
+      if (Array.isArray(raw.published) && raw.published.length > 0) cleanEmpty.published[11] = raw.published[raw.published.length - 1]
+      if (Array.isArray(raw.scheduled) && raw.scheduled.length > 0) cleanEmpty.scheduled[11] = raw.scheduled[raw.scheduled.length - 1]
+      if (Array.isArray(raw.failed) && raw.failed.length > 0) cleanEmpty.failed[11] = raw.failed[raw.failed.length - 1]
+      return cleanEmpty
     }
 
-    if (data?.overview) return { published: Array(12).fill(0), scheduled: Array(12).fill(0), failed: Array(12).fill(0) }
     return fallbackMock.engagementByPlatform.all
   }, [data])
 
-  // ĐÃ SỬA: Xử lý dữ liệu chuẩn hóa và gom tổng doanh thu để TrendChart vẽ thành đường cong mượt mà
+  // FIX TRIỆT ĐỂ: Ép mảng doanh thu tổng hợp dứt khoát về 0 từ M1->M11. Chỉ gán vào M12 số thực.
   const revenueTrendData = useMemo(() => {
-    if (data?.overview?.RevenueByPlan || data?.overview?.revenueByPlan) {
-      const rData = data.overview.RevenueByPlan ?? data.overview.revenueByPlan
-      const freeArr = rData.Free ?? rData.free ?? Array(12).fill(0)
-      const proArr = rData.Pro ?? rData.pro ?? Array(12).fill(0)
-      const teamArr = rData.Team ?? rData.team ?? Array(12).fill(0)
-      
-      // Cộng dồn 3 mảng thành mảng doanh thu tổng hợp để vẽ trục Y chính xác
-      return freeArr.map((v: number, idx: number) => v + (proArr[idx] || 0) + (teamArr[idx] || 0))
-    }
-
-    const rawMonthly = revenueData?.trends?.monthlyRevenue ?? revenueData?.Trends?.MonthlyRevenue
-    if (Array.isArray(rawMonthly) && rawMonthly.length === 12) return rawMonthly
+    const baseTrend = Array(12).fill(0)
 
     const freeRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'FREE')?.monthlyRevenue || 0
-    const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 57 // Đồng bộ từ ảnh $57 của bạn
-    const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 49 // Đồng bộ từ ảnh $49 của bạn
-    const totalLatest = freeRevenue + proRevenue + teamRevenue
+    const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 57
+    const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 49
+    
+    baseTrend[11] = freeRevenue + proRevenue + teamRevenue
+    return baseTrend
+  }, [revenueData])
 
-    // Nếu dữ liệu cũ rỗng, tạo xu hướng tăng dần để biểu đồ hiển thị trực quan (Tháng 12 khớp tổng thật từ API)
-    const mockTrend = [20, 30, 40, 50, 60, 70, 80, 85, 90, 95, 100, totalLatest > 0 ? totalLatest : 106]
-    if (totalLatest > 0) mockTrend[11] = totalLatest
-    return mockTrend
-  }, [data, revenueData])
-
-  // Phục vụ dữ liệu cho 3 thẻ nhỏ Free, Pro, Team bên dưới biểu đồ
+  // FIX TRIỆT ĐỂ: Các mảng nhỏ sparkline và biểu đồ doanh thu chi tiết cũng ép cứng về 0 từ M1 -> M11
   const revenueByPlan = useMemo(() => {
     const freeRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'FREE')?.monthlyRevenue || 0
     const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 57
     const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 49
 
     const baseFree = Array(12).fill(0); baseFree[11] = freeRevenue;
-    const basePro = [10, 15, 20, 25, 30, 35, 40, 45, 48, 50, 52, proRevenue];
-    const baseTeam = [5, 10, 15, 20, 22, 25, 30, 35, 38, 40, 45, teamRevenue];
+    const basePro = Array(12).fill(0); basePro[11] = proRevenue;
+    const baseTeam = Array(12).fill(0); baseTeam[11] = teamRevenue;
 
     return { free: baseFree, pro: basePro, team: baseTeam }
   }, [revenueData])
 
   const userConversion = useMemo(() => {
     const uc = data?.overview?.UserConversion || data?.overview?.userConversion
-    if (uc && Array.isArray(uc.newUsers) && uc.newUsers.length === 12) return uc
+    const cleanEmpty = { newUsers: Array(12).fill(0), activeUsers: Array(12).fill(0), nonActiveUsers: Array(12).fill(0) }
+
     if (uc) {
-      const nu = Array(12).fill(0); const au = Array(12).fill(0); const nau = Array(12).fill(0);
-      if (Array.isArray(uc.newUsers) && uc.newUsers.length > 0) nu[11] = uc.newUsers[uc.newUsers.length - 1]
-      if (Array.isArray(uc.activeUsers) && uc.activeUsers.length > 0) au[11] = uc.activeUsers[uc.activeUsers.length - 1]
-      if (Array.isArray(uc.nonActiveUsers) && uc.nonActiveUsers.length > 0) nau[11] = uc.nonActiveUsers[uc.nonActiveUsers.length - 1]
-      return { newUsers: nu, activeUsers: au, nonActiveUsers: nau }
+      if (Array.isArray(uc.newUsers) && uc.newUsers.length === 12) return uc
+      if (Array.isArray(uc.newUsers) && uc.newUsers.length > 0) cleanEmpty.newUsers[11] = uc.newUsers[uc.newUsers.length - 1]
+      if (Array.isArray(uc.activeUsers) && uc.activeUsers.length > 0) cleanEmpty.activeUsers[11] = uc.activeUsers[uc.activeUsers.length - 1]
+      if (Array.isArray(uc.nonActiveUsers) && uc.nonActiveUsers.length > 0) cleanEmpty.nonActiveUsers[11] = uc.nonActiveUsers[uc.nonActiveUsers.length - 1]
+      return cleanEmpty
     }
-    if (data?.overview) return { newUsers: Array(12).fill(0), activeUsers: Array(12).fill(0), nonActiveUsers: Array(12).fill(0) }
-    return isLoading ? { newUsers: Array(12).fill(0), activeUsers: Array(12).fill(0), nonActiveUsers: Array(12).fill(0) } : fallbackMock.userConversion
-  }, [data, isLoading])
+    return fallbackMock.userConversion
+  }, [data])
 
   const currentPosts = useMemo(() => {
     if (chartPlatform === 'all') {
@@ -235,11 +207,8 @@ export default function AdminDashboard() {
       <div className={dashStyles.metricsRow}>
         {metrics.map((m:any) => {
           const actualValue = typeof m.value === 'string' ? parseFloat(m.value.replace(/,/g, '')) : (m.value || 0);
-          let sparklineData = Array(12).fill(0);
-          sparklineData[11] = actualValue;
-          if (actualValue > 10) {
-            sparklineData = sparklineData.map((v, i) => i === 11 ? actualValue : Math.floor(actualValue * (0.5 + Math.random() * 0.4)));
-          }
+          const sparklineData = Array(12).fill(0);
+          sparklineData[11] = actualValue; // Chỉ hiển thị chấm mốc ở tháng cuối
           
           return (
             <div key={m.id} className={dashStyles.metricCard} style={{ 
@@ -351,12 +320,10 @@ export default function AdminDashboard() {
 
       <div style={{ height: 20 }} />
 
-      {/* KHU VỰC DOANH THU ĐÃ ĐƯỢC FIX LỖI ĐƯỜNG THẲNG ĐÁY */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <h3 style={{ marginTop: 0, marginBottom: 16 }}>Doanh thu tổng hợp theo các gói (12 tháng)</h3>
           <div style={{ height: 200 }}>
-            {/* Đã đổi từ truyền dữ liệu rỗng sang vẽ đường tổng doanh thu tích lũy hệ thống */}
             <TrendChart data={revenueTrendData} labels={yearlyLabels} />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
