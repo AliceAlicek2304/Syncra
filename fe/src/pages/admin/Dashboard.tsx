@@ -86,7 +86,7 @@ export default function AdminDashboard() {
   }, [data, isLoading])
 
   const postsByPlatform = useMemo(() => {
-    if (data?.overview?.postsByPlatform) return data.overview.postsByPlatform
+    if (data?.overview?.postsByPlatform || data?.overview?.PostsByPlatform) return data.overview.postsByPlatform ?? data.overview.PostsByPlatform
     if (data?.overview) return {
       twitter: Array(12).fill(0), linkedin: Array(12).fill(0), facebook: Array(12).fill(0),
       instagram: Array(12).fill(0), tiktok: Array(12).fill(0), youtube: Array(12).fill(0),

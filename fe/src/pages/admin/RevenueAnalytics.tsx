@@ -21,7 +21,13 @@ export default function RevenueAnalytics() {
   }, [data, isLoading])
 
   const trends = useMemo(() => {
-    if (data?.Trends || data?.trends) return data.Trends ?? data.trends
+    if (data?.Trends || data?.trends) {
+      const trendsData = data.Trends ?? data.trends
+      console.log('Trends data:', trendsData)
+      console.log('MonthlyRevenue:', trendsData?.monthlyRevenue ?? trendsData?.MonthlyRevenue)
+      console.log('NewSubscriptions:', trendsData?.newSubscriptions ?? trendsData?.NewSubscriptions)
+      return trendsData
+    }
     return null
   }, [data, isLoading])
 
