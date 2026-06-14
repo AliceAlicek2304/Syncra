@@ -202,6 +202,91 @@ public sealed class GetUserGrowthQueryHandler
             // This would require a subscription change history table in a real implementation
             dto.RecentPlanChanges = new List<PlanChangeDto>();
 
+            // Workspace statistics
+            var activeWorkspaces = allWorkspaces.Count(w => w.UpdatedAtUtc >= thirtyDaysAgo);
+            var avgAccountsPerWorkspace = allWorkspaces.Any() ? Math.Round((double)totalAccounts / allWorkspaces.Count(), 1) : 0;
+
+            var topWorkspaces = allWorkspaces
+                .OrderByDescending(w => w.Members.Count)
+                .Take(5)
+                .Select(w => new WorkspaceSummaryDto
+                {
+                    Id = w.Id,
+                    Name = w.Name,
+                    Slug = w.Slug,
+                    MemberCount = w.Members.Count,
+                    AccountCount = _socialAccountRepository.GetByWorkspaceIdAsync(w.Id).GetAwaiter().GetResult().Count
+                })
+                .ToList();
+
+            dto.WorkspaceStatistics = new WorkspaceStatisticsDto
+            {
+                TotalWorkspaces = allWorkspaces.Count(),
+                ActiveWorkspaces = activeWorkspaces,
+                AvgAccountsPerWorkspace = avgAccountsPerWorkspace,
+                TopWorkspaces = topWorkspaces
+            };
+
+            // Social account trends (monthly)
+            var monthlyAccounts = new List<int>();
+            var accountsByPlatformMonthly = new Dictionary<string, List<int>>();
+
+            // Initialize platform arrays
+            foreach (var platform in accountsByPlatform.Keys)
+            {
+                accountsByPlatformMonthly[platform] = new List<int>();
+            }
+
+            for (int i = 11; i >= 0; i--)
+            {
+                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+                // Count total accounts created in this month
+                var accountsInMonth = 0;
+                foreach (var workspace in allWorkspaces)
+                {
+                    var accounts = await _socialAccountRepository.GetByWorkspaceIdAsync(workspace.Id);
+                    accountsInMonth += accounts.Count(a => a.CreatedAtUtc >= monthStart && a.CreatedAtUtc <= monthEnd);
+
+                    // Count by platform
+                    foreach (var acc in accounts)
+                    {
+                        if (acc.CreatedAtUtc >= monthStart && acc.CreatedAtUtc <= monthEnd)
+                        {
+                            var platform = acc.Platform;
+                            if (!string.IsNullOrEmpty(platform))
+                            {
+                                if (!accountsByPlatformMonthly.ContainsKey(platform))
+                                    accountsByPlatformMonthly[platform] = new List<int>();
+                                // We need to ensure the list has 12 elements
+                                while (accountsByPlatformMonthly[platform].Count < 12)
+                                    accountsByPlatformMonthly[platform].Add(0);
+                                var currentIdx = 11 - i;
+                                if (currentIdx < accountsByPlatformMonthly[platform].Count)
+                                    accountsByPlatformMonthly[platform][currentIdx]++;
+                            }
+                        }
+                    }
+                }
+                monthlyAccounts.Add(accountsInMonth);
+            }
+
+            // Ensure all platform arrays have exactly 12 elements
+            foreach (var platform in accountsByPlatformMonthly.Keys.ToList())
+            {
+                while (accountsByPlatformMonthly[platform].Count < 12)
+                    accountsByPlatformMonthly[platform].Add(0);
+                if (accountsByPlatformMonthly[platform].Count > 12)
+                    accountsByPlatformMonthly[platform] = accountsByPlatformMonthly[platform].Take(12).ToList();
+            }
+
+            dto.SocialAccountTrends = new SocialAccountTrendsDto
+            {
+                MonthlyAccounts = monthlyAccounts,
+                AccountsByPlatformMonthly = accountsByPlatformMonthly.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.AsEnumerable())
+            };
+
             return Result.Success(dto);
         }
         catch (Exception ex)

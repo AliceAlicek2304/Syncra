@@ -44,30 +44,38 @@ export default function UserGrowth() {
   }, [data, isLoading])
 
   const userGrowthTrend = useMemo(() => {
-    const base = Array(12).fill(0)
-    
-    // FIX TẠI ĐÂY: Thêm kiểu dữ liệu (m: MetricItem) cho hàm find
-    const totalStr = data?.Overview?.TotalUsers ?? data?.overview?.totalUsers ?? metrics.find((m: MetricItem) => m.id === 'total')?.value ?? '0'
-    const totalVal = typeof totalStr === 'string' ? parseInt(totalStr.replace(/,/g, ''), 10) : (totalStr || 0)
-    
-    base[11] = totalVal > 0 ? totalVal : 1452 
-    return base
-  }, [data, metrics])
+    // Use real API data for user growth trends
+    if (data?.ActivityTrends?.NewUsers || data?.activityTrends?.newUsers) {
+      const newUsers = data.ActivityTrends?.NewUsers ?? data.activityTrends?.newUsers ?? []
+      if (Array.isArray(newUsers) && newUsers.length === 12) return newUsers
+    }
+    return Array(12).fill(0)
+  }, [data])
 
   const accountGrowthTrend = useMemo(() => {
-    const base = Array(12).fill(0)
-    
-    // FIX TẠI ĐÂY: Thêm kiểu dữ liệu (m: MetricItem) cho hàm find
-    const accStr = data?.Overview?.TotalAccounts ?? data?.overview?.totalAccounts ?? metrics.find((m: MetricItem) => m.id === 'accounts')?.value ?? '0'
-    const accVal = typeof accStr === 'string' ? parseInt(accStr.replace(/,/g, ''), 10) : (accStr || 0)
-    
-    base[11] = accVal > 0 ? accVal : 3214 
-    return base
-  }, [data, metrics])
+    // Use real API data for social account trends
+    if (data?.SocialAccountTrends?.MonthlyAccounts || data?.socialAccountTrends?.monthlyAccounts) {
+      const monthlyAccounts = data.SocialAccountTrends?.MonthlyAccounts ?? data.socialAccountTrends?.monthlyAccounts ?? []
+      if (Array.isArray(monthlyAccounts) && monthlyAccounts.length === 12) return monthlyAccounts
+    }
+    return Array(12).fill(0)
+  }, [data])
 
   const planDistribution = useMemo(() => {
     if (data?.PlanDistribution || data?.planDistribution) return data.PlanDistribution ?? data.planDistribution
     return { labels: ['Free', 'Pro', 'Team'], values: [65, 25, 10] }
+  }, [data])
+
+  const workspaceStats = useMemo(() => {
+    if (data?.WorkspaceStatistics || data?.workspaceStatistics) {
+      return data.WorkspaceStatistics ?? data.workspaceStatistics
+    }
+    return {
+      totalWorkspaces: 0,
+      activeWorkspaces: 0,
+      avgAccountsPerWorkspace: 0,
+      topWorkspaces: []
+    }
   }, [data])
 
   return (
@@ -130,6 +138,58 @@ export default function UserGrowth() {
             <TrendChart data={accountGrowthTrend} labels={yearlyLabels} />
           </div>
         </div>
+      </div>
+
+      <div style={{ height: 20 }} />
+
+      {/* Workspace Statistics Section */}
+      <div className={styles.card} style={{ background: '#fff' }}>
+        <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 15, color: '#333' }}>Thống kê Workspace</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+          <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Tổng Workspace</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{workspaceStats.totalWorkspaces}</div>
+          </div>
+          <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Workspace hoạt động (30d)</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#4FFF4F' }}>{workspaceStats.activeWorkspaces}</div>
+          </div>
+          <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>TB tài khoản/Workspace</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#4F8FFF' }}>{workspaceStats.avgAccountsPerWorkspace}</div>
+          </div>
+        </div>
+
+        <h4 style={{ marginTop: 0, marginBottom: 12, fontSize: 14, color: '#333' }}>Top 5 Workspace theo số thành viên</h4>
+        {workspaceStats.topWorkspaces && workspaceStats.topWorkspaces.length > 0 ? (
+          <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #eaeaea' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, background: '#fff' }}>
+              <thead style={{ background: '#fafafa', borderBottom: '1px solid #eaeaea' }}>
+                <tr>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'left' }}>Tên Workspace</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'left' }}>Slug</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'left' }}>Số thành viên</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'left' }}>Tài khoản MXH</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workspaceStats.topWorkspaces.map((w: any, i: number) => (
+                  <tr 
+                    key={w.id} 
+                    style={{ borderBottom: i === workspaceStats.topWorkspaces.length - 1 ? 'none' : '1px solid #f0f0f0' }}
+                  >
+                    <td style={{ padding: '12px 16px', fontWeight: 600 }}>{w.name}</td>
+                    <td style={{ padding: '12px 16px', color: '#666' }}>{w.slug}</td>
+                    <td style={{ padding: '12px 16px', color: '#4F8FFF', fontWeight: 600 }}>{w.memberCount}</td>
+                    <td style={{ padding: '12px 16px', color: '#FFC84F', fontWeight: 600 }}>{w.accountCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: 20, textAlign: 'center', color: '#888', fontSize: 13 }}>Không có workspace nào trong hệ thống.</div>
+        )}
       </div>
 
       <div style={{ height: 20 }} />
