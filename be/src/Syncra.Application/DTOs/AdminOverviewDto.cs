@@ -39,9 +39,9 @@ public class EngagementDto
 
 public class RevenueByPlanDto
 {
-    public List<int> Starter { get; set; } = new();
+    public List<int> Free { get; set; } = new();
     public List<int> Pro { get; set; } = new();
-    public List<int> Enterprise { get; set; } = new();
+    public List<int> Team { get; set; } = new();
 }
 
 public class UserConversionDto

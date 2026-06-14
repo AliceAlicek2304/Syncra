@@ -203,7 +203,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         var result = new Dictionary<string, List<int>>();
         var months = new List<DateTime>();
         
-        for (var date = startUtc; date <= endUtc; date = date.AddMonths(1))
+        for (var date = startUtc; date < endUtc; date = date.AddMonths(1))
         {
             months.Add(new DateTime(date.Year, date.Month, 1));
         }

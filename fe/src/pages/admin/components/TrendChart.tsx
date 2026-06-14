@@ -6,10 +6,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip,
 type Props = { data: number[]; labels?: string[] }
 
 export default function TrendChart({ data, labels }: Props) {
-  console.log('TrendChart received data:', data)
-  console.log('TrendChart data length:', data?.length)
-  console.log('TrendChart data values:', data)
-
   if (!data || data.length === 0) {
     return (
       <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 13 }}>
@@ -19,7 +15,7 @@ export default function TrendChart({ data, labels }: Props) {
   }
 
   const chartData = {
-    labels: labels ?? data.map((_, i) => `M${i + 1}`),
+    labels: labels ?? data.map((_, i) => `M${i}`),
     datasets: [
       {
         data,

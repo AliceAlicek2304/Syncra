@@ -18,6 +18,7 @@ public sealed class GetAdminOverviewQueryHandler
     private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserSessionRepository _userSessionRepository;
+    private readonly IPlanRepository _planRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly ILogger<GetAdminOverviewQueryHandler> _logger;
@@ -29,6 +30,7 @@ public sealed class GetAdminOverviewQueryHandler
         ISubscriptionRepository subscriptionRepository,
         IUserRepository userRepository,
         IUserSessionRepository userSessionRepository,
+        IPlanRepository planRepository,
         IZernioClient zernioClient,
         IZernioProfileRepository zernioProfileRepository,
         ILogger<GetAdminOverviewQueryHandler> logger)
@@ -39,6 +41,7 @@ public sealed class GetAdminOverviewQueryHandler
         _subscriptionRepository = subscriptionRepository;
         _userRepository = userRepository;
         _userSessionRepository = userSessionRepository;
+        _planRepository = planRepository;
         _zernioClient = zernioClient;
         _zernioProfileRepository = zernioProfileRepository;
         _logger = logger;
@@ -62,7 +65,7 @@ public sealed class GetAdminOverviewQueryHandler
             foreach (var workspace in allWorkspaces)
             {
                 var posts = await _postRepository.GetByWorkspaceIdAsync(workspace.Id);
-                totalPosts += posts.Count();
+                totalPosts += posts.Count(p => p.Status == PostStatus.Published);
                 scheduledPosts += posts.Count(p => p.Status == PostStatus.Scheduled);
             }
 
@@ -131,16 +134,20 @@ public sealed class GetAdminOverviewQueryHandler
 
             // Get revenue by plan from subscriptions
             var allSubscriptions = await _subscriptionRepository.GetAllAsync(cancellationToken);
-            
+
             var activeSubscriptions = allSubscriptions
                 .Where(s => s.Status == Domain.Enums.SubscriptionStatus.Active)
                 .ToList();
 
+            // Load plan data separately to avoid navigation property issues
+            var planIds = activeSubscriptions.Select(s => s.PlanId).Distinct().ToList();
+            var plans = await _planRepository.GetByIdsAsync(planIds, cancellationToken);
+
             var revenueByPlan = new RevenueByPlanDto
             {
-                Starter = new List<int>(),
+                Free = new List<int>(),
                 Pro = new List<int>(),
-                Enterprise = new List<int>()
+                Team = new List<int>()
             };
 
             // Calculate monthly revenue for the last 12 months
@@ -148,32 +155,33 @@ public sealed class GetAdminOverviewQueryHandler
             {
                 var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
                 var monthEnd = monthStart.AddMonths(1).AddDays(-1);
-                
-                var monthlyStarterRevenue = 0;
+
+                var monthlyFreeRevenue = 0;
                 var monthlyProRevenue = 0;
-                var monthlyEnterpriseRevenue = 0;
+                var monthlyTeamRevenue = 0;
 
                 foreach (var sub in activeSubscriptions)
                 {
                     // Check if subscription was active during this month
-                    var wasActiveInMonth = (sub.StartsAtUtc <= monthEnd) && 
+                    var wasActiveInMonth = (sub.StartsAtUtc <= monthEnd) &&
                                           (!sub.EndsAtUtc.HasValue || sub.EndsAtUtc.Value >= monthStart);
-                    
+
                     if (wasActiveInMonth)
                     {
-                        var monthlyRevenue = sub.Plan?.PriceMonthly ?? 0;
-                        if (sub.Plan?.Name?.ToLower().Contains("starter") == true)
-                            monthlyStarterRevenue += (int)monthlyRevenue;
-                        else if (sub.Plan?.Name?.ToLower().Contains("pro") == true)
+                        var plan = plans.FirstOrDefault(p => p.Id == sub.PlanId);
+                        var monthlyRevenue = plan?.PriceMonthly ?? 0;
+                        if (plan?.Name?.ToLower().Contains("free") == true)
+                            monthlyFreeRevenue += (int)monthlyRevenue;
+                        else if (plan?.Name?.ToLower().Contains("pro") == true)
                             monthlyProRevenue += (int)monthlyRevenue;
-                        else if (sub.Plan?.Name?.ToLower().Contains("enterprise") == true)
-                            monthlyEnterpriseRevenue += (int)monthlyRevenue;
+                        else if (plan?.Name?.ToLower().Contains("team") == true)
+                            monthlyTeamRevenue += (int)monthlyRevenue;
                     }
                 }
 
-                revenueByPlan.Starter.Add(monthlyStarterRevenue);
+                revenueByPlan.Free.Add(monthlyFreeRevenue);
                 revenueByPlan.Pro.Add(monthlyProRevenue);
-                revenueByPlan.Enterprise.Add(monthlyEnterpriseRevenue);
+                revenueByPlan.Team.Add(monthlyTeamRevenue);
             }
 
             overview.RevenueByPlan = revenueByPlan;

@@ -22,14 +22,58 @@ export default function RevenueAnalytics() {
 
   const trends = useMemo(() => {
     if (data?.Trends || data?.trends) {
-      const trendsData = data.Trends ?? data.trends
-      console.log('Trends data:', trendsData)
-      console.log('MonthlyRevenue:', trendsData?.monthlyRevenue ?? trendsData?.MonthlyRevenue)
-      console.log('NewSubscriptions:', trendsData?.newSubscriptions ?? trendsData?.NewSubscriptions)
-      return trendsData
+      return data.Trends ?? data.trends
     }
     return null
   }, [data, isLoading])
+
+  // Normalize monthly revenue data to ensure proper 12-month structure
+  const normalizedMonthlyRevenue = useMemo(() => {
+    const monthlyRevenue = trends?.monthlyRevenue ?? trends?.MonthlyRevenue ?? []
+    
+    // If we have exactly 12 months of data, use it as-is
+    if (monthlyRevenue.length === 12) {
+      return monthlyRevenue
+    }
+    
+    // If we have partial data (e.g., only current month), normalize it
+    if (monthlyRevenue.length > 0) {
+      const normalized = Array(12).fill(0)
+      // Place the last available value at its corresponding position
+      // If we have 1 month of data, it goes to index 11 (December)
+      // If we have 2 months, they go to indices 10 and 11, etc.
+      for (let i = 0; i < monthlyRevenue.length; i++) {
+        const targetIndex = 12 - monthlyRevenue.length + i
+        if (targetIndex >= 0 && targetIndex < 12) {
+          normalized[targetIndex] = monthlyRevenue[i]
+        }
+      }
+      return normalized
+    }
+    
+    return []
+  }, [trends])
+
+  const normalizedNewSubscriptions = useMemo(() => {
+    const newSubscriptions = trends?.newSubscriptions ?? trends?.NewSubscriptions ?? []
+    
+    if (newSubscriptions.length === 12) {
+      return newSubscriptions
+    }
+    
+    if (newSubscriptions.length > 0) {
+      const normalized = Array(12).fill(0)
+      for (let i = 0; i < newSubscriptions.length; i++) {
+        const targetIndex = 12 - newSubscriptions.length + i
+        if (targetIndex >= 0 && targetIndex < 12) {
+          normalized[targetIndex] = newSubscriptions[i]
+        }
+      }
+      return normalized
+    }
+    
+    return []
+  }, [trends])
 
   const planGrowth = useMemo(() => {
     if (data?.PlanGrowth || data?.planGrowth) return data.PlanGrowth ?? data.planGrowth
@@ -127,10 +171,10 @@ export default function RevenueAnalytics() {
               </div>
             </div>
           </div>
-          <TrendChart data={trends?.monthlyRevenue ?? trends?.MonthlyRevenue ?? []} />
+          <TrendChart data={normalizedMonthlyRevenue} />
           <div style={{ height: 16 }} />
           <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Subscription mới</div>
-          <TrendChart data={trends?.newSubscriptions ?? trends?.NewSubscriptions ?? []} />
+          <TrendChart data={normalizedNewSubscriptions} />
         </div>
 
         {/* Plans by Usage */}

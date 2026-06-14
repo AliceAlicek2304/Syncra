@@ -111,7 +111,10 @@ public sealed class GetRevenueAnalyticsQueryHandler
                     s.StartsAtUtc <= monthEnd && 
                     (!s.EndsAtUtc.HasValue || s.EndsAtUtc.Value > monthStart) &&
                     s.Status == SubscriptionStatus.Active).ToList();
-                var revenueInMonth = activeInMonth.Sum(s => s.Plan?.PriceMonthly ?? 0m);
+                var revenueInMonth = activeInMonth.Sum(s => {
+                    var plan = plans.FirstOrDefault(p => p.Id == s.PlanId);
+                    return plan?.PriceMonthly ?? 0m;
+                });
                 monthlyRevenue.Add(revenueInMonth);
                 
                 // New subscriptions in this month

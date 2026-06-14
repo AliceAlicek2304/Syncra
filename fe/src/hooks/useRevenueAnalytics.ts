@@ -9,11 +9,8 @@ export function useRevenueAnalytics() {
     queryFn: async (): Promise<RevenueAnalyticsResult> => {
       try {
         const data = await adminApi.getRevenueAnalytics()
-        console.log('Revenue analytics data from API:', JSON.stringify(data, null, 2))
-        console.log('Data keys:', Object.keys(data || {}))
         return data
       } catch (error) {
-        console.error('Failed to fetch revenue analytics:', error)
         throw error
       }
     },
