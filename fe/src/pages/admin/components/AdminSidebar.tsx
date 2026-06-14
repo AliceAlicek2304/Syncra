@@ -65,8 +65,6 @@ export default function AdminSidebar() {
           )}
         </div>
       ))}
-
-      <div style={{marginTop:16, fontSize:12, color:'#605d52'}}>Converted from srtdash — working in progress</div>
     </aside>
   )
 }
