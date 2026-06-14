@@ -23,11 +23,13 @@ export default function TrendChart({ data, labels }: Props) {
     datasets: [
       {
         data,
-        borderColor: 'var(--color-primary)',
+        borderColor: '#FF4F00',
         backgroundColor: 'rgba(255,79,0,0.08)',
         tension: 0.3,
         borderWidth: 2,
         pointRadius: 3,
+        pointBackgroundColor: '#FF4F00',
+        pointBorderColor: '#FF4F00',
         fill: true,
       },
     ],
@@ -37,7 +39,18 @@ export default function TrendChart({ data, labels }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: true } },
-    scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,0.03)' } } },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: 'rgba(0,0,0,0.03)' },
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            return value
+          }
+        }
+      }
+    },
   }
 
   return <div style={{ height: 180 }}><Line data={chartData as any} options={options as any} /></div>

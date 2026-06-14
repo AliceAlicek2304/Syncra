@@ -86,6 +86,11 @@ export default function AdminDashboard() {
   }, [data, isLoading])
 
   const postsByPlatform = useMemo(() => {
+    console.log('Dashboard data:', data)
+    console.log('Dashboard overview:', data?.overview)
+    console.log('Dashboard postsByPlatform (camelCase):', data?.overview?.postsByPlatform)
+    console.log('Dashboard PostsByPlatform (PascalCase):', data?.overview?.PostsByPlatform)
+    
     if (data?.overview?.postsByPlatform || data?.overview?.PostsByPlatform) return data.overview.postsByPlatform ?? data.overview.PostsByPlatform
     if (data?.overview) return {
       twitter: Array(12).fill(0), linkedin: Array(12).fill(0), facebook: Array(12).fill(0),
