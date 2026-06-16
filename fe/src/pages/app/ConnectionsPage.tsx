@@ -590,10 +590,11 @@ export default function ConnectionsPage() {
     mutationFn: async ({ accountId, workspaceId, selectedPageId }: { accountId: string; workspaceId: string; selectedPageId: string }) => {
       await socialAccountsApi.updateFacebookPage(workspaceId, accountId, selectedPageId);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       showSuccess('Facebook page switched successfully');
       setSelectedManagePagesAccount(null);
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+      void queryClient.invalidateQueries({ queryKey: ['facebook-pages', variables.accountId] });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to switch Facebook page';
@@ -620,10 +621,11 @@ export default function ConnectionsPage() {
     mutationFn: async ({ accountId, workspaceId, selectedOrgUrn }: { accountId: string; workspaceId: string; selectedOrgUrn: string }) => {
       await socialAccountsApi.updateLinkedInOrganization(workspaceId, accountId, selectedOrgUrn);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       showSuccess('LinkedIn organization switched successfully');
       setSelectedManagePagesAccount(null);
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
+      void queryClient.invalidateQueries({ queryKey: ['linkedin-organizations', variables.accountId] });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || 'Failed to switch LinkedIn organization';
