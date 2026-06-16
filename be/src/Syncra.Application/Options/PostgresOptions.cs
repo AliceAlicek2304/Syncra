@@ -14,7 +14,7 @@ public class PostgresOptions
     {
         get
         {
-            var sslPart = UseSsl ? ";SSL Mode=Require;Trust Server Certificate=true" : "";
+            var sslPart = UseSsl ? ";SSL Mode=Require;Trust Server Certificate=true" : ";SSL Mode=Disable";
             return $"Host={Host};Port={Port};Database={Database};Username={Username};Password={Password}{sslPart}";
         }
     }

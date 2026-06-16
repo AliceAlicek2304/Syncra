@@ -8,6 +8,8 @@ using Syncra.Application;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>

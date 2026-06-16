@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: syncra-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "@HieuTai@/DepTrai@"
+      POSTGRES_DB: syncra_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: syncra-redis
@@ -9,3 +22,4 @@ services:
     restart: unless-stopped
 
 volumes:
+  pgdata:
