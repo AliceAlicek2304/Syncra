@@ -38,8 +38,8 @@ public class ZernioWorkspaceAnalyticsServiceTests
     public async Task GetSummaryAsync_ShouldReturnEmpty_WhenNoZernioProfile()
     {
         // Arrange
-        _zernioProfileRepo.Setup(r => r.GetByWorkspaceIdAsync(_workspaceId))
-            .ReturnsAsync((ZernioProfile?)null);
+        _zernioProfileRepo.Setup(r => r.GetActiveByWorkspaceIdAsync(_workspaceId))
+            .ReturnsAsync(new List<ZernioProfile>());
 
         // Act
         var result = await _service.GetSummaryAsync(_workspaceId, 30, default);
@@ -56,10 +56,10 @@ public class ZernioWorkspaceAnalyticsServiceTests
     {
         // Arrange
         var cached = new WorkspaceAnalyticsSummaryDto(500, 3.5, 20, 10, Array.Empty<WeeklyReachDto>());
-        var cacheKey = $"zernio:analytics:summary:{_workspaceId}:30";
+        var cacheKey = $"zernio:analytics:summary:{_workspaceId}:default:30";
 
-        _zernioProfileRepo.Setup(r => r.GetByWorkspaceIdAsync(_workspaceId))
-            .ReturnsAsync(ZernioProfile.Create(_workspaceId, "prof_cached", "Cached Profile", "all"));
+        _zernioProfileRepo.Setup(r => r.GetActiveByWorkspaceIdAsync(_workspaceId))
+            .ReturnsAsync(new List<ZernioProfile> { ZernioProfile.Create(_workspaceId, "prof_cached", "Cached Profile", "all") });
         _cache.Setup(c => c.GetAsync<WorkspaceAnalyticsSummaryDto>(cacheKey, default))
             .ReturnsAsync(cached);
 
@@ -79,8 +79,8 @@ public class ZernioWorkspaceAnalyticsServiceTests
         var profileId = "prof_abc";
         var profile = ZernioProfile.Create(_workspaceId, profileId, "Test Profile", "all");
 
-        _zernioProfileRepo.Setup(r => r.GetByWorkspaceIdAsync(_workspaceId))
-            .ReturnsAsync(profile);
+        _zernioProfileRepo.Setup(r => r.GetActiveByWorkspaceIdAsync(_workspaceId))
+            .ReturnsAsync(new List<ZernioProfile> { profile });
 
         _cache.Setup(c => c.GetAsync<WorkspaceAnalyticsSummaryDto>(It.IsAny<string>(), default))
             .ReturnsAsync((WorkspaceAnalyticsSummaryDto?)null);

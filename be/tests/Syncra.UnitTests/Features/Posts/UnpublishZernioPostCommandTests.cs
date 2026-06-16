@@ -38,7 +38,11 @@ public class UnpublishZernioPostCommandTests : IDisposable
         var postRepository = new PostRepository(_db);
         var uow = new UnitOfWork(_db);
 
-        _handler = new UnpublishZernioPostCommandHandler(postRepository, uow, _zernioClientMock.Object);
+        _handler = new UnpublishZernioPostCommandHandler(
+            postRepository,
+            uow,
+            _zernioClientMock.Object,
+            new Mock<Microsoft.Extensions.Logging.ILogger<UnpublishZernioPostCommandHandler>>().Object);
     }
 
     public void Dispose()
@@ -133,7 +137,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_ZernioApiFails_LeavesPostIntact()
+    public async Task UnpublishHandler_ZernioApiFails_StillUpdatesPostLocal()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -154,11 +158,14 @@ public class UnpublishZernioPostCommandTests : IDisposable
 
         var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _handler.Handle(cmd, CancellationToken.None));
+        // Act
+        var result = await _handler.Handle(cmd, CancellationToken.None);
 
-        var unchangedPost = await _db.Posts.FirstAsync(p => p.Id == post.Id);
-        Assert.False(unchangedPost.IsDeleted);
+        // Assert
+        Assert.True(result);
+
+        var updatedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
+        Assert.True(updatedPost.IsDeleted);
     }
 
     [Fact]

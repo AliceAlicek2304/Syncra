@@ -70,11 +70,11 @@ public sealed class Post : WorkspaceEntityBase
 
     public void UpdateContent(string title, string content)
     {
-        if (Status is PostStatus.Published or PostStatus.Publishing)
+        if (Status is PostStatus.Published)
         {
             throw new DomainException(
                 "invalid_state",
-                "Cannot update content of a published or publishing post.");
+                "Cannot update content of a published post.");
         }
 
         Title = PostTitle.Create(title);
@@ -281,11 +281,11 @@ public sealed class Post : WorkspaceEntityBase
 
     public void StartZernioRetry()
     {
-        if (Status is not (PostStatus.Failed or PostStatus.Partial))
+        if (Status is not (PostStatus.Failed or PostStatus.Partial or PostStatus.Publishing))
         {
             throw new DomainException(
                 "invalid_state",
-                "Only failed or partial posts can be retried via Zernio.");
+                "Only failed, partial, or publishing posts can be retried via Zernio.");
         }
 
         if (string.IsNullOrEmpty(ZernioPostId))

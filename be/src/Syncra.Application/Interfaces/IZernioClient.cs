@@ -436,6 +436,12 @@ public interface IZernioClient
         string selectedOrganizationUrn,
         CancellationToken cancellationToken = default);
 
+    Task<ZernioLinkedInMentionsResponseDto> GetLinkedInMentionsAsync(
+        string accountId,
+        string url,
+        string? displayName,
+        CancellationToken cancellationToken = default);
+
     // ── Account Update methods ────────────────────────────────
 
     Task<ZernioUpdateAccountResponseDto> UpdateAccountAsync(
@@ -622,5 +628,17 @@ public interface IZernioClient
 
     Task<ZernioWebhookResponseDto> UpdateWebhookAsync(
         ZernioWebhookUpdateRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    // ── YouTube Playlist methods ───────────────────────────────
+
+    Task<ZernioYouTubePlaylistsResponseDto> GetYouTubePlaylistsAsync(
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> UpdateYouTubeDefaultPlaylistAsync(
+        string accountId,
+        string defaultPlaylistId,
+        string? defaultPlaylistName,
         CancellationToken cancellationToken = default);
 }

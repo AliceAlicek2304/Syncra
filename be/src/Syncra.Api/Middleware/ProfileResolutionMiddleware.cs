@@ -28,8 +28,9 @@ public class ProfileResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // 1. Skip validation for Auth routes
-        if (context.Request.Path.StartsWithSegments("/api/v1/Auth", StringComparison.OrdinalIgnoreCase))
+        // 1. Skip validation for Auth and User profile routes
+        if (context.Request.Path.StartsWithSegments("/api/v1/Auth", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/v1/Users/me", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

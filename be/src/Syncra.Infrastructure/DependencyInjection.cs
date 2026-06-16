@@ -160,6 +160,14 @@ public static class DependencyInjection
     {
         services.Configure<ZernioOptions>(configuration.GetSection(ZernioOptions.SectionName));
         services.AddScoped<IZernioClient, ZernioClient>();
+
+        services.AddHttpClient("Zernio", (sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<ZernioOptions>>().Value;
+            client.BaseAddress = new Uri("https://api.zernio.com");
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.ApiKey);
+        });
+
         services.AddScoped<IInboxAnalyticsService, InboxAnalyticsService>();
         services.AddScoped<ProcessZernioWebhookJob>();
         services.AddScoped<CancelScheduledPostsForDisconnectedAccountJob>();

@@ -6,7 +6,12 @@ type CreatePostFooterProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | '
 export default function CreatePostFooter({ state, actions }: CreatePostFooterProps) {
   const getPrimaryButtonLabel = () => {
     if (state.isEditMode) {
-      return state.publishingTab === 'draft' ? 'Save Changes' : 'Update Schedule'
+      if (state.publishingTab === 'draft') return 'Save Changes'
+      const status = state.editPost?.status?.toLowerCase()
+      if (status === 'partial' || status === 'failed') {
+        return 'Update & Retry'
+      }
+      return 'Update Schedule'
     }
     if (state.publishingTab === 'draft') return 'save draft'
     if (state.publishingTab === 'now') return 'publish now'

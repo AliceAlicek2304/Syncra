@@ -18,7 +18,7 @@ public class ZernioProfileConfiguration : BaseWorkspaceEntityConfiguration<Zerni
         builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
 
         builder.HasOne(e => e.Workspace)
-            .WithMany()
+            .WithMany(w => w.ZernioProfiles)
             .HasForeignKey(e => e.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);
 

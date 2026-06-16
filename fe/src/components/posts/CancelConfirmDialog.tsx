@@ -41,7 +41,7 @@ export function CancelConfirmDialog({
 
         <h3 className={styles.title}>Cancel Scheduled Post</h3>
         <p className={styles.bodyText}>
-          This will cancel the following scheduled platform targets in Zernio:
+          This will cancel the following scheduled platform targets:
         </p>
 
         <ul className={styles.platformList}>

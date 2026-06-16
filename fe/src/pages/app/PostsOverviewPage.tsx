@@ -1138,7 +1138,11 @@ export default function PostsOverviewPage() {
 
                       {post.mediaItems?.[0] && (
                         <button type="button" className={styles.cardThumbnailBtn} aria-label="Preview media" onClick={(e) => { e.stopPropagation(); handlePostClick(post); }}>
-                          <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
+                          {post.mediaItems[0].type === 'video' || post.mediaItems[0].mimeType?.startsWith('video/') || post.mediaItems[0].url.endsWith('.mp4') ? (
+                            <video src={post.mediaItems[0].url} className={styles.cardThumbnailImg} muted playsInline preload="metadata" />
+                          ) : (
+                            <img src={post.mediaItems[0].url} alt={post.mediaItems[0].filename || 'media'} className={styles.cardThumbnailImg} />
+                          )}
                           {post.mediaItems.length > 1 && (
                             <span className={styles.mediaCountBadge}>
                               {post.mediaItems.length}
@@ -1481,11 +1485,19 @@ export default function PostsOverviewPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
                     {selectedPostDetails.mediaItems.map((item, idx) => (
                       <div key={idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--clr-border)', background: 'var(--clr-canvas-soft)' }}>
-                        <img 
-                          src={item.url} 
-                          alt={item.filename || 'media'} 
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
-                        />
+                        {item.type === 'video' || item.mimeType?.startsWith('video/') || item.url.endsWith('.mp4') ? (
+                          <video 
+                            src={item.url} 
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                            controls
+                          />
+                        ) : (
+                          <img 
+                            src={item.url} 
+                            alt={item.filename || 'media'} 
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, X, ChevronDown, Check } from 'lucide-react'
+import { Search, X, ChevronDown, Check, Loader2 } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
 import { getSocialAvatarUrl } from '../../utils/social'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
@@ -8,6 +8,7 @@ import { getPlatformValidationError } from './useCreatePostState'
 import type { Platform } from './types'
 import SchedulePicker from '../SchedulePicker'
 import styles from '../CreatePostModal.module.css'
+import type { Profile } from '../../api/types'
 
 const getPlatformBrandColor = (platform: string): string => {
   switch (platform) {
@@ -25,7 +26,7 @@ const getPlatformBrandColor = (platform: string): string => {
 type SidebarProps = Pick<UseCreatePostStateReturn, 'state' | 'refs' | 'actions'>
 
 export function RightPanel({ state, actions }: SidebarProps) {
-  const { workspaces } = useWorkspace()
+  const { workspaces, profiles: activeProfiles } = useWorkspace()
   const [workspaceDropdownOpen, setWorkspaceDropdownOpen] = useState(false)
   const [workspaceSearch, setWorkspaceSearch] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -41,55 +42,71 @@ export function RightPanel({ state, actions }: SidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Filter workspaces based on search query
-  const filteredWorkspaces = workspaces.filter(w =>
-    w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
-  )
+  // Get flat list of all unique profiles (combining activeProfiles and allProfilesMap)
+  const allProfilesMap = (state as any).allProfilesMap || {}
+  const allProfilesFlat = [
+    ...(activeProfiles || []),
+    ...Object.values(allProfilesMap).flat()
+  ] as Profile[]
+  const uniqueProfiles: Profile[] = Array.from(new Map(allProfilesFlat.map(p => [p.id, p])).values())
 
-  const selectedWorkspaceNames = workspaces
-    .filter(w => state.selectedWorkspaceIds.includes(w.id))
-    .map(w => w.name)
+  // Filter profiles based on search query, grouped by workspace ID
+  const filteredProfilesByWorkspace = Object.entries(allProfilesMap).reduce<Record<string, Profile[]>>((acc, [wsId, wsProfiles]) => {
+    const ws = workspaces.find(w => w.id === wsId)
+    const wsName = ws?.name || ''
+    const matchesWsName = wsName.toLowerCase().includes(workspaceSearch.toLowerCase())
+
+    const matched = (wsProfiles as Profile[]).filter(p =>
+      matchesWsName || p.name.toLowerCase().includes(workspaceSearch.toLowerCase())
+    )
+    if (matched.length > 0) {
+      acc[wsId] = matched
+    }
+    return acc
+  }, {})
+
+  const selectedProfileNames = uniqueProfiles
+    .filter(p => state.selectedProfileIds.includes(p.id))
+    .map(p => p.name)
     .join(', ')
 
-  const workspaceCount = state.selectedWorkspaceIds.length
+  const profileCount = state.selectedProfileIds.length
 
   const activeAccounts = state.socialAccounts.filter(a => a.isActive)
 
-  const toggleWorkspace = (wsId: string) => {
-    const isSelected = state.selectedWorkspaceIds.includes(wsId)
+  const toggleProfile = (profileId: string) => {
+    const isSelected = state.selectedProfileIds.includes(profileId)
     let nextIds: string[]
     if (isSelected) {
-      nextIds = state.selectedWorkspaceIds.filter(id => id !== wsId)
-      // Deselect accounts belonging to this workspace
+      nextIds = state.selectedProfileIds.filter(id => id !== profileId)
+      // Deselect accounts belonging to this profile
       const accountsToDeselect = state.socialAccounts
-        .filter(a => {
-          const ws = workspaces.find(w => w.zernioProfileId === a.zernioProfileId || w.id === a.zernioProfileId)
-          return ws?.id === wsId
-        })
+        .filter(a => (a as any).profileId === profileId)
         .map(a => a.id)
       actions.setSelectedSocialAccountIds(prev => prev.filter(id => !accountsToDeselect.includes(id)))
     } else {
-      nextIds = [...state.selectedWorkspaceIds, wsId]
+      nextIds = [...state.selectedProfileIds, profileId]
     }
-    actions.setSelectedWorkspaceIds(nextIds)
+    ;(actions as any).setSelectedProfileIds(nextIds)
   }
 
-  const handleSelectAllWorkspaces = () => {
-    actions.setSelectedWorkspaceIds(workspaces.map(w => w.id))
+  const handleSelectAllProfiles = () => {
+    const allIds = uniqueProfiles.map(p => p.id);
+    (actions as any).setSelectedProfileIds(allIds);
   }
 
-  const handleClearAllWorkspaces = () => {
-    actions.setSelectedWorkspaceIds([])
-    actions.setSelectedSocialAccountIds([])
+  const handleClearAllProfiles = () => {
+    (actions as any).setSelectedProfileIds([]);
+    actions.setSelectedSocialAccountIds([]);
   }
 
   return (
     <div className={styles.sidebar}>
       {/* Workspaces Section */}
       <div className={styles.inputGroup} ref={dropdownRef}>
-        <label className={styles.fieldLabel}>workspaces</label>
+        <label className={styles.fieldLabel}>profiles</label>
         <p className={styles.fieldDescription}>
-          Select one or more workspaces to post to their connected accounts
+          Select one or more profiles to post to their connected accounts
         </p>
 
         <div className={styles.profileSelectWrapper}>
@@ -98,42 +115,42 @@ export function RightPanel({ state, actions }: SidebarProps) {
             className={styles.workspaceDropdownToggle}
             onClick={() => setWorkspaceDropdownOpen(!workspaceDropdownOpen)}
           >
-            {workspaceCount === 1 ? (
+            {profileCount === 1 ? (
               <>
                 <span
                   className={styles.profileYellowDot}
-                  style={{ background: workspaces.find(w => w.id === state.selectedWorkspaceIds[0])?.color || '#fdba74' }}
+                  style={{ background: uniqueProfiles.find(p => p.id === state.selectedProfileIds[0])?.color || '#fdba74' }}
                 />
                 <span className={styles.workspaceDropdownLabel}>
-                  {selectedWorkspaceNames}
+                  {selectedProfileNames}
                 </span>
               </>
-            ) : workspaceCount > 1 ? (
+            ) : profileCount > 1 ? (
               <>
                 <div className={styles.profileYellowDotsRow}>
-                  {state.selectedWorkspaceIds.map(id => {
-                    const ws = workspaces.find(w => w.id === id)
+                  {state.selectedProfileIds.map(id => {
+                    const p = uniqueProfiles.find(prof => prof.id === id)
                     return (
                       <span
                         key={id}
                         className={styles.profileYellowDot}
-                        style={{ background: ws?.color || '#fdba74' }}
+                        style={{ background: p?.color || '#fdba74' }}
                       />
                     )
                   })}
                 </div>
                 <span className={styles.workspaceDropdownLabel}>
-                  {workspaceCount} workspaces selected
+                  {profileCount} profiles selected
                 </span>
                 <span className={styles.workspaceCountBadge}>
-                  {workspaceCount}
+                  {profileCount}
                 </span>
               </>
             ) : (
               <>
                 <span className={styles.profileYellowDot} style={{ opacity: 0.5 }} />
                 <span className={styles.workspaceDropdownLabel} style={{ opacity: 0.5 }}>
-                  Select workspaces...
+                  Select profiles...
                 </span>
               </>
             )}
@@ -146,7 +163,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                 <Search size={14} className={styles.searchIcon} />
                 <input
                   type="text"
-                  placeholder="Search workspaces..."
+                  placeholder="Search profiles..."
                   value={workspaceSearch}
                   onChange={e => setWorkspaceSearch(e.target.value)}
                   className={styles.dropdownSearchInput}
@@ -157,54 +174,85 @@ export function RightPanel({ state, actions }: SidebarProps) {
               <div className={styles.dropdownActionsRow}>
                 <button
                   type="button"
-                  onClick={handleSelectAllWorkspaces}
+                  onClick={handleSelectAllProfiles}
                   className={styles.dropdownActionLink}
                 >
-                  Select All ({workspaces.length})
+                  Select All ({uniqueProfiles.length})
                 </button>
                 <span className={styles.dividerDot}>•</span>
                 <button
                   type="button"
-                  onClick={handleClearAllWorkspaces}
+                  onClick={handleClearAllProfiles}
                   className={styles.dropdownActionLink}
                 >
                   Clear
                 </button>
                 <span className={styles.selectionCount}>
-                  {workspaceCount}/{workspaces.length}
+                  {profileCount}/{uniqueProfiles.length}
                 </span>
               </div>
 
               <div className={styles.workspaceCheckboxList}>
-                {filteredWorkspaces.map(ws => {
-                  const isChecked = state.selectedWorkspaceIds.includes(ws.id)
+                {Object.entries(filteredProfilesByWorkspace).map(([wsId, wsProfiles]) => {
+                  const ws = workspaces.find(w => w.id === wsId)
                   return (
-                    <label key={ws.id} className={styles.workspaceCheckboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleWorkspace(ws.id)}
-                        className={styles.workspaceCheckboxInput}
-                      />
-                      <span
-                        className={styles.profileYellowDot}
-                        style={{ background: ws.color || '#fdba74', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
-                      />
-                      <div className={styles.workspaceMeta}>
-                        <div className={styles.workspaceName}>{ws.name}</div>
-                        <div className={styles.workspaceId}>{ws.id}</div>
+                    <div key={wsId}>
+                      {/* Workspace Group Header */}
+                      <div style={{
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase',
+                        color: 'var(--clr-body-mid)',
+                        background: 'var(--clr-canvas-soft)',
+                        borderBottom: '1px solid var(--clr-border)',
+                        borderTop: '1px solid var(--clr-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}>
+                        <span style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: ws?.color || '#fdba74'
+                        }} />
+                        {ws?.name || 'Unknown Project'}
                       </div>
-                    </label>
+                      
+                      {/* Profiles under this Workspace */}
+                      {wsProfiles.map(profile => {
+                        const isChecked = state.selectedProfileIds.includes(profile.id)
+                        return (
+                          <label key={profile.id} className={styles.workspaceCheckboxLabel} style={{ paddingLeft: '24px' }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleProfile(profile.id)}
+                              className={styles.workspaceCheckboxInput}
+                            />
+                            <span
+                              className={styles.profileYellowDot}
+                              style={{ background: profile.color || '#fdba74', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
+                            />
+                            <div className={styles.workspaceMeta}>
+                              <div className={styles.workspaceName}>{profile.name}</div>
+                              <div className={styles.workspaceId}>{profile.id}</div>
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
                   )
                 })}
-                {filteredWorkspaces.length === 0 && (
-                  <div className={styles.dropdownEmptyText}>No workspaces found</div>
+                {Object.keys(filteredProfilesByWorkspace).length === 0 && (
+                  <div className={styles.dropdownEmptyText}>No profiles found</div>
                 )}
               </div>
 
-              {selectedWorkspaceNames && (
+              {selectedProfileNames && (
                 <div className={styles.dropdownSelectedBar}>
-                  Selected: {selectedWorkspaceNames}
+                  Selected: {selectedProfileNames}
                 </div>
               )}
             </div>
@@ -216,7 +264,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
       <div className={styles.inputGroup}>
         <div className={styles.platformsHeader}>
           <label className={styles.fieldLabel}>
-            platforms (from {workspaceCount} workspace{workspaceCount === 1 ? '' : 's'})
+            platforms (from {profileCount} profile{profileCount === 1 ? '' : 's'})
           </label>
           <button
             type="button"
@@ -289,6 +337,12 @@ export function RightPanel({ state, actions }: SidebarProps) {
 
         <div className={styles.platformGrid}>
           {activeAccounts.map(account => {
+            const platformTarget = state.editPost?.platformTargets?.find(
+              (t: any) => t.zernioAccountId === account.externalAccountId
+            )
+            const isPublished = platformTarget?.status?.toLowerCase() === 'published'
+            const isProcessing = platformTarget?.status?.toLowerCase() === 'pending' || platformTarget?.status?.toLowerCase() === 'publishing'
+            
             const isChecked = state.selectedSocialAccountIds.includes(account.id)
             const validationError = getPlatformValidationError(account.platform as Platform, state.media)
             const hasError = isChecked && !!validationError
@@ -298,13 +352,16 @@ export function RightPanel({ state, actions }: SidebarProps) {
               <button
                 key={account.id}
                 type="button"
-                title={validationError || undefined}
-                className={`${styles.platformButtonCard} ${isChecked ? styles.platformButtonCardActive : ''} ${hasError ? styles.platformButtonCardError : ''}`}
-                onClick={() => actions.setSelectedSocialAccountIds(
-                  isChecked
-                    ? state.selectedSocialAccountIds.filter(id => id !== account.id)
-                    : [...state.selectedSocialAccountIds, account.id]
-                )}
+                title={isPublished ? "Already published successfully" : (validationError || undefined)}
+                className={`${styles.platformButtonCard} ${isChecked ? styles.platformButtonCardActive : ''} ${hasError ? styles.platformButtonCardError : ''} ${isPublished ? styles.platformButtonCardPublished : ''}`}
+                onClick={() => {
+                  if (isPublished) return
+                  actions.setSelectedSocialAccountIds(
+                    isChecked
+                      ? state.selectedSocialAccountIds.filter(id => id !== account.id)
+                      : [...state.selectedSocialAccountIds, account.id]
+                  )
+                }}
               >
                 <div className={styles.platformCardAvatar}>
                   {getSocialAvatarUrl(account) ? (
@@ -339,7 +396,15 @@ export function RightPanel({ state, actions }: SidebarProps) {
                   </div>
                 </div>
 
-                {hasError ? (
+                {isPublished ? (
+                  <div className={styles.publishedBadge} title="Published successfully">
+                    <Check size={10} strokeWidth={3} />
+                  </div>
+                ) : isProcessing ? (
+                  <div className={styles.checkedBadge} style={{ background: '#eab308' }} title="Publishing...">
+                    <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} />
+                  </div>
+                ) : hasError ? (
                   <div className={styles.errorBadge} title={validationError!}>
                     !
                   </div>

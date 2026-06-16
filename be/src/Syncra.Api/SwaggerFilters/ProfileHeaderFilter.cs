@@ -7,6 +7,14 @@ public class ProfileHeaderFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
+        var controllerName = context.MethodInfo.DeclaringType?.Name;
+        if (controllerName != null && 
+            (controllerName.StartsWith("Auth", StringComparison.OrdinalIgnoreCase) || 
+             controllerName.StartsWith("Users", StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
         operation.Parameters ??= new List<OpenApiParameter>();
 
         operation.Parameters.Add(new OpenApiParameter

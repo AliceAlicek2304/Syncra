@@ -39,6 +39,14 @@ public class TenantResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // Skip for Auth and User profile routes (login, register, me, etc.)
+        if (context.Request.Path.StartsWithSegments("/api/v1/Auth", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/v1/Users/me", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         // Extract user identity (only possible after UseAuthentication runs)
         var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))

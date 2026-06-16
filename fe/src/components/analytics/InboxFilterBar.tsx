@@ -205,15 +205,15 @@ export const InboxBanner = ({ profileId }: { profileId?: string }) => {
         <div className="flex items-start gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 text-amber-700" />
           <div>
-            <h3 className="text-sm font-semibold text-amber-900">Zernio is not connected</h3>
+            <h3 className="text-sm font-semibold text-amber-900">Syncra is not connected</h3>
             <p className="text-sm text-amber-800">
-              Connect your Zernio account in workspace settings to unlock inbox analytics.
+              Connect your social accounts in workspace settings to unlock inbox analytics.
             </p>
           </div>
         </div>
         <Button asChild size="sm" className="bg-amber-600 text-white hover:bg-amber-700">
           <a href={inboxError.dashboardUrl ?? '/app/settings'} target="_blank" rel="noreferrer">
-            Open Zernio dashboard
+            Open settings
           </a>
         </Button>
       </div>
@@ -242,9 +242,9 @@ export const InboxBanner = ({ profileId }: { profileId?: string }) => {
         <div className="flex items-start gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 text-indigo-700" />
           <div>
-            <h3 className="text-sm font-semibold text-indigo-900">Reauthorize Zernio</h3>
+            <h3 className="text-sm font-semibold text-indigo-900">Reauthorize Syncra</h3>
             <p className="text-sm text-indigo-800">
-              Required scopes are missing. Reconnect Zernio to continue.
+              Required scopes are missing. Reconnect to continue.
             </p>
           </div>
         </div>

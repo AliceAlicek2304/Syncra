@@ -1,8 +1,10 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,12 +15,18 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
     private readonly IPostRepository _postRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IZernioClient _zernioClient;
+    private readonly ILogger<DeleteZernioPostCommandHandler> _logger;
 
-    public DeleteZernioPostCommandHandler(IPostRepository postRepository, IUnitOfWork unitOfWork, IZernioClient zernioClient)
+    public DeleteZernioPostCommandHandler(
+        IPostRepository postRepository,
+        IUnitOfWork unitOfWork,
+        IZernioClient zernioClient,
+        ILogger<DeleteZernioPostCommandHandler> _logger)
     {
         _postRepository = postRepository;
         _unitOfWork = unitOfWork;
         _zernioClient = zernioClient;
+        this._logger = _logger;
     }
 
     public async Task<bool> Handle(DeleteZernioPostCommand request, CancellationToken cancellationToken)
@@ -32,7 +40,14 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
 
             if (!string.IsNullOrEmpty(post.ZernioPostId))
             {
-                await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                try
+                {
+                    await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete post {PostId} from Zernio, but proceeding with database deletion.", post.ZernioPostId);
+                }
             }
 
             post.MarkAsDeleted();
@@ -42,7 +57,14 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
         {
             // If the post does not exist in our database, it is a dynamic post.
             // We call the Zernio client directly to delete it from Zernio.
-            await _zernioClient.DeletePostAsync(request.ZernioPostId, cancellationToken);
+            try
+            {
+                await _zernioClient.DeletePostAsync(request.ZernioPostId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete dynamic post {PostId} from Zernio.", request.ZernioPostId);
+            }
         }
 
         return true;

@@ -12,12 +12,12 @@
  */
 
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
-import { ChevronDown, Plus, X, Image, Music, Folder } from 'lucide-react'
+import { ChevronDown, Plus, X, Image, Music, Folder, HelpCircle, Loader2 } from 'lucide-react'
 import { ExtendedPlatformIcon } from './platformIcons'
 import { shortId } from '../../utils/shortId'
 import type { MediaFile } from './types'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { socialAccountsApi } from '../../api/socialAccounts'
+import { socialAccountsApi, type SocialAccountDto } from '../../api/socialAccounts'
 import { useQuery } from '@tanstack/react-query'
 import styles from './PlatformSpecificForm.module.css'
 
@@ -240,6 +240,12 @@ interface PlatformSpecificFormProps {
   onChange: (next: AllPlatformData) => void
   tiktokAccountId?: string
   media?: MediaFile[]
+  customCaptions?: Record<string, string>
+  onChangeCustomCaption?: (platform: string, value: string) => void
+  selectedSocialAccountIds?: string[]
+  socialAccounts?: SocialAccountDto[]
+  insertAtCursor?: (text: string) => void
+  platformTargets?: any[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -433,14 +439,20 @@ function PlatformAccordion({
   platform,
   children,
   hasContent,
+  status,
 }: {
   platform: string
   children: React.ReactNode
   hasContent?: boolean
+  status?: string
 }) {
   const [open, setOpen] = useState(false)
   const label = PLATFORM_LABELS[platform] ?? platform
   const color = BRAND_COLORS[platform] ?? '#6b7280'
+
+  const isPublished = status?.toLowerCase() === 'published'
+  const isProcessing = status?.toLowerCase() === 'pending' || status?.toLowerCase() === 'publishing'
+  const isFailed = status?.toLowerCase() === 'failed'
 
   return (
     <div className={styles.platformSection}>
@@ -459,15 +471,41 @@ function PlatformAccordion({
             ●
           </span>
         )}
+        {status && (
+          <div style={{ marginLeft: 'auto', marginRight: 8, display: 'flex', alignItems: 'center' }}>
+            {isPublished && (
+              <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>Published</span>
+            )}
+            {isFailed && (
+              <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>Failed</span>
+            )}
+            {isProcessing && (
+              <span style={{ fontSize: 11, color: '#eab308', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} />
+                Processing
+              </span>
+            )}
+          </div>
+        )}
         <ChevronDown
           size={14}
           className={`${styles.accordionChevron} ${open ? styles.accordionChevronOpen : ''}`}
+          style={status ? { marginLeft: 0 } : { marginLeft: 'auto' }}
         />
       </button>
 
       {open && (
         <div className={styles.accordionBody}>
-          {children}
+          {isPublished ? (
+            <fieldset disabled style={{ border: 'none', padding: 0, margin: 0, width: '100%' }}>
+              <div style={{ fontSize: 12, color: 'var(--clr-body-mid)', marginBottom: 12, fontStyle: 'italic' }}>
+                This platform was published successfully and cannot be edited.
+              </div>
+              {children}
+            </fieldset>
+          ) : (
+            children
+          )}
         </div>
       )}
     </div>
@@ -1092,39 +1130,153 @@ function InstagramForm({ value, onChange }: {
 }
 
 // LinkedIn
-function LinkedInForm({ value, onChange }: {
+function LinkedInForm({
+  value,
+  onChange,
+  socialAccounts = [],
+  selectedSocialAccountIds = [],
+  customCaption = '',
+  onChangeCustomCaption,
+  insertAtCursor,
+}: {
   value: LinkedInPlatformData
   onChange: (v: LinkedInPlatformData) => void
+  socialAccounts?: SocialAccountDto[]
+  selectedSocialAccountIds?: string[]
+  customCaption?: string
+  onChangeCustomCaption?: (v: string) => void
+  insertAtCursor?: (text: string) => void
 }) {
   const set = <K extends keyof LinkedInPlatformData>(k: K, v: LinkedInPlatformData[K]) =>
     onChange({ ...value, [k]: v })
 
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const [mentionUrl, setMentionUrl] = useState('')
+  const [mentionDisplayName, setMentionDisplayName] = useState('')
+  const [isResolvingMention, setIsResolvingMention] = useState(false)
+  const [mentionError, setMentionError] = useState<string | null>(null)
+  const [lastFocusedField, setLastFocusedField] = useState<'customCaption' | 'firstComment' | 'mainContent'>('mainContent')
+
+
+  const firstCommentRef = useRef<HTMLTextAreaElement>(null)
+
+  const insertTextAtTextarea = (
+    textarea: HTMLTextAreaElement,
+    text: string,
+    updateState: (val: string) => void
+  ) => {
+    const start = textarea.selectionStart ?? textarea.value.length
+    const end = textarea.selectionEnd ?? textarea.value.length
+    const val = textarea.value
+    const nextVal = val.slice(0, start) + text + val.slice(end)
+    updateState(nextVal)
+    
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + text.length
+      textarea.focus()
+    }, 0)
+  }
+
+  const handleInsertMention = async () => {
+    if (!mentionUrl.trim()) return
+    setMentionError(null)
+    
+    if (!workspaceId) {
+      setMentionError('Workspace context missing.')
+      return
+    }
+
+    const linkedinAccount = socialAccounts.find(
+      sa => sa.platform === 'linkedin' && selectedSocialAccountIds.includes(sa.id)
+    ) ?? socialAccounts.find(sa => sa.platform === 'linkedin');
+
+    if (!linkedinAccount) {
+      setMentionError('Please connect a LinkedIn account first to resolve mentions.')
+      return
+    }
+
+    setIsResolvingMention(true)
+    try {
+      const result = await socialAccountsApi.getLinkedInMentions(
+        workspaceId,
+        linkedinAccount.id,
+        mentionUrl.trim(),
+        mentionDisplayName.trim() || undefined
+      )
+      
+      const mentionText = result.mentionFormat
+      
+      if (lastFocusedField === 'firstComment' && firstCommentRef.current) {
+        insertTextAtTextarea(firstCommentRef.current, mentionText, (val) => set('firstComment', val || undefined))
+      } else {
+        if (insertAtCursor) {
+          insertAtCursor(mentionText)
+        } else {
+          setMentionError('Could not find active text area to insert.')
+        }
+      }
+      
+      setMentionUrl('')
+      setMentionDisplayName('')
+    } catch (err: any) {
+      console.error(err)
+      setMentionError(err.response?.data?.message || 'Failed to resolve mention.')
+    } finally {
+      setIsResolvingMention(false)
+    }
+  }
+
+  const hasLinkedInAccount = socialAccounts.some(sa => sa.platform === 'linkedin');
+
   return (
     <>
+      {/* @mention */}
       <div className={styles.field}>
-        <FieldLabel>document title (PDF/carousel)</FieldLabel>
-        <input
-          className={styles.input}
-          placeholder="Title shown on document posts"
-          value={value.documentTitle ?? ''}
-          onChange={e => set('documentTitle', e.target.value || undefined)}
-        />
-        <p className={styles.hint}>Required by LinkedIn for document posts. Falls back to filename.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <FieldLabel>@mention</FieldLabel>
+          <div className={styles.tooltipContainer}>
+            <HelpCircle size={13} className={styles.tooltipIcon} />
+            <div className={styles.tooltipText}>
+              <p>Person mentions require your LinkedIn account to be admin of at least one organization (LinkedIn API limitation).</p>
+              <p style={{ marginTop: 6 }}>Organization mentions (e.g. @Microsoft) work without this requirement.</p>
+              <p style={{ marginTop: 6 }}>Display name must match their profile exactly for the mention to be clickable.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.mentionRow}>
+          <input
+            className={styles.input}
+            placeholder="username or profile URL"
+            value={mentionUrl}
+            onChange={e => setMentionUrl(e.target.value)}
+            disabled={!hasLinkedInAccount}
+          />
+          <input
+            className={styles.input}
+            placeholder="display name"
+            value={mentionDisplayName}
+            onChange={e => setMentionDisplayName(e.target.value)}
+            disabled={!hasLinkedInAccount}
+          />
+          <button
+            type="button"
+            className={styles.insertBtn}
+            onClick={handleInsertMention}
+            disabled={isResolvingMention || !mentionUrl || !hasLinkedInAccount}
+          >
+            {isResolvingMention ? '...' : 'insert'}
+          </button>
+        </div>
+        {!hasLinkedInAccount && (
+          <p className={styles.mentionHintError}>Connect a LinkedIn account first to resolve mentions</p>
+        )}
+        {mentionError && <p className={styles.mentionError}>{mentionError}</p>}
       </div>
 
-      <TodoSelect label="organization URN" placeholder="// TODO: Fetch organizations from API" />
-
-      <div className={styles.field}>
-        <FieldLabel>first comment</FieldLabel>
-        <textarea
-          className={styles.textarea}
-          rows={2}
-          placeholder="Optional first comment after publishing..."
-          value={value.firstComment ?? ''}
-          onChange={e => set('firstComment', e.target.value || undefined)}
-        />
-      </div>
-
+      {/* Disable link preview */}
       <Switch
         on={value.disableLinkPreview ?? false}
         onChange={v => set('disableLinkPreview', v)}
@@ -1132,9 +1284,29 @@ function LinkedInForm({ value, onChange }: {
         desc="Prevents automatic link preview cards from appearing on the post"
       />
 
-      <GeoRestrictionField
-        value={value.geoRestriction}
-        onChange={v => set('geoRestriction', v)}
+      {/* First comment */}
+      <div className={styles.field}>
+        <div className={styles.fieldLabelRow}>
+          <FieldLabel>first comment</FieldLabel>
+          <span className={styles.charCount}>
+            {(value.firstComment ?? '').length}/1250
+          </span>
+        </div>
+        <textarea
+          ref={firstCommentRef}
+          className={styles.textarea}
+          rows={2}
+          placeholder="Add a first comment to boost engagement."
+          value={value.firstComment ?? ''}
+          maxLength={1250}
+          onChange={e => set('firstComment', e.target.value || undefined)}
+          onFocus={() => setLastFocusedField('firstComment')}
+        />
+      </div>
+
+      <CustomCaptionTextarea
+        value={customCaption}
+        onChange={onChangeCustomCaption}
       />
     </>
   )
@@ -1200,12 +1372,32 @@ function PinterestForm({ value, onChange }: {
 }
 
 // YouTube
-function YouTubeForm({ value, onChange }: {
+function YouTubeForm({
+  value,
+  onChange,
+  socialAccounts = [],
+  selectedSocialAccountIds = [],
+}: {
   value: YouTubePlatformData
   onChange: (v: YouTubePlatformData) => void
+  socialAccounts?: SocialAccountDto[]
+  selectedSocialAccountIds?: string[]
 }) {
   const set = <K extends keyof YouTubePlatformData>(k: K, v: YouTubePlatformData[K]) =>
     onChange({ ...value, [k]: v })
+
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const youtubeAccount = socialAccounts.find(
+    sa => sa.platform === 'youtube' && selectedSocialAccountIds.includes(sa.id)
+  ) ?? socialAccounts.find(sa => sa.platform === 'youtube')
+
+  const { data: playlistsData, isLoading: playlistsLoading } = useQuery({
+    queryKey: ['youtube-playlists', workspaceId, youtubeAccount?.id],
+    queryFn: () => socialAccountsApi.getYouTubePlaylists(workspaceId!, youtubeAccount!.id),
+    enabled: !!workspaceId && !!youtubeAccount?.id,
+  })
 
   const CATEGORIES = [
     { id: '1', label: 'Film & Animation' },
@@ -1289,7 +1481,28 @@ function YouTubeForm({ value, onChange }: {
         desc="YouTube may add a disclosure label"
       />
 
-      <TodoSelect label="playlist ID" placeholder="// TODO: Fetch playlists from API" />
+      <div className={styles.field}>
+        <FieldLabel>playlist</FieldLabel>
+        <select
+          className={styles.select}
+          value={value.playlistId ?? ''}
+          onChange={e => set('playlistId', e.target.value || undefined)}
+          disabled={!youtubeAccount || playlistsLoading}
+        >
+          <option value="">
+            {!youtubeAccount
+              ? 'Connect a YouTube account first'
+              : playlistsLoading
+                ? 'Loading playlists...'
+                : 'No playlist (default)'}
+          </option>
+          {playlistsData?.playlists.map(p => (
+            <option key={p.id} value={p.id}>
+              {p.title} ({p.itemCount} videos)
+            </option>
+          ))}
+        </select>
+      </div>
     </>
   )
 }
@@ -2275,8 +2488,47 @@ function hasConfiguredValues(data: Record<string, any>): boolean {
   })
 }
 
+function CustomCaptionTextarea({
+  value,
+  onChange,
+  maxLength = 3000,
+}: {
+  value: string
+  onChange?: (v: string) => void
+  maxLength?: number
+}) {
+  return (
+    <div className={styles.field}>
+      <div className={styles.fieldLabelRow}>
+        <FieldLabel>custom caption</FieldLabel>
+        <span className={styles.charCount}>
+          {(value ?? '').length}/{maxLength}
+        </span>
+      </div>
+      <textarea
+        className={styles.textarea}
+        rows={3}
+        placeholder="Leave blank to use main content..."
+        value={value}
+        maxLength={maxLength}
+        onChange={e => onChange?.(e.target.value)}
+      />
+    </div>
+  )
+}
+
 export default function PlatformSpecificForm(props: PlatformSpecificFormProps) {
-  const { activePlatforms, value, onChange } = props
+  const {
+    activePlatforms,
+    value,
+    onChange,
+    customCaptions = {},
+    onChangeCustomCaption,
+    selectedSocialAccountIds,
+    socialAccounts,
+    insertAtCursor,
+    platformTargets,
+  } = props
   const visiblePlatforms = activePlatforms.filter(isSupportedPlatform)
 
   if (visiblePlatforms.length === 0) return null
@@ -2292,103 +2544,191 @@ export default function PlatformSpecificForm(props: PlatformSpecificFormProps) {
     switch (platform) {
       case 'twitter':
         return (
-          <TwitterForm
-            value={value.twitter ?? {}}
-            onChange={d => updatePlatform('twitter', d)}
-          />
+          <>
+            <TwitterForm
+              value={value.twitter ?? {}}
+              onChange={d => updatePlatform('twitter', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.twitter ?? ''}
+              onChange={v => onChangeCustomCaption?.('twitter', v)}
+            />
+          </>
         )
       case 'threads':
         return (
-          <ThreadsForm
-            value={value.threads ?? {}}
-            onChange={d => updatePlatform('threads', d)}
-          />
+          <>
+            <ThreadsForm
+              value={value.threads ?? {}}
+              onChange={d => updatePlatform('threads', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.threads ?? ''}
+              onChange={v => onChangeCustomCaption?.('threads', v)}
+            />
+          </>
         )
       case 'facebook':
         return (
-          <FacebookForm
-            value={value.facebook ?? {}}
-            onChange={d => updatePlatform('facebook', d)}
-          />
+          <>
+            <FacebookForm
+              value={value.facebook ?? {}}
+              onChange={d => updatePlatform('facebook', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.facebook ?? ''}
+              onChange={v => onChangeCustomCaption?.('facebook', v)}
+            />
+          </>
         )
       case 'instagram':
         return (
-          <InstagramForm
-            value={value.instagram ?? {}}
-            onChange={d => updatePlatform('instagram', d)}
-          />
+          <>
+            <InstagramForm
+              value={value.instagram ?? {}}
+              onChange={d => updatePlatform('instagram', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.instagram ?? ''}
+              onChange={v => onChangeCustomCaption?.('instagram', v)}
+            />
+          </>
         )
       case 'linkedin':
         return (
           <LinkedInForm
             value={value.linkedin ?? {}}
             onChange={d => updatePlatform('linkedin', d)}
+            socialAccounts={socialAccounts}
+            selectedSocialAccountIds={selectedSocialAccountIds}
+            customCaption={customCaptions.linkedin ?? ''}
+            onChangeCustomCaption={v => onChangeCustomCaption?.('linkedin', v)}
+            insertAtCursor={insertAtCursor}
           />
         )
       case 'pinterest':
         return (
-          <PinterestForm
-            value={value.pinterest ?? {}}
-            onChange={d => updatePlatform('pinterest', d)}
-          />
+          <>
+            <PinterestForm
+              value={value.pinterest ?? {}}
+              onChange={d => updatePlatform('pinterest', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.pinterest ?? ''}
+              onChange={v => onChangeCustomCaption?.('pinterest', v)}
+            />
+          </>
         )
       case 'youtube':
         return (
-          <YouTubeForm
-            value={value.youtube ?? {}}
-            onChange={d => updatePlatform('youtube', d)}
-          />
+          <>
+            <YouTubeForm
+              value={value.youtube ?? {}}
+              onChange={d => updatePlatform('youtube', d)}
+              socialAccounts={socialAccounts}
+              selectedSocialAccountIds={selectedSocialAccountIds}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.youtube ?? ''}
+              onChange={v => onChangeCustomCaption?.('youtube', v)}
+            />
+          </>
         )
       case 'googlebusiness':
         return (
-          <GoogleBusinessForm
-            value={value.googlebusiness ?? {}}
-            onChange={d => updatePlatform('googlebusiness', d)}
-          />
+          <>
+            <GoogleBusinessForm
+              value={value.googlebusiness ?? {}}
+              onChange={d => updatePlatform('googlebusiness', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.googlebusiness ?? ''}
+              onChange={v => onChangeCustomCaption?.('googlebusiness', v)}
+            />
+          </>
         )
       case 'tiktok':
         return (
-          <TikTokForm
-            value={value.tiktok ?? {}}
-            onChange={d => updatePlatform('tiktok', d)}
-            tiktokAccountId={props.tiktokAccountId}
-            media={props.media}
-          />
+          <>
+            <TikTokForm
+              value={value.tiktok ?? {}}
+              onChange={d => updatePlatform('tiktok', d)}
+              tiktokAccountId={props.tiktokAccountId}
+              media={props.media}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.tiktok ?? ''}
+              onChange={v => onChangeCustomCaption?.('tiktok', v)}
+            />
+          </>
         )
       case 'telegram':
         return (
-          <TelegramForm
-            value={value.telegram ?? {}}
-            onChange={d => updatePlatform('telegram', d)}
-          />
+          <>
+            <TelegramForm
+              value={value.telegram ?? {}}
+              onChange={d => updatePlatform('telegram', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.telegram ?? ''}
+              onChange={v => onChangeCustomCaption?.('telegram', v)}
+              maxLength={4096}
+            />
+          </>
         )
       case 'snapchat':
         return (
-          <SnapchatForm
-            value={value.snapchat ?? {}}
-            onChange={d => updatePlatform('snapchat', d)}
-          />
+          <>
+            <SnapchatForm
+              value={value.snapchat ?? {}}
+              onChange={d => updatePlatform('snapchat', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.snapchat ?? ''}
+              onChange={v => onChangeCustomCaption?.('snapchat', v)}
+            />
+          </>
         )
       case 'reddit':
         return (
-          <RedditForm
-            value={value.reddit ?? {}}
-            onChange={d => updatePlatform('reddit', d)}
-          />
+          <>
+            <RedditForm
+              value={value.reddit ?? {}}
+              onChange={d => updatePlatform('reddit', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.reddit ?? ''}
+              onChange={v => onChangeCustomCaption?.('reddit', v)}
+              maxLength={300}
+            />
+          </>
         )
       case 'bluesky':
         return (
-          <BlueskyForm
-            value={value.bluesky ?? {}}
-            onChange={d => updatePlatform('bluesky', d)}
-          />
+          <>
+            <BlueskyForm
+              value={value.bluesky ?? {}}
+              onChange={d => updatePlatform('bluesky', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.bluesky ?? ''}
+              onChange={v => onChangeCustomCaption?.('bluesky', v)}
+            />
+          </>
         )
       case 'discord':
         return (
-          <DiscordForm
-            value={value.discord ?? { channelId: '' }}
-            onChange={d => updatePlatform('discord', d)}
-          />
+          <>
+            <DiscordForm
+              value={value.discord ?? { channelId: '' }}
+              onChange={d => updatePlatform('discord', d)}
+            />
+            <CustomCaptionTextarea
+              value={customCaptions.discord ?? ''}
+              onChange={v => onChangeCustomCaption?.('discord', v)}
+              maxLength={2000}
+            />
+          </>
         )
       default:
         return null
@@ -2401,8 +2741,22 @@ export default function PlatformSpecificForm(props: PlatformSpecificFormProps) {
         const platformData = value[platform as keyof AllPlatformData]
         const hasContent = platformData ? hasConfiguredValues(platformData as Record<string, any>) : false
 
+        const account = socialAccounts?.find(
+          a => a.platform.toLowerCase() === platform.toLowerCase() && 
+               selectedSocialAccountIds?.includes(a.id)
+        )
+        const target = platformTargets?.find(
+          t => t.zernioAccountId === account?.externalAccountId || 
+               t.platform.toLowerCase() === platform.toLowerCase()
+        )
+
         return (
-          <PlatformAccordion key={platform} platform={platform} hasContent={hasContent}>
+          <PlatformAccordion 
+            key={platform} 
+            platform={platform} 
+            hasContent={hasContent}
+            status={target?.status}
+          >
             {renderForm(platform)}
           </PlatformAccordion>
         )

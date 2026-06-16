@@ -25,6 +25,7 @@ public sealed class ZernioClient : IZernioClient
     private readonly CommentsApi _commentsApi;
     private readonly ReviewsApi _reviewsApi;
     private readonly MediaApi _mediaApi;
+    private readonly LinkedInMentionsApi _linkedInMentionsApi;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ZernioClient> _logger;
     private readonly ZernioOptions _options;
@@ -51,6 +52,7 @@ public sealed class ZernioClient : IZernioClient
         _commentsApi = new CommentsApi(config);
         _reviewsApi = new ReviewsApi(config);
         _mediaApi = new MediaApi(config);
+        _linkedInMentionsApi = new LinkedInMentionsApi(config);
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _options = options.Value;
@@ -1170,6 +1172,31 @@ public sealed class ZernioClient : IZernioClient
         };
     }
 
+    private static object? FilterMediaForPlatform(string platform, IReadOnlyList<Syncra.Application.DTOs.Posts.PostMediaItemDto>? mediaItems)
+    {
+        if (mediaItems == null) return null;
+
+        var normalizedPlatform = platform.ToLowerInvariant();
+        var filtered = mediaItems.AsEnumerable();
+
+        if (normalizedPlatform == "youtube")
+        {
+            filtered = filtered.Where(m => string.Equals(m.Type, "video", StringComparison.OrdinalIgnoreCase));
+        }
+        else if (normalizedPlatform == "googlebusiness")
+        {
+            filtered = filtered.Where(m => string.Equals(m.Type, "image", StringComparison.OrdinalIgnoreCase));
+        }
+
+        return filtered.Select(m => new
+        {
+            type = m.Type.ToLowerInvariant(),
+            url = m.Url,
+            filename = m.Filename,
+            mimeType = m.MimeType
+        }).ToList();
+    }
+
     private object ToSdkCreatePostRequest(ZernioCreatePostRequest request)
     {
         var platforms = request.Platforms.Select(p =>
@@ -1180,6 +1207,7 @@ public sealed class ZernioClient : IZernioClient
                 platform = p.Platform,
                 accountId = p.ZernioAccountId,
                 customContent = platformContent?.Caption,
+                customMedia = FilterMediaForPlatform(p.Platform, request.MediaItems),
                 platformSpecificData = MapPlatformSpecificData(p.Platform, request)
             };
         }).ToList();
@@ -1221,6 +1249,7 @@ public sealed class ZernioClient : IZernioClient
                 platform = p.Platform,
                 accountId = p.ZernioAccountId,
                 customContent = platformContent?.Caption,
+                customMedia = FilterMediaForPlatform(p.Platform, request.MediaItems),
                 platformSpecificData = MapPlatformSpecificData(p.Platform, request)
             };
         }).ToList();
@@ -1304,8 +1333,7 @@ public sealed class ZernioClient : IZernioClient
     private FacebookPlatformData? BuildSdkFacebookSettings(ZernioCreatePostRequest request)
     {
         var fbData = request.PlatformSpecificData?.Facebook;
-        if (fbData == null && !request.Platforms.Any(p => string.Equals(p.Platform, "facebook", StringComparison.OrdinalIgnoreCase)))
-            return null;
+        if (fbData == null) return null;
 
         var cards = fbData.CarouselCards?
             .Select(c => new FacebookPlatformDataCarouselCardsInner(c.Link, c.Name, c.Description))
@@ -3970,6 +3998,38 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+
+
+    public async Task<ZernioLinkedInMentionsResponseDto> GetLinkedInMentionsAsync(
+        string accountId,
+        string url,
+        string? displayName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _linkedInMentionsApi.GetLinkedInMentionsAsync(accountId, url, displayName, cancellationToken);
+            return new ZernioLinkedInMentionsResponseDto(
+                Urn: response.Urn,
+                Type: response.Type?.ToString(),
+                DisplayName: response.DisplayName,
+                MentionFormat: response.MentionFormat,
+                VanityName: response.VanityName,
+                Warning: response.Warning
+            );
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error getting LinkedIn mentions for account {AccountId} and URL {Url}", accountId, url);
+            throw new DomainException("zernio_linkedin_mentions_error", "Failed to resolve LinkedIn mentions", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error getting LinkedIn mentions for account {AccountId} and URL {Url}", accountId, url);
+            throw;
+        }
+    }
+
     public async Task<ZernioLinkedInOrganizationsResponseDto> GetLinkedInOrganizationsAsync(
         string accountId,
         bool? refresh = null,
@@ -3977,30 +4037,22 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var client = _httpClientFactory.CreateClient("Zernio");
-            var url = $"/v1/accounts/{accountId}/linkedin-organizations";
-            if (refresh == true) url += "?refresh=true";
+            var response = await _connectApi.GetLinkedInOrganizationsAsync(accountId, cancellationToken);
 
-            var response = await client.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationsResponse>(json, _jsonOptions);
-
-            var organizations = (result?.Organizations ?? [])
+            var organizations = (response?.Organizations ?? new List<Zernio.Model.GetLinkedInOrganizations200ResponseOrganizationsInner>())
                 .Select(o => new ZernioLinkedInOrganizationDto(
                     o.Id ?? string.Empty,
                     o.Name ?? string.Empty,
                     o.VanityName,
-                    o.LogoUrl))
+                    null))
                 .ToList();
 
             return new ZernioLinkedInOrganizationsResponseDto(
                 organizations,
-                result?.SelectedOrganizationUrn,
-                result?.Cached ?? false);
+                null,
+                false);
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        catch (ApiException ex) when (ex.ErrorCode == 402)
         {
             _logger.LogWarning(ex, "Zernio billing gate triggered listing LinkedIn organizations for account {AccountId}", accountId);
             throw new ZernioBillingRequiredException(
@@ -4023,31 +4075,24 @@ public sealed class ZernioClient : IZernioClient
     {
         try
         {
-            var client = _httpClientFactory.CreateClient("Zernio");
-            var url = $"/v1/accounts/{accountId}/linkedin-organization";
+            var sdkRequest = new Zernio.Model.UpdateLinkedInOrganizationRequest(
+                Zernio.Model.UpdateLinkedInOrganizationRequest.AccountTypeEnum.Organization,
+                new { id = selectedOrganizationUrn }
+            );
 
-            var request = new { organizationUrn = selectedOrganizationUrn };
-            var content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(request, _jsonOptions),
-                System.Text.Encoding.UTF8,
-                "application/json");
-
-            var response = await client.PutAsync(url, content, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = System.Text.Json.JsonSerializer.Deserialize<LinkedInOrganizationItem>(json, _jsonOptions);
-            if (result is not null)
+            var response = await _connectApi.UpdateLinkedInOrganizationAsync(accountId, sdkRequest, cancellationToken);
+            var account = response?.Account;
+            if (account is not null)
             {
                 return new ZernioLinkedInOrganizationDto(
-                    result.Id ?? string.Empty,
-                    result.Name ?? string.Empty,
-                    result.VanityName,
-                    result.LogoUrl);
+                    account.Id ?? string.Empty,
+                    account.DisplayName ?? string.Empty,
+                    account.Username,
+                    account.ProfilePicture);
             }
             return null;
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+        catch (ApiException ex) when (ex.ErrorCode == 402)
         {
             _logger.LogWarning(ex, "Zernio billing gate triggered switching LinkedIn organization for account {AccountId}", accountId);
             throw new ZernioBillingRequiredException(
@@ -4078,6 +4123,83 @@ public sealed class ZernioClient : IZernioClient
         public string? Name { get; set; }
         public string? VanityName { get; set; }
         public string? LogoUrl { get; set; }
+    }
+
+    // ── YouTube Playlist methods ─────────────────────────────────────────────
+
+    public async Task<ZernioYouTubePlaylistsResponseDto> GetYouTubePlaylistsAsync(
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _connectApi.GetYoutubePlaylistsAsync(
+                accountId,
+                cancellationToken);
+
+            var playlists = (response?.Playlists ?? new List<Zernio.Model.GetYoutubePlaylists200ResponsePlaylistsInner>())
+                .Select(p => new ZernioYouTubePlaylistDto(
+                    p.Id ?? string.Empty,
+                    p.Title ?? string.Empty,
+                    p.Description,
+                    p.Privacy?.ToString(),
+                    p.ItemCount,
+                    p.ThumbnailUrl))
+                .ToList();
+
+            return new ZernioYouTubePlaylistsResponseDto(
+                playlists,
+                response?.DefaultPlaylistId);
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered listing YouTube playlists for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to manage YouTube playlists.",
+                reason: "youtube_playlists_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error listing YouTube playlists for account {AccountId}", accountId);
+            throw new DomainException("zernio_youtube_playlists_error", "Failed to list YouTube playlists", ex);
+        }
+    }
+
+    public async Task<bool> UpdateYouTubeDefaultPlaylistAsync(
+        string accountId,
+        string defaultPlaylistId,
+        string? defaultPlaylistName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new UpdateYoutubeDefaultPlaylistRequest(
+                defaultPlaylistId: defaultPlaylistId,
+                defaultPlaylistName: defaultPlaylistName);
+
+            var response = await _connectApi.UpdateYoutubeDefaultPlaylistAsync(
+                accountId,
+                request,
+                cancellationToken);
+
+            return response?.Success ?? false;
+        }
+        catch (ApiException ex) when (ex.ErrorCode == 402)
+        {
+            _logger.LogWarning(ex, "Zernio billing gate triggered switching YouTube playlist for account {AccountId}", accountId);
+            throw new ZernioBillingRequiredException(
+                "A paid Zernio plan is required to switch YouTube playlists.",
+                reason: "youtube_playlist_switch_restricted",
+                dashboardUrl: "https://zernio.com/dashboard/billing",
+                details: new { accountId });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error switching YouTube playlist for account {AccountId}", accountId);
+            throw new DomainException("zernio_youtube_playlist_switch_error", "Failed to switch YouTube playlist", ex);
+        }
     }
 
     // ── Inbox DM methods ────────────────────────────────────────────────────

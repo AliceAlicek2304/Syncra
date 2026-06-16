@@ -382,6 +382,14 @@ public sealed record ZernioLinkedInOrganizationsResponseDto(
     string? SelectedOrganizationUrn,
     bool Cached);
 
+public sealed record ZernioLinkedInMentionsResponseDto(
+    string Urn,
+    string? Type,
+    string DisplayName,
+    string MentionFormat,
+    string? VanityName,
+    string? Warning);
+
 // ── Follower Stats DTOs ───────────────────────────────────────────
 
 public sealed record ZernioFollowerStatsDateRangeDto(
@@ -1015,5 +1023,23 @@ public sealed record ZernioWebhookUpdateRequestDto(
 public sealed record ZernioWebhookResponseDto(
     bool Success,
     ZernioWebhookSettingsDto? Webhook);
+
+// ── YouTube Playlist DTOs ─────────────────────────────────────
+
+public sealed record ZernioYouTubePlaylistDto(
+    string Id,
+    string Title,
+    string? Description,
+    string? Privacy,
+    int? ItemCount,
+    string? ThumbnailUrl);
+
+public sealed record ZernioYouTubePlaylistsResponseDto(
+    IReadOnlyList<ZernioYouTubePlaylistDto> Playlists,
+    string? DefaultPlaylistId);
+
+public sealed record UpdateYouTubeDefaultPlaylistRequestDto(
+    string DefaultPlaylistId,
+    string? DefaultPlaylistName = null);
 
 

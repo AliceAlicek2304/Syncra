@@ -145,6 +145,45 @@ export const socialAccountsApi = {
       { selectedOrganizationUrn },
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+  },
+  getLinkedInMentions: async (
+    workspaceId: string,
+    accountId: string,
+    url: string,
+    displayName?: string
+  ): Promise<LinkedInMentionsResponseDto> => {
+    const params: Record<string, string> = { url };
+    if (displayName) params.displayName = displayName;
+    const response = await api.get<LinkedInMentionsResponseDto>(
+      `social-accounts/${accountId}/linkedin-mentions`,
+      {
+        headers: { 'X-Workspace-Id': workspaceId },
+        params,
+      }
+    );
+    return response.data;
+  },
+  getYouTubePlaylists: async (
+    workspaceId: string,
+    accountId: string
+  ): Promise<YouTubePlaylistsResponseDto> => {
+    const response = await api.get<YouTubePlaylistsResponseDto>(
+      `social-accounts/${accountId}/youtube-playlists`,
+      { headers: { 'X-Workspace-Id': workspaceId } }
+    );
+    return response.data;
+  },
+  updateYouTubeDefaultPlaylist: async (
+    workspaceId: string,
+    accountId: string,
+    defaultPlaylistId: string,
+    defaultPlaylistName?: string
+  ): Promise<void> => {
+    await api.put(
+      `social-accounts/${accountId}/youtube-playlists`,
+      { defaultPlaylistId, defaultPlaylistName },
+      { headers: { 'X-Workspace-Id': workspaceId } }
+    );
   }
 };
 
@@ -157,4 +196,27 @@ export interface LinkedInOrganizationDto {
 export interface LinkedInOrganizationsResponseDto {
   organizations: LinkedInOrganizationDto[];
   selectedOrganizationUrn: string | null;
+}
+
+export interface LinkedInMentionsResponseDto {
+  urn: string;
+  type: string;
+  displayName: string;
+  mentionFormat: string;
+  vanityName?: string;
+  warning?: string;
+}
+
+export interface YouTubePlaylistDto {
+  id: string;
+  title: string;
+  description: string | null;
+  privacy: string | null;
+  itemCount: number | null;
+  thumbnailUrl: string | null;
+}
+
+export interface YouTubePlaylistsResponseDto {
+  playlists: YouTubePlaylistDto[];
+  defaultPlaylistId: string | null;
 }

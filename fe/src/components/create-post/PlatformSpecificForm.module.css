@@ -531,3 +531,135 @@
   gap: 8px;
   align-items: end;
 }
+
+/* ── LinkedIn Mention & Form elements ── */
+.tooltipContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.tooltipIcon {
+  color: var(--clr-mute);
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.tooltipContainer:hover .tooltipIcon {
+  opacity: 1;
+}
+
+.tooltipText {
+  visibility: hidden;
+  opacity: 0;
+  width: 280px;
+  background-color: #ffffff;
+  color: var(--clr-ink);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 12px;
+  position: absolute;
+  bottom: 125%; /* Position above the icon */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  font-weight: normal;
+  text-transform: none;
+  font-size: 11px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+}
+
+.tooltipText p {
+  margin: 0;
+}
+
+.tooltipText::after {
+  content: "";
+  position: absolute;
+  top: 100%; /* At the bottom of tooltip */
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #ffffff transparent transparent transparent;
+}
+
+/* For border of arrow */
+.tooltipText::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--clr-border) transparent transparent transparent;
+  z-index: -1;
+}
+
+.tooltipContainer:hover .tooltipText {
+  visibility: visible;
+  opacity: 1;
+}
+
+.mentionRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.insertBtn {
+  background-color: #828079;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  height: 38px; /* to align with input height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.insertBtn:hover:not(:disabled) {
+  background-color: #6b6963;
+}
+
+.insertBtn:disabled {
+  background-color: var(--clr-border);
+  color: var(--clr-mute);
+  cursor: not-allowed;
+}
+
+.mentionError {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.mentionHintError {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+.fieldLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.charCount {
+  font-size: 11px;
+  color: var(--clr-mute);
+}

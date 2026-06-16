@@ -41,8 +41,8 @@ public class BestTimeMapperTests
         var profile = ZernioProfile.Create(
             workspaceId, "zernio_profile_1", "Test Profile", "zernio");
 
-        _profileRepoMock.Setup(r => r.GetByWorkspaceIdAsync(workspaceId))
-            .ReturnsAsync(profile);
+        _profileRepoMock.Setup(r => r.GetActiveByWorkspaceIdAsync(workspaceId))
+            .ReturnsAsync(new List<ZernioProfile> { profile });
 
         // Cache miss
         _cacheMock.Setup(c => c.GetAsync<HeatmapDto>(
@@ -93,8 +93,8 @@ public class BestTimeMapperTests
         var profile = ZernioProfile.Create(
             workspaceId, "zernio_profile_2", "Test Profile", "zernio");
 
-        _profileRepoMock.Setup(r => r.GetByWorkspaceIdAsync(workspaceId))
-            .ReturnsAsync(profile);
+        _profileRepoMock.Setup(r => r.GetActiveByWorkspaceIdAsync(workspaceId))
+            .ReturnsAsync(new List<ZernioProfile> { profile });
 
         _cacheMock.Setup(c => c.GetAsync<HeatmapDto>(
                 It.IsAny<string>(), It.IsAny<CancellationToken>()))

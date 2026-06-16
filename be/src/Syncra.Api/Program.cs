@@ -36,7 +36,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173", "https://syncra.vn", "https://www.syncra.vn")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

@@ -766,6 +766,49 @@ public sealed class SocialAccountsController : ControllerBase
         return Ok(new { message = "LinkedIn organization switched successfully." });
     }
 
+    // ── GET /api/v1/social-accounts/{accountId}/linkedin-mentions ──────
+
+    /// <summary>
+    /// Resolves a LinkedIn profile/company URL or vanity name to a URN format for @mentions.
+    /// </summary>
+    [HttpGet("{accountId:guid}/linkedin-mentions")]
+    public async Task<IActionResult> GetLinkedInMentions(
+        Guid accountId,
+        [FromQuery] string url,
+        [FromQuery] string? displayName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return BadRequest(new { code = "invalid_request", message = "url parameter is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var mentionResult = await _zernioClient.GetLinkedInMentionsAsync(
+            accountId: account.ExternalAccountId,
+            url: url,
+            displayName: displayName,
+            cancellationToken: cancellationToken);
+
+        return Ok(mentionResult);
+    }
+
     // ── GET /api/v1/social-accounts/{accountId}/tiktok-creator-info ──────
 
     /// <summary>
@@ -799,6 +842,86 @@ public sealed class SocialAccountsController : ControllerBase
             cancellationToken: cancellationToken);
 
         return Ok(info);
+    }
+
+    // ── GET /api/v1/social-accounts/{accountId}/youtube-playlists ──────
+
+    /// <summary>
+    /// Returns all YouTube playlists the connected account has access to,
+    /// including the currently selected default playlist.
+    /// </summary>
+    [HttpGet("{accountId:guid}/youtube-playlists")]
+    public async Task<IActionResult> GetYouTubePlaylists(
+        Guid accountId,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var playlists = await _zernioClient.GetYouTubePlaylistsAsync(
+            accountId: account.ExternalAccountId,
+            cancellationToken: cancellationToken);
+
+        return Ok(playlists);
+    }
+
+    // ── PUT /api/v1/social-accounts/{accountId}/youtube-playlists ──────
+
+    /// <summary>
+    /// Switches which YouTube Playlist is the default for a connected account.
+    /// </summary>
+    [HttpPut("{accountId:guid}/youtube-playlists")]
+    public async Task<IActionResult> UpdateYouTubeDefaultPlaylist(
+        Guid accountId,
+        [FromBody] UpdateYouTubeDefaultPlaylistRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { code = "not_found", message = "Social account not found." });
+        }
+
+        var success = await _zernioClient.UpdateYouTubeDefaultPlaylistAsync(
+            accountId: account.ExternalAccountId,
+            defaultPlaylistId: request.DefaultPlaylistId,
+            defaultPlaylistName: request.DefaultPlaylistName,
+            cancellationToken: cancellationToken);
+
+        if (!success)
+        {
+            return StatusCode(502, new { code = "zernio_error", message = "Failed to update default YouTube playlist." });
+        }
+
+        _logger.LogInformation(
+            "Switched default YouTube playlist for account {AccountId} to playlist {PlaylistId}",
+            accountId, request.DefaultPlaylistId);
+
+        return Ok(new { message = "Default YouTube playlist updated successfully." });
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

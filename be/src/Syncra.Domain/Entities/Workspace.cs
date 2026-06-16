@@ -18,6 +18,7 @@ public sealed class Workspace : EntityBase
     public string? StripeCustomerId { get; private set; }
 
     // Navigation properties
+    public ICollection<ZernioProfile> ZernioProfiles { get; set; } = new List<ZernioProfile>();
     public ICollection<WorkspaceMember> Members { get; set; } = new List<WorkspaceMember>();
     public ICollection<UsageCounter> UsageCounters { get; set; } = new List<UsageCounter>();
     public Subscription? Subscription { get; set; }

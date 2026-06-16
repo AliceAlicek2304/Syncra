@@ -153,7 +153,7 @@ public sealed class ZernioWorkspaceAnalyticsService : IZernioWorkspaceAnalyticsS
     {
         var profiles = await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(workspaceId);
 
-        if (profiles.Count == 0)
+        if (profiles == null || profiles.Count == 0)
             return Array.Empty<ZernioProfile>();
 
         if (!string.IsNullOrEmpty(profileId))

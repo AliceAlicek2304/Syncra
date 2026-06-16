@@ -9,6 +9,8 @@ import { postsApi } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
 import { PLATFORMS, type Platform, type Tone, type PlatformCaptionMap, type CreatePostModalProps } from './types'
 import type { AllPlatformData } from './PlatformSpecificForm'
+import type { Profile } from '../../api/types'
+import api from '../../lib/axios'
 
 export function getUtcString(localStr: string, timezone: string): string | undefined {
   if (!localStr) return undefined
@@ -47,6 +49,41 @@ export function getPlatformValidationError(platform: Platform, media: any[]): st
   return null
 }
 
+function extractErrorMessage(err: any, defaultMsg: string): string {
+  if (!err) return defaultMsg;
+  const apiMessage = err.response?.data?.message || err.message;
+  if (!apiMessage) return defaultMsg;
+
+  let finalMessage = apiMessage;
+
+  try {
+    const errorJsonMatch = apiMessage.match(/Error:\s*(\{.*\})/);
+    if (errorJsonMatch && errorJsonMatch[1]) {
+      const parsed = JSON.parse(errorJsonMatch[1]);
+      if (parsed && parsed.error) {
+        finalMessage = parsed.error;
+      }
+    }
+  } catch (e) {
+    // Ignore JSON parsing errors
+  }
+
+  if (finalMessage === apiMessage) {
+    const errorPropMatch = apiMessage.match(/"error"\s*:\s*"([^"]+)"/);
+    if (errorPropMatch && errorPropMatch[1]) {
+      finalMessage = errorPropMatch[1];
+    }
+  }
+
+  return finalMessage.replace(/zernio/gi, (match: string) => {
+    if (match === 'ZERNIO') return 'SYNCRA';
+    if (match.toLowerCase() === 'zernio') {
+      return match[0] === 'Z' ? 'Syncra' : 'syncra';
+    }
+    return 'Syncra';
+  });
+}
+
 function convertCaptionForPlatform(base: string, _platform: Platform, maxChars: number): string {
   const clean = base.trim()
   if (!clean) return ''
@@ -82,7 +119,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const { user } = useAuth()
 
   const isEditMode = !!editPost
-  const { activeWorkspace } = useWorkspace()
+  const { activeWorkspace, workspaces, activeProfile } = useWorkspace()
   const workspaceId = activeWorkspace?.id
 
   const mediaHook = useCreatePostMedia()
@@ -106,24 +143,56 @@ export function useCreatePostState(props: CreatePostModalProps) {
     return resolved
   }, [mediaHook.media])
 
-  // Selected workspaces state
-  const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([])
+  // Selected profiles state
+  const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([])
 
   useEffect(() => {
-    if (isOpen && activeWorkspace && selectedWorkspaceIds.length === 0) {
-      setSelectedWorkspaceIds([activeWorkspace.id])
+    if (isOpen && activeProfile && selectedProfileIds.length === 0) {
+      setSelectedProfileIds([activeProfile.id])
     }
-  }, [isOpen, activeWorkspace])
+  }, [isOpen, activeProfile])
 
-  // Fetch social accounts tagged with workspaceId
-  const { data: socialAccounts = [], isFetched } = useQuery({
-    queryKey: ['social-accounts-multiple', selectedWorkspaceIds],
-    enabled: selectedWorkspaceIds.length > 0,
+  // Fetch profiles for all workspaces
+  const { data: allProfilesMap = {} } = useQuery({
+    queryKey: ['profiles-all-workspaces', workspaces],
+    enabled: workspaces.length > 0,
     queryFn: async () => {
       const results = await Promise.all(
-        selectedWorkspaceIds.map(async (id) => {
-          const accounts = await socialAccountsApi.listSocialAccounts(id)
-          return accounts.map(a => ({ ...a, workspaceId: id }))
+        workspaces.map(async (ws) => {
+          const res = await api.get<Profile[]>('profiles', {
+            headers: { 'X-Workspace-Id': ws.id }
+          })
+          return { workspaceId: ws.id, profiles: res.data }
+        })
+      )
+      return results.reduce<Record<string, Profile[]>>((acc, item) => {
+        acc[item.workspaceId] = item.profiles
+        return acc
+      }, {})
+    }
+  })
+
+  // Fetch social accounts tagged with workspaceId and profileId
+  const { data: socialAccounts = [], isFetched } = useQuery({
+    queryKey: ['social-accounts-multiple', selectedProfileIds, allProfilesMap],
+    enabled: selectedProfileIds.length > 0 && Object.keys(allProfilesMap).length > 0,
+    queryFn: async () => {
+      const results = await Promise.all(
+        selectedProfileIds.map(async (profileId) => {
+          // Find workspace ID for this profile
+          let wsId = ''
+          for (const [wId, wsProfiles] of Object.entries(allProfilesMap)) {
+            if (wsProfiles.some(p => p.id === profileId)) {
+              wsId = wId
+              break
+            }
+          }
+          if (!wsId) {
+            wsId = activeWorkspace?.id || ''
+          }
+          if (!wsId) return []
+          const accounts = await socialAccountsApi.listSocialAccounts(wsId, profileId)
+          return accounts.map(a => ({ ...a, workspaceId: wsId, profileId }))
         })
       )
       return results.flat()
@@ -254,8 +323,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
       void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
       onClose()
     },
-    onError: () => {
-      onToast?.({ message: 'Failed to retry post.', type: 'error' })
+    onError: (err: any) => {
+      const msg = extractErrorMessage(err, 'Failed to retry post.')
+      onToast?.({ message: msg, type: 'error' })
     }
   })
 
@@ -270,8 +340,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
       void queryClient.invalidateQueries({ queryKey: ['dashboard-recent-posts'] })
       onClose()
     },
-    onError: () => {
-      onToast?.({ message: 'Failed to delete post.', type: 'error' })
+    onError: (err: any) => {
+      const msg = extractErrorMessage(err, 'Failed to delete post.')
+      onToast?.({ message: msg, type: 'error' })
     }
   })
 
@@ -281,9 +352,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   // Main input fields
   const [mainContent, setMainContent] = useState('')
   const [facebookFirstComment, setFacebookFirstComment] = useState('')
-  const [facebookCustomCaption, setFacebookCustomCaption] = useState('')
   const [tiktokDraft, setTiktokDraft] = useState(false)
-  const [tiktokCustomCaption, setTiktokCustomCaption] = useState('')
   const [tiktokPhotoDescription, setTiktokPhotoDescription] = useState('')
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
     tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: ''
@@ -309,6 +378,11 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [showPublishConfirmDialog, setShowPublishConfirmDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSubmitError(null)
+  }, [mainContent, selectedSocialAccountIds, mediaHook.media])
 
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitRef = useRef(false)
@@ -441,20 +515,15 @@ export function useCreatePostState(props: CreatePostModalProps) {
   }, [isOpen, initialContent, initialDate, showUnsavedDialog, editPost, mediaHook])
 
   const getResolvedContentForPlatform = useCallback((platform: Platform) => {
-    if (platform === 'facebook') {
-      return facebookCustomCaption.trim() ? facebookCustomCaption : mainContent
-    }
     if (platform === 'tiktok') {
       const hasImages = mediaHook.media.some(m => m.type === 'image')
       if (hasImages) {
         return tiktokPhotoDescription.trim() ? tiktokPhotoDescription : mainContent
-      } else {
-        return tiktokCustomCaption.trim() ? tiktokCustomCaption : mainContent
       }
     }
     const override = captionsByPlatform[platform]
     return override.trim() ? override : mainContent
-  }, [mainContent, facebookCustomCaption, tiktokPhotoDescription, tiktokCustomCaption, captionsByPlatform, mediaHook.media])
+  }, [mainContent, tiktokPhotoDescription, captionsByPlatform, mediaHook.media])
 
   const caption = useMemo(() => {
     return getResolvedContentForPlatform(activeTab)
@@ -492,9 +561,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowUnsavedDialog(false)
     setMainContent('')
     setFacebookFirstComment('')
-    setFacebookCustomCaption('')
+    setCaptionsByPlatform({ tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' })
     setTiktokDraft(false)
-    setTiktokCustomCaption('')
     setTiktokPhotoDescription('')
     setPlatformTimeOverrides({})
     setIsCreatingGroup(false)
@@ -521,6 +589,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const submitPost = async (isDraft: boolean): Promise<boolean> => {
     if (!activeWorkspace) return false
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
       const wsId = activeWorkspace.id
 
@@ -572,20 +641,25 @@ export function useCreatePostState(props: CreatePostModalProps) {
         }
       }
 
-      // 2. Group selected accounts by workspace ID
-      const accountsByWorkspace: Record<string, string[]> = {}
+      // 2. Group selected accounts by profile ID
+      const accountsByProfile: Record<string, { wsId: string, accountIds: string[] }> = {}
       if (selectedSocialAccountIds.length > 0) {
         selectedSocialAccountIds.forEach(id => {
           const account = socialAccounts.find(a => a.id === id)
           if (!account) return
-          const accountWsId = account.workspaceId || activeWorkspace.id
-          if (!accountsByWorkspace[accountWsId]) {
-            accountsByWorkspace[accountWsId] = []
+          const profileId = (account as any).profileId || activeProfile?.id
+          const wsId = account.workspaceId || activeWorkspace?.id
+          if (profileId && wsId) {
+            if (!accountsByProfile[profileId]) {
+              accountsByProfile[profileId] = { wsId, accountIds: [] }
+            }
+            accountsByProfile[profileId].accountIds.push(id)
           }
-          accountsByWorkspace[accountWsId].push(id)
         })
       } else {
-        accountsByWorkspace[activeWorkspace.id] = []
+        if (activeProfile?.id && activeWorkspace?.id) {
+          accountsByProfile[activeProfile.id] = { wsId: activeWorkspace.id, accountIds: [] }
+        }
       }
 
       // 3. Resolve schedule time
@@ -606,8 +680,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       const publishNow = isDraft ? false : (scheduledAtUtc === undefined || isNow)
 
-      // 4. Send requests for all workspaces
-      const promises = Object.entries(accountsByWorkspace).map(([wsId, accountIds]) => {
+      // 4. Send requests for all selected profiles
+      const promises = Object.entries(accountsByProfile).map(([profileId, { wsId, accountIds }]) => {
         const content = mainContent
         const title = content.slice(0, 50) || 'Untitled Post'
 
@@ -633,11 +707,21 @@ export function useCreatePostState(props: CreatePostModalProps) {
           platformContents,
           platformSpecificData: resolvedPlatformData,
           tiktokSettings: prepareTikTokSettings(resolvedPlatformData.tiktok),
-          facebookSettings: resolvedPlatformData.facebook
+          facebookSettings: resolvedPlatformData.facebook,
+          profileId // Pass the specific profileId to associate the post with the profile
         })
       })
 
       await Promise.all(promises)
+
+      // If editing a partial or failed post, trigger retry automatically after updating
+      if (editPost && (editPost.status?.toLowerCase() === 'partial' || editPost.status?.toLowerCase() === 'failed') && !isDraft) {
+        try {
+          await postsApi.retryZernioPost(wsId, editPost.id)
+        } catch (retryErr) {
+          console.error('Failed to trigger retry for failed platforms:', retryErr)
+        }
+      }
 
       onToast?.({
         message: `Post ${isDraft ? 'saved as draft' : (publishNow ? 'published' : 'scheduled')} successfully!`,
@@ -653,9 +737,10 @@ export function useCreatePostState(props: CreatePostModalProps) {
       reset()
       if (!createAnother) onClose()
       return true
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      onToast?.({ message: 'Failed to save or schedule post. Please try again.', type: 'error' })
+      const msg = extractErrorMessage(err, 'Failed to save or schedule post. Please try again.')
+      setSubmitError(msg)
       return false
     } finally {
       setIsSubmitting(false)
@@ -667,7 +752,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const handleSchedule = () => {
     if (!hasPlatforms) {
-      onToast?.({ message: 'Please select at least one channel first.', type: 'error' })
+      setSubmitError('Please select at least one channel first.')
       return
     }
 
@@ -676,11 +761,12 @@ export function useCreatePostState(props: CreatePostModalProps) {
     for (const acc of selectedAccounts) {
       const err = getPlatformValidationError(acc.platform as Platform, mediaHook.media)
       if (err) {
-        onToast?.({ message: `Validation failed: ${err}`, type: 'error' })
+        setSubmitError(`Validation failed: ${err}`)
         return
       }
     }
 
+    setSubmitError(null)
     setShowPublishConfirmDialog(true)
   }
 
@@ -809,14 +895,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
       socialAccounts,
       selectedSocialAccountIds,
       publishingTab,
-      selectedWorkspaceIds,
+      selectedProfileIds,
+      allProfilesMap,
       platformGroups,
       isCreatingGroup,
       newGroupName,
       facebookFirstComment,
-      facebookCustomCaption,
       tiktokDraft,
-      tiktokCustomCaption,
       tiktokPhotoDescription,
       platformTimeOverrides,
       timezone,
@@ -824,6 +909,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       platformSpecificData,
       isSubmitting,
       tiktokAccountId,
+      submitError,
     },
     refs,
     actions: {
@@ -854,7 +940,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       isDeletingZernio: deleteZernioPost.isPending,
       setSelectedSocialAccountIds,
       reuseLastPost,
-      setSelectedWorkspaceIds,
+      setSelectedProfileIds,
       savePlatformGroup,
       deletePlatformGroup,
       selectPlatformGroup,
@@ -862,9 +948,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setNewGroupName,
       setMainContent,
       setFacebookFirstComment,
-      setFacebookCustomCaption,
       setTiktokDraft,
-      setTiktokCustomCaption,
       setTiktokPhotoDescription,
       setPlatformTimeOverrides,
       setTimezone,

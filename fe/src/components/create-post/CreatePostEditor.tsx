@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check, Info, Settings2 } from 'lucide-react'
+import { X, Crop, RotateCcw, RotateCw, FlipHorizontal, Check, Info, Settings2, AlertTriangle } from 'lucide-react'
 import { CROP_PRESETS } from './types'
 import type { UseCreatePostStateReturn } from './useCreatePostState'
 import PlatformSpecificForm from './PlatformSpecificForm'
@@ -169,10 +169,41 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
   const isTiktokSelected = state.activePlatforms.includes('tiktok')
   const showTiktokPhotoWarning = isTiktokSelected && hasImages
 
-
+  const failedTargets = state.editPost?.platformTargets?.filter(
+    (t: any) => t.status?.toLowerCase() === 'failed' && t.errorMessage
+  ) || []
 
   return (
     <div className={styles.postArea}>
+      {/* Publishing Errors Callout */}
+      {(failedTargets.length > 0 || state.submitError) && (
+        <div className={styles.failedBanner} style={{ margin: '0 0 20px 0' }}>
+          <div className={styles.failedBannerHeader}>
+            <AlertTriangle className={styles.failedBannerIcon} size={16} />
+            <span className={styles.failedBannerTitle}>publishing errors</span>
+          </div>
+          <div className={styles.failedBannerBody}>
+            {state.submitError && (
+              <div className={styles.failedBannerItem}>
+                <span className={styles.failedBannerItemMsg}>
+                  {state.submitError}
+                </span>
+              </div>
+            )}
+            {failedTargets.map((target: any) => (
+              <div key={target.id} className={styles.failedBannerItem}>
+                <span className={styles.failedBannerItemPlatform}>
+                  {target.platform}:
+                </span>
+                <span className={styles.failedBannerItemMsg}>
+                  {target.errorMessage}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Master Content Editor */}
       <div className={styles.inputGroup}>
         <label className={styles.fieldLabel}>content</label>
@@ -287,6 +318,14 @@ export default function CreatePostEditor({ state, refs: { fileInputRef, replaceI
             onChange={actions.setPlatformSpecificData}
             tiktokAccountId={state.tiktokAccountId}
             media={state.media}
+            customCaptions={state.captionsByPlatform}
+            onChangeCustomCaption={(platform, value) =>
+              actions.setCaptionsByPlatform(prev => ({ ...prev, [platform]: value }))
+            }
+            selectedSocialAccountIds={state.selectedSocialAccountIds}
+            socialAccounts={state.socialAccounts}
+            insertAtCursor={actions.insertAtCursor}
+            platformTargets={state.editPost?.platformTargets}
           />
         </div>
       )}

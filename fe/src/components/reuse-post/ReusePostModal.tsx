@@ -213,9 +213,13 @@ export default function ReusePostModal({ isOpen, onClose, onApply }: ReusePostMo
                             </div>
                             <span className={styles.cardDate}>{formatDate(post.createdAt)}</span>
                           </div>
-                          {thumbnail && (
+                           {thumbnail && (
                             <div className={styles.cardThumb}>
-                              <img src={thumbnail.url} alt="" className={styles.cardThumbImg} />
+                              {thumbnail.type === 'video' || thumbnail.mimeType?.startsWith('video/') || thumbnail.url.endsWith('.mp4') ? (
+                                <video src={thumbnail.url} className={styles.cardThumbImg} muted playsInline preload="metadata" />
+                              ) : (
+                                <img src={thumbnail.url} alt="" className={styles.cardThumbImg} />
+                              )}
                               {(post.mediaItems?.length ?? 0) > 1 && (
                                 <span className={styles.mediaCount}>{post.mediaItems!.length}</span>
                               )}

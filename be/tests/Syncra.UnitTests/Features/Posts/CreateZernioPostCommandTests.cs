@@ -437,5 +437,49 @@ public class CreateZernioPostCommandTests : IDisposable
         ), Times.Never);
     }
 
+    [Fact]
+    public void TestPlatformSpecificMediaFiltering()
+    {
+        var method = typeof(Syncra.Infrastructure.Services.ZernioClient)
+            .GetMethod("FilterMediaForPlatform", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        Assert.NotNull(method);
+
+        var mediaItems = new List<PostMediaItemDto>
+        {
+            new PostMediaItemDto("https://test.com/img.png", "image", "img.png", "image/png"),
+            new PostMediaItemDto("https://test.com/vid.mp4", "video", "vid.mp4", "video/mp4")
+        };
+
+        // 1. YouTube should only return video
+        var youtubeResult = method.Invoke(null, new object?[] { "youtube", mediaItems }) as System.Collections.IList;
+        Assert.NotNull(youtubeResult);
+        Assert.Single(youtubeResult);
+        var ytItem = youtubeResult[0];
+        Assert.NotNull(ytItem);
+        var ytTypeProp = ytItem.GetType().GetProperty("type");
+        Assert.NotNull(ytTypeProp);
+        Assert.Equal("video", ytTypeProp.GetValue(ytItem));
+
+        // 2. Google Business Profile should only return image
+        var gmbResult = method.Invoke(null, new object?[] { "googlebusiness", mediaItems }) as System.Collections.IList;
+        Assert.NotNull(gmbResult);
+        Assert.Single(gmbResult);
+        var gmbItem = gmbResult[0];
+        Assert.NotNull(gmbItem);
+        var gmbTypeProp = gmbItem.GetType().GetProperty("type");
+        Assert.NotNull(gmbTypeProp);
+        Assert.Equal("image", gmbTypeProp.GetValue(gmbItem));
+
+        // 3. Facebook should return both
+        var fbResult = method.Invoke(null, new object?[] { "facebook", mediaItems }) as System.Collections.IList;
+        Assert.NotNull(fbResult);
+        Assert.Equal(2, fbResult.Count);
+
+        // 4. Null media items should return null
+        var nullResult = method.Invoke(null, new object?[] { "facebook", null });
+        Assert.Null(nullResult);
+    }
+
 }
 

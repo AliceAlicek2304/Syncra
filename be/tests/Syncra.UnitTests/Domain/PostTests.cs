@@ -79,6 +79,36 @@ public class PostTests
     }
 
     [Fact]
+    public void UpdateContent_ShouldSucceed_WhenPublishing()
+    {
+        // Arrange
+        var post = Post.Create(_workspaceId, _userId, "Title", "Content");
+        post.MarkPublishAttempt(DateTime.UtcNow);
+
+        // Act
+        post.UpdateContent("New Title", "New Content");
+
+        // Assert
+        Assert.Equal("New Title", post.Title.Value);
+        Assert.Equal("New Content", post.Content.Value);
+    }
+
+    [Fact]
+    public void StartZernioRetry_ShouldSucceed_WhenPublishing()
+    {
+        // Arrange
+        var post = Post.Create(_workspaceId, _userId, "Title", "Content");
+        post.MarkPublishAttempt(DateTime.UtcNow);
+        post.AssignZernioPost("z_123", 2);
+
+        // Act
+        post.StartZernioRetry();
+
+        // Assert
+        Assert.Equal(PostStatus.Publishing, post.Status);
+    }
+
+    [Fact]
     public void CanBePublished_ShouldReturnFalse_WhenNoIntegration()
     {
         // Arrange

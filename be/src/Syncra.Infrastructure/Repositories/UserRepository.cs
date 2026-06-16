@@ -30,4 +30,14 @@ public class UserRepository : Repository<User>, IUserRepository
             .Include(u => u.Profile)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
+
+    public async Task<User?> GetByIdWithProfileAndWorkspacesAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(u => u.Profile)
+            .Include(u => u.WorkspaceMemberships)
+            .ThenInclude(om => om.Workspace)
+            .ThenInclude(w => w.ZernioProfiles)
+            .FirstOrDefaultAsync(u => u.Id == id);
+    }
 }
