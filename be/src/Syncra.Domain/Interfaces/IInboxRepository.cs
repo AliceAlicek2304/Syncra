@@ -30,8 +30,19 @@ public interface IInboxRepository
         string zernioMessageId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<InboxMessage>> GetMessagesByZernioIdsAsync(
+        Guid workspaceId,
+        string[] zernioMessageIds,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InboxConversation>> GetConversationsByZernioIdsAsync(
+        Guid workspaceId,
+        string[] zernioConversationIds,
+        CancellationToken cancellationToken = default);
+
     Task AddConversationAsync(InboxConversation conversation);
     Task AddMessageAsync(InboxMessage message);
+    Task AddMessagesAsync(IReadOnlyList<InboxMessage> messages);
     Task DeleteMessageAsync(InboxMessage message);
     Task<int> GetUnreadTotalAsync(Guid workspaceId, CancellationToken cancellationToken = default);
 
@@ -69,6 +80,11 @@ public interface IInboxRepository
 
     Task<IReadOnlyList<InboxCommentPrivateReply>> GetPrivateRepliesForWorkspaceAsync(
         Guid workspaceId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InboxCommentPrivateReply>> GetPrivateRepliesByCommentIdsAsync(
+        Guid workspaceId,
+        HashSet<string> commentIds,
         CancellationToken cancellationToken = default);
 
     // ── Comment Threads (cache layer) ───────────────────────────────────────

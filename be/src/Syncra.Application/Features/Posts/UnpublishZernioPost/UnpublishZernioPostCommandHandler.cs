@@ -42,37 +42,35 @@ public class UnpublishZernioPostCommandHandler : IRequestHandler<UnpublishZernio
 
             try
             {
+                // Unpublish from live platform
                 await _zernioClient.UnpublishPostAsync(post.ZernioPostId, request.Platform, cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to unpublish post {PostId} from platform {Platform}, but proceeding with database updates.", post.ZernioPostId, request.Platform);
+                _logger.LogWarning(ex, "Failed to unpublish post {PostId} from platform {Platform}.", post.ZernioPostId, request.Platform);
+                return false;
             }
 
             if (request.DeleteFromDb)
             {
-                post.MarkAsDeleted();
-            }
-            else
-            {
-                var utcNow = DateTime.UtcNow;
-                var target = post.PlatformTargets.FirstOrDefault(t => 
-                    string.Equals(t.Platform, request.Platform, StringComparison.OrdinalIgnoreCase));
-                
-                if (target != null)
+                // Delete from Zernio
+                try
                 {
-                    target.MarkFailed("Unpublished from platform", utcNow);
+                    await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                }
+                catch (Exception deleteEx)
+                {
+                    _logger.LogWarning(deleteEx, "Failed to delete post {PostId} from Zernio after successful unpublish.", post.ZernioPostId);
                 }
 
-                if (post.PlatformTargets.All(t => t.Status == PostPlatformStatus.Failed))
-                {
-                    post.MarkAsUnpublished(utcNow);
-                }
+                // Hard delete from Syncra database
+                await _postRepository.DeleteAsync(post.Id);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         else
         {
+            // Dynamic post (not in Syncra DB) - unpublish directly via Zernio
             try
             {
                 await _zernioClient.UnpublishPostAsync(request.ZernioPostId, request.Platform, cancellationToken);
@@ -80,6 +78,19 @@ public class UnpublishZernioPostCommandHandler : IRequestHandler<UnpublishZernio
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to unpublish dynamic post {PostId} from platform {Platform}.", request.ZernioPostId, request.Platform);
+                return false;
+            }
+
+            if (request.DeleteFromDb)
+            {
+                try
+                {
+                    await _zernioClient.DeletePostAsync(request.ZernioPostId, cancellationToken);
+                }
+                catch (Exception deleteEx)
+                {
+                    _logger.LogWarning(deleteEx, "Failed to delete dynamic post {PostId} from Zernio after successful unpublish.", request.ZernioPostId);
+                }
             }
         }
 

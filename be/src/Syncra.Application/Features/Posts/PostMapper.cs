@@ -11,10 +11,10 @@ public static class PostMapper
             post.Id,
             post.WorkspaceId,
             post.UserId,
-            post.Title.Value,
-            post.Content.Value,
+            post.Title?.Value ?? string.Empty,
+            post.Content?.Value ?? string.Empty,
             post.Status.ToString(),
-            post.ScheduledAt.UtcValue,
+            post.ScheduledAt?.UtcValue,
             post.PublishedAtUtc,
             post.Media.Select(m => m.Id).ToList(),
             post.Media.Select(m => new PostMediaItemDto(

@@ -99,7 +99,7 @@ export function useNotificationHub({ workspaceId }: UseNotificationHubArgs) {
       const { postId, status, zernioTargetCount, platformTargets } = payload
 
       queryClient.setQueriesData<Post[]>(
-        { queryKey: [workspaceId] },
+        { queryKey: ['posts', workspaceId] },
         (oldData) => {
           if (!oldData) return oldData
           return oldData.map((post) =>

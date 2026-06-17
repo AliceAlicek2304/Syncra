@@ -137,8 +137,8 @@ export default function SettingsPage() {
 
           {/* Zernio Profiles */}
           <section className={`glass-card ${styles.section}`}>
-            <h2 className={styles.sectionTitle}><UserIcon size={18} /> Zernio Profiles</h2>
-            <p className={styles.sectionDesc}>Manage your Zernio profiles. Each profile can connect to different social accounts.</p>
+            <h2 className={styles.sectionTitle}><UserIcon size={18} /> Publishing Profiles</h2>
+            <p className={styles.sectionDesc}>Manage your profiles. Each profile can connect to different social accounts.</p>
             {isLoading ? (
               <div className={styles.form}><Skeleton height="100px" /></div>
             ) : (

@@ -8,6 +8,8 @@ import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
+import { useNotificationHub } from '../../hooks/useNotificationHub'
 import CreatePostModal from '../../components/CreatePostModal'
 import MeshBackground from '../../components/MeshBackground'
 import CommandPalette from '../../components/CommandPalette'
@@ -31,6 +33,9 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [postsOpen, setPostsOpen] = useState(true)
   const [inboxOpen, setInboxOpen] = useState(true)
+
+  const { activeWorkspace } = useWorkspace()
+  useNotificationHub({ workspaceId: activeWorkspace?.id })
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
 

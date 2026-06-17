@@ -69,7 +69,6 @@ export default function PostsOverviewPage() {
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false)
   const [isDeletingSingle, setIsDeletingSingle] = useState<boolean>(false)
   const [isDeletingSyncraOnly, setIsDeletingSyncraOnly] = useState<boolean>(false)
-  const [isDeletingPlatformOnly, setIsDeletingPlatformOnly] = useState<boolean>(false)
   const [isDeletingPlatformAndSyncra, setIsDeletingPlatformAndSyncra] = useState<boolean>(false)
   const menuRef = useRef<HTMLDivElement>(null)
   
@@ -418,32 +417,6 @@ export default function PostsOverviewPage() {
     }
   }
 
-  const handleDeletePlatformOnly = async (post: Post) => {
-    if (!workspaceId) return
-    setIsDeletingPlatformOnly(true)
-    try {
-      if (post.zernioPostId) {
-        const postPlatforms = Array.from(new Set(
-          post.platforms?.length 
-            ? post.platforms 
-            : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
-        ));
-        for (const platform of postPlatforms) {
-          await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
-        }
-        showSuccess('Post unpublished from platforms')
-      } else {
-        showError('Post does not support unpublish')
-      }
-      setDeleteConfirmPost(null)
-      setOpenMenuPostId(null)
-      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
-    } catch (err) {
-      showError('Failed to unpublish post')
-    } finally {
-      setIsDeletingPlatformOnly(false)
-    }
-  }
 
   const handleDeletePlatformAndSyncra = async (post: Post) => {
     if (!workspaceId) return
@@ -456,6 +429,9 @@ export default function PostsOverviewPage() {
             : (post.platformTargets?.map(t => t.platform.toLowerCase()) || [])
         ));
         for (const platform of postPlatforms) {
+          if (['instagram', 'tiktok', 'snapchat'].includes(platform.toLowerCase())) {
+            continue;
+          }
           await postsApi.unpublishZernioPost(workspaceId, post.zernioPostId, platform, false);
         }
         await postsApi.deleteZernioPost(workspaceId, post.zernioPostId);
@@ -464,12 +440,12 @@ export default function PostsOverviewPage() {
         await postsApi.deletePost(workspaceId, post.id)
         showSuccess('Post deleted successfully')
       }
-      setDeleteConfirmPost(null)
-      setOpenMenuPostId(null)
-      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
     } catch (err) {
       showError('Failed to delete post')
     } finally {
+      setDeleteConfirmPost(null)
+      setOpenMenuPostId(null)
+      queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
       setIsDeletingPlatformAndSyncra(false)
     }
   }
@@ -1599,17 +1575,20 @@ export default function PostsOverviewPage() {
               ? deleteConfirmPost.platforms 
               : (deleteConfirmPost.platformTargets?.map(t => t.platform.toLowerCase()) || [])
           ));
-          const hasUnsupported = postPlatforms.some(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
+           const allUnsupported = postPlatforms.every(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
           const formatPlatformName = (p: string) => {
             if (p === 'youtube') return 'YouTube';
             if (p === 'linkedin') return 'LinkedIn';
             if (p === 'gmb' || p === 'googlebusiness') return 'Google Business';
+            if (p.toLowerCase() === 'tiktok') return 'TikTok';
+            if (p.toLowerCase() === 'instagram') return 'Instagram';
+            if (p.toLowerCase() === 'snapchat') return 'Snapchat';
             return p.charAt(0).toUpperCase() + p.slice(1);
           };
           const platformsText = postPlatforms.map(formatPlatformName).join(', ') || 'platforms';
           const unsupportedPlatforms = postPlatforms.filter(p => ['instagram', 'tiktok', 'snapchat'].includes(p.toLowerCase()));
 
-          const isAnyDeleting = isDeletingSyncraOnly || isDeletingPlatformOnly || isDeletingPlatformAndSyncra;
+          const isAnyDeleting = isDeletingSyncraOnly || isDeletingPlatformAndSyncra;
 
           return deleteConfirmPost.status === 'published' ? (
             <div className={styles.modalBackdrop} onClick={() => !isAnyDeleting && setDeleteConfirmPost(null)}>
@@ -1648,68 +1627,48 @@ export default function PostsOverviewPage() {
                       <span className={styles.optionDescription}>
                         Remove from your Syncra dashboard. The post will remain live on {platformsText}.
                       </span>
+                      {allUnsupported && unsupportedPlatforms.map((p) => (
+                        <div key={p} className={styles.unsupportedWarning}>
+                          <AlertCircle size={14} />
+                          <span>
+                            {formatPlatformName(p)} doesn't support deletion via API. You'll need to remove it manually.
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </button>
 
-                  {/* Option 2: Delete from platform only */}
-                  <button 
-                    type="button" 
-                    className={`${styles.deleteOptionCard} ${hasUnsupported || isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
-                    onClick={() => !hasUnsupported && !isAnyDeleting && handleDeletePlatformOnly(deleteConfirmPost)}
-                    disabled={hasUnsupported || isAnyDeleting}
-                  >
-                    <div className={styles.optionIconSquare}>
-                      {isDeletingPlatformOnly ? (
-                        <div className={styles.optionSpinner} />
-                      ) : (
-                        <Globe size={20} />
-                      )}
-                    </div>
-                    <div className={styles.optionTextStack}>
-                      <span className={styles.optionTitle}>Delete from platform only</span>
-                      <span className={styles.optionDescription}>
-                        Permanently delete from {platformsText}. The post will remain on your Syncra dashboard.
-                      </span>
-                      {unsupportedPlatforms.length > 0 && (
-                        <div className={styles.unsupportedWarning}>
-                          <AlertCircle size={14} />
-                          <span>
-                            {unsupportedPlatforms.map(formatPlatformName).join(', ')} {unsupportedPlatforms.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Option 3: Delete from platform and Syncra */}
-                  <button 
-                    type="button" 
-                    className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
-                    onClick={() => !isAnyDeleting && handleDeletePlatformAndSyncra(deleteConfirmPost)}
-                    disabled={isAnyDeleting}
-                  >
-                    <div className={styles.optionIconSquare}>
-                      {isDeletingPlatformAndSyncra ? (
-                        <div className={styles.optionSpinner} />
-                      ) : (
-                        <Globe size={20} />
-                      )}
-                    </div>
-                    <div className={styles.optionTextStack}>
-                      <span className={styles.optionTitle}>Delete from platform and Syncra</span>
-                      <span className={styles.optionDescription}>
-                        Permanently delete from {platformsText} and remove from Syncra.
-                      </span>
-                      {unsupportedPlatforms.length > 0 && (
-                        <div className={styles.unsupportedWarning}>
-                          <AlertCircle size={14} />
-                          <span>
-                            {unsupportedPlatforms.map(formatPlatformName).join(', ')} {unsupportedPlatforms.length === 1 ? "doesn't" : "don't"} support deletion via API and will need to be removed manually.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
+                  {/* Option 2: Delete from platform and Syncra */}
+                  {!allUnsupported && (
+                    <button 
+                      type="button" 
+                      className={`${styles.deleteOptionCard} ${isAnyDeleting ? styles.deleteOptionCardDisabled : ''}`}
+                      onClick={() => !isAnyDeleting && handleDeletePlatformAndSyncra(deleteConfirmPost)}
+                      disabled={isAnyDeleting}
+                    >
+                      <div className={styles.optionIconSquare}>
+                        {isDeletingPlatformAndSyncra ? (
+                          <div className={styles.optionSpinner} />
+                        ) : (
+                          <Globe size={20} />
+                        )}
+                      </div>
+                      <div className={styles.optionTextStack}>
+                        <span className={styles.optionTitle}>Delete from platform and Syncra</span>
+                        <span className={styles.optionDescription}>
+                          Permanently delete from {platformsText} and remove from Syncra.
+                        </span>
+                        {unsupportedPlatforms.map((p) => (
+                          <div key={p} className={styles.unsupportedWarning}>
+                            <AlertCircle size={14} />
+                            <span>
+                              {formatPlatformName(p)} doesn't support deletion via API. You'll need to remove it manually.
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </button>
+                  )}
                 </div>
 
                 {/* Footer displaying target platforms */}

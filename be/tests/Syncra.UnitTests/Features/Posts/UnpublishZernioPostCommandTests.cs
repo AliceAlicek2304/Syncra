@@ -51,7 +51,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_PublishedPost_CallsUnpublishAndSoftDeletes()
+    public async Task UnpublishHandler_PublishedPost_CallsUnpublishAndHardDeletes()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -74,13 +74,14 @@ public class UnpublishZernioPostCommandTests : IDisposable
         // Assert
         Assert.True(result);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
 
-        var deletedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
-        Assert.True(deletedPost.IsDeleted);
+        var dbPost = await _db.Posts.FirstOrDefaultAsync(p => p.Id == post.Id);
+        Assert.Null(dbPost);
     }
 
     [Fact]
-    public async Task UnpublishHandler_PublishedPostWithPlatforms_CallsUnpublishForSpecifiedPlatformOnly()
+    public async Task UnpublishHandler_PublishedPostWithPlatforms_CallsUnpublishForSpecifiedPlatformOnlyAndHardDeletes()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -106,9 +107,10 @@ public class UnpublishZernioPostCommandTests : IDisposable
         Assert.True(result);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "twitter", It.IsAny<CancellationToken>()), Times.Never);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
 
-        var deletedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
-        Assert.True(deletedPost.IsDeleted);
+        var dbPost = await _db.Posts.FirstOrDefaultAsync(p => p.Id == post.Id);
+        Assert.Null(dbPost);
     }
 
     [Fact]
@@ -137,7 +139,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_ZernioApiFails_StillUpdatesPostLocal()
+    public async Task UnpublishHandler_ZernioApiFails_ReturnsFalseAndDoesNotDeletePostLocal()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -162,10 +164,10 @@ public class UnpublishZernioPostCommandTests : IDisposable
         var result = await _handler.Handle(cmd, CancellationToken.None);
 
         // Assert
-        Assert.True(result);
+        Assert.False(result);
 
-        var updatedPost = await _db.Posts.IgnoreQueryFilters().FirstAsync(p => p.Id == post.Id);
-        Assert.True(updatedPost.IsDeleted);
+        var updatedPost = await _db.Posts.FirstAsync(p => p.Id == post.Id);
+        Assert.False(updatedPost.IsDeleted);
     }
 
     [Fact]
@@ -181,10 +183,11 @@ public class UnpublishZernioPostCommandTests : IDisposable
         // Assert
         Assert.True(result);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task UnpublishHandler_PublishedPost_DeleteFromDbFalse_CallsUnpublishAndKeepsPostInDb()
+    public async Task UnpublishHandler_PublishedPost_DeleteFromDbFalse_CallsUnpublishOnlyAndKeepsPostInDb()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -207,12 +210,25 @@ public class UnpublishZernioPostCommandTests : IDisposable
         // Assert
         Assert.True(result);
         _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Never);
 
-        var dbPost = await _db.Posts.FirstAsync(p => p.Id == post.Id);
-        Assert.False(dbPost.IsDeleted);
-        Assert.Equal(PostStatus.Failed, dbPost.Status);
+        var dbPost = await _db.Posts.FirstOrDefaultAsync(p => p.Id == post.Id);
+        Assert.NotNull(dbPost);
+    }
 
-        var dbTarget = await _db.PostPlatformTargets.FirstAsync(t => t.Id == fbTarget.Id);
-        Assert.Equal(PostPlatformStatus.Failed, dbTarget.Status);
+    [Fact]
+    public async Task UnpublishHandler_PostNotInLocalDb_DeleteFromDbFalse_CallsUnpublishOnly()
+    {
+        // Arrange
+        var zernioPostId = "z_123";
+        var cmd = new UnpublishZernioPostCommand(_workspaceId, zernioPostId, "facebook", false);
+
+        // Act
+        var result = await _handler.Handle(cmd, CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        _zernioClientMock.Verify(x => x.UnpublishPostAsync("z_123", "facebook", It.IsAny<CancellationToken>()), Times.Once);
+        _zernioClientMock.Verify(x => x.DeletePostAsync("z_123", It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -1118,7 +1118,7 @@ export default function ConnectionsPage() {
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>Create new profile</h2>
-                <p className={styles.drawerSubtitle}>Add a new Zernio profile to manage your social accounts.</p>
+                <p className={styles.drawerSubtitle}>Add a new profile to manage your social accounts.</p>
               </div>
               <button className={styles.drawerCloseBtn} onClick={() => closeProfileDrawer()}>
                 <X size={18} />
@@ -1363,7 +1363,7 @@ export default function ConnectionsPage() {
             <div className={styles.drawerHeader}>
               <div>
                 <h2 className={styles.drawerTitle}>Edit profile</h2>
-                <p className={styles.drawerSubtitle}>Update the name or color of your Zernio profile.</p>
+                <p className={styles.drawerSubtitle}>Update the name or color of your profile.</p>
               </div>
               <button className={styles.drawerCloseBtn} onClick={() => closeEditProfileDrawer()}>
                 <X size={18} />

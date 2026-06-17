@@ -1,12 +1,21 @@
 using FluentValidation;
+using Syncra.Application.Interfaces;
+using Syncra.Domain.Interfaces;
 using Syncra.Domain.ValueObjects;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Syncra.Application.Features.Posts.UpdateZernioPost;
 
 public sealed class UpdateZernioPostCommandValidator : AbstractValidator<UpdateZernioPostCommand>
 {
-    public UpdateZernioPostCommandValidator()
+    private readonly IPostRepository _postRepository;
+
+    public UpdateZernioPostCommandValidator(IPostRepository postRepository)
     {
+        _postRepository = postRepository;
+
         RuleFor(x => x.WorkspaceId)
             .NotEmpty()
             .WithMessage("Workspace ID is required.");
@@ -27,18 +36,25 @@ public sealed class UpdateZernioPostCommandValidator : AbstractValidator<UpdateZ
         RuleFor(x => x.SocialAccountIds)
             .NotNull()
             .WithMessage("Social account IDs are required.")
-            .Must(ids => ids.Count > 0)
-            .When(x => x.PublishNow || x.ScheduledAtUtc.HasValue)
+            .Must(ids => ids != null && ids.Count > 0)
+            .When(x => x != null && (x.PublishNow || x.ScheduledAtUtc.HasValue))
             .WithMessage("At least one social account is required for scheduled or immediate publishing.");
 
-        RuleFor(x => x.ScheduledAtUtc)
-            .Must(BeFutureWhenSpecified)
-            .When(x => x.ScheduledAtUtc.HasValue)
+        RuleFor(x => x)
+            .MustAsync(BeFutureOrUnchangedScheduledTimeAsync)
+            .When(x => x != null && x.ScheduledAtUtc.HasValue && !x.PublishNow && x.IsDraft != true)
             .WithMessage("Scheduled time must be in the future.");
     }
 
-    private static bool BeFutureWhenSpecified(DateTime? scheduledAtUtc)
+    private async Task<bool> BeFutureOrUnchangedScheduledTimeAsync(UpdateZernioPostCommand command, CancellationToken cancellationToken)
     {
-        return !scheduledAtUtc.HasValue || scheduledAtUtc.Value > DateTime.UtcNow;
+        if (command == null || !command.ScheduledAtUtc.HasValue) return true;
+        if (command.ScheduledAtUtc.Value > DateTime.UtcNow) return true;
+
+        var post = await _postRepository.GetByZernioPostIdAsync(command.PostId);
+        if (post == null) return false;
+
+        DateTime? existingScheduledTime = post.ScheduledAt.IsNone ? null : post.ScheduledAt.UtcValue;
+        return existingScheduledTime == command.ScheduledAtUtc.Value;
     }
 }

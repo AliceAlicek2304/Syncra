@@ -145,6 +145,11 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
     {
         if (string.IsNullOrEmpty(storageKeyOrUrl)) return string.Empty;
 
+        if (storageKeyOrUrl.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+        {
+            return storageKeyOrUrl;
+        }
+
         // If it's already a full URL, extract the storage key
         var key = storageKeyOrUrl;
         var prefix = $"{_options.ServiceUrl.TrimEnd('/')}/{_options.BucketName}/";

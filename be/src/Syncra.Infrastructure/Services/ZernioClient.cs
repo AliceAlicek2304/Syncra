@@ -1003,7 +1003,7 @@ public sealed class ZernioClient : IZernioClient
             if (!PlatformMap.TryGetValue(platform, out var platformEnum))
             {
                 _logger.LogWarning("Platform {Platform} is not supported for API unpublishing. Skipping Zernio unpublish API call.", platform);
-                return;
+                throw new NotSupportedException($"Platform {platform} is not supported for API unpublishing.");
             }
 
             var request = new UnpublishPostRequest(platformEnum);
@@ -4021,7 +4021,7 @@ public sealed class ZernioClient : IZernioClient
         catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error getting LinkedIn mentions for account {AccountId} and URL {Url}", accountId, url);
-            throw new DomainException("zernio_linkedin_mentions_error", "Failed to resolve LinkedIn mentions", ex);
+            throw new DomainException("zernio_linkedin_mentions_error", $"Failed to resolve LinkedIn mentions: {ex.Message}", ex);
         }
         catch (Exception ex)
         {

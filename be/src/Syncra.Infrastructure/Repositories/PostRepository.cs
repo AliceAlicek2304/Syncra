@@ -188,4 +188,5 @@ public class PostRepository : Repository<Post>, IPostRepository
     {
         _context.Set<PostPlatformTarget>().Add(target);
     }
+
 }

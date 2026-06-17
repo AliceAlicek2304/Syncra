@@ -1,4 +1,8 @@
 import api from '../lib/axios';
+import { cached, invalidateCache } from '../lib/apiCache';
+
+const cacheKey = (prefix: string, ...parts: (string | undefined)[]) =>
+  `${prefix}:${parts.filter(Boolean).join(':')}`;
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -354,18 +358,24 @@ export interface InboxSendCommentReplyResponse {
 
 // ── API Wrapper Methods ──────────────────────────────────────────────────────
 
+const CACHE_TTL = 30000; // 30s
+const SOCIAL_CACHE_TTL = 60000; // 60s for social accounts
+
 export const inboxApi = {
   // 1. Existing Endpoints
   getConversations: async (workspaceId: string, profileId?: string): Promise<InboxConversationDto[]> => {
-    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
-    if (profileId) {
-      headers['X-Profile-Id'] = profileId;
-    }
-    const response = await api.get<InboxConversationDto[]>(
-      `workspaces/${workspaceId}/inbox/conversations`,
-      { headers }
-    );
-    return response.data;
+    const key = cacheKey('conversations', workspaceId, profileId);
+    return cached(key, async () => {
+      const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+      if (profileId) {
+        headers['X-Profile-Id'] = profileId;
+      }
+      const response = await api.get<InboxConversationDto[]>(
+        `workspaces/${workspaceId}/inbox/conversations`,
+        { headers }
+      );
+      return response.data;
+    }, CACHE_TTL);
   },
 
   getMessages: async (
@@ -373,18 +383,21 @@ export const inboxApi = {
     conversationId: string,
     params?: { limit?: number; before?: string; profileId?: string }
   ): Promise<InboxMessageDto[]> => {
-    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
-    if (params?.profileId) {
-      headers['X-Profile-Id'] = params.profileId;
-    }
-    const response = await api.get<InboxMessageDto[]>(
-      `workspaces/${workspaceId}/inbox/conversations/${conversationId}/messages`,
-      {
-        headers,
-        params,
+    const key = cacheKey('messages', workspaceId, conversationId, params?.profileId);
+    return cached(key, async () => {
+      const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+      if (params?.profileId) {
+        headers['X-Profile-Id'] = params.profileId;
       }
-    );
-    return response.data;
+      const response = await api.get<InboxMessageDto[]>(
+        `workspaces/${workspaceId}/inbox/conversations/${conversationId}/messages`,
+        {
+          headers,
+          params,
+        }
+      );
+      return response.data;
+    }, CACHE_TTL);
   },
 
   sendMessage: async (
@@ -397,6 +410,8 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('messages', workspaceId, conversationId));
+    invalidateCache(cacheKey('conversations', workspaceId));
     return response.data;
   },
 
@@ -433,6 +448,7 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('conversations', workspaceId));
     return response.data;
   },
 
@@ -446,6 +462,7 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('conversations', workspaceId));
     return response.data;
   },
 
@@ -460,6 +477,7 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('messages', workspaceId, conversationId));
     return response.data;
   },
 
@@ -476,6 +494,8 @@ export const inboxApi = {
         params: { accountId }
       }
     );
+    invalidateCache(cacheKey('messages', workspaceId, conversationId));
+    invalidateCache(cacheKey('conversations', workspaceId));
     return response.data;
   },
 
@@ -490,6 +510,7 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('messages', workspaceId, conversationId));
     return response.data;
   },
 
@@ -506,6 +527,7 @@ export const inboxApi = {
         params: { accountId }
       }
     );
+    invalidateCache(cacheKey('messages', workspaceId, conversationId));
     return response.data;
   },
 
@@ -528,18 +550,22 @@ export const inboxApi = {
     workspaceId: string,
     params?: { limit?: number; before?: string; platform?: string; accountId?: string; profileId?: string }
   ): Promise<InboxCommentedPostsResponseDto> => {
-    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
-    if (params?.profileId !== undefined) {
-      headers['X-Profile-Id'] = params.profileId;
-    }
-    const response = await api.get<InboxCommentedPostsResponseDto>(
-      `workspaces/${workspaceId}/inbox/comments`,
-      {
-        headers,
-        params,
+    const paramKey = params ? `${params.limit || ''}:${params.platform || ''}:${params.accountId || ''}:${params.profileId || ''}` : '';
+    const key = cacheKey('comments', workspaceId, paramKey);
+    return cached(key, async () => {
+      const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+      if (params?.profileId !== undefined) {
+        headers['X-Profile-Id'] = params.profileId;
       }
-    );
-    return response.data;
+      const response = await api.get<InboxCommentedPostsResponseDto>(
+        `workspaces/${workspaceId}/inbox/comments`,
+        {
+          headers,
+          params,
+        }
+      );
+      return response.data;
+    }, CACHE_TTL);
   },
 
   getPostComments: async (
@@ -548,18 +574,21 @@ export const inboxApi = {
     accountId: string,
     params?: { subreddit?: string; limit?: number; cursor?: string; commentId?: string; forceRefresh?: boolean; profileId?: string }
   ): Promise<ZernioPostCommentsResponseDto> => {
-    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
-    if (params?.profileId !== undefined) {
-      headers['X-Profile-Id'] = params.profileId;
-    }
-    const response = await api.get<ZernioPostCommentsResponseDto>(
-      `workspaces/${workspaceId}/inbox/posts/${postId}/comments`,
-      {
-        headers,
-        params: { accountId, ...params }
+    const key = cacheKey('postComments', workspaceId, postId, params?.forceRefresh ? 'force' : '');
+    return cached(key, async () => {
+      const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
+      if (params?.profileId !== undefined) {
+        headers['X-Profile-Id'] = params.profileId;
       }
-    );
-    return response.data;
+      const response = await api.get<ZernioPostCommentsResponseDto>(
+        `workspaces/${workspaceId}/inbox/posts/${postId}/comments`,
+        {
+          headers,
+          params: { accountId, ...params }
+        }
+      );
+      return response.data;
+    }, CACHE_TTL);
   },
 
   deleteComment: async (
@@ -570,6 +599,8 @@ export const inboxApi = {
       `workspaces/${workspaceId}/inbox/comments/${commentId}`,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('comments', workspaceId));
+    invalidateCache(cacheKey('postComments', workspaceId));
     return response.data;
   },
 
@@ -582,6 +613,8 @@ export const inboxApi = {
       {},
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('comments', workspaceId));
+    invalidateCache(cacheKey('postComments', workspaceId));
     return response.data;
   },
 
@@ -593,6 +626,8 @@ export const inboxApi = {
       `workspaces/${workspaceId}/inbox/comments/${commentId}/hide`,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('comments', workspaceId));
+    invalidateCache(cacheKey('postComments', workspaceId));
     return response.data;
   },
 
@@ -634,6 +669,8 @@ export const inboxApi = {
       { message },
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('comments', workspaceId));
+    invalidateCache(cacheKey('postComments', workspaceId));
     return response.data;
   },
 
@@ -647,6 +684,8 @@ export const inboxApi = {
       request,
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+    invalidateCache(cacheKey('comments', workspaceId));
+    invalidateCache(cacheKey('postComments', workspaceId));
     return response.data;
   }
 };

@@ -10,7 +10,7 @@ namespace Syncra.Application.Features.Inbox.Queries;
 public sealed class GetInboxPostCommentsQueryHandler
     : IRequestHandler<GetInboxPostCommentsQuery, ZernioPostCommentsResponseDto>
 {
-    private static readonly TimeSpan ThreadTtl = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan ThreadTtl = TimeSpan.FromMinutes(5);
 
     private readonly IZernioClient _zernioClient;
     private readonly IInboxRepository _inboxRepository;
@@ -32,6 +32,10 @@ public sealed class GetInboxPostCommentsQueryHandler
             request.ZernioPostId,
             cancellationToken);
 
+        var postEntity = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(
+            request.WorkspaceId, request.ZernioPostId, cancellationToken);
+        var isAd = postEntity?.IsAd == true;
+
         ZernioPostCommentsResponseDto response;
 
         if (!request.ForceRefresh && cached != null && cached.ExpiresAtUtc > DateTime.UtcNow)
@@ -43,19 +47,19 @@ public sealed class GetInboxPostCommentsQueryHandler
             }
             else
             {
-                response = await FetchLiveAndCacheAsync(request, cancellationToken);
+                response = await FetchLiveAndCacheAsync(request, postEntity, cancellationToken);
             }
         }
         else
         {
-            response = await FetchLiveAndCacheAsync(request, cancellationToken);
+            response = await FetchLiveAndCacheAsync(request, postEntity, cancellationToken);
         }
 
-        var privateReplies = await _inboxRepository.GetPrivateRepliesForWorkspaceAsync(request.WorkspaceId, cancellationToken);
+        var allCommentIds = ExtractCommentIds(response.Comments);
+        var privateReplies = allCommentIds.Count > 0
+            ? await _inboxRepository.GetPrivateRepliesByCommentIdsAsync(request.WorkspaceId, allCommentIds, cancellationToken)
+            : Array.Empty<InboxCommentPrivateReply>();
         var repliedCommentIds = new HashSet<string>(privateReplies.Select(pr => pr.ZernioCommentId));
-
-        var postEntity = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(request.WorkspaceId, request.ZernioPostId, cancellationToken);
-        var isAd = postEntity?.IsAd == true;
 
         if (response.Comments != null)
         {
@@ -64,6 +68,21 @@ public sealed class GetInboxPostCommentsQueryHandler
         }
 
         return response;
+    }
+
+    private static HashSet<string> ExtractCommentIds(IReadOnlyList<ZernioPostCommentItemDto>? comments)
+    {
+        var ids = new HashSet<string>();
+        if (comments == null) return ids;
+        foreach (var c in comments)
+        {
+            ids.Add(c.Id);
+            if (c.Replies?.Count > 0)
+            {
+                ids.UnionWith(ExtractCommentIds(c.Replies));
+            }
+        }
+        return ids;
     }
 
     private static IReadOnlyList<ZernioPostCommentItemDto> PopulateCommentsMetadata(
@@ -90,6 +109,7 @@ public sealed class GetInboxPostCommentsQueryHandler
 
     private async Task<ZernioPostCommentsResponseDto> FetchLiveAndCacheAsync(
         GetInboxPostCommentsQuery request,
+        InboxCommentedPost? postEntity,
         CancellationToken cancellationToken)
     {
         var live = await _zernioClient.GetInboxPostCommentsAsync(
@@ -103,7 +123,6 @@ public sealed class GetInboxPostCommentsQueryHandler
             request.Platform,
             cancellationToken);
 
-        var postEntity = await _inboxRepository.GetCommentedPostByZernioPostIdAsync(request.WorkspaceId, request.ZernioPostId, cancellationToken);
         if (postEntity == null)
         {
             var newPost = InboxCommentedPost.Create(

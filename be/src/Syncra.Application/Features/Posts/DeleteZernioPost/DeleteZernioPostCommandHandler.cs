@@ -50,7 +50,7 @@ public class DeleteZernioPostCommandHandler : IRequestHandler<DeleteZernioPostCo
                 }
             }
 
-            post.MarkAsDeleted();
+            await _postRepository.DeleteAsync(post.Id);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         else

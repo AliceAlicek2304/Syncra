@@ -58,16 +58,18 @@ public sealed class GetInboxConversationsQueryHandler
             cancellationToken: cancellationToken);
 
         var socialAccounts = await _socialAccountRepository.GetByWorkspaceIdAsync(request.WorkspaceId);
+
+        var allZernioIds = zernioResult.Items.Select(i => i.Id).ToArray();
+        var existingConversations = await _inboxRepository.GetConversationsByZernioIdsAsync(
+            request.WorkspaceId, allZernioIds, cancellationToken);
+        var existingByZernioId = existingConversations.ToLookup(c => c.ZernioConversationId);
+
         var resultList = new List<InboxConversationDto>();
 
         foreach (var item in zernioResult.Items)
         {
             var socialAccount = socialAccounts.FirstOrDefault(sa => sa.ExternalAccountId == item.AccountId);
-            
-            var localConvo = await _inboxRepository.GetConversationByZernioIdAsync(
-                request.WorkspaceId,
-                item.Id,
-                cancellationToken);
+            var localConvo = existingByZernioId[item.Id].FirstOrDefault();
 
             if (localConvo == null)
             {

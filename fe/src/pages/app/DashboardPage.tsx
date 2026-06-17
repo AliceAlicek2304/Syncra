@@ -157,7 +157,7 @@ export default function DashboardPage() {
       setSelectedCancelPost(null)
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Could not cancel this post in Zernio. Your post remains scheduled. Please try again.'
+      const msg = err?.response?.data?.message || 'Could not cancel this post. Your post remains scheduled. Please try again.'
       showError(msg)
     }
   })

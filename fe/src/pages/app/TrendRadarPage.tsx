@@ -176,7 +176,7 @@ export default function TrendRadarPage() {
         <div className={styles.trendsCard}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>🔥 Xu hướng đang bùng nổ</h2>
-            <span className={styles.cardBadge}>Cập nhật từ Zernio</span>
+            <span className={styles.cardBadge}>Cập nhật hệ thống</span>
           </div>
           
           <div className={styles.tableWrap}>

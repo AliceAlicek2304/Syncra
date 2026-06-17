@@ -83,16 +83,41 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
                 cancellationToken);
     }
 
+    public async Task<IReadOnlyList<InboxMessage>> GetMessagesByZernioIdsAsync(
+        Guid workspaceId,
+        string[] zernioMessageIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxMessages
+            .Where(m => m.WorkspaceId == workspaceId
+                     && zernioMessageIds.Contains(m.ZernioMessageId))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<InboxConversation>> GetConversationsByZernioIdsAsync(
+        Guid workspaceId,
+        string[] zernioConversationIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxConversations
+            .Where(c => c.WorkspaceId == workspaceId
+                     && zernioConversationIds.Contains(c.ZernioConversationId))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddConversationAsync(InboxConversation conversation)
     {
         await _context.InboxConversations.AddAsync(conversation);
-        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task AddMessageAsync(InboxMessage message)
     {
         await _context.InboxMessages.AddAsync(message);
-        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task AddMessagesAsync(IReadOnlyList<InboxMessage> messages)
+    {
+        await _context.InboxMessages.AddRangeAsync(messages);
     }
 
     public async Task DeleteMessageAsync(InboxMessage message)
@@ -236,6 +261,17 @@ public sealed class InboxRepository : Repository<InboxConversation>, IInboxRepos
     {
         return await _context.InboxCommentPrivateReplies
             .Where(r => r.WorkspaceId == workspaceId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<InboxCommentPrivateReply>> GetPrivateRepliesByCommentIdsAsync(
+        Guid workspaceId,
+        HashSet<string> commentIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InboxCommentPrivateReplies
+            .Where(r => r.WorkspaceId == workspaceId
+                     && commentIds.Contains(r.ZernioCommentId))
             .ToListAsync(cancellationToken);
     }
 

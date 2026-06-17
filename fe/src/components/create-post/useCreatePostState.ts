@@ -46,6 +46,13 @@ export function getPlatformValidationError(platform: Platform, media: any[]): st
       return 'YouTube requires a video file.'
     }
   }
+  if (platform === 'facebook') {
+    const hasImage = media.some(m => m.type === 'image')
+    const hasVideo = media.some(m => m.type === 'video')
+    if (hasImage && hasVideo) {
+      return 'Facebook posts cannot mix videos and images. Please use either all images or all videos.'
+    }
+  }
   return null
 }
 

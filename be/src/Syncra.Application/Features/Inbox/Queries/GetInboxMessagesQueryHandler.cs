@@ -60,14 +60,17 @@ public sealed class GetInboxMessagesQueryHandler
             cursor,
             cancellationToken);
 
+        var allZernioIds = zernioResult.Items.Select(i => i.Id).ToArray();
+        var existingMessages = await _inboxRepository.GetMessagesByZernioIdsAsync(
+            request.WorkspaceId, allZernioIds, cancellationToken);
+        var existingByZernioId = existingMessages.ToLookup(m => m.ZernioMessageId);
+
+        var newMessages = new List<InboxMessage>();
         var resultList = new List<InboxMessageDto>();
 
         foreach (var item in zernioResult.Items)
         {
-            var localMessage = await _inboxRepository.GetMessageByZernioIdAsync(
-                request.WorkspaceId,
-                item.Id,
-                cancellationToken);
+            var localMessage = existingByZernioId[item.Id].FirstOrDefault();
 
             string direction = string.Equals(item.Direction, "outgoing", StringComparison.OrdinalIgnoreCase)
                 ? "Outbound"
@@ -84,7 +87,7 @@ public sealed class GetInboxMessagesQueryHandler
                     (item.SentAt == null || item.SentAt == default(DateTime)) ? DateTime.UtcNow : item.SentAt.Value,
                     conversation.SocialAccount?.ExternalAccountId
                 );
-                await _inboxRepository.AddMessageAsync(localMessage);
+                newMessages.Add(localMessage);
             }
             else
             {
@@ -102,6 +105,11 @@ public sealed class GetInboxMessagesQueryHandler
                 localMessage.CreatedAtUtc,
                 item.Attachments
             ));
+        }
+
+        if (newMessages.Count > 0)
+        {
+            await _inboxRepository.AddMessagesAsync(newMessages);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
