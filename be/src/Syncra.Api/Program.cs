@@ -1,4 +1,5 @@
 using Hangfire;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Syncra.Api;
 using Syncra.Api.Logging;
@@ -7,6 +8,7 @@ using Syncra.Api.Hubs;
 using Syncra.Application;
 using Syncra.Infrastructure;
 using Syncra.Infrastructure.Jobs;
+using Syncra.Infrastructure.Persistence;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -98,6 +100,12 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/api/v1/hubs/notifications");
 app.MapHealthChecks("/health");
 
-// Program entry point
+if (app.Environment.IsProduction())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 app.Run();
 public partial class Program { }

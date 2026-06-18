@@ -3,15 +3,38 @@ services:
     image: redis:7-alpine
     container_name: syncra-redis
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
+    volumes:
+      - redis-data:/data
+
+  backend:
+    image: ghcr.io/tai-isme/syncra-api:latest
+    container_name: syncra-backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:8080"
+    env_file: .env
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+        - subnet: "fd00:dead:beef::/48"
 
 volumes:
   redis-data:

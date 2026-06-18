@@ -162,6 +162,7 @@ be/stripe.tar.gz
 .gsd.migrating
 .env.*
 !.env.example
+!.env.production.template
 .next/
 __pycache__/
 *.pyc

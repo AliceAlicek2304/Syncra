@@ -10,18 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Publish Backend
-        run: |
-          dotnet publish be/src/Syncra.Api/Syncra.Api.csproj \
-            -c Release -o backend-publish
-          # Ensure wwwroot/uploads exists
-          mkdir -p backend-publish/wwwroot/uploads
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -34,26 +22,6 @@ jobs:
           npm ci
           npm run build
 
-      - name: Ensure target directories
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            mkdir -p /var/www/Syncra/backend
-            mkdir -p /var/www/Syncra/frontend
-
-      - name: Copy backend
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "backend-publish/"
-          target: "/var/www/Syncra/backend/"
-          strip_components: 1 
-
       - name: Copy frontend
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -64,7 +32,37 @@ jobs:
           target: "/var/www/Syncra/frontend/"
           strip_components: 1
 
-      - name: Restart & verify
+      - name: Copy deploy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "deploy/docker-compose.yml"
+          target: "/var/www/Syncra/deploy/"
+          strip_components: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: tai-isme
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/tai-isme/syncra-api:latest
+            ghcr.io/tai-isme/syncra-api:${{ github.sha }}
+
+      - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -72,12 +70,13 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            systemctl daemon-reload
-            systemctl restart syncra-api || {
-              echo "FAILED to restart syncra-api"
-              journalctl -u syncra-api --no-pager -n 30
-              exit 1
-            }
+            cd /var/www/Syncra
+
+            echo "Pulling latest image..."
+            docker compose -f deploy/docker-compose.yml pull backend
+
+            echo "Restarting backend (keeping Redis)..."
+            docker compose -f deploy/docker-compose.yml up -d --no-deps backend
 
             echo "Waiting for health check..."
             for i in 1 2 3 4 5; do
@@ -89,9 +88,10 @@ jobs:
               sleep 3
               if [ "$i" = "5" ]; then
                 echo "FAILED health check"
-                journalctl -u syncra-api --no-pager -n 50
+                docker logs syncra-backend --tail 30
                 exit 1
               fi
             done
 
+            docker image prune -f
             echo "Deploy complete!"

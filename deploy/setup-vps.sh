@@ -2,54 +2,48 @@
 set -euo pipefail
 
 SYNCRA_DIR="/var/www/Syncra"
-BACKEND_DIR="$SYNCRA_DIR/backend"
+DEPLOY_DIR="$(dirname "$0")"
 FRONTEND_DIR="$SYNCRA_DIR/frontend"
-UPLOADS_DIR="$SYNCRA_DIR/uploads"
 LOGS_DIR="/var/log/syncra"
-
-ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
 
 echo "=== Step 1: Install dependencies ==="
 apt update
 
-# Install nginx if missing
 if ! command -v nginx &>/dev/null; then
     apt install -y nginx
 fi
 
-# Install Docker if missing
 if ! command -v docker &>/dev/null; then
-    apt install -y docker.io
+    apt install -y docker.io docker-compose-plugin
 fi
 
-# Install docker-compose plugin if missing
 if ! docker compose version &>/dev/null 2>&1; then
     apt install -y docker-compose-plugin
 fi
 
-if ! command -v dotnet &>/dev/null; then
-    echo "Installing .NET 8 runtime..."
-    wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
-    chmod +x /tmp/dotnet-install.sh
-    /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
-    ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
-fi
-
-echo "=== Step 2: Create directories ==="
-mkdir -p "$BACKEND_DIR" "$FRONTEND_DIR" "$UPLOADS_DIR" "$LOGS_DIR"
-
-echo "=== Step 3: Redis check ==="
-if systemctl is-active --quiet redis-server 2>/dev/null; then
-    echo "Redis native service already running — skipping Docker Redis"
+echo "=== Step 2: Enable Docker IPv6 ==="
+DOCKER_CONFIG="/etc/docker/daemon.json"
+if [ ! -f "$DOCKER_CONFIG" ] || ! grep -q "ipv6" "$DOCKER_CONFIG" 2>/dev/null; then
+    mkdir -p /etc/docker
+    cat > "$DOCKER_CONFIG" << 'EOF'
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "2001:db8:1::/64",
+  "ip6tables": true
+}
+EOF
+    echo "Docker daemon.json updated. Restarting Docker..."
+    systemctl restart docker
 else
-    echo "Starting Redis via Docker..."
-    cd "$SYNCRA_DIR"
-    cp "$(dirname "$0")/docker-compose.yml" "$SYNCRA_DIR/docker-compose.yml"
-    docker compose up -d redis
+    echo "Docker IPv6 already configured"
 fi
+
+echo "=== Step 3: Create directories ==="
+mkdir -p "$FRONTEND_DIR" "$LOGS_DIR"
+mkdir -p "$SYNCRA_DIR/deploy"
 
 echo "=== Step 4: Setup nginx ==="
-cp "$(dirname "$0")/nginx-syncra.conf" /etc/nginx/sites-available/syncra
+cp "$DEPLOY_DIR/nginx-syncra.conf" /etc/nginx/sites-available/syncra
 if [ ! -L /etc/nginx/sites-enabled/syncra ]; then
     ln -sf /etc/nginx/sites-available/syncra /etc/nginx/sites-enabled/
 fi
@@ -66,15 +60,26 @@ else
     echo "Certbot already installed"
 fi
 
-echo "=== Step 6: Setup systemd service ==="
-cp "$(dirname "$0")/syncra-api.service" /etc/systemd/system/syncra-api.service
-systemctl daemon-reload
-systemctl enable syncra-api
+echo "=== Step 6: Deploy Docker Compose ==="
+cp "$DEPLOY_DIR/docker-compose.yml" "$SYNCRA_DIR/deploy/docker-compose.yml"
+cd "$SYNCRA_DIR"
+
+if [ -f ".env" ]; then
+    echo "Found .env — starting services..."
+    docker compose -f deploy/docker-compose.yml pull
+    docker compose -f deploy/docker-compose.yml up -d
+    echo "Services started. Check: curl https://syncra.vn/health"
+else
+    echo "No .env found. Create from template:"
+    echo "  cp .env.production.template .env && nano .env"
+    echo "Then run: docker compose -f deploy/docker-compose.yml up -d"
+fi
 
 echo ""
 echo "=== Bootstrap complete! ==="
-echo "System is ready. Push to main branch to trigger deploy via GitHub Actions."
-echo "Or deploy manually:"
-echo "  1. Build backend: dotnet publish -c Release -o $BACKEND_DIR"
-echo "  2. Build frontend: cd fe && npm ci && npm run build && cp -r dist/* $FRONTEND_DIR/"
-echo "  3. Start service: systemctl start syncra-api"
+echo "Push to main branch to trigger auto-deploy via GitHub Actions."
+echo "Manual deploy:"
+echo "  1. Build frontend: cd fe && npm ci && npm run build"
+echo "  2. Build image: docker build -f deploy/Dockerfile -t ghcr.io/tai-isme/syncra-api:latest ."
+echo "  3. Push image: docker push ghcr.io/tai-isme/syncra-api:latest"
+echo "  4. On VPS: docker compose -f deploy/docker-compose.yml pull backend && docker compose -f deploy/docker-compose.yml up -d --no-deps backend"
