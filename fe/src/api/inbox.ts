@@ -359,7 +359,6 @@ export interface InboxSendCommentReplyResponse {
 // ── API Wrapper Methods ──────────────────────────────────────────────────────
 
 const CACHE_TTL = 30000; // 30s
-const SOCIAL_CACHE_TTL = 60000; // 60s for social accounts
 
 export const inboxApi = {
   // 1. Existing Endpoints
