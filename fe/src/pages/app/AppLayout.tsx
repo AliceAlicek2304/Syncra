@@ -67,7 +67,8 @@ export default function AppLayout() {
                         location.pathname.includes('/analytics') ||
                         location.pathname.includes('/inbox') ||
                         location.pathname.includes('/billing') ||
-                        location.pathname.includes('/settings')
+                        location.pathname.includes('/settings') ||
+                        location.pathname.includes('/sepay-checkout')
 
   const handleLogout = () => {
     logout()

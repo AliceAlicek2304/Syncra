@@ -9,7 +9,6 @@ export default function SePayCheckoutPage() {
   const [searchParams] = useSearchParams();
   const { subscription, loadCurrentSubscription } = useBilling();
 
-  // Parse query parameters
   const paymentCode = searchParams.get('code') || '';
   const amountStr = searchParams.get('amount') || '0';
   const planCode = searchParams.get('plan') || '';
@@ -17,17 +16,14 @@ export default function SePayCheckoutPage() {
 
   const amount = parseInt(amountStr, 10);
 
-  // Configuration (reads from query params, env or falls back to defaults)
   const accountNumber = searchParams.get('accountNumber') || import.meta.env.VITE_SEPAY_ACCOUNT_NUMBER || '1017588888';
   const bankCode = searchParams.get('bankCode') || import.meta.env.VITE_SEPAY_BANK_CODE || 'Vietinbank';
   const accountName = searchParams.get('accountName') || import.meta.env.VITE_SEPAY_ACCOUNT_NAME || 'CONG TY CO PHAN SYNCRA';
 
-  // State
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(900);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // 1. Polling for payment status (every 5 seconds)
   useEffect(() => {
     if (isSuccess) return;
 
@@ -38,7 +34,6 @@ export default function SePayCheckoutPage() {
     return () => clearInterval(intervalId);
   }, [loadCurrentSubscription, isSuccess]);
 
-  // 2. Watch subscription state to detect activation success
   useEffect(() => {
     if (
       subscription &&
@@ -46,14 +41,12 @@ export default function SePayCheckoutPage() {
       subscription.status?.toLowerCase() === 'active'
     ) {
       setIsSuccess(true);
-      // Wait 3 seconds to show success state with fireworks before navigating
       setTimeout(() => {
         navigate(`/app/connections?billing=success`);
       }, 3000);
     }
   }, [subscription, planCode, navigate]);
 
-  // 3. Countdown timer
   useEffect(() => {
     if (timeLeft <= 0 || isSuccess) return;
 
@@ -90,7 +83,7 @@ export default function SePayCheckoutPage() {
             </div>
             <h2 className={styles.successTitle}>Thanh Toán Thành Công!</h2>
             <p className={styles.successDesc}>
-              Hệ thống đã nhận được chuyển khoản của bạn. Đang thiết lập tài khoản của bạn...
+              Hệ thống đã nhận được chuyển khoản của bạn. Đang thiết lập tài khoản...
             </p>
           </div>
         </div>
@@ -109,7 +102,6 @@ export default function SePayCheckoutPage() {
         </div>
 
         <div className={styles.grid}>
-          {/* Left Column: Transfer Information */}
           <div className={styles.leftCol}>
             <div className={styles.summarySection}>
               <div className={styles.summaryRow}>
@@ -189,28 +181,27 @@ export default function SePayCheckoutPage() {
             <div className={styles.alertBox}>
               <AlertTriangle className={styles.alertIcon} size={18} />
               <p className={styles.alertText}>
-                <strong>QUAN TRỌNG:</strong> Bạn phải điền chính xác nội dung chuyển khoản{' '}
-                <strong>{paymentCode}</strong> ở trên để giao dịch được ghi nhận tự động.
+                <strong>QUAN TRỌNG:</strong> Vui lòng chuyển khoản đúng số tiền và điền chính xác nội dung chuyển khoản{' '}
+                <strong>{paymentCode}</strong> ở trên để hệ thống kích hoạt tự động.
               </p>
             </div>
           </div>
 
-          {/* Right Column: QR Code & Status */}
           <div className={styles.rightCol}>
             <h3 className={styles.sectionSubtitle} style={{ marginBottom: 16 }}>Quét mã VietQR thanh toán</h3>
-            
+
             <div className={styles.qrContainer}>
               <img src={qrUrl} alt="Mã VietQR SePay" className={styles.qrImage} />
             </div>
 
             <div className={styles.timer}>
               <Clock size={14} />
-              <span>Thời gian giữ mã: <strong>{formatTime(timeLeft)}</strong></span>
+              <span>Thời gian hiệu lực: <strong>{formatTime(timeLeft)}</strong></span>
             </div>
 
             <div className={styles.statusIndicator}>
               <div className={styles.spinner} />
-              <span className={styles.statusText}>Đang chờ chuyển khoản...</span>
+              <span className={styles.statusText}>Đang chờ thanh toán...</span>
             </div>
           </div>
         </div>

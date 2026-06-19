@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
+import { useWorkspace } from './WorkspaceContext';
 import type{ 
   CurrentSubscriptionDto, 
   CreateCheckoutSessionByPlanRequest, 
@@ -26,14 +27,21 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
-  const getWorkspaceId = useCallback(() => {
-    return localStorage.getItem('syncra_workspace_id');
+  const { activeWorkspace } = useWorkspace();
+  const workspaceId = activeWorkspace?.id;
+
+  // ponytail: clear redirecting when page restored from bfcache (back button)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setRedirecting(false);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
   }, []);
 
   const loadCurrentSubscription = useCallback(async () => {
-    const workspaceId = getWorkspaceId();
     if (!workspaceId) {
-      setError('Workspace ID not found. Please set syncra_workspace_id in localStorage.');
+      setError('Workspace ID not found.');
       return;
     }
 
@@ -50,12 +58,11 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [getWorkspaceId]);
+  }, [workspaceId]);
 
   const startCheckout = useCallback(async (planCode: string, interval: 'month' | 'year', skipTrial: boolean = false) => {
-    const workspaceId = getWorkspaceId();
     if (!workspaceId) {
-      setError('Workspace ID not found. Please set syncra_workspace_id in localStorage.');
+      setError('Workspace ID not found.');
       return;
     }
 
@@ -90,12 +97,11 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : 'Failed to start checkout');
       setLoading(false);
     }
-  }, [getWorkspaceId]);
+  }, [workspaceId]);
 
   const openPortal = useCallback(async () => {
-    const workspaceId = getWorkspaceId();
     if (!workspaceId) {
-      setError('Workspace ID not found. Please set syncra_workspace_id in localStorage.');
+      setError('Workspace ID not found.');
       return;
     }
 
@@ -125,7 +131,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : 'Failed to open billing portal');
       setLoading(false);
     }
-  }, [getWorkspaceId]);
+  }, [workspaceId]);
 
   return (
     <BillingContext.Provider value={{

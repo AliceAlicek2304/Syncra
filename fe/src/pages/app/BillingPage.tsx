@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  CreditCard, Check, ExternalLink, X, Lock, AlertCircle, Zap, Users, Clock
+  CreditCard, Check, ExternalLink, X, AlertCircle, Zap, Users, Clock
 } from 'lucide-react';
 import { useBilling } from '../../context/BillingContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import styles from './BillingPage.module.css';
 
 const PLANS = [
@@ -59,15 +60,16 @@ export default function BillingPage() {
     subscription, loading, error, redirecting,
     loadCurrentSubscription, startCheckout, openPortal
   } = useBilling();
+  const { activeWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const [yearly, setYearly] = useState(false);
   const [banner, setBanner] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
 
-  const isOwner = localStorage.getItem('syncra_is_owner') !== 'false';
-
   useEffect(() => {
-    loadCurrentSubscription();
-  }, [loadCurrentSubscription]);
+    if (activeWorkspace) {
+      loadCurrentSubscription();
+    }
+  }, [activeWorkspace, loadCurrentSubscription]);
 
   useEffect(() => {
     const billingStatus = searchParams.get('billing');
@@ -89,12 +91,10 @@ export default function BillingPage() {
   }, [searchParams, setSearchParams, loadCurrentSubscription]);
 
   const handleCheckout = async (planCode: string) => {
-    if (!isOwner) return;
     await startCheckout(planCode, yearly ? 'year' : 'month', !isEligibleForTrial);
   };
 
   const handleOpenPortal = async () => {
-    if (!isOwner) return;
     await openPortal();
   };
 
@@ -135,7 +135,7 @@ export default function BillingPage() {
             </h1>
             <p className={styles.subtitle}>Manage your plan and payment details.</p>
           </div>
-          {subscription && !subscription.isDefault && isOwner && (
+          {subscription && !subscription.isDefault && (
             <button className={styles.portalBtn} onClick={handleOpenPortal} disabled={redirecting}>
               {redirecting ? 'Redirecting...' : <>
                 Manage Billing <ExternalLink size={14} />
@@ -229,15 +229,10 @@ export default function BillingPage() {
                 <div className={styles.planAction}>
                   {isCurrent ? (
                     <span className={styles.currentLabel}>Active</span>
-                  ) : isOwner ? (
+                  ) : (
                     <button className={styles.actionBtn} onClick={() => handleCheckout(plan.code)} disabled={redirecting}>
                       {redirecting ? 'Redirecting...' : (isEligibleForTrial ? 'Start 14-day Free Trial' : `Upgrade to ${plan.name}`)}
                     </button>
-                  ) : (
-                    <div className={styles.ownerNotice}>
-                      <Lock size={14} />
-                      <span>Only workspace owner can manage billing.</span>
-                    </div>
                   )}
                 </div>
               </div>

@@ -30,9 +30,8 @@ import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
-import { useNavigate } from 'react-router-dom'
-import LoginModal from './components/auth/LoginModal'
-import SignupModal from './components/auth/SignupModal'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -51,11 +50,6 @@ import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 
 
 function Homepage() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const isLoginOpen = location.pathname === '/login'
-  const isSignupOpen = location.pathname === '/signup'
-
   useEffect(() => {
     // Add light theme classes and style overrides to document body for the landing page
     document.body.classList.add('bg-brand-canvas-soft', 'text-brand-ink');
@@ -72,22 +66,6 @@ function Homepage() {
     };
   }, []);
 
-  const handleCloseLogin = () => {
-    navigate('/')
-  }
-
-  const handleLoginSuccess = () => {
-    navigate(`/app/connections${location.search}`)
-  }
-
-  const handleCloseSignup = () => {
-    navigate('/')
-  }
-
-  const handleSignupSuccess = () => {
-    navigate(`/app/connections${location.search}`)
-  }
-
   return (
     <div className="relative bg-brand-canvas-soft text-brand-ink min-h-screen font-sans antialiased selection:bg-brand-primary/20 selection:text-brand-primary">
       <Navbar />
@@ -99,20 +77,6 @@ function Homepage() {
       <Testimonials />
       <TrustBadges />
       <Footer />
-
-      {isLoginOpen && (
-        <LoginModal
-          onClose={handleCloseLogin}
-          onSuccess={handleLoginSuccess}
-        />
-      )}
-
-      {isSignupOpen && (
-        <SignupModal
-          onClose={handleCloseSignup}
-          onSuccess={handleSignupSuccess}
-        />
-      )}
     </div>
   )
 }
@@ -124,8 +88,8 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
-        <Route path="/login" element={<PageWrapper><Homepage /></PageWrapper>} />
-        <Route path="/signup" element={<PageWrapper><Homepage /></PageWrapper>} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/google/callback" element={<OAuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
