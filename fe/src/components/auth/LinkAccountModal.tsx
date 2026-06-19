@@ -95,14 +95,14 @@ export default function LinkAccountModal({
               <img 
                 src={avatarUrl} 
                 alt={email} 
-                className="h-20 w-20 rounded-full border-2 border-purple-500/30 object-cover mx-auto"
+                className="h-20 w-20 rounded-full border-2 border-brand-primary/30 object-cover mx-auto"
               />
-              <div className="absolute -bottom-1 -right-1 bg-[#0f1220] p-1.5 rounded-full border border-purple-500/30">
-                <Lock size={14} className="text-purple-500" />
+              <div className="absolute -bottom-1 -right-1 bg-brand-canvas p-1.5 rounded-full border border-brand-primary/30">
+                <Lock size={14} className="text-brand-primary" />
               </div>
             </div>
           ) : (
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10 text-purple-500">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
               <Lock size={24} />
             </div>
           )}
@@ -128,7 +128,7 @@ export default function LinkAccountModal({
           <div className={styles.field}>
             <div className="flex items-center justify-between">
               <label className={styles.label}>Password</label>
-              <a href="#" className="text-xs font-medium text-purple-500 hover:text-purple-400 transition-colors">
+              <a href="#" className="text-xs font-medium text-brand-primary hover:text-brand-primary-hover transition-colors">
                 Forgot password?
               </a>
             </div>

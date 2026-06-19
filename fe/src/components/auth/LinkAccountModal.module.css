@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 11, 20, 0.82);
+  background: rgba(32, 21, 21, 0.7);
   backdrop-filter: blur(6px);
   z-index: 9000;
   display: flex;
@@ -17,15 +17,15 @@
 }
 
 .modal {
-  background: #0f1220;
-  border: 1px solid var(--border-glass);
-  border-radius: 18px;
+  background: #fffefb;
+  border: 1px solid #e5dfd3;
+  border-radius: 12px;
   width: 100%;
   max-width: 420px;
   position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 24px rgba(32, 21, 21, 0.12);
   animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 32px;
 }
@@ -49,13 +49,13 @@
 .title {
   font-size: 24px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #201515;
   margin-bottom: 8px;
 }
 
 .subtitle {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: #605d52;
   line-height: 1.5;
 }
 
@@ -74,23 +74,23 @@
 .label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #939084;
 }
 
 .input {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
-  border-radius: 10px;
+  background: #fffefb;
+  border: 1px solid #e5dfd3;
+  border-radius: 6px;
   padding: 12px 14px;
-  color: var(--text-primary);
+  color: #201515;
   font-size: 14px;
   outline: none;
   transition: all 0.2s;
 }
 
 .input:focus {
-  border-color: var(--purple-500);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: #ff4f00;
+  background: #f8f4f0;
 }
 
 .inputError {
@@ -134,12 +134,12 @@
 .submitBtn {
   margin-top: 10px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   border: none;
-  background: var(--gradient-brand);
-  color: #fff;
+  background: #ff4f00;
+  color: #fffefb;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -160,11 +160,11 @@
   right: 16px;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #939084;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .closeBtn:hover {
-  color: var(--text-primary);
+  color: #201515;
 }

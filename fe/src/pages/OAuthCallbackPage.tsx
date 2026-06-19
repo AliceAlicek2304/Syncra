@@ -4,6 +4,7 @@ import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
 import LinkAccountModal from '../components/auth/LinkAccountModal';
 import { useAuth } from '../context/AuthContext';
+import { PageWrapper } from '../components/PageWrapper';
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -98,22 +99,24 @@ export default function OAuthCallbackPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#080b14]">
-      <div className="text-center">
-        {!linkingState.showModal && (
-          <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto" />
-        )}
-        <p className="text-lg font-semibold text-white">{status}</p>
-      </div>
+    <PageWrapper>
+      <div className="flex min-h-screen items-center justify-center bg-brand-canvas-soft">
+        <div className="text-center">
+          {!linkingState.showModal && (
+            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto" />
+          )}
+          <p className="text-lg font-semibold text-brand-ink">{status}</p>
+        </div>
 
-      <LinkAccountModal
-        isOpen={linkingState.showModal}
-        onClose={() => navigate('/login')}
-        email={linkingState.email}
-        providerKey={linkingState.providerKey}
-        avatarUrl={linkingState.avatarUrl}
-        onLinkSuccess={handleLinkSuccess}
-      />
-    </div>
+        <LinkAccountModal
+          isOpen={linkingState.showModal}
+          onClose={() => navigate('/login')}
+          email={linkingState.email}
+          providerKey={linkingState.providerKey}
+          avatarUrl={linkingState.avatarUrl}
+          onLinkSuccess={handleLinkSuccess}
+        />
+      </div>
+    </PageWrapper>
   );
 }
