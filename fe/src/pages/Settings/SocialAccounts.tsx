@@ -86,7 +86,7 @@ export default function SocialAccounts() {
           'X-Workspace-Id': activeWorkspace.id
         }
       });
-      setAccounts(response.data);
+      setAccounts(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||

@@ -2,8 +2,17 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb,
   BarChart3, LogOut, ChevronLeft, Menu, Repeat, HelpCircle, Plug,
-  FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle
+  FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle,
+  ChevronsUpDown, CreditCard, Settings
 } from 'lucide-react'
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../../components/ui/dropdown-menu'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -56,7 +65,8 @@ export default function AppLayout() {
                         location.pathname.includes('/trends') ||
                         location.pathname.includes('/help') ||
                         location.pathname.includes('/analytics') ||
-                        location.pathname.includes('/inbox')
+                        location.pathname.includes('/inbox') ||
+                        location.pathname.includes('/settings')
 
   const handleLogout = () => {
     logout()
@@ -247,33 +257,45 @@ export default function AppLayout() {
 
         {/* Bottom: user */}
         <div className={styles.sidebarBottom}>
-
-          <div className={styles.userRow}>
-            <div className={styles.avatar}>
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.displayName || user.email} />
-              ) : (
-                (user?.displayName || user?.email || 'U').charAt(0).toUpperCase()
-              )}
-            </div>
-            {!collapsed && (
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{user?.displayName || user?.email}</span>
-                <span className={styles.userPlan}>
-                  {subscription?.isDefault
-                    ? 'Free plan'
-                    : subscription?.status === 'Trialing'
-                      ? `${subscription.planName} (Trial)`
-                      : subscription?.planName || 'Free plan'}
-                </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className={styles.userTrigger}>
+              <div className={styles.avatar}>
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName || user.email} />
+                ) : (
+                  (user?.displayName || user?.email || 'U').charAt(0).toUpperCase()
+                )}
               </div>
-            )}
-            {!collapsed && (
-              <button className={styles.logoutBtn} onClick={handleLogout} title="Logout">
-                <LogOut size={15} />
-              </button>
-            )}
-          </div>
+              {!collapsed && (
+                <>
+                  <div className={styles.userInfo}>
+                    <span className={styles.userName}>{user?.displayName || user?.email}</span>
+                    <span className={styles.userEmail}>{user?.email || ''}</span>
+                  </div>
+                  <ChevronsUpDown size={16} className={styles.chevronDown} />
+                </>
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className={styles.userMenuContent}>
+              <DropdownMenuItem onClick={() => navigate('/app/settings')}>
+                <BarChart3 size={16} />
+                Usage
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/settings')}>
+                <CreditCard size={16} />
+                Billing
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/settings')}>
+                <Settings size={16} />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className={styles.signOutItem}>
+                <LogOut size={16} />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 

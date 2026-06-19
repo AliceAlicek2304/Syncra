@@ -116,7 +116,7 @@ export default function ChangePasswordForm() {
           type="submit"
           whileTap={{ scale: 0.97 }}
           transition={{ duration: 0.1 }}
-          className="btn-primary"
+          className={styles.submitBtn}
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Updating Password...' : 'Change Password'}
