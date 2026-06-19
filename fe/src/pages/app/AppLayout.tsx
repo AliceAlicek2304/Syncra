@@ -4,11 +4,12 @@ import {
   BarChart3, LogOut, ChevronLeft, Menu, Repeat, HelpCircle, Plug,
   FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
+import { useBilling } from '../../context/BillingContext'
 import { useNotificationHub } from '../../hooks/useNotificationHub'
 import CreatePostModal from '../../components/CreatePostModal'
 import MeshBackground from '../../components/MeshBackground'
@@ -35,6 +36,14 @@ export default function AppLayout() {
   const [inboxOpen, setInboxOpen] = useState(true)
 
   const { activeWorkspace } = useWorkspace()
+  const { subscription, loadCurrentSubscription } = useBilling()
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      loadCurrentSubscription()
+    }
+  }, [activeWorkspace, loadCurrentSubscription])
+
   useNotificationHub({ workspaceId: activeWorkspace?.id })
 
   const { state, openCreatePost, closeCreatePost } = useCreatePostModal()
@@ -250,7 +259,13 @@ export default function AppLayout() {
             {!collapsed && (
               <div className={styles.userInfo}>
                 <span className={styles.userName}>{user?.displayName || user?.email}</span>
-                <span className={styles.userPlan}>Free plan</span>
+                <span className={styles.userPlan}>
+                  {subscription?.isDefault
+                    ? 'Free plan'
+                    : subscription?.status === 'Trialing'
+                      ? `${subscription.planName} (Trial)`
+                      : subscription?.planName || 'Free plan'}
+                </span>
               </div>
             )}
             {!collapsed && (

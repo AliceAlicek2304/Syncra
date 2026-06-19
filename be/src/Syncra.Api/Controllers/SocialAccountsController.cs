@@ -201,6 +201,44 @@ public sealed class SocialAccountsController : ControllerBase
             return BadRequest(new { code = "missing_redirect_url", message = "redirectUrl query parameter is required." });
         }
 
+        // Active subscription and limit checks
+        var workspace = await _db.Workspaces
+            .Include(w => w.Subscription)
+            .ThenInclude(s => s!.Plan)
+            .FirstOrDefaultAsync(w => w.Id == workspaceId.Value, cancellationToken);
+
+        if (workspace is null)
+        {
+            return NotFound(new { code = "workspace_not_found", message = "Workspace not found." });
+        }
+
+        var subscription = workspace.Subscription;
+        if (subscription is null || 
+            (subscription.Status != SubscriptionStatus.Active && subscription.Status != SubscriptionStatus.Trialing) ||
+            (subscription.Status == SubscriptionStatus.Trialing && subscription.TrialEndsAtUtc.HasValue && subscription.TrialEndsAtUtc.Value < DateTime.UtcNow) ||
+            (subscription.Status == SubscriptionStatus.Active && subscription.EndsAtUtc.HasValue && subscription.EndsAtUtc.Value < DateTime.UtcNow))
+        {
+            return StatusCode(402, new
+            {
+                code = "subscription_required",
+                message = "An active or trialing subscription is required to connect social accounts.",
+                dashboardUrl = $"/api/v2/workspaces/{workspaceId.Value}/subscription/create-checkout-session"
+            });
+        }
+
+        var activeAccountsCount = await _db.SocialAccounts
+            .CountAsync(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive, cancellationToken);
+
+        if (activeAccountsCount >= subscription.Plan.MaxSocialAccounts)
+        {
+            return StatusCode(402, new
+            {
+                code = "free_tier_exceeded",
+                message = $"You have reached the platform connection limit for your plan ({subscription.Plan.MaxSocialAccounts} connections). Upgrade your subscription to connect more accounts.",
+                dashboardUrl = $"/api/v2/workspaces/{workspaceId.Value}/subscription/create-checkout-session"
+            });
+        }
+
         // 1. Lazy provision Zernio Profile for workspace
         var zernioProfile = await GetOrProvisionZernioProfileAsync(workspaceId.Value, cancellationToken);
 

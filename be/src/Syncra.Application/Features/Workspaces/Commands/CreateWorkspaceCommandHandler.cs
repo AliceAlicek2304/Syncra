@@ -4,23 +4,27 @@ using Syncra.Application.DTOs;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
+using Syncra.Domain.Enums;
 
 namespace Syncra.Application.Features.Workspaces.Commands;
 
 public sealed class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, WorkspaceDto>
 {
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateWorkspaceCommandHandler(
         IWorkspaceRepository workspaceRepository,
+        ISubscriptionRepository subscriptionRepository,
         IZernioProfileRepository zernioProfileRepository,
         IZernioClient zernioClient,
         IUnitOfWork unitOfWork)
     {
         _workspaceRepository = workspaceRepository;
+        _subscriptionRepository = subscriptionRepository;
         _zernioProfileRepository = zernioProfileRepository;
         _zernioClient = zernioClient;
         _unitOfWork = unitOfWork;

@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { authApi } from '../api/auth'
-import type { User, LoginRequest } from '../api/types'
+import type { User, LoginRequest, AuthResponse } from '../api/types'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (credentials: LoginRequest) => Promise<void>
+  login: (credentials: LoginRequest) => Promise<AuthResponse>
   logout: () => void
   updateUser: (user: User | null) => void
   hydrateSession: () => Promise<void>
@@ -47,11 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hydrateSession()
   }, [])
 
-  const login = async (credentials: LoginRequest) => {
+  const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
+      localStorage.removeItem('syncra_workspace_id')
+      localStorage.removeItem('syncra_profile_id')
       const response = await authApi.login(credentials)
       localStorage.setItem('syncra_access_token', response.token)
       await hydrateSession()
+      return response
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -61,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('syncra_access_token')
     localStorage.removeItem('syncra_workspace_id')
+    localStorage.removeItem('syncra_profile_id')
     setUser(null)
   }
 

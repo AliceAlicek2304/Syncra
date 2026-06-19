@@ -7,6 +7,7 @@ using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
+using Syncra.Domain.Enums;
 using BC = BCrypt.Net.BCrypt;
 
 namespace Syncra.Application.Features.Auth.Commands;
@@ -17,6 +18,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
     private readonly IUserRepository _userRepository;
     private readonly IExternalLoginRepository _externalLoginRepository;
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IUserSessionRepository _userSessionRepository;
@@ -31,6 +33,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         IUserRepository userRepository,
         IExternalLoginRepository externalLoginRepository,
         IWorkspaceRepository workspaceRepository,
+        ISubscriptionRepository subscriptionRepository,
         IZernioProfileRepository zernioProfileRepository,
         IZernioClient zernioClient,
         IUserSessionRepository userSessionRepository,
@@ -44,6 +47,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         _userRepository = userRepository;
         _externalLoginRepository = externalLoginRepository;
         _workspaceRepository = workspaceRepository;
+        _subscriptionRepository = subscriptionRepository;
         _zernioProfileRepository = zernioProfileRepository;
         _zernioClient = zernioClient;
         _userSessionRepository = userSessionRepository;
@@ -184,11 +188,12 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         var profile = ZernioProfile.Create(
             workspaceId: workspace.Id,
             zernioProfileId: provisioned.Id,
-            displayName: workspace.Name,
+            displayName: provisioned.Name,
             platform: "zernio");
 
         await _workspaceRepository.AddAsync(workspace);
         await _zernioProfileRepository.AddAsync(profile);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private static string GenerateSlug(string name)

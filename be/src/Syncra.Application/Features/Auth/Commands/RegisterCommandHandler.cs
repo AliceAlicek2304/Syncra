@@ -2,10 +2,12 @@ using System.Text.RegularExpressions;
 using MediatR;
 using Syncra.Application.Common.Interfaces;
 using Syncra.Application.DTOs.Auth;
+using Syncra.Application.DTOs.Payments;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Exceptions;
+using Syncra.Domain.Enums;
 using BC = BCrypt.Net.BCrypt;
 
 namespace Syncra.Application.Features.Auth.Commands;
@@ -17,6 +19,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository;
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IPlanRepository _planRepository;
+    private readonly IPaymentProviderResolver _paymentProviderResolver;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IZernioClient _zernioClient;
     private readonly IUnitOfWork _unitOfWork;
@@ -30,6 +35,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         IUserSessionRepository userSessionRepository,
         IEmailVerificationTokenRepository emailVerificationTokenRepository,
         IWorkspaceRepository workspaceRepository,
+        ISubscriptionRepository subscriptionRepository,
+        IPlanRepository planRepository,
+        IPaymentProviderResolver paymentProviderResolver,
         IZernioProfileRepository zernioProfileRepository,
         IZernioClient zernioClient,
         IUnitOfWork unitOfWork,
@@ -42,6 +50,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         _userSessionRepository = userSessionRepository;
         _emailVerificationTokenRepository = emailVerificationTokenRepository;
         _workspaceRepository = workspaceRepository;
+        _subscriptionRepository = subscriptionRepository;
+        _planRepository = planRepository;
+        _paymentProviderResolver = paymentProviderResolver;
         _zernioProfileRepository = zernioProfileRepository;
         _zernioClient = zernioClient;
         _unitOfWork = unitOfWork;
@@ -73,7 +84,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Create default workspace + ZernioProfile for the new user
-        await CreateDefaultWorkspaceAsync(user, cancellationToken);
+        var workspace = await CreateDefaultWorkspaceAsync(user, request.Flow, request.Plan, cancellationToken);
 
         // Generate verification token (32 random bytes, base64url encoded, per D-03 pattern)
         var verificationToken = GenerateToken();
@@ -117,10 +128,45 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc);
+        string? checkoutUrl = null;
+        if (string.Equals(request.Flow, "checkout", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(request.Plan))
+        {
+            var plan = await _planRepository.GetByCodeAsync(request.Plan.ToUpper(), cancellationToken);
+            if (plan != null && plan.IsActive)
+            {
+                var providerKey = _paymentProviderResolver.GetDefaultProviderKey();
+                var provider = _paymentProviderResolver.GetRequiredProvider(providerKey);
+
+                var priceId = providerKey.Equals("stripe", StringComparison.OrdinalIgnoreCase)
+                    ? plan.StripeMonthlyPriceId
+                    : plan.Id.ToString();
+
+                if (!string.IsNullOrWhiteSpace(priceId))
+                {
+                    var origin = "http://localhost:5173";
+                    var successUrl = $"{origin}/app/connections?billing=success";
+                    var cancelUrl = $"{origin}/app/connections?billing=cancel";
+
+                    var checkoutResult = await provider.CreateCheckoutSessionAsync(
+                        new PaymentCheckoutSessionRequest(
+                            WorkspaceId: workspace.Id,
+                            WorkspaceName: workspace.Name.ToString(),
+                            ProviderCustomerId: null,
+                            PriceId: priceId,
+                            SuccessUrl: successUrl,
+                            CancelUrl: cancelUrl,
+                            SkipTrial: true),
+                        cancellationToken);
+
+                    checkoutUrl = checkoutResult.CheckoutUrl;
+                }
+            }
+        }
+
+        return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc, checkoutUrl);
     }
 
-    private async Task CreateDefaultWorkspaceAsync(User user, CancellationToken cancellationToken)
+    private async Task<Workspace> CreateDefaultWorkspaceAsync(User user, string? flow, string? planCode, CancellationToken cancellationToken)
     {
         var emailPrefix = user.Email.Value.Split('@')[0];
         var slug = GenerateSlug(emailPrefix);
@@ -138,6 +184,27 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _workspaceRepository.AddAsync(workspace);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        if (string.Equals(flow, "trial", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(planCode))
+        {
+            var plan = await _planRepository.GetByCodeAsync(planCode.ToUpper(), cancellationToken);
+            if (plan != null && plan.IsActive)
+            {
+                var subscription = new Subscription
+                {
+                    WorkspaceId = workspace.Id,
+                    PlanId = plan.Id,
+                    Status = SubscriptionStatus.Trialing,
+                    StartsAtUtc = DateTime.UtcNow,
+                    EndsAtUtc = null,
+                    TrialEndsAtUtc = DateTime.UtcNow.AddDays(14),
+                    CanceledAtUtc = null,
+                    LastEventTimestampUtc = DateTime.UtcNow
+                };
+                await _subscriptionRepository.AddAsync(subscription);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         var zernioName = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
         var provisioned = await _zernioClient.ProvisionProfileAsync(
             workspaceId: workspace.Id.ToString(),
@@ -152,6 +219,8 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
 
         await _zernioProfileRepository.AddAsync(profile);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return workspace;
     }
 
     private static string GenerateSlug(string name)

@@ -60,7 +60,7 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
         var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
         var priceId = providerKey.Equals("stripe", StringComparison.OrdinalIgnoreCase)
             ? (isYearly ? plan.StripeYearlyPriceId : plan.StripeMonthlyPriceId)
-            : null;
+            : plan.Id.ToString();
 
         if (string.IsNullOrWhiteSpace(priceId))
         {
@@ -77,7 +77,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
                 ProviderCustomerId: workspace.BillingCustomerId ?? workspace.StripeCustomerId,
                 PriceId: priceId,
                 SuccessUrl: request.SuccessUrl ?? string.Empty,
-                CancelUrl: request.CancelUrl ?? string.Empty),
+                CancelUrl: request.CancelUrl ?? string.Empty,
+                SkipTrial: request.SkipTrial),
             cancellationToken);
 
         return new CreateCheckoutSessionResponse(

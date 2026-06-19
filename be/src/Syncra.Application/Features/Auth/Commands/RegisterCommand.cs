@@ -7,5 +7,7 @@ public record RegisterCommand(
     string Email,
     string Password,
     string FirstName,
-    string LastName
+    string LastName,
+    string? Flow = null,
+    string? Plan = null
 ) : IRequest<AuthResponseDto>;

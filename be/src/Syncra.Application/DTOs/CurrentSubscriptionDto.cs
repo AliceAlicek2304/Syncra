@@ -64,15 +64,14 @@ public class CurrentSubscriptionDto
 
     /// <summary>
     /// Creates a default DTO representing a workspace with no subscription.
-    /// Returns a "Free" state suitable for UI and demo flows.
     /// </summary>
     public static CurrentSubscriptionDto Default(Guid workspaceId)
     {
         return new CurrentSubscriptionDto
         {
-            Status = "Free",
-            PlanCode = "free",
-            PlanName = "Free",
+            Status = "None",
+            PlanCode = null,
+            PlanName = null,
             IsDefault = true
         };
     }

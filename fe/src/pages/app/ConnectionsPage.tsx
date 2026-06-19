@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, ChevronUp, Check, X, Info, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle
+  Plus, ChevronDown, ChevronUp, Check, X, Info, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle, AlertCircle
 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useToast } from '../../context/ToastContext';
 import { workspacesApi } from '../../api/workspaces';
@@ -369,6 +370,7 @@ export default function ConnectionsPage() {
   // Drawers open state
   const [isNewProfileOpen, setIsNewProfileOpen] = useState(false);
   const [isNewConnectionOpen, setIsNewConnectionOpen] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Form states
   const [newProfileName, setNewProfileName] = useState('');
@@ -439,6 +441,7 @@ export default function ConnectionsPage() {
     } else if (profiles.length > 0) {
       setSelectedProfileForConnection(profiles[0].id);
     }
+    setConnectionError(null);
   }, [activeProfile, profiles, isNewConnectionOpen]);
 
   // Reset expanded platform when drawer closes or profile changes
@@ -650,20 +653,21 @@ export default function ConnectionsPage() {
 
   // Handle platform connection
   const handleConnectPlatform = async (platformId: string, overrideProfileId?: string) => {
+    setConnectionError(null);
     const config = ALL_PLATFORMS.find(p => p.id === platformId);
     if (!config?.isSupported) {
-      showError(`${config?.label || platformId} integration is coming soon! Under development.`);
+      setConnectionError(`${config?.label || platformId} integration is coming soon! Under development.`);
       return;
     }
     
     if (!activeWorkspace) {
-      showError("Please select a workspace first.");
+      setConnectionError("Please select a workspace first.");
       return;
     }
 
     const profileId = overrideProfileId || selectedProfileForConnection;
     if (!profileId || profileId === 'all') {
-      showError("Please select a profile first.");
+      setConnectionError("Please select a profile first.");
       return;
     }
 
@@ -685,7 +689,7 @@ export default function ConnectionsPage() {
     } catch (err: any) {
       setConnectingPlatform(null);
       const msg = err?.response?.data?.message || `Failed to connect ${platformId}`;
-      showError(msg);
+      setConnectionError(msg);
     }
   };
 
@@ -1193,6 +1197,13 @@ export default function ConnectionsPage() {
             </div>
 
             <div className={styles.drawerBody}>
+              {connectionError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Connection Error</AlertTitle>
+                  <AlertDescription>{connectionError}</AlertDescription>
+                </Alert>
+              )}
               {/* Profile Selection */}
               <div className={styles.formGroup} style={{ position: 'relative' }}>
                 <label className={styles.formLabel}>Profile</label>

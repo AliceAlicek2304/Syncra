@@ -17,6 +17,7 @@ export type CreateCheckoutSessionByPlanRequest = {
   interval?: 'month' | 'year' | string;
   successUrl?: string;
   cancelUrl?: string;
+  skipTrial?: boolean;
 };
 
 export type CreateCheckoutSessionResponse = {

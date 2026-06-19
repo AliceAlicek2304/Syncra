@@ -40,8 +40,16 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      await login(data);
-      onSuccess();
+      const queryParams = new URLSearchParams(window.location.search);
+      const flow = queryParams.get('flow') || undefined;
+      const plan = queryParams.get('plan') || undefined;
+
+      const loginRes = await login({ ...data, flow, plan });
+      if (loginRes?.checkoutUrl) {
+        window.location.assign(loginRes.checkoutUrl);
+      } else {
+        onSuccess();
+      }
     } catch (err: unknown) {
       console.error('Login error:', err);
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid email or password';

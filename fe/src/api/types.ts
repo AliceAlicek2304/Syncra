@@ -16,11 +16,14 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   expiresAtUtc: string;
+  checkoutUrl?: string;
 }
 
 export interface LoginRequest {
   email: string;
   password?: string;
+  flow?: string;
+  plan?: string;
 }
 
 export interface RegisterRequest {
@@ -28,6 +31,8 @@ export interface RegisterRequest {
   password?: string;
   firstName: string;
   lastName: string;
+  flow?: string;
+  plan?: string;
 }
 
 export interface Workspace {

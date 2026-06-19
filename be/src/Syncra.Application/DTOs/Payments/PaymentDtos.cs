@@ -6,7 +6,8 @@ public sealed record PaymentCheckoutSessionRequest(
     string? ProviderCustomerId,
     string PriceId,
     string SuccessUrl,
-    string CancelUrl);
+    string CancelUrl,
+    bool SkipTrial = false);
 
 public sealed record PaymentCheckoutSessionResult(
     string SessionId,

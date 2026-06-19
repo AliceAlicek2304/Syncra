@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import logo from '../assets/syncra-logo.png'
 
 const PLANS = [
@@ -156,17 +157,28 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <motion.a
-                whileTap={{ scale: 0.98 }}
-                href="#"
-                className={`w-full py-3 font-bold rounded-brand-md text-sm transition-all inline-flex items-center justify-center shadow-sm hover:shadow ${
-                  plan.highlight 
-                    ? 'bg-brand-primary text-brand-on-primary hover:bg-brand-primary-hover' 
-                    : 'bg-brand-canvas border border-brand-border text-brand-ink hover:bg-brand-canvas-soft'
-                }`}
-              >
-                {plan.cta}
-              </motion.a>
+              <div className="flex flex-col gap-2.5 mt-auto w-full">
+                <Link
+                  to={`/signup?flow=trial&plan=${plan.name.toLowerCase()}`}
+                  className={`w-full py-2.5 font-bold rounded-brand-md text-sm transition-all inline-flex items-center justify-center shadow-sm hover:shadow ${
+                    plan.highlight 
+                      ? 'bg-brand-primary text-brand-on-primary hover:bg-brand-primary-hover' 
+                      : 'bg-brand-canvas border border-brand-border text-brand-ink hover:bg-brand-canvas-soft'
+                  }`}
+                >
+                  Start Free Trial
+                </Link>
+                <Link
+                  to={`/signup?flow=checkout&plan=${plan.name.toLowerCase()}`}
+                  className={`w-full py-2.5 font-bold rounded-brand-md text-sm transition-all inline-flex items-center justify-center shadow-sm hover:shadow ${
+                    plan.highlight 
+                      ? 'bg-brand-on-primary text-brand-ink hover:bg-brand-canvas-soft' 
+                      : 'bg-brand-ink text-brand-on-primary hover:bg-brand-ink-soft'
+                  }`}
+                >
+                  Buy Now
+                </Link>
+              </div>
             </div>
           ))}
         </div>

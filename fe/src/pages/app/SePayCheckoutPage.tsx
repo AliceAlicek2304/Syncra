@@ -1,0 +1,220 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Copy, Check, AlertTriangle, Clock } from 'lucide-react';
+import { useBilling } from '../../context/BillingContext';
+import styles from './SePayCheckoutPage.module.css';
+
+export default function SePayCheckoutPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { subscription, loadCurrentSubscription } = useBilling();
+
+  // Parse query parameters
+  const paymentCode = searchParams.get('code') || '';
+  const amountStr = searchParams.get('amount') || '0';
+  const planCode = searchParams.get('plan') || '';
+  const interval = searchParams.get('interval') || 'month';
+
+  const amount = parseInt(amountStr, 10);
+
+  // Configuration (reads from query params, env or falls back to defaults)
+  const accountNumber = searchParams.get('accountNumber') || import.meta.env.VITE_SEPAY_ACCOUNT_NUMBER || '1017588888';
+  const bankCode = searchParams.get('bankCode') || import.meta.env.VITE_SEPAY_BANK_CODE || 'Vietinbank';
+  const accountName = searchParams.get('accountName') || import.meta.env.VITE_SEPAY_ACCOUNT_NAME || 'CONG TY CO PHAN SYNCRA';
+
+  // State
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // 1. Polling for payment status (every 5 seconds)
+  useEffect(() => {
+    if (isSuccess) return;
+
+    const intervalId = setInterval(async () => {
+      await loadCurrentSubscription();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [loadCurrentSubscription, isSuccess]);
+
+  // 2. Watch subscription state to detect activation success
+  useEffect(() => {
+    if (
+      subscription &&
+      subscription.planCode?.toUpperCase() === planCode.toUpperCase() &&
+      subscription.status?.toLowerCase() === 'active'
+    ) {
+      setIsSuccess(true);
+      // Wait 3 seconds to show success state with fireworks before navigating
+      setTimeout(() => {
+        navigate(`/app/connections?billing=success`);
+      }, 3000);
+    }
+  }, [subscription, planCode, navigate]);
+
+  // 3. Countdown timer
+  useEffect(() => {
+    if (timeLeft <= 0 || isSuccess) return;
+
+    const timerId = setTimeout(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timerId);
+  }, [timeLeft, isSuccess]);
+
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => {
+      setCopiedField(null);
+    }, 1500);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankCode}&amount=${amount}&des=${paymentCode}&template=compact`;
+
+  if (isSuccess) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.checkoutCard} style={{ maxWidth: '500px' }}>
+          <div className={styles.successContainer}>
+            <div className={styles.checkmarkWrapper}>
+              <Check size={48} />
+            </div>
+            <h2 className={styles.successTitle}>Thanh Toán Thành Công!</h2>
+            <p className={styles.successDesc}>
+              Hệ thống đã nhận được chuyển khoản của bạn. Đang thiết lập tài khoản của bạn...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.checkoutCard}>
+        <div className={styles.header}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)} title="Quay lại">
+            <ArrowLeft size={18} />
+          </button>
+          <h2 className={styles.title}>Thanh toán nâng cấp gói</h2>
+        </div>
+
+        <div className={styles.grid}>
+          {/* Left Column: Transfer Information */}
+          <div className={styles.leftCol}>
+            <div className={styles.summarySection}>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>Gói cước nâng cấp</span>
+                <span className={styles.summaryValue}>Syncra {planCode} ({interval === 'year' ? '1 Năm' : '1 Tháng'})</span>
+              </div>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>Tổng số tiền</span>
+                <span className={`${styles.summaryValue} ${styles.priceTotal}`}>
+                  {amount.toLocaleString('vi-VN')} đ
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.instructionsSection}>
+              <h3 className={styles.sectionSubtitle}>Thông tin chuyển khoản</h3>
+
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Ngân hàng thụ hưởng</span>
+                <div className={styles.infoValueContainer}>
+                  <span className={styles.infoValue}>{bankCode}</span>
+                </div>
+              </div>
+
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Số tài khoản</span>
+                <div className={styles.infoValueContainer}>
+                  <span className={styles.infoValue}>{accountNumber}</span>
+                  <button
+                    className={styles.copyBtn}
+                    onClick={() => handleCopy(accountNumber, 'acc')}
+                  >
+                    <Copy size={12} /> Sao chép
+                  </button>
+                </div>
+                {copiedField === 'acc' && <span className={styles.tooltip}>Đã sao chép!</span>}
+              </div>
+
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Tên tài khoản nhận</span>
+                <div className={styles.infoValueContainer}>
+                  <span className={styles.infoValue}>{accountName}</span>
+                </div>
+              </div>
+
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Số tiền chuyển</span>
+                <div className={styles.infoValueContainer}>
+                  <span className={`${styles.infoValue} ${styles.highlightValue}`}>
+                    {amount.toLocaleString('vi-VN')} đ
+                  </span>
+                  <button
+                    className={styles.copyBtn}
+                    onClick={() => handleCopy(amount.toString(), 'amount')}
+                  >
+                    <Copy size={12} /> Sao chép
+                  </button>
+                </div>
+                {copiedField === 'amount' && <span className={styles.tooltip}>Đã sao chép!</span>}
+              </div>
+
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Nội dung chuyển khoản</span>
+                <div className={styles.infoValueContainer}>
+                  <span className={`${styles.infoValue} ${styles.highlightValue}`}>{paymentCode}</span>
+                  <button
+                    className={styles.copyBtn}
+                    onClick={() => handleCopy(paymentCode, 'code')}
+                  >
+                    <Copy size={12} /> Sao chép
+                  </button>
+                </div>
+                {copiedField === 'code' && <span className={styles.tooltip}>Đã sao chép!</span>}
+              </div>
+            </div>
+
+            <div className={styles.alertBox}>
+              <AlertTriangle className={styles.alertIcon} size={18} />
+              <p className={styles.alertText}>
+                <strong>QUAN TRỌNG:</strong> Bạn phải điền chính xác nội dung chuyển khoản{' '}
+                <strong>{paymentCode}</strong> ở trên để giao dịch được ghi nhận tự động.
+              </p>
+            </div>
+          </div>
+
+          {/* Right Column: QR Code & Status */}
+          <div className={styles.rightCol}>
+            <h3 className={styles.sectionSubtitle} style={{ marginBottom: 16 }}>Quét mã VietQR thanh toán</h3>
+            
+            <div className={styles.qrContainer}>
+              <img src={qrUrl} alt="Mã VietQR SePay" className={styles.qrImage} />
+            </div>
+
+            <div className={styles.timer}>
+              <Clock size={14} />
+              <span>Thời gian giữ mã: <strong>{formatTime(timeLeft)}</strong></span>
+            </div>
+
+            <div className={styles.statusIndicator}>
+              <div className={styles.spinner} />
+              <span className={styles.statusText}>Đang chờ chuyển khoản...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

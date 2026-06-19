@@ -9,4 +9,5 @@ public record CreateCheckoutSessionByPlanCommand(
     string PlanCode,
     string? Interval,
     string? SuccessUrl,
-    string? CancelUrl) : IRequest<CreateCheckoutSessionResponse>;
+    string? CancelUrl,
+    bool SkipTrial = false) : IRequest<CreateCheckoutSessionResponse>;

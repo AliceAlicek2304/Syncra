@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import Toast, { type ToastItem } from '../components/Toast';
 import { shortId } from '../utils/shortId';
-import { registerErrorHandler } from '../lib/axios';
 
 interface ToastContextType {
   addToast: (toast: Omit<ToastItem, 'id'>) => void;
@@ -38,11 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     addToast({ message, type: 'success' });
   }, [addToast]);
 
-  useEffect(() => {
-    registerErrorHandler((msg) => {
-      error(msg);
-    });
-  }, [error]);
+
 
   return (
     <ToastContext.Provider value={{ addToast, removeToast, error, success }}>

@@ -31,11 +31,13 @@ public class AuthController : ControllerBase
             registerDto.Email,
             registerDto.Password,
             registerDto.FirstName,
-            registerDto.LastName);
+            registerDto.LastName,
+            registerDto.Flow,
+            registerDto.Plan);
 
         var result = await _mediator.Send(command, cancellationToken);
 
-        return CreatedAtAction(nameof(Register), new { id = result }, new { Message = "User registered successfully." });
+        return CreatedAtAction(nameof(Register), new { id = result.Token }, result);
     }
 
     [AllowAnonymous]
@@ -77,7 +79,11 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
-        var command = new LoginCommand(loginDto.Email, loginDto.Password);
+        var command = new LoginCommand(
+            loginDto.Email,
+            loginDto.Password,
+            loginDto.Flow,
+            loginDto.Plan);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }

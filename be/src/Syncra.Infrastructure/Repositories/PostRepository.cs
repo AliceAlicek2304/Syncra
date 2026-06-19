@@ -189,4 +189,15 @@ public class PostRepository : Repository<Post>, IPostRepository
         _context.Set<PostPlatformTarget>().Add(target);
     }
 
+    public async Task<int> CountPostsCreatedInMonthAsync(
+        Guid workspaceId,
+        DateTime monthStart,
+        DateTime monthEnd,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .CountAsync(p => p.WorkspaceId == workspaceId &&
+                             p.CreatedAtUtc >= monthStart && p.CreatedAtUtc <= monthEnd,
+                        cancellationToken);
+    }
 }

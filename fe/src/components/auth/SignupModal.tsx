@@ -30,10 +30,12 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { ref, focusFirst } = useFocusTrap(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -41,14 +43,34 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
 
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
+    setServerError(null);
     try {
-      await authApi.register(data);
-      await login({ email: data.email, password: data.password });
-      onSuccess();
+      const queryParams = new URLSearchParams(window.location.search);
+      const flow = queryParams.get('flow') || undefined;
+      const plan = queryParams.get('plan') || undefined;
+
+      await authApi.register({ ...data, flow, plan });
+      const loginRes = await login({ email: data.email, password: data.password, flow, plan });
+      
+      if (loginRes?.checkoutUrl) {
+        window.location.assign(loginRes.checkoutUrl);
+      } else {
+        onSuccess();
+      }
     } catch (err: unknown) {
       console.error('Signup error:', err);
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Registration failed';
-      showError(message);
+      const errorData = (err as { response?: { data?: { code?: string, message?: string } } })?.response?.data;
+      const message = errorData?.message || 'Registration failed';
+      const code = errorData?.code;
+
+      if (code === 'user_exists' || message.toLowerCase().includes('already exists')) {
+        setError('email', {
+          type: 'manual',
+          message: 'User with this email already exists.',
+        });
+      } else {
+        setServerError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -117,6 +139,11 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          {serverError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-brand-sm font-medium">
+              {serverError}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-brand-ink uppercase tracking-wider">First name</label>

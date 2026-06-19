@@ -12,7 +12,6 @@ namespace Syncra.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/v1/workspaces/{workspaceId}/repurpose")]
-[ServiceFilter(typeof(RepurposePlanLimitFilter))]
 public sealed class RepurposeController : ControllerBase
 {
     private readonly IRepurposeService _repurposeService;
@@ -34,6 +33,7 @@ public sealed class RepurposeController : ControllerBase
     }
 
     [HttpPost("fetch-url")]
+    [ServiceFilter(typeof(RepurposePlanLimitFilter))]
     public async Task<IActionResult> FetchUrl(
         Guid workspaceId,
         [FromBody] FetchUrlRequest request,
@@ -61,6 +61,7 @@ public sealed class RepurposeController : ControllerBase
     }
 
     [HttpPost("generate")]
+    [ServiceFilter(typeof(RepurposePlanLimitFilter))]
     public async Task Generate(
         Guid workspaceId,
         [FromBody] RepurposeGenerateRequest request,

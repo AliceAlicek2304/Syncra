@@ -6,6 +6,8 @@ using Syncra.Application.Options;
 using Syncra.Domain.Entities;
 using Syncra.Infrastructure.Persistence;
 
+using Syncra.Domain.Enums;
+
 namespace Syncra.Api.Filters;
 
 public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
@@ -44,10 +46,60 @@ public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
             return;
         }
 
-        var plan = workspace.Subscription?.Plan;
-        if (plan is null)
+        var subscription = workspace.Subscription;
+
+        if (subscription is null || subscription.Plan is null)
         {
-            await next();
+            context.Result = new ObjectResult(new
+            {
+                error = "subscription_required",
+                message = "An active or trialing subscription is required to use this feature.",
+                upgrade_url = $"/api/v2/workspaces/{workspaceId}/subscription/create-checkout-session"
+            })
+            { StatusCode = 402 };
+            return;
+        }
+
+        var plan = subscription.Plan;
+
+        if (subscription.Status == SubscriptionStatus.Expired || 
+            (subscription.Status != SubscriptionStatus.Active && subscription.Status != SubscriptionStatus.Trialing))
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = "subscription_expired",
+                message = "Your subscription has expired or is inactive. Please renew your plan to continue using this feature.",
+                upgrade_url = $"/api/v2/workspaces/{workspaceId}/subscription/create-checkout-session"
+            })
+            { StatusCode = 402 };
+            return;
+        }
+
+        if (subscription.Status == SubscriptionStatus.Trialing && 
+            subscription.TrialEndsAtUtc.HasValue && 
+            subscription.TrialEndsAtUtc.Value < DateTime.UtcNow)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = "trial_expired",
+                message = "Your 14-day free trial has expired. Please upgrade to a paid plan to continue using this feature.",
+                upgrade_url = $"/api/v2/workspaces/{workspaceId}/subscription/create-checkout-session"
+            })
+            { StatusCode = 402 };
+            return;
+        }
+
+        if (subscription.Status == SubscriptionStatus.Active && 
+            subscription.EndsAtUtc.HasValue && 
+            subscription.EndsAtUtc.Value < DateTime.UtcNow)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = "subscription_expired",
+                message = "Your subscription has expired. Please renew your plan to continue using this feature.",
+                upgrade_url = $"/api/v2/workspaces/{workspaceId}/subscription/create-checkout-session"
+            })
+            { StatusCode = 402 };
             return;
         }
 

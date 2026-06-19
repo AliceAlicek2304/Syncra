@@ -14,7 +14,7 @@ interface BillingContextType {
   error: string | null;
   redirecting: boolean;
   loadCurrentSubscription: () => Promise<void>;
-  startCheckout: (planCode: string, interval: 'month' | 'year') => Promise<void>;
+  startCheckout: (planCode: string, interval: 'month' | 'year', skipTrial?: boolean) => Promise<void>;
   openPortal: () => Promise<void>;
 }
 
@@ -52,7 +52,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [getWorkspaceId]);
 
-  const startCheckout = useCallback(async (planCode: string, interval: 'month' | 'year') => {
+  const startCheckout = useCallback(async (planCode: string, interval: 'month' | 'year', skipTrial: boolean = false) => {
     const workspaceId = getWorkspaceId();
     if (!workspaceId) {
       setError('Workspace ID not found. Please set syncra_workspace_id in localStorage.');
@@ -71,7 +71,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
         planCode,
         interval,
         successUrl,
-        cancelUrl
+        cancelUrl,
+        skipTrial
       };
 
       const response = await apiFetch<CreateCheckoutSessionResponse>(

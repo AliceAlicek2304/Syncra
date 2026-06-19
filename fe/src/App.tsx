@@ -45,6 +45,8 @@ import PostsOverviewPage from './pages/app/PostsOverviewPage'
 import PostsQueuesPage from './pages/app/PostsQueuesPage'
 import MessagesPage from './pages/app/MessagesPage'
 import CommentsPage from './pages/app/CommentsPage'
+import SettingsPage from './pages/app/SettingsPage'
+import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 
 
 function Homepage() {
@@ -74,7 +76,7 @@ function Homepage() {
   }
 
   const handleLoginSuccess = () => {
-    navigate('/app/connections')
+    navigate(`/app/connections${location.search}`)
   }
 
   const handleCloseSignup = () => {
@@ -82,7 +84,7 @@ function Homepage() {
   }
 
   const handleSignupSuccess = () => {
-    navigate('/app/connections')
+    navigate(`/app/connections${location.search}`)
   }
 
   return (
@@ -134,11 +136,9 @@ function AnimatedRoutes() {
           <ProtectedRoute>
             <BillingProvider>
               <CalendarProvider>
-                <RepurposeProvider>
-                  <CreatePostModalProvider>
-                    <AppLayout />
-                  </CreatePostModalProvider>
-                </RepurposeProvider>
+                <CreatePostModalProvider>
+                  <AppLayout />
+                </CreatePostModalProvider>
               </CalendarProvider>
             </BillingProvider>
           </ProtectedRoute>
@@ -153,10 +153,12 @@ function AnimatedRoutes() {
           <Route path="calendar" element={<Navigate to="/app/posts-all?view=calendar" replace />} />
           <Route path="analytics" element={<PageWrapper><AnalyticsPage /></PageWrapper>} />
           <Route path="trends" element={<PageWrapper><TrendRadarPage /></PageWrapper>} />
-          <Route path="repurpose" element={<PageWrapper><RepurposePage /></PageWrapper>} />
+          <Route path="repurpose" element={<RepurposeProvider><PageWrapper><RepurposePage /></PageWrapper></RepurposeProvider>} />
           <Route path="help" element={<PageWrapper><HelpPage /></PageWrapper>} />
           <Route path="inbox/messages" element={<PageWrapper><MessagesPage /></PageWrapper>} />
           <Route path="inbox/comments" element={<PageWrapper><CommentsPage /></PageWrapper>} />
+          <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+          <Route path="sepay-checkout" element={<PageWrapper><SePayCheckoutPage /></PageWrapper>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

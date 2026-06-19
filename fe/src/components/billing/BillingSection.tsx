@@ -16,14 +16,16 @@ import styles from './BillingSection.module.css';
 
 const PLANS = [
   {
-    code: 'FREE',
-    name: 'Free',
-    price: { month: 0, year: 0 },
+    code: 'BASIC',
+    name: 'Basic',
+    price: { month: 99000, year: 79000 },
     features: [
-      '5 posts per month',
-      '2 platform connections',
-      'Basic AI assistant',
-      'Standard analytics'
+      '20 Social Media Connections',
+      'Unlimited scheduled posts',
+      'Basic analytics',
+      'Content editor',
+      'Community support',
+      'AI assistant (limited)',
     ],
     icon: <Clock size={20} />
   },
@@ -32,25 +34,29 @@ const PLANS = [
     name: 'Pro',
     price: { month: 149000, year: 119000 },
     features: [
+      'Up to 50 Social Media Connections',
       'Unlimited scheduled posts',
-      'Up to 50 connections',
-      'Advanced AI assistant',
+      'Advanced analytics',
+      'Best-time scheduling',
+      'Content recycling',
       'Priority support',
-      'Repurpose tools'
+      'AI assistant',
     ],
     icon: <Zap size={20} />,
     highlight: true
   },
   {
-    code: 'TEAM',
-    name: 'Team',
-    price: { month: 299000, year: 239000 },
+    code: 'MAX',
+    name: 'Max',
+    price: { month: 199000, year: 159000 },
     features: [
       'Everything in Pro',
       'Up to 10 team members',
-      'Brand kits',
+      'Custom brand kits',
       'White-label reports',
-      'API access'
+      'API access',
+      'Dedicated support',
+      'Custom integrations',
     ],
     icon: <Users size={20} />
   }
@@ -104,7 +110,7 @@ export default function BillingSection() {
   const handleCheckout = async (planCode: string) => {
     if (!isOwner) return;
     const interval = yearly ? 'year' : 'month';
-    await startCheckout(planCode, interval);
+    await startCheckout(planCode, interval, !isEligibleForTrial);
   };
 
   const handleOpenPortal = async () => {
@@ -112,8 +118,9 @@ export default function BillingSection() {
     await openPortal();
   };
 
-  const currentPlanCode = subscription?.planCode || 'FREE';
+  const currentPlanCode = subscription?.planCode || null;
   const displayStatus = (subscription?.status || 'inactive').toLowerCase();
+  const isEligibleForTrial = subscription?.isDefault === true && !subscription?.trialEndsAtUtc;
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return 'N/A';
@@ -175,7 +182,7 @@ export default function BillingSection() {
       <div className={styles.summaryGrid}>
         <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Current Plan</span>
-          <div className={styles.summaryValue}>{subscription?.planName || 'Free Plan'}</div>
+          <div className={styles.summaryValue}>{subscription?.planName || (subscription?.isDefault ? 'No active plan' : '')}</div>
         </div>
         <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Status</span>
@@ -219,7 +226,10 @@ export default function BillingSection() {
             <div key={plan.code} className={`glass-card ${styles.planCard} ${isCurrent ? styles.currentPlanCard : ''}`}>
               {isCurrent && <div className={styles.currentPlanBadge}>Current Plan</div>}
               
-              <div className={styles.planName}>{plan.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <div className={styles.planName} style={{ margin: 0 }}>{plan.name}</div>
+                {isEligibleForTrial && <div className={styles.trialBadge}>Trial 14 days</div>}
+              </div>
               
               <div className={styles.planPrice}>
                 <span className={styles.priceAmount}>{price.toLocaleString('vi-VN')} đ</span>
@@ -243,7 +253,7 @@ export default function BillingSection() {
                     onClick={() => handleCheckout(plan.code)}
                     disabled={redirecting}
                   >
-                    {redirecting ? 'Redirecting...' : `Upgrade to ${plan.name}`}
+                    {redirecting ? 'Redirecting...' : (isEligibleForTrial ? 'Start 14-day Free Trial' : `Upgrade to ${plan.name}`)}
                   </button>
                 ) : (
                   <div className={styles.ownerOnlyNotice}>

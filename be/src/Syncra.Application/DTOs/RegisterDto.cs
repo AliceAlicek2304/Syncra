@@ -17,4 +17,7 @@ public class RegisterDto
 
     [Required]
     public string LastName { get; set; } = string.Empty;
+
+    public string? Flow { get; set; }
+    public string? Plan { get; set; }
 }

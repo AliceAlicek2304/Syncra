@@ -112,8 +112,10 @@ public static class DependencyInjection
 
         services.Configure<PaymentOptions>(configuration.GetSection(PaymentOptions.SectionName));
         services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
+        services.Configure<SePayOptions>(configuration.GetSection(SePayOptions.SectionName));
         services.Configure<AnalyticsOptions>(configuration.GetSection(AnalyticsOptions.SectionName));
         services.AddScoped<IPaymentProvider, StripePaymentProvider>();
+        services.AddScoped<IPaymentProvider, SePayPaymentProvider>();
         services.AddScoped<IPaymentProviderResolver, PaymentProviderResolver>();
         services.AddScoped<IStripeService, StripeService>();
 
