@@ -464,6 +464,26 @@ The brand uses illustrative SVGs of zaps / workflows + product screenshots insid
 **`footer`** — the dark coffee footer.
 - Background `{colors.ink}`, text `{colors.canvas-soft}`, padding `{spacing.3xl} {spacing.xl}`. Body in `{typography.body-sm}`.
 
+### Alerts
+
+**`alert-default`** — informational / neutral message.
+- Background `{colors.canvas-soft}`, text `{colors.body}`, border `{colors.mute}`, icon muted neutral.
+- Used for: generic info, tips, onboarding hints.
+
+**`alert-destructive`** — error / failure message.
+- Background `bg-red-50/50`, text `text-red-700`, border `border-red-500/50`, icon `text-red-500`.
+- Used for: login failures, form submission errors, critical warnings.
+
+**`alert-warning`** — caution / attention message.
+- Background `bg-orange-50/50`, text `{colors.ink}`, border `{colors.primary}/30`, icon `{colors.primary}`.
+- Used for: rate limits, expiring subscriptions, low-credits.
+
+**`alert-success`** — success / confirmation message.
+- Background `bg-green-50/50`, text `text-green-800`, border `border-green-500/50`, icon `text-green-500`.
+- Used for: upload complete, save confirmed, action successful.
+
+Layout: icon left (absolute), title + description inline, optional dismiss button top-right. Shape `{rounded.md}` 12 px, padding `{spacing.md} {spacing.lg}`.
+
 ### Signature Components
 
 **`hero-band`** — the cream hero band.

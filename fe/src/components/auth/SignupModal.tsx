@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { authApi } from '../../api/auth';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
@@ -140,9 +141,11 @@ export default function SignupModal({ onClose, onSuccess }: SignupModalProps) {
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           {serverError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-brand-sm font-medium">
-              {serverError}
-            </div>
+            <Alert variant="destructive" className="pr-10">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Registration failed</AlertTitle>
+              <AlertDescription>{serverError}</AlertDescription>
+            </Alert>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">

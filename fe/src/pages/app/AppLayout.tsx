@@ -66,6 +66,7 @@ export default function AppLayout() {
                         location.pathname.includes('/help') ||
                         location.pathname.includes('/analytics') ||
                         location.pathname.includes('/inbox') ||
+                        location.pathname.includes('/billing') ||
                         location.pathname.includes('/settings')
 
   const handleLogout = () => {
@@ -281,7 +282,7 @@ export default function AppLayout() {
                 <BarChart3 size={16} />
                 Usage
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/app/settings')}>
+              <DropdownMenuItem onClick={() => navigate('/app/billing')}>
                 <CreditCard size={16} />
                 Billing
               </DropdownMenuItem>

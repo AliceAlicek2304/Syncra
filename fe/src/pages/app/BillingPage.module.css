@@ -1,49 +1,78 @@
-.section {
-  padding: 24px;
-  animation: fadeIn 0.3s ease-out;
+.page {
+  padding: 32px 36px;
+  min-height: 100vh;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.sectionHeader {
+/* ── Header ── */
+
+.header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
-.sectionInfo { flex: 1; }
-
-.sectionTitle {
+.title {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 18px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 24px;
   font-weight: 600;
   color: #201515;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
-.sectionDesc {
-  font-size: 14px;
+.subtitle {
+  font-size: 15px;
   color: #939084;
   margin: 0;
 }
 
-/* Banner */
+.portalBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #f8f4f0;
+  border: 1px solid #e5dfd3;
+  border-radius: 12px;
+  color: #201515;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.portalBtn:hover {
+  background: #fffefb;
+  border-color: #ff4f00;
+}
+
+/* ── Banner ── */
+
 .banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 24px;
   font-size: 14px;
   animation: slideDown 0.3s ease-out;
+}
+
+.banner span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @keyframes slideDown {
@@ -76,23 +105,26 @@
   cursor: pointer;
   padding: 4px;
   display: flex;
-  align-items: center;
   opacity: 0.7;
   transition: opacity 0.2s;
 }
 
 .bannerClose:hover { opacity: 1; }
 
-/* Subscription Summary */
+/* ── Summary ── */
+
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
 
 .summaryCard {
-  background: #fffefb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8f4f0;
   border: 1px solid #e5dfd3;
   border-radius: 12px;
   padding: 16px;
@@ -104,8 +136,6 @@
   color: #939084;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 8px;
-  display: block;
 }
 
 .summaryValue {
@@ -116,10 +146,11 @@
 
 .statusBadge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 20px;
+  padding: 2px 10px;
+  border-radius: 9999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  width: fit-content;
 }
 
 .statusActive { background: rgba(16, 185, 129, 0.1); color: #059669; }
@@ -127,18 +158,14 @@
 .statusCanceled { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
 .statusPast_due { background: rgba(245, 158, 11, 0.1); color: #d97706; }
 
-/* Pricing Section */
-.pricingHeader {
-  text-align: center;
-  margin-bottom: 32px;
-}
+/* ── Toggle ── */
 
-.toggleContainer {
+.toggleSection {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 16px;
+  margin-bottom: 32px;
 }
 
 .toggleLabel {
@@ -157,7 +184,7 @@
   height: 24px;
   background: #e5dfd3;
   border: 1px solid #c5c0b1;
-  border-radius: 100px;
+  border-radius: 9999px;
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
@@ -185,36 +212,41 @@
   padding: 1px 6px;
   border-radius: 4px;
   margin-left: 4px;
+  font-weight: 700;
 }
+
+/* ── Pricing Grid ── */
 
 .pricingGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
+/* ── Plan Card ── */
+
 .planCard {
-  padding: 24px;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s, border-color 0.2s;
-  border: 1px solid #e5dfd3;
   background: #fffefb;
+  border: 1px solid #e5dfd3;
   border-radius: 12px;
+  padding: 28px 24px;
   position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .planCard:hover {
   transform: translateY(-4px);
-  border-color: #ff4f00;
+  box-shadow: 0 12px 24px rgba(32, 21, 21, 0.06);
 }
 
 .currentPlanCard {
-  border-color: rgba(255, 79, 0, 0.5);
-  background: rgba(255, 79, 0, 0.03);
+  border-color: rgba(255, 79, 0, 0.4);
+  background: rgba(255, 79, 0, 0.02);
 }
 
-.currentPlanBadge {
+.currentBadge {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -222,18 +254,43 @@
   color: #fffefb;
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+/* ── Plan Header ── */
+
+.planHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.planIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #f8f4f0;
+  color: #ff4f00;
+  flex-shrink: 0;
 }
 
 .planName {
+  font-family: Inter, system-ui, sans-serif;
   font-size: 20px;
   font-weight: 700;
   color: #201515;
-  margin: 0 0 8px;
 }
 
-.planPrice { margin-bottom: 20px; }
+/* ── Price ── */
+
+.planPrice {
+  margin-bottom: 20px;
+}
 
 .priceAmount {
   font-size: 28px;
@@ -241,10 +298,20 @@
   color: #201515;
 }
 
+.priceCurrency {
+  font-size: 20px;
+  font-weight: 600;
+  color: #605d52;
+  margin-left: 2px;
+}
+
 .pricePeriod {
   font-size: 14px;
   color: #939084;
+  margin-left: 4px;
 }
+
+/* ── Features ── */
 
 .featureList {
   list-style: none;
@@ -264,51 +331,61 @@
 
 .featureIcon { color: #10b981; flex-shrink: 0; }
 
-/* Owner Gating */
-.ownerOnlyNotice {
+/* ── Action / CTA ── */
+
+.planAction {
+  margin-top: auto;
+}
+
+.currentLabel {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  background: #f8f4f0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #939084;
+}
+
+.actionBtn {
+  width: 100%;
+  padding: 12px 24px;
+  background: #ff4f00;
+  color: #fffefb;
+  border: none;
+  border-radius: 12px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.actionBtn:hover {
+  background: #e04500;
+  transform: translateY(-1px);
+}
+
+.ownerNotice {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: auto;
   padding: 12px;
   background: #f8f4f0;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 13px;
   color: #939084;
 }
 
-.ownerOnlyIcon { color: #c5c0b1; }
+/* ── Loading ── */
 
-/* Portal Section */
-.portalSection {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid #e5dfd3;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.portalInfo h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #201515;
-  margin: 0 0 4px;
-}
-
-.portalInfo p {
-  font-size: 14px;
-  color: #939084;
-  margin: 0;
-}
-
-/* Loading state */
 .loadingOverlay {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 0;
+  padding: 80px 0;
   gap: 16px;
   color: #939084;
 }
@@ -324,19 +401,4 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.trialBadge {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  color: #16a34a;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 8px;
-  display: inline-block;
-  align-self: flex-start;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
