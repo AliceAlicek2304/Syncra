@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, ChevronDown, ChevronUp, Check, X, Info, Loader2, Key, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle, AlertCircle
+  Plus, ChevronDown, ChevronUp, Check, X, Info, Loader2, Key, Lock, ShieldCheck, Trash2, Link2, ChevronRight, Pencil, HelpCircle, AlertCircle
 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useWorkspace } from '../../context/WorkspaceContext';
@@ -13,6 +13,9 @@ import { socialAccountsApi } from '../../api/socialAccounts';
 import { getSocialAvatarUrl, getFbPageAvatarUrl } from '../../utils/social';
 import { postsApi } from '../../api/posts';
 import api from '../../lib/axios';
+import { useBilling } from '../../context/BillingContext';
+import { useNavigate } from 'react-router-dom';
+import SubscriptionUpgradeModal from '../../components/SubscriptionUpgradeModal';
 import styles from './ConnectionsPage.module.css';
 import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons';
 
@@ -359,6 +362,8 @@ export default function ConnectionsPage() {
   const queryClient = useQueryClient();
   const { workspaces, activeWorkspace, profiles, activeProfile, isLoading: isWorkspaceLoading } = useWorkspace();
   const { success: showSuccess, error: showError } = useToast();
+  const { subscription, loading: billingLoading, loadCurrentSubscription } = useBilling();
+  const navigate = useNavigate();
 
   const [selectedHealthAccount, setSelectedHealthAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
   const [selectedManagePagesAccount, setSelectedManagePagesAccount] = useState<(SocialAccountDto & { workspace: typeof workspaces[0] }) | null>(null);
@@ -370,6 +375,7 @@ export default function ConnectionsPage() {
   // Drawers open state
   const [isNewProfileOpen, setIsNewProfileOpen] = useState(false);
   const [isNewConnectionOpen, setIsNewConnectionOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Form states
@@ -443,6 +449,13 @@ export default function ConnectionsPage() {
     }
     setConnectionError(null);
   }, [activeProfile, profiles, isNewConnectionOpen]);
+
+  // Load subscription on mount
+  useEffect(() => {
+    if (!subscription && !billingLoading) {
+      loadCurrentSubscription();
+    }
+  }, []);
 
   // Reset expanded platform when drawer closes or profile changes
   useEffect(() => {
@@ -701,6 +714,9 @@ export default function ConnectionsPage() {
     return matchesProfile && matchesPlatform && matchesStatus;
   });
 
+  const hasValidSubscription = subscription?.status === 'Active' || subscription?.status === 'Trialing';
+  const isSubscriptionKnown = subscription !== null;
+
   const renderedCards = ALL_PLATFORMS.flatMap((platform) => {
     if (selectedPlatformFilter !== 'all' && selectedPlatformFilter !== platform.id) return [];
 
@@ -887,7 +903,13 @@ export default function ConnectionsPage() {
         <div className={styles.headerActions}>
           <button
             className={styles.newConnBtn}
-            onClick={() => setIsNewConnectionOpen(true)}
+            onClick={() => {
+              if (isSubscriptionKnown && !hasValidSubscription) {
+                setIsUpgradeModalOpen(true);
+              } else {
+                setIsNewConnectionOpen(true);
+              }
+            }}
           >
             <Plus size={16} />
             <span>New Connection</span>
@@ -1091,7 +1113,22 @@ export default function ConnectionsPage() {
       </div>
 
       {/* Connection Cards Grid */}
-      {isConnectionsLoading || isWorkspaceLoading ? (
+      {isSubscriptionKnown && !hasValidSubscription ? (
+        <div className={styles.emptyState}>
+          <Lock size={48} className={styles.emptyIcon} />
+          <h2>Social Account Connections</h2>
+          <p>Connect TikTok, Instagram, Facebook and more.</p>
+          <p style={{ margin: '4px 0 24px', color: '#939084', fontSize: '13px' }}>
+            Available on Pro and Business plans.
+          </p>
+          <button
+            className={styles.newConnBtn}
+            onClick={() => navigate('/app/billing')}
+          >
+            Upgrade Plan
+          </button>
+        </div>
+      ) : isConnectionsLoading || isWorkspaceLoading ? (
         <div className={styles.loadingState}>
           <Loader2 className={styles.spinner} size={32} />
           <p>Loading connections...</p>
@@ -1654,6 +1691,10 @@ export default function ConnectionsPage() {
         />
       )}
 
+      <SubscriptionUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
 
     </div>
   );
