@@ -54,6 +54,7 @@ export default function OAuthCallbackPage() {
         // Handle successful login
         localStorage.setItem('syncra_access_token', response.token);
         localStorage.removeItem('syncra_workspace_id');
+        localStorage.removeItem('syncra_profile_id');
         console.log(`[OAuth] Token saved to localStorage (length: ${response.token.length})`);
 
         setStatus('Success! Syncing account...');
@@ -87,6 +88,8 @@ export default function OAuthCallbackPage() {
 
   const handleLinkSuccess = async (token: string) => {
     localStorage.setItem('syncra_access_token', token);
+    localStorage.removeItem('syncra_workspace_id');
+    localStorage.removeItem('syncra_profile_id');
     setStatus('Success! Account linked. Syncing...');
     await hydrateSession();
     setStatus('Redirecting...');

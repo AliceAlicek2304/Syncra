@@ -133,13 +133,15 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
 
         var workspace = Workspace.Create(user.Id, "Default", slug);
         workspace.AddMember(user.Id, "owner");
+        workspace.Members.First().Activate();
 
         await _workspaceRepository.AddAsync(workspace);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var zernioName = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
         var provisioned = await _zernioClient.ProvisionProfileAsync(
             workspaceId: workspace.Id.ToString(),
-            name: "Default",
+            name: zernioName,
             cancellationToken: cancellationToken);
 
         var profile = ZernioProfile.Create(
