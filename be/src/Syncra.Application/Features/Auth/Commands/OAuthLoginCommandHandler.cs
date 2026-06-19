@@ -75,6 +75,9 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
             if (!string.IsNullOrEmpty(callbackResult.AccessToken))
                 externalLogin.StoreTokens(callbackResult.AccessToken, callbackResult.RefreshToken, callbackResult.ExpiresIn);
             await _externalLoginRepository.UpdateAsync(externalLogin);
+
+            user.RecordLogin();
+            await _userRepository.UpdateAsync(user);
         }
         else
         {
@@ -82,20 +85,12 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
 
             if (existingUser != null)
             {
-                // Collision detected: user exists with this email but not this OAuth provider
-                // Throw LinkingRequiredException to trigger password verification on frontend
                 throw new LinkingRequiredException(callbackResult.Email, callbackResult.ProviderUserId, callbackResult.AvatarUrl);
             }
-            else
-            {
-                user = await CreateNewUserAsync(request.ProviderName, callbackResult);
-                isNewUser = true;
-            }
-        }
 
-        user.RecordLogin();
-        if (!isNewUser)
-            await _userRepository.UpdateAsync(user);
+            user = await CreateNewUserAsync(request.ProviderName, callbackResult, cancellationToken);
+            isNewUser = true;
+        }
 
         var token = _tokenService.GenerateJwtToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
@@ -125,7 +120,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc);
     }
 
-    private async Task<User> CreateNewUserAsync(string providerName, OAuthCallbackResult callbackResult)
+    private async Task<User> CreateNewUserAsync(string providerName, OAuthCallbackResult callbackResult, CancellationToken cancellationToken)
     {
         var randomPassword = BC.HashPassword(Guid.NewGuid().ToString("N"));
         var user = User.Create(callbackResult.Email, randomPassword);
@@ -151,6 +146,7 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         }
 
         user.VerifyEmail();
+        user.RecordLogin();
 
         await _userRepository.AddAsync(user);
 
@@ -159,12 +155,12 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
             externalLogin.StoreTokens(callbackResult.AccessToken, callbackResult.RefreshToken, callbackResult.ExpiresIn);
         await _externalLoginRepository.AddAsync(externalLogin);
 
-        await CreateDefaultWorkspaceAsync(user);
+        await CreateDefaultWorkspaceAsync(user, cancellationToken);
 
         return user;
     }
 
-    private async Task CreateDefaultWorkspaceAsync(User user)
+    private async Task CreateDefaultWorkspaceAsync(User user, CancellationToken cancellationToken)
     {
         var emailPrefix = user.Email.Value.Split('@')[0];
         var slug = GenerateSlug(emailPrefix);
@@ -177,23 +173,22 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
 
         var workspace = Workspace.Create(user.Id, "Default", slug);
         workspace.AddMember(user.Id, "owner");
+        workspace.Members.First().Activate();
 
-        await _workspaceRepository.AddAsync(workspace);
-        await _unitOfWork.SaveChangesAsync(default);
-
+        var zernioName = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
         var provisioned = await _zernioClient.ProvisionProfileAsync(
             workspaceId: workspace.Id.ToString(),
-            name: "Default",
-            cancellationToken: default);
+            name: zernioName,
+            cancellationToken: cancellationToken);
 
         var profile = ZernioProfile.Create(
             workspaceId: workspace.Id,
             zernioProfileId: provisioned.Id,
-            displayName: provisioned.Name,
+            displayName: workspace.Name,
             platform: "zernio");
 
+        await _workspaceRepository.AddAsync(workspace);
         await _zernioProfileRepository.AddAsync(profile);
-        await _unitOfWork.SaveChangesAsync(default);
     }
 
     private static string GenerateSlug(string name)
