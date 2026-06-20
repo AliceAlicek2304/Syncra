@@ -64,7 +64,7 @@ public sealed class PaymentWebhookOrchestrator
             if (distributedLock == null)
             {
                 _logger.LogInformation("Webhook event {EventId} is being processed by another instance", eventId);
-                return new OkResult();
+                return new OkObjectResult(new { success = true });
             }
 
             // Idempotency check
@@ -76,13 +76,13 @@ public sealed class PaymentWebhookOrchestrator
                 if (record.Status == IdempotencyStatus.Success)
                 {
                     _logger.LogInformation("Duplicate webhook event {EventId} already processed successfully", eventId);
-                    return new OkResult();
+                    return new OkObjectResult(new { success = true });
                 }
 
                 if (record.Status == IdempotencyStatus.PermanentFailure)
                 {
                     _logger.LogInformation("Webhook event {EventId} permanently failed — returning 200 to stop retries", eventId);
-                    return new OkResult();
+                    return new OkObjectResult(new { success = true });
                 }
 
                 if (record.Status == IdempotencyStatus.Pending)
@@ -116,7 +116,7 @@ public sealed class PaymentWebhookOrchestrator
                 {
                     // D-11: Unique index violation — another instance created the record
                     _logger.LogInformation("Webhook event {EventId} — duplicate key constraint. Another instance handled it.", eventId);
-                    return new OkResult();
+                    return new OkObjectResult(new { success = true });
                 }
             }
 
@@ -129,7 +129,7 @@ public sealed class PaymentWebhookOrchestrator
                 record.ResponseStatusCode = 200;
                 await _db.SaveChangesAsync(cancellationToken);
 
-                return new OkResult();
+                return new OkObjectResult(new { success = true });
             }
             catch (Exception ex)
             {
