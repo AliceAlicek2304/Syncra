@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles, Zap, Layers, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import { useRepurpose } from '../../context/repurposeContextBase'
 import { useCreatePostModal } from '../../context/createPostModalContext'
+import { useBilling } from '../../context/BillingContext'
+import SubscriptionUpgradeModal from '../../components/SubscriptionUpgradeModal'
 import ContentSourceCard from '../../components/repurpose/ContentSourceCard'
 import AISettingsCard from '../../components/repurpose/AISettingsCard'
 import PlatformSelector from '../../components/repurpose/PlatformSelector'
@@ -13,10 +15,20 @@ import { DeleteSessionConfirmDialog } from '../../components/repurpose/DeleteSes
 export default function RepurposePage() {
   const { config, isGenerating, generate, error, setError, sessions, activeSessionId, switchSession, deleteSession, results } = useRepurpose()
   const { openCreatePost } = useCreatePostModal()
+  const { subscription, loading: billingLoading, loadCurrentSubscription } = useBilling()
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false)
+  const hasValidSubscription = subscription?.status === 'Active' || subscription?.status === 'Trialing'
+  const isSubscriptionKnown = subscription !== null
   const hasOutput = results.length > 0 || isGenerating
   const hasReadySources = config.sources.some(s => s.status === 'ready')
   const hasInputContent = config.sourceText.trim().length > 0 || hasReadySources
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!subscription && !billingLoading) {
+      loadCurrentSubscription()
+    }
+  }, [])
 
   const handleDeleteConfirm = async () => {
     if (deleteTargetId) {
@@ -27,10 +39,18 @@ export default function RepurposePage() {
 
   const handleGenerate = async () => {
     if (!hasInputContent) return
+    if (isSubscriptionKnown && !hasValidSubscription) {
+      setIsUpgradeModalOpen(true)
+      return
+    }
     await generate()
   }
 
   const handleCreatePost = (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => {
+    if (isSubscriptionKnown && !hasValidSubscription) {
+      setIsUpgradeModalOpen(true)
+      return
+    }
     let mediaName = 'AI_Media'
     if (mediaUrl) {
       const ext = mediaUrl.split('.').pop()?.split('?')[0]
@@ -140,6 +160,11 @@ export default function RepurposePage() {
         open={deleteTargetId !== null}
         onCancel={() => setDeleteTargetId(null)}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <SubscriptionUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
       />
     </div>
   )

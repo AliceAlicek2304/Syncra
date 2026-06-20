@@ -10,6 +10,9 @@ import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import { useToast } from '../../context/ToastContext'
+import { useBilling } from '../../context/BillingContext'
+import { useNavigate } from 'react-router-dom'
+import SubscriptionUpgradeModal from '../../components/SubscriptionUpgradeModal'
 import { postsApi } from '../../api/posts'
 import type { Post } from '../../api/posts'
 import { socialAccountsApi } from '../../api/socialAccounts'
@@ -60,6 +63,8 @@ export default function PostsOverviewPage() {
   const { user } = useAuth()
   const { openCreatePost, openEditPost } = useCreatePostModal()
   const { success: showSuccess, error: showError } = useToast()
+  const { subscription, loading: billingLoading, loadCurrentSubscription } = useBilling()
+  const navigate = useNavigate()
   
   const queryClient = useQueryClient()
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
@@ -70,6 +75,7 @@ export default function PostsOverviewPage() {
   const [isDeletingSingle, setIsDeletingSingle] = useState<boolean>(false)
   const [isDeletingSyncraOnly, setIsDeletingSyncraOnly] = useState<boolean>(false)
   const [isDeletingPlatformAndSyncra, setIsDeletingPlatformAndSyncra] = useState<boolean>(false)
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   
   // ─── Filter & View States ───
@@ -96,6 +102,13 @@ export default function PostsOverviewPage() {
   useEffect(() => {
     localStorage.setItem('syncra_week_starts_on', weekStartsOn)
   }, [weekStartsOn])
+
+  // Load subscription on mount
+  useEffect(() => {
+    if (!subscription && !billingLoading) {
+      loadCurrentSubscription()
+    }
+  }, [])
 
   const [sortField, setSortField] = useState<string>('Scheduled (newest first)')
   
@@ -170,6 +183,10 @@ export default function PostsOverviewPage() {
     if (post.status === 'published') {
       setSelectedPostDetails(post)
     } else if (post.status === 'scheduled' || post.status === 'draft' || post.status === 'failed' || post.status === 'partial') {
+      if (isSubscriptionKnown && !hasValidSubscription) {
+        setIsUpgradeModalOpen(true)
+        return
+      }
       const scheduledDate = new Date(post.scheduledAtUtc || post.createdAt)
       const scheduledTimeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) // e.g. "14:30"
       openEditPost({
@@ -210,6 +227,9 @@ export default function PostsOverviewPage() {
     const filteredCsv = csvPosts.filter(p => !apiIds.has(p.id))
     return [...apiPosts, ...filteredCsv]
   }, [apiPosts, csvPosts])
+
+  const hasValidSubscription = subscription?.status === 'Active' || subscription?.status === 'Trialing'
+  const isSubscriptionKnown = subscription !== null
 
   // ─── Filter Logic ───
   const filteredPosts = React.useMemo(() => {
@@ -748,14 +768,26 @@ export default function PostsOverviewPage() {
         <div className={styles.actionButtons}>
           <button 
             className={styles.createPostBtn}
-            onClick={() => openCreatePost({ source: 'direct' })}
+            onClick={() => {
+              if (isSubscriptionKnown && !hasValidSubscription) {
+                setIsUpgradeModalOpen(true)
+              } else {
+                openCreatePost({ source: 'direct' })
+              }
+            }}
           >
             <Plus size={16} />
             <span>Create post</span>
           </button>
           <button 
             className={styles.importBtn}
-            onClick={() => setImportOpen(true)}
+            onClick={() => {
+              if (isSubscriptionKnown && !hasValidSubscription) {
+                setIsUpgradeModalOpen(true)
+              } else {
+                setImportOpen(true)
+              }
+            }}
           >
             <Upload size={16} />
             <span>Import CSV</span>
@@ -1719,6 +1751,11 @@ export default function PostsOverviewPage() {
           );
         })()
       )}
+
+      <SubscriptionUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </div>
   )
 }
