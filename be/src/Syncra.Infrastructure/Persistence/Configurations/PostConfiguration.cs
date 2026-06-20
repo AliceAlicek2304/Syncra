@@ -44,6 +44,7 @@ public class PostConfiguration : BaseWorkspaceEntityConfiguration<Post>
         // Zernio fields
         builder.Property(e => e.ZernioPostId).HasMaxLength(200).HasColumnName("zernio_post_id");
         builder.Property(e => e.ZernioTargetCount).HasDefaultValue(0).HasColumnName("zernio_target_count");
+        builder.Property(e => e.IsSplitVideoPost).HasDefaultValue(false).HasColumnName("is_split_video_post");
 
         // Relationships
         builder.HasOne(e => e.User)

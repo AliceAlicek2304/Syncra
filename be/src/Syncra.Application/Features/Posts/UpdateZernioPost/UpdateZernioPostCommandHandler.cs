@@ -116,6 +116,10 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
         }
 
         var post = await _postRepository.GetByZernioPostIdAsync(request.PostId);
+        if (post is not null && post.IsSplitVideoPost)
+        {
+            throw new DomainException("split_post_edit_not_supported", "This post targets multiple platforms (split video post workaround) and cannot be edited. Please delete and recreate.");
+        }
 
         var platforms = activeAccounts
             .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))

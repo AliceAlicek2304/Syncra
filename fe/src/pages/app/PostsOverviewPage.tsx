@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useCreatePostModal } from '../../context/createPostModalContext'
 import { useToast } from '../../context/ToastContext'
 import { useBilling } from '../../context/BillingContext'
-import { useNavigate } from 'react-router-dom'
+// import { useNavigate } from 'react-router-dom'
 import SubscriptionUpgradeModal from '../../components/SubscriptionUpgradeModal'
 import { postsApi } from '../../api/posts'
 import type { Post } from '../../api/posts'
@@ -64,7 +64,7 @@ export default function PostsOverviewPage() {
   const { openCreatePost, openEditPost } = useCreatePostModal()
   const { success: showSuccess, error: showError } = useToast()
   const { subscription, loading: billingLoading, loadCurrentSubscription } = useBilling()
-  const navigate = useNavigate()
+  // const navigate = useNavigate()
   
   const queryClient = useQueryClient()
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
@@ -204,7 +204,8 @@ export default function PostsOverviewPage() {
         zernioPostId: post.zernioPostId,
         platformTargets: post.platformTargets,
         mediaItems: post.mediaItems,
-        media: post.mediaItems
+        media: post.mediaItems,
+        isSplitVideoPost: post.isSplitVideoPost
       })
     }
   }

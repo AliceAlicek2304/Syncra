@@ -45,7 +45,7 @@ export default function AppLayout() {
   const [inboxOpen, setInboxOpen] = useState(true)
 
   const { activeWorkspace } = useWorkspace()
-  const { subscription, loadCurrentSubscription } = useBilling()
+  const { loadCurrentSubscription } = useBilling()
 
   useEffect(() => {
     if (activeWorkspace) {

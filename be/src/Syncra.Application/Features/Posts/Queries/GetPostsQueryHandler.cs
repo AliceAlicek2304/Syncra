@@ -60,6 +60,10 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             .Where(id => !string.IsNullOrEmpty(id))
             .ToHashSet();
 
+        var splitPostMap = localPosts
+            .Where(p => !string.IsNullOrEmpty(p.ZernioPostId))
+            .ToDictionary(p => p.ZernioPostId!, p => p.IsSplitVideoPost);
+
         if (profiles.Count == 1)
         {
             var single = results[0];
@@ -68,7 +72,10 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
                 .ToList();
 
             var singleItems = filteredPosts
-                .Select(p => MapToDto(p, request.WorkspaceId))
+                .Select(p => {
+                    var isSplit = splitPostMap.TryGetValue(p.Id, out var val) && val;
+                    return MapToDto(p, request.WorkspaceId, isSplit);
+                })
                 .ToList();
 
             var filteredOutCount = single.Posts.Count - filteredPosts.Count;
@@ -101,7 +108,10 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
             .Take(pageSize)
             .ToList();
 
-        var items = pagedPosts.Select(p => MapToDto(p, request.WorkspaceId)).ToList();
+        var items = pagedPosts.Select(p => {
+            var isSplit = splitPostMap.TryGetValue(p.Id, out var val) && val;
+            return MapToDto(p, request.WorkspaceId, isSplit);
+        }).ToList();
 
         return new PaginatedResult<PostDto>(
             Items: items,
@@ -123,7 +133,7 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
         return await _zernioProfileRepository.GetActiveByWorkspaceIdAsync(request.WorkspaceId);
     }
 
-    private PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId)
+    private PostDto MapToDto(ZernioPostListItemDto zp, Guid workspaceId, bool isSplitVideoPost)
     {
         return new PostDto(
             Id: ObjectIdToGuid(zp.Id),
@@ -151,7 +161,8 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
                     ErrorMessage: pt.ErrorMessage,
                     ZernioAccountId: pt.AccountId,
                     PlatformSpecificData: pt.PlatformSpecificData))
-                .ToList()
+                .ToList(),
+            IsSplitVideoPost: isSplitVideoPost
         );
     }
 

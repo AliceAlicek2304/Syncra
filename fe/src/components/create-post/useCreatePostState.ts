@@ -418,6 +418,14 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initialPlatformSpecificData: AllPlatformData = {}
 
       if (editPost) {
+        if (editPost.isSplitVideoPost) {
+          onToast?.({
+            message: 'This post targets multiple platforms (split video post workaround) and cannot be edited. Please delete and recreate.',
+            type: 'error'
+          })
+          onClose()
+          return
+        }
         nextContent = editPost.caption
         nextCaptions = {
           tiktok: editPost.caption,
@@ -595,6 +603,13 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
   const submitPost = async (isDraft: boolean): Promise<boolean> => {
     if (!activeWorkspace) return false
+    if (editPost?.isSplitVideoPost) {
+      onToast?.({
+        message: 'This post targets multiple platforms (split video post workaround) and cannot be edited. Please delete and recreate.',
+        type: 'error'
+      })
+      return false
+    }
     setIsSubmitting(true)
     setSubmitError(null)
     try {

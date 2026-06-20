@@ -481,5 +481,73 @@ public class CreateZernioPostCommandTests : IDisposable
         Assert.Null(nullResult);
     }
 
-}
+    [Fact]
+    public async Task Handler_SplitLinkedInVideoPost_CreatesTwoSeparatePosts()
+    {
+        // Arrange
+        var linkedinAccount = await SeedSocialAccountAsync(_workspaceId, "linkedin", "acc_linkedin_1");
+        var twitterAccount = await SeedSocialAccountAsync(_workspaceId, "twitter", "acc_twitter_1");
 
+        var zernioMediaUrl = "https://media.zernio.com/temp/123_video.mp4";
+        var mediaItem = new PostMediaItemDto(
+            Url: zernioMediaUrl,
+            Type: "video",
+            Filename: "video.mp4",
+            MimeType: "video/mp4"
+        );
+
+        _zernioClientMock
+            .Setup(x => x.CreatePostAsync(It.IsAny<ZernioCreatePostRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ZernioCreatePostRequest req, CancellationToken ct) => 
+            {
+                var isLinkedInOnly = req.Platforms.Count == 1 && req.Platforms[0].Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase);
+                return new ZernioCreatePostResult(
+                    isLinkedInOnly ? "zernio_linkedin_123" : "zernio_twitter_456", 
+                    "scheduled", 
+                    1);
+            });
+
+        var command = new CreateZernioPostCommand(
+            _workspaceId,
+            _userId,
+            "Split Post Test",
+            "This targets LinkedIn + Twitter with a video.",
+            new List<Guid> { linkedinAccount.Id, twitterAccount.Id },
+            ScheduledAtUtc: DateTime.UtcNow.AddHours(2),
+            PublishNow: false,
+            IsDraft: false,
+            MediaItems: new List<PostMediaItemDto> { mediaItem },
+            PlatformContents: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("zernio_twitter_456", result.ZernioPostId); // Returns Post 2 (other platforms)
+        Assert.True(result.IsSplitVideoPost);
+
+        // Verify that BOTH posts were created in our DB
+        var savedPosts = await _db.Posts
+            .Include(p => p.PlatformTargets)
+            .Where(p => p.WorkspaceId == _workspaceId)
+            .ToListAsync();
+
+        Assert.Equal(2, savedPosts.Count);
+
+        var linkedinPost = savedPosts.FirstOrDefault(p => p.ZernioPostId == "zernio_linkedin_123");
+        var twitterPost = savedPosts.FirstOrDefault(p => p.ZernioPostId == "zernio_twitter_456");
+
+        Assert.NotNull(linkedinPost);
+        Assert.NotNull(twitterPost);
+
+        Assert.True(linkedinPost!.IsSplitVideoPost);
+        Assert.True(twitterPost!.IsSplitVideoPost);
+
+        Assert.Single(linkedinPost.PlatformTargets);
+        Assert.Equal("linkedin", linkedinPost.PlatformTargets.First().Platform);
+
+        Assert.Single(twitterPost.PlatformTargets);
+        Assert.Equal("twitter", twitterPost.PlatformTargets.First().Platform);
+    }
+}

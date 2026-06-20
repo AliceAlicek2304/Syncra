@@ -30,7 +30,8 @@ public static class PostMapper
                 t.Status.ToString(),
                 t.ExternalPostUrl,
                 t.ErrorMessage,
-                t.ZernioAccountId)).ToList() ?? new List<PostPlatformTargetDto>());
+                t.ZernioAccountId)).ToList() ?? new List<PostPlatformTargetDto>(),
+            post.IsSplitVideoPost);
 
     public static PostDto ToDto(
         Guid workspaceId,
@@ -52,5 +53,6 @@ public static class PostMapper
             MediaItems: new List<PostMediaItemDto>(),
             ZernioPostId: zernioPostId,
             ZernioTargetCount: 0,
-            PlatformTargets: new List<PostPlatformTargetDto>());
+            PlatformTargets: new List<PostPlatformTargetDto>(),
+            IsSplitVideoPost: false);
 }

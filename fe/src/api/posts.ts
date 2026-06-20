@@ -25,6 +25,7 @@ export interface Post {
   zernioTargetCount?: number;
   platformTargets?: PostPlatformTargetDto[];
   mediaItems?: PostMediaItem[];
+  isSplitVideoPost?: boolean;
 }
 
 export interface PostMediaItem {

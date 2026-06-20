@@ -18,6 +18,7 @@ export interface ScheduledPost {
     platformTargets?: PostPlatformTargetDto[]
     mediaItems?: PostMediaItem[]
     media?: PostMediaItem[]
+    isSplitVideoPost?: boolean
 }
 
 export interface CalendarContextValue {

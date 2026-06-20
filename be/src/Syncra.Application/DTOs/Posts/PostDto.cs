@@ -13,7 +13,8 @@ public record PostDto(
     IReadOnlyList<PostMediaItemDto>? MediaItems,
     string? ZernioPostId,
     int ZernioTargetCount,
-    IReadOnlyList<PostPlatformTargetDto> PlatformTargets
+    IReadOnlyList<PostPlatformTargetDto> PlatformTargets,
+    bool IsSplitVideoPost = false
 );
 
 public record PostMediaItemDto(

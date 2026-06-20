@@ -111,6 +111,142 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             }
         }
 
+        var mediaItemsToUse = updatedMediaItems.Count > 0 ? updatedMediaItems : (request.MediaItems ?? new List<PostMediaItemDto>());
+
+        if (ShouldSplitForLinkedIn(mediaItemsToUse, activeAccounts))
+        {
+            var linkedinAccounts = activeAccounts.Where(a => a.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase)).ToList();
+            var otherAccounts = activeAccounts.Where(a => !a.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            // 1. Post 1: LinkedIn-only
+            var linkedinPlatforms = linkedinAccounts
+                .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
+                .ToList();
+
+            // Filter mediaItems: video items only
+            var linkedinMediaItems = mediaItemsToUse.Where(m =>
+                (m.Type != null && m.Type.Equals("video", StringComparison.OrdinalIgnoreCase)) ||
+                (m.MimeType != null && m.MimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+
+            var linkedinPlatformContents = request.PlatformContents?
+                .Where(pc => pc.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var linkedinSpecificData = request.PlatformSpecificData != null
+                ? new AllPlatformDataDto(LinkedIn: request.PlatformSpecificData.LinkedIn)
+                : null;
+
+            var zernioRequest1 = new ZernioCreatePostRequest(
+                request.Title,
+                request.Content ?? string.Empty,
+                linkedinPlatforms,
+                request.ScheduledAtUtc,
+                request.PublishNow,
+                request.IsDraft,
+                linkedinMediaItems,
+                linkedinPlatformContents,
+                null,
+                null,
+                linkedinSpecificData,
+                null);
+
+            var zernioResult1 = await _zernioClient.CreatePostAsync(zernioRequest1, cancellationToken);
+
+            var post1 = Post.Create(
+                request.WorkspaceId,
+                request.UserId,
+                request.Title ?? string.Empty,
+                request.Content ?? string.Empty,
+                request.ScheduledAtUtc);
+
+            post1.AssignZernioPost(zernioResult1.ZernioPostId, linkedinAccounts.Count);
+            post1.MarkAsSplitVideoPost();
+
+            if (request.PublishNow)
+            {
+                post1.MarkPublishAttempt(DateTime.UtcNow);
+            }
+
+            await _postRepository.AddAsync(post1);
+
+            foreach (var account in linkedinAccounts)
+            {
+                var target = PostPlatformTarget.Create(
+                    request.WorkspaceId,
+                    post1.Id,
+                    account.Platform);
+                target.SetZernioAccountId(account.ExternalAccountId);
+                post1.PlatformTargets.Add(target);
+            }
+
+            // 2. Post 2: Other platforms
+            var otherPlatforms = otherAccounts
+                .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
+                .ToList();
+
+            var otherPlatformContents = request.PlatformContents?
+                .Where(pc => !pc.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var otherSpecificData = request.PlatformSpecificData != null
+                ? request.PlatformSpecificData with { LinkedIn = null }
+                : null;
+
+            // Handle TikTok truncation for Post 2
+            var tiktokPlatformForSplit = otherPlatforms.FirstOrDefault(p => p.Platform.Equals("TikTok", StringComparison.OrdinalIgnoreCase));
+            var otherZernioContent = tiktokPlatformForSplit != null && !string.IsNullOrEmpty(request.Content) && request.Content.Length > 90
+                ? request.Content.Substring(0, 90)
+                : request.Content ?? string.Empty;
+
+            var zernioRequest2 = new ZernioCreatePostRequest(
+                request.Title,
+                otherZernioContent,
+                otherPlatforms,
+                request.ScheduledAtUtc,
+                request.PublishNow,
+                request.IsDraft,
+                mediaItemsToUse,
+                otherPlatformContents,
+                null,
+                null,
+                otherSpecificData,
+                request.TiktokSettings);
+
+            var zernioResult2 = await _zernioClient.CreatePostAsync(zernioRequest2, cancellationToken);
+
+            var post2 = Post.Create(
+                request.WorkspaceId,
+                request.UserId,
+                request.Title ?? string.Empty,
+                request.Content ?? string.Empty,
+                request.ScheduledAtUtc);
+
+            post2.AssignZernioPost(zernioResult2.ZernioPostId, otherAccounts.Count);
+            post2.MarkAsSplitVideoPost();
+
+            if (request.PublishNow)
+            {
+                post2.MarkPublishAttempt(DateTime.UtcNow);
+            }
+
+            await _postRepository.AddAsync(post2);
+
+            foreach (var account in otherAccounts)
+            {
+                var target = PostPlatformTarget.Create(
+                    request.WorkspaceId,
+                    post2.Id,
+                    account.Platform);
+                target.SetZernioAccountId(account.ExternalAccountId);
+                post2.PlatformTargets.Add(target);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return PostMapper.ToDto(post2, _storageService);
+        }
+
         // Build the Zernio API request
         var platforms = activeAccounts
             .Select(a => new ZernioCreatePostPlatformTarget(a.Platform, a.ExternalAccountId))
@@ -129,7 +265,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
             request.ScheduledAtUtc,
             request.PublishNow,
             request.IsDraft,
-            updatedMediaItems.Count > 0 ? updatedMediaItems : request.MediaItems,
+            mediaItemsToUse,
             request.PlatformContents,
             null,
             null,
@@ -174,6 +310,31 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PostMapper.ToDto(post, _storageService);
+    }
+
+    private static bool ShouldSplitForLinkedIn(
+        IReadOnlyList<PostMediaItemDto>? mediaItems,
+        List<SocialAccount> accounts)
+    {
+        if (mediaItems == null || mediaItems.Count == 0)
+        {
+            return false;
+        }
+
+        var hasVideo = mediaItems.Any(m =>
+            (m.Type != null && m.Type.Equals("video", StringComparison.OrdinalIgnoreCase)) ||
+            (m.MimeType != null && m.MimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+        );
+
+        if (!hasVideo)
+        {
+            return false;
+        }
+
+        var hasLinkedIn = accounts.Any(a => a.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase));
+        var hasOtherPlatforms = accounts.Any(a => !a.Platform.Equals("linkedin", StringComparison.OrdinalIgnoreCase));
+
+        return hasLinkedIn && hasOtherPlatforms;
     }
 
     private string ExtractStorageKey(string fileUrl)

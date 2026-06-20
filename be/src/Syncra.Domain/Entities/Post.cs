@@ -28,6 +28,7 @@ public sealed class Post : WorkspaceEntityBase
     // Zernio fields
     public string? ZernioPostId { get; private set; }
     public int ZernioTargetCount { get; private set; }
+    public bool IsSplitVideoPost { get; private set; }
 
     // Navigation properties
     public Workspace Workspace { get; set; } = null!;
@@ -320,6 +321,12 @@ public sealed class Post : WorkspaceEntityBase
     {
         ZernioPostId = zernioPostId;
         ZernioTargetCount = targetCount;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void MarkAsSplitVideoPost()
+    {
+        IsSplitVideoPost = true;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
