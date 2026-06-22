@@ -29,7 +29,7 @@
     width: 40px;
     height: 40px;
     border-radius: var(--radius-md);
-    background: rgba(255, 79, 0, 0.08);
+    background: rgba(168, 85, 247, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -88,13 +88,13 @@
     color: var(--clr-on-primary) !important;
     border: none !important;
     border-radius: var(--radius-md) !important;
-    box-shadow: 0 4px 14px rgba(255, 79, 0, 0.15) !important;
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.15) !important;
 }
 
 .aiBtn:hover {
     background: var(--clr-primary-hover) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(255, 79, 0, 0.25) !important;
+    box-shadow: 0 6px 18px rgba(168, 85, 247, 0.25) !important;
 }
 
 /* ── Board ──────────────────────────────────────────────────────── */
@@ -294,7 +294,7 @@
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 0 2px 8px rgba(255, 79, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
     text-decoration: none;
 }
 

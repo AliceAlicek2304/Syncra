@@ -4,7 +4,7 @@
   justify-content: center;
   min-height: 100vh;
   padding: 32px 36px;
-  background: #fffefb;
+  background: #fffaff;
 }
 
 .comingSoon {
@@ -16,20 +16,20 @@
 }
 
 .icon {
-  color: #ff4f00;
+  color: #a855f7;
   opacity: 0.6;
 }
 
 .title {
   font-size: 32px;
   font-weight: 500;
-  color: #201515;
+  color: #211329;
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
 }
 
 .subtitle {
   font-size: 16px;
-  color: #939084;
+  color: #9a82a7;
   margin: 0;
 }

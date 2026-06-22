@@ -33,8 +33,8 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'facebook', label: 'Facebook', color: '#1877f2', isSupported: true },
   { id: 'youtube', label: 'YouTube', color: '#ff0000', isSupported: true },
   { id: 'linkedin', label: 'LinkedIn', color: '#0a66c2', isSupported: true },
-  { id: 'twitter', label: 'Twitter / X', color: '#201515', isSupported: false },
-  { id: 'threads', label: 'Threads', color: '#201515', isSupported: true },
+  { id: 'twitter', label: 'Twitter / X', color: '#211329', isSupported: false },
+  { id: 'threads', label: 'Threads', color: '#211329', isSupported: true },
   { id: 'bluesky', label: 'Bluesky', color: '#0085ff', isSupported: true },
   { id: 'pinterest', label: 'Pinterest', color: '#e60023', isSupported: true },
   { id: 'reddit', label: 'Reddit', color: '#ff4500', isSupported: true },
@@ -744,8 +744,8 @@ export default function ConnectionsPage() {
               </div>
               <div>
                 <h3 className={styles.cardPlatformName}>{platform.label}</h3>
-                <div className={styles.statusBadge} style={{ backgroundColor: platform.isSupported ? '#f8f4f0' : '#fffbe8', color: platform.isSupported ? '#939084' : '#b45309' }}>
-                  <span className={styles.statusDot} style={{ backgroundColor: platform.isSupported ? '#939084' : '#eab308' }} />
+                <div className={styles.statusBadge} style={{ backgroundColor: platform.isSupported ? '#f8f1fb' : '#fffbe8', color: platform.isSupported ? '#9a82a7' : '#b45309' }}>
+                  <span className={styles.statusDot} style={{ backgroundColor: platform.isSupported ? '#9a82a7' : '#eab308' }} />
                   <span>{platform.isSupported ? 'Not connected' : 'Coming soon'}</span>
                 </div>
               </div>
@@ -845,7 +845,7 @@ export default function ConnectionsPage() {
               {account.displayName || account.externalAccountId} • {displayDate}
             </div>
             <div className={styles.handleBlock}>
-              <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#fdba74' }} />
+              <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#c084fc' }} />
               <span className={styles.handleText}>{account.workspace.name}</span>
             </div>
           </div>
@@ -936,7 +936,7 @@ export default function ConnectionsPage() {
             >
               <span className={styles.workspaceOptRow}>
                 {selectedProfileFilter !== 'all' ? (
-                  <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileFilter)?.color || '#fdba74' }} />
+                  <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileFilter)?.color || '#c084fc' }} />
                 ) : null}
                 <span>{getProfileName(selectedProfileFilter)}</span>
               </span>
@@ -1118,7 +1118,7 @@ export default function ConnectionsPage() {
           <Lock size={48} className={styles.emptyIcon} />
           <h2>Social Account Connections</h2>
           <p>Connect TikTok, Instagram, Facebook and more.</p>
-          <p style={{ margin: '4px 0 24px', color: '#939084', fontSize: '13px' }}>
+          <p style={{ margin: '4px 0 24px', color: '#9a82a7', fontSize: '13px' }}>
             Available on Pro and Business plans.
           </p>
           <button
@@ -1250,7 +1250,7 @@ export default function ConnectionsPage() {
                 >
                   <span className={styles.workspaceOptRow}>
                     {selectedProfileForConnection ? (
-                      <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileForConnection)?.color || '#fdba74' }} />
+                      <span className={styles.workspaceDot} style={{ backgroundColor: profiles.find(p => p.id === selectedProfileForConnection)?.color || '#c084fc' }} />
                     ) : null}
                     <span>
                       {selectedProfileForConnection
@@ -1273,7 +1273,7 @@ export default function ConnectionsPage() {
                         }}
                       >
                         <div className={styles.workspaceOptRow}>
-                          <span className={styles.workspaceDot} style={{ backgroundColor: p.color || '#fdba74' }} />
+                          <span className={styles.workspaceDot} style={{ backgroundColor: p.color || '#c084fc' }} />
                           <span>{p.name}</span>
                         </div>
                         {selectedProfileForConnection === p.id && <Check size={14} />}

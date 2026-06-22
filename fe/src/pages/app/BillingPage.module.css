@@ -24,13 +24,13 @@
   font-family: Inter, system-ui, sans-serif;
   font-size: 24px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0 0 4px;
 }
 
 .subtitle {
   font-size: 15px;
-  color: #939084;
+  color: #9a82a7;
   margin: 0;
 }
 
@@ -39,10 +39,10 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -51,8 +51,8 @@
 }
 
 .portalBtn:hover {
-  background: #fffefb;
-  border-color: #ff4f00;
+  background: #fffaff;
+  border-color: #a855f7;
 }
 
 /* ── Banner ── */
@@ -124,8 +124,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 16px;
 }
@@ -133,7 +133,7 @@
 .summaryLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #939084;
+  color: #9a82a7;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -141,7 +141,7 @@
 .summaryValue {
   font-size: 16px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
 }
 
 .statusBadge {
@@ -170,32 +170,32 @@
 
 .toggleLabel {
   font-size: 14px;
-  color: #939084;
+  color: #9a82a7;
   transition: color 0.2s;
 }
 
 .toggleActive {
-  color: #201515;
+  color: #211329;
   font-weight: 600;
 }
 
 .toggleBtn {
   width: 44px;
   height: 24px;
-  background: #e5dfd3;
-  border: 1px solid #c5c0b1;
+  background: #eadcf1;
+  border: 1px solid #d9c8e6;
   border-radius: 9999px;
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.toggleBtnOn { background: #ff4f00; }
+.toggleBtnOn { background: #a855f7; }
 
 .toggleThumb {
   width: 18px;
   height: 18px;
-  background: #fffefb;
+  background: #fffaff;
   border-radius: 50%;
   position: absolute;
   top: 2px;
@@ -207,8 +207,8 @@
 
 .saveBadge {
   font-size: 11px;
-  background: rgba(255, 79, 0, 0.1);
-  color: #ff4f00;
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
   padding: 1px 6px;
   border-radius: 4px;
   margin-left: 4px;
@@ -228,8 +228,8 @@
 .planCard {
   display: flex;
   flex-direction: column;
-  background: #fffefb;
-  border: 1px solid #e5dfd3;
+  background: #fffaff;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 28px 24px;
   position: relative;
@@ -242,16 +242,16 @@
 }
 
 .currentPlanCard {
-  border-color: rgba(255, 79, 0, 0.4);
-  background: rgba(255, 79, 0, 0.02);
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.02);
 }
 
 .currentBadge {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: #ff4f00;
-  color: #fffefb;
+  background: #a855f7;
+  color: #fffaff;
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
@@ -274,8 +274,8 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #f8f4f0;
-  color: #ff4f00;
+  background: #f8f1fb;
+  color: #a855f7;
   flex-shrink: 0;
 }
 
@@ -283,7 +283,7 @@
   font-family: Inter, system-ui, sans-serif;
   font-size: 20px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
 }
 
 /* ── Price ── */
@@ -295,19 +295,19 @@
 .priceAmount {
   font-size: 28px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
 }
 
 .priceCurrency {
   font-size: 20px;
   font-weight: 600;
-  color: #605d52;
+  color: #675471;
   margin-left: 2px;
 }
 
 .pricePeriod {
   font-size: 14px;
-  color: #939084;
+  color: #9a82a7;
   margin-left: 4px;
 }
 
@@ -325,7 +325,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   margin-bottom: 10px;
 }
 
@@ -341,18 +341,18 @@
   display: block;
   text-align: center;
   padding: 12px;
-  background: #f8f4f0;
+  background: #f8f1fb;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .actionBtn {
   width: 100%;
   padding: 12px 24px;
-  background: #ff4f00;
-  color: #fffefb;
+  background: #a855f7;
+  color: #fffaff;
   border: none;
   border-radius: 12px;
   font-family: Inter, system-ui, sans-serif;
@@ -363,7 +363,7 @@
 }
 
 .actionBtn:hover {
-  background: #e04500;
+  background: #9333ea;
   transform: translateY(-1px);
 }
 
@@ -372,10 +372,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #f8f4f0;
+  background: #f8f1fb;
   border-radius: 12px;
   font-size: 13px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 /* ── Loading ── */
@@ -387,14 +387,14 @@
   justify-content: center;
   padding: 80px 0;
   gap: 16px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255, 79, 0, 0.1);
-  border-top-color: #ff4f00;
+  border: 3px solid rgba(168, 85, 247, 0.1);
+  border-top-color: #a855f7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

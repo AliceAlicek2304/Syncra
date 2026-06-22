@@ -5,8 +5,8 @@
   margin-bottom: 24px;
 }
 .contactCard {
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 28px;
   display: flex;
@@ -14,18 +14,18 @@
   gap: 10px;
   transition: border-color .2s;
 }
-.contactCard:hover { border-color: #ff4f00; }
+.contactCard:hover { border-color: #a855f7; }
 .contactCard h3 {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0;
 }
 .contactCard p {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   margin: 0;
   line-height: 1.55;
 }
@@ -46,7 +46,7 @@
   gap: 6px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .primaryBtn {
@@ -58,7 +58,7 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  background: #ff4f00;
+  background: #a855f7;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -68,7 +68,7 @@
   margin-top: 4px;
   width: 100%;
 }
-.primaryBtn:hover { background: #e04500; }
+.primaryBtn:hover { background: #9333ea; }
 
 .secondaryBtn {
   display: flex;
@@ -79,7 +79,7 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  background: #201515;
+  background: #211329;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -88,7 +88,7 @@
   margin-top: 4px;
   width: 100%;
 }
-.secondaryBtn:hover { background: #2f2a26; }
+.secondaryBtn:hover { background: #34203f; }
 
 .textBtn {
   display: flex;
@@ -100,8 +100,8 @@
   font-size: 14px;
   font-weight: 500;
   background: transparent;
-  color: #605d52;
-  border: 1px solid #e5dfd3;
+  color: #675471;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   cursor: pointer;
   transition: all .15s;
@@ -109,12 +109,12 @@
   width: 100%;
   text-decoration: none;
 }
-.textBtn:hover { border-color: #c5c0b1; color: #201515; }
+.textBtn:hover { border-color: #d9c8e6; color: #211329; }
 
 .contactEmail {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
-  color: #c5c0b1;
+  color: #d9c8e6;
   text-align: center;
   margin: 0;
 }
@@ -124,8 +124,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
 }
 .statusDot {
@@ -145,12 +145,12 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
 }
 .statusSub {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: #939084;
+  color: #9a82a7;
 }
 .statusLink {
   margin-left: auto;
@@ -158,11 +158,11 @@
   border: none;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: #ff4f00;
+  color: #a855f7;
   cursor: pointer;
   white-space: nowrap;
   transition: color .15s;
 }
-.statusLink:hover { color: #e04500; }
+.statusLink:hover { color: #9333ea; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }

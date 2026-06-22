@@ -27,13 +27,13 @@
 }
 
 .resultCard:hover {
-  border-color: rgba(255, 79, 0, 0.25);
-  background: rgba(255, 79, 0, 0.01);
+  border-color: rgba(168, 85, 247, 0.25);
+  background: rgba(168, 85, 247, 0.01);
 }
 
 .resultCardSelected {
   border-color: var(--clr-primary) !important;
-  background: rgba(255, 79, 0, 0.06) !important;
+  background: rgba(168, 85, 247, 0.06) !important;
 }
 
 .resultCardTop {
@@ -92,7 +92,7 @@
 }
 
 .selectBtn:hover {
-  background: rgba(255, 79, 0, 0.08);
+  background: rgba(168, 85, 247, 0.08);
   border-color: var(--clr-primary);
 }
 

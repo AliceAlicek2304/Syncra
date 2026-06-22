@@ -964,12 +964,12 @@ export default function AnalyticsPage() {
   }, [bestTimeSlots])
 
   const getHeatColor = (value: number, max: number) => {
-    if (value === 0) return '#f8f4f0'
+    if (value === 0) return '#f8f1fb'
     const ratio = value / (max || 1)
     if (ratio < 0.2) return '#fee4d2'
     if (ratio < 0.5) return '#ffbb98'
     if (ratio < 0.8) return '#ff8e5d'
-    return '#ff4f00'
+    return '#a855f7'
   }
 
   // Recharts bar chart data
@@ -983,7 +983,7 @@ export default function AnalyticsPage() {
     return breakdown.map(p => ({
       name: platformLabelMap.get(p.platform) ?? p.platform,
       count: p.postCount,
-      fill: p.platform === 'facebook' ? '#1877F2' : '#ff4f00',
+      fill: p.platform === 'facebook' ? '#1877F2' : '#a855f7',
     }))
   }, [dailyMetrics, platformLabelMap])
 
@@ -1025,7 +1025,7 @@ export default function AnalyticsPage() {
     const items = breakdown.map(p => ({
       name: platformLabelMap.get(p.platform) ?? p.platform,
       value: (p as any)[engagementMetric] as number ?? 0,
-      fill: p.platform === 'facebook' ? '#1877F2' : '#ff4f00',
+      fill: p.platform === 'facebook' ? '#1877F2' : '#a855f7',
     }))
     const total = items.reduce((s, v) => s + v.value, 0)
 
@@ -1214,7 +1214,7 @@ export default function AnalyticsPage() {
 
 const PLATFORM_CHART_COLORS: Record<string, string> = {
   facebook: '#1877F2',
-  tiktok: '#ff4f00',
+  tiktok: '#a855f7',
   instagram: '#E4405F',
   linkedin: '#0A66C2',
   youtube: '#FF0000',
@@ -1361,7 +1361,7 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
     <UITooltipProvider delayDuration={100}>
       <div
         className="p-6 md:p-8 flex flex-col gap-6 text-brand-ink min-h-screen font-sans bg-brand-canvas"
-        style={{ background: 'radial-gradient(circle at top, #ffffff 0%, #fffefb 52%, #f8f4f0 100%)' }}
+        style={{ background: 'radial-gradient(circle at top, #ffffff 0%, #fffaff 52%, #f8f1fb 100%)' }}
       >
         {/* ── HEADER ── */}
         <div className="flex items-center justify-between flex-wrap gap-4 border-b-2 border-brand-primary pb-4">
@@ -2259,15 +2259,15 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                       />
                       <Tooltip
                         content={<EngagementAccumulationTooltip />}
-                        cursor={{ stroke: '#ff4f00', strokeDasharray: '4 3', strokeWidth: 1 }}
+                        cursor={{ stroke: '#a855f7', strokeDasharray: '4 3', strokeWidth: 1 }}
                       />
                       <Line
                         type="monotone"
                         dataKey="pct"
-                        stroke="#ff4f00"
+                        stroke="#a855f7"
                         strokeWidth={2.5}
-                        dot={{ r: 4, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
-                        activeDot={{ r: 6, fill: '#ff4f00', stroke: '#fff', strokeWidth: 2 }}
+                        dot={{ r: 4, fill: '#a855f7', stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 6, fill: '#a855f7', stroke: '#fff', strokeWidth: 2 }}
                         connectNulls
                       />
                     </LineChart>

@@ -7,7 +7,7 @@
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0 0 1.5rem 0;
 }
 
@@ -24,28 +24,28 @@
   display: block;
   font-size: 15px;
   font-weight: 500;
-  color: #201515;
+  color: #211329;
   margin-bottom: 0.25rem;
 }
 
 .description {
   font-size: 14px;
-  color: #939084;
+  color: #9a82a7;
   margin: 0.25rem 0 0.5rem 0;
   line-height: 1.4;
 }
 
 .email {
   font-size: 13px;
-  color: #c5c0b1;
+  color: #d9c8e6;
   margin: 0;
   font-style: italic;
 }
 
 .actionBtn {
   padding: 8px 16px;
-  background: #ff4f00;
-  color: #fffefb;
+  background: #a855f7;
+  color: #fffaff;
   border: none;
   border-radius: 6px;
   font-size: 14px;

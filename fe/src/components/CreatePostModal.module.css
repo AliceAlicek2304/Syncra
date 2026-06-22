@@ -240,7 +240,7 @@
 
 .mediaZone:hover {
   border-color: var(--clr-primary);
-  background: rgba(255, 79, 0, 0.01);
+  background: rgba(168, 85, 247, 0.01);
 }
 
 .addMediaText {
@@ -328,7 +328,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 79, 0, 0.9);
+  background: rgba(168, 85, 247, 0.9);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -352,7 +352,7 @@
 
 .mediaZoneSmall:hover {
   border-color: var(--clr-primary);
-  background: rgba(255, 79, 0, 0.01);
+  background: rgba(168, 85, 247, 0.01);
 }
 
 .mediaZoneText {
@@ -438,12 +438,12 @@
 
 .platformSelectCard:hover {
   border-color: var(--clr-primary);
-  background: rgba(255, 79, 0, 0.01);
+  background: rgba(168, 85, 247, 0.01);
 }
 
 .platformSelectCardActive {
   border-color: var(--clr-primary);
-  background: rgba(255, 79, 0, 0.02);
+  background: rgba(168, 85, 247, 0.02);
 }
 
 .platformCardLogo {
@@ -1520,4 +1520,4 @@
   color: #fff;
 }
 
-
+

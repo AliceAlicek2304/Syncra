@@ -184,5 +184,5 @@
 .addIdeaBtn:hover {
     border-color: var(--clr-primary);
     color: var(--clr-primary);
-    background: rgba(255, 79, 0, 0.04);
+    background: rgba(168, 85, 247, 0.04);
 }

@@ -289,62 +289,62 @@
    ============================================= */
 
 .lightThemeLayout {
-  background: #fffefb; /* Canvas */
+  background: #fffaff; /* Canvas */
 }
 
 .lightThemeLayout .sidebar {
-  background: #f8f4f0; /* Canvas Soft */
-  border-right: 1px solid #e5dfd3; /* Mute */
+  background: #f8f1fb; /* Canvas Soft */
+  border-right: 1px solid #eadcf1; /* Mute */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
 .lightThemeLayout .logoText {
-  color: #201515; /* Ink */
+  color: #211329; /* Ink */
 }
 
 .lightThemeLayout .collapseBtn {
   background: #fff;
-  border: 1px solid #e5dfd3;
-  color: #605d52;
+  border: 1px solid #eadcf1;
+  color: #675471;
 }
 
 .lightThemeLayout .collapseBtn:hover {
-  background: #f8f4f0;
-  color: #201515;
-  border-color: #c5c0b1;
+  background: #f8f1fb;
+  color: #211329;
+  border-color: #d9c8e6;
 }
 
 .lightThemeLayout .newPostBtn {
-  background: #ff4f00; /* Primary */
+  background: #a855f7; /* Primary */
   color: #fff;
-  box-shadow: 0 4px 14px rgba(255, 79, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.25);
 }
 
 .lightThemeLayout .newPostBtn:hover {
-  background: #e04500;
-  box-shadow: 0 6px 18px rgba(255, 79, 0, 0.35);
+  background: #9333ea;
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.35);
 }
 
 .lightThemeLayout .navItem {
-  color: #605d52; /* Body */
+  color: #675471; /* Body */
 }
 
 .lightThemeLayout .navItem:hover {
   background: rgba(0, 0, 0, 0.03);
-  color: #201515;
+  color: #211329;
   transform: translateX(4px);
 }
 
 .lightThemeLayout .navItemActive {
-  background: rgba(255, 79, 0, 0.08); /* 8% Primary */
-  color: #ff4f00; /* Primary */
-  border: 1px solid rgba(255, 79, 0, 0.15);
-  box-shadow: 0 2px 8px rgba(255, 79, 0, 0.05);
+  background: rgba(168, 85, 247, 0.08); /* 8% Primary */
+  color: #a855f7; /* Primary */
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.05);
 }
 
 .lightThemeLayout .sidebarBottom {
-  border-top: 1px solid #e5dfd3;
+  border-top: 1px solid #eadcf1;
 }
 
 .lightThemeLayout .userTrigger:hover {
@@ -352,85 +352,85 @@
 }
 
 .lightThemeLayout .userName {
-  color: #201515;
+  color: #211329;
 }
 
 .lightThemeLayout .userEmail {
-  color: #939084;
+  color: #9a82a7;
 }
 
 .lightThemeLayout .chevronDown {
-  color: #939084;
+  color: #9a82a7;
 }
 
 .lightThemeLayout .main {
-  background: #fffefb; /* Canvas */
-  color: #201515; /* Ink */
+  background: #fffaff; /* Canvas */
+  color: #211329; /* Ink */
 }
 
 /* Workspace Selector Light Theme Overrides (using attribute matches for CSS modules) */
 .lightThemeLayout [class*="WorkspaceSelector_trigger"] {
   background: #ffffff;
-  border: 1px solid #e5dfd3;
-  color: #201515;
+  border: 1px solid #eadcf1;
+  color: #211329;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_trigger"]:hover {
-  background: #f8f4f0;
-  border-color: #c5c0b1;
+  background: #f8f1fb;
+  border-color: #d9c8e6;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_activeIcon"] {
-  background: #ff4f00; /* Use orange accent */
+  background: #a855f7; /* Use brand accent */
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_activeName"] {
-  color: #201515;
+  color: #211329;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_chevron"] {
-  color: #605d52;
+  color: #675471;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_dropdown"] {
   background: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   box-shadow: 0 10px 25px rgba(32, 21, 21, 0.08);
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_dropdownHeader"] {
-  color: #939084;
+  color: #9a82a7;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_workspaceItem"] {
-  color: #605d52;
+  color: #675471;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_workspaceItem"]:hover {
-  background: #f8f4f0;
-  color: #201515;
+  background: #f8f1fb;
+  color: #211329;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_activeItem"] {
-  background: rgba(255, 79, 0, 0.08) !important;
-  color: #ff4f00 !important;
+  background: rgba(168, 85, 247, 0.08) !important;
+  color: #a855f7 !important;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_checkIcon"] {
-  color: #ff4f00;
+  color: #a855f7;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_divider"] {
-  background: #e5dfd3;
+  background: #eadcf1;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_addBtn"] {
-  color: #605d52;
+  color: #675471;
 }
 
 .lightThemeLayout [class*="WorkspaceSelector_addBtn"]:hover {
-  background: #f8f4f0;
-  color: #201515;
+  background: #f8f1fb;
+  color: #211329;
 }
 
 /* Sub-navigation Menu styling */
@@ -455,7 +455,7 @@
 }
 
 .lightThemeLayout .subMenuActiveHeader {
-  color: #ff4f00 !important;
+  color: #a855f7 !important;
 }
 
 .subItems {
@@ -488,16 +488,16 @@
 }
 
 .lightThemeLayout .subNavItem {
-  color: #605d52;
+  color: #675471;
 }
 
 .lightThemeLayout .subNavItem:hover {
   background: rgba(0, 0, 0, 0.02);
-  color: #201515;
+  color: #211329;
 }
 
 .lightThemeLayout .subMenuIcon {
-  color: #939084;
+  color: #9a82a7;
 }
 
 .subNavItemActive {
@@ -507,9 +507,9 @@
 }
 
 .lightThemeLayout .subNavItemActive {
-  background: rgba(255, 79, 0, 0.06);
-  color: #ff4f00;
-  border: 1px solid rgba(255, 79, 0, 0.12);
+  background: rgba(168, 85, 247, 0.06);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.12);
 }
 
 .subMenuIcon {

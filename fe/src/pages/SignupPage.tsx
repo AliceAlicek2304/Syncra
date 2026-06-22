@@ -183,8 +183,8 @@ function SignupPage() {
 
   useEffect(() => {
     document.body.classList.add('bg-brand-canvas', 'text-brand-ink');
-    document.body.style.backgroundColor = '#fffefb';
-    document.body.style.color = '#201515';
+    document.body.style.backgroundColor = '#fffaff';
+    document.body.style.color = '#211329';
     document.body.style.backgroundImage = 'none';
     return () => {
       document.body.classList.remove('bg-brand-canvas', 'text-brand-ink');

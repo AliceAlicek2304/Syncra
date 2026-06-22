@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: center;
   height: 140px;
-  color: var(--analytics-body, #605d52);
+  color: var(--analytics-body, #675471);
   font-size: 13px;
 }
 
@@ -33,7 +33,7 @@
 .monthLabel {
   font-size: 10px;
   font-weight: 600;
-  color: var(--analytics-body, #605d52);
+  color: var(--analytics-body, #675471);
   text-align: left;
 }
 
@@ -52,7 +52,7 @@
 .dayLabel {
   font-size: 10px;
   font-weight: 600;
-  color: var(--analytics-body, #605d52);
+  color: var(--analytics-body, #675471);
   height: 14px;
   line-height: 14px;
   text-align: right;
@@ -83,12 +83,12 @@
 }
 
 .cell:hover {
-  outline: 1.5px solid var(--analytics-ink, #201515);
+  outline: 1.5px solid var(--analytics-ink, #211329);
   outline-offset: -1px;
 }
 
 .cell:focus-visible {
-  outline: 2px solid var(--analytics-accent, #ff4f00);
+  outline: 2px solid var(--analytics-accent, #a855f7);
   outline-offset: 1px;
 }
 
@@ -127,7 +127,7 @@
 
 .legendLabel {
   font-size: 10px;
-  color: var(--analytics-body, #605d52);
+  color: var(--analytics-body, #675471);
 }
 
 .tooltip {

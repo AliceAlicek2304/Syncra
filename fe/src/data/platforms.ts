@@ -64,14 +64,14 @@ export const ZERNIO_PLATFORM_MAP: Readonly<Record<string, ZernioPlatform>> =
  */
 export const PLATFORM_STYLES: Record<string, { color: string; bg: string; border: string }> = {
     linkedin:       { color: '#0a66c2', bg: 'rgba(10,102,194,0.08)',  border: 'rgba(10,102,194,0.22)' },
-    twitter:        { color: '#201515', bg: 'rgba(32,21,21,0.06)',   border: 'rgba(32,21,21,0.15)' },
+    twitter:        { color: '#211329', bg: 'rgba(32,21,21,0.06)',   border: 'rgba(32,21,21,0.15)' },
     instagram:      { color: '#d62976', bg: 'rgba(214,41,118,0.08)', border: 'rgba(214,41,118,0.22)' },
     tiktok:         { color: '#ef2950', bg: 'rgba(239,41,80,0.08)',  border: 'rgba(239,41,80,0.22)' },
     facebook:       { color: '#1877f2', bg: 'rgba(24,119,242,0.08)', border: 'rgba(24,119,242,0.22)' },
     youtube:        { color: '#c20000', bg: 'rgba(194,0,0,0.06)',    border: 'rgba(194,0,0,0.22)' },
     pinterest:      { color: '#bd081c', bg: 'rgba(189,8,28,0.08)',   border: 'rgba(189,8,28,0.22)' },
     bluesky:        { color: '#0085ff', bg: 'rgba(0,133,255,0.08)',  border: 'rgba(0,133,255,0.22)' },
-    threads:        { color: '#201515', bg: 'rgba(32,21,21,0.06)',   border: 'rgba(32,21,21,0.15)' },
+    threads:        { color: '#211329', bg: 'rgba(32,21,21,0.06)',   border: 'rgba(32,21,21,0.15)' },
     googlebusiness: { color: '#0f9d58', bg: 'rgba(15,157,88,0.08)',  border: 'rgba(15,157,88,0.22)' },
     telegram:       { color: '#0088cc', bg: 'rgba(0,136,204,0.08)',  border: 'rgba(0,136,204,0.22)' },
     snapchat:       { color: '#a68000', bg: 'rgba(166,128,0,0.08)',  border: 'rgba(166,128,0,0.22)' },

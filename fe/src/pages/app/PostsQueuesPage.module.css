@@ -16,26 +16,26 @@
   font-size: 32px;
   font-weight: 500;
   line-height: 36px;
-  color: #201515;
+  color: #211329;
   margin: 0 0 8px 0;
 }
 
 .subtitle {
   font-family: Inter, system-ui, sans-serif;
   font-size: 16px;
-  color: #605d52;
+  color: #675471;
   margin: 0;
 }
 
 .card {
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   border-radius: 12px;
   padding: 48px;
   text-align: center;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
 }
 
 .placeholderText {
-  color: #939084;
+  color: #9a82a7;
   font-size: 16px;
 }

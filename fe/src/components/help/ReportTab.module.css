@@ -7,8 +7,8 @@
 @media (max-width: 768px) { .reportWrap { grid-template-columns: 1fr; } }
 
 .reportCard {
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 28px;
 }
@@ -19,13 +19,13 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0 0 8px;
 }
 .cardDesc {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   margin: 0 0 24px;
   line-height: 1.5;
 }
@@ -39,26 +39,26 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: #605d52;
+  color: #675471;
 }
-.required { color: #ff4f00; }
+.required { color: #a855f7; }
 
 .formInput, .formTextarea, .formSelect {
   background: #fff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 6px;
   padding: 11px 14px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  color: #201515;
+  color: #211329;
   outline: none;
   transition: border-color .2s, box-shadow .2s;
   resize: vertical;
 }
-.formInput::placeholder, .formTextarea::placeholder { color: #c5c0b1; }
+.formInput::placeholder, .formTextarea::placeholder { color: #d9c8e6; }
 .formInput:focus, .formTextarea:focus, .formSelect:focus {
-  border-color: #ff4f00;
-  box-shadow: 0 0 0 3px rgba(255,79,0,.1);
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247,.1);
 }
 .formSelect { appearance: none; cursor: pointer; }
 .formSelect option { background: #fff; }
@@ -70,15 +70,15 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   background: #fff;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   transition: all .15s;
 }
-.severityBtn:hover { border-color: #c5c0b1; color: #605d52; }
+.severityBtn:hover { border-color: #d9c8e6; color: #675471; }
 .severity_low.severityBtnActive { background: rgba(100,116,139,.1); border-color: #64748b; color: #475569; }
-.severity_medium.severityBtnActive { background: rgba(255,79,0,.08); border-color: #ff4f00; color: #ff4f00; }
+.severity_medium.severityBtnActive { background: rgba(168, 85, 247,.08); border-color: #a855f7; color: #a855f7; }
 .severity_high.severityBtnActive { background: rgba(245,158,11,.1); border-color: #f59e0b; color: #b45309; }
 .severity_critical.severityBtnActive { background: rgba(239,68,68,.1); border-color: #ef4444; color: #dc2626; }
 
@@ -87,9 +87,9 @@
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  border: 1.5px dashed #e5dfd3;
+  border: 1.5px dashed #eadcf1;
   border-radius: 10px;
-  color: #939084;
+  color: #9a82a7;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
 }
@@ -104,20 +104,20 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
-  background: #ff4f00;
+  background: #a855f7;
   color: #fff;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   transition: background .15s;
 }
-.submitBtn:hover { background: #e04500; }
+.submitBtn:hover { background: #9333ea; }
 .submitBtn:disabled { opacity: .4; cursor: not-allowed; }
 
 .reportSidebar { display: flex; flex-direction: column; gap: 14px; }
 .tipCard {
-  background: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 20px;
 }
@@ -128,7 +128,7 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0 0 12px;
 }
 .tipCard ul {
@@ -141,7 +141,7 @@
 .tipCard li {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: #605d52;
+  color: #675471;
   line-height: 1.5;
 }
 
@@ -151,7 +151,7 @@
   justify-content: space-between;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: #605d52;
+  color: #675471;
 }
 .responseTime { font-weight: 600; }
 
@@ -169,13 +169,13 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 20px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin: 0;
 }
 .successCard p {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   margin: 0;
   line-height: 1.5;
 }
@@ -190,13 +190,13 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  background: #201515;
+  background: #211329;
   color: #fff;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   transition: background .15s;
 }
-.resetBtn:hover { background: #2f2a26; }
+.resetBtn:hover { background: #34203f; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }

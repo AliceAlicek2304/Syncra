@@ -140,20 +140,20 @@ const DoubleCheck = ({ size = 12, className }: { size?: number; className?: stri
 
 const LOCAL_STYLE = `
   .messages-dashboard-theme {
-    --primary: #ff4f00;
+    --primary: #a855f7;
     --primary-container: #ffece0;
-    --on-primary: #fffefb;
-    --on-primary-container: #201515;
-    --background: #fffefb;
-    --surface: #fffefb;
-    --surface-container: #f8f4f0;
+    --on-primary: #fffaff;
+    --on-primary-container: #211329;
+    --background: #fffaff;
+    --surface: #fffaff;
+    --surface-container: #f8f1fb;
     --surface-container-high: #f1e8de;
     --surface-container-highest: #eae0d3;
     --surface-container-low: #faf7f4;
     --surface-container-lowest: #ffffff;
-    --on-surface: #201515;
-    --on-surface-variant: #605d52;
-    --outline: #c5c0b1;
+    --on-surface: #211329;
+    --on-surface-variant: #675471;
+    --outline: #d9c8e6;
     --outline-variant: #e6dfd2;
     --error: #ba1a1a;
     --error-container: #ffdad6;

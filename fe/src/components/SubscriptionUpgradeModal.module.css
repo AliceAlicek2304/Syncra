@@ -12,7 +12,7 @@
 .card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 16px;
   padding: 40px 36px 32px;
   max-width: 440px;
@@ -38,7 +38,7 @@
   right: 14px;
   background: transparent;
   border: none;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -49,8 +49,8 @@
 }
 
 .closeBtn:hover {
-  color: #201515;
-  background: #f8f4f0;
+  color: #211329;
+  background: #f8f1fb;
 }
 
 .iconWrap {
@@ -60,7 +60,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #ff4f00;
+  background: #a855f7;
   margin: 0 auto 20px;
 }
 
@@ -72,7 +72,7 @@
   font-family: var(--font-title, 'Outfit', 'Inter', sans-serif);
   font-size: 20px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
   margin-bottom: 12px;
   line-height: 1.3;
 }
@@ -80,7 +80,7 @@
 .body {
   font-size: 14px;
   font-weight: 400;
-  color: #605d52;
+  color: #675471;
   line-height: 1.6;
   margin-bottom: 24px;
 }
@@ -100,13 +100,13 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #201515;
+  color: #211329;
   font-weight: 500;
 }
 
 .featureIcon {
   flex-shrink: 0;
-  color: #ff4f00;
+  color: #a855f7;
 }
 
 .actions {
@@ -118,7 +118,7 @@
 
 .upgradeBtn {
   padding: 12px 24px;
-  background: #ff4f00;
+  background: #a855f7;
   color: #ffffff;
   font-size: 14px;
   font-weight: 700;
@@ -140,17 +140,17 @@
 .cancelBtn {
   padding: 11px 24px;
   background: transparent;
-  color: #939084;
+  color: #9a82a7;
   font-size: 14px;
   font-weight: 400;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 10px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 
 .cancelBtn:hover {
-  color: #201515;
-  border-color: #201515;
-  background: #f8f4f0;
+  color: #211329;
+  border-color: #211329;
+  background: #f8f1fb;
 }

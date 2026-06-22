@@ -3,21 +3,21 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 600;
-  color: #939084;
+  color: #9a82a7;
   text-transform: uppercase;
   letter-spacing: .08em;
   margin-bottom: 10px;
 }
 .faqItem {
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   margin-bottom: 8px;
   overflow: hidden;
   background: #fff;
   transition: border-color .2s;
 }
-.faqItem:hover { border-color: #c5c0b1; }
-.faqItemOpen { border-color: #ff4f00; }
+.faqItem:hover { border-color: #d9c8e6; }
+.faqItemOpen { border-color: #a855f7; }
 
 .faqQuestion {
   width: 100%;
@@ -32,24 +32,24 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 500;
-  color: #201515;
+  color: #211329;
   text-align: left;
   transition: color .15s;
 }
-.faqQuestion:hover { color: #ff4f00; }
+.faqQuestion:hover { color: #a855f7; }
 
 .faqChevron {
   flex-shrink: 0;
-  color: #c5c0b1;
+  color: #d9c8e6;
   transition: transform .25s;
 }
-.faqChevronOpen { transform: rotate(180deg); color: #ff4f00; }
+.faqChevronOpen { transform: rotate(180deg); color: #a855f7; }
 
 .faqAnswer {
   padding: 0 20px 16px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
-  color: #605d52;
+  color: #675471;
   line-height: 1.65;
   animation: fadeIn .15s ease;
 }

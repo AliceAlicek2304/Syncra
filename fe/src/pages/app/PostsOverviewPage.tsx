@@ -199,7 +199,7 @@ export default function PostsOverviewPage() {
         month: scheduledDate.getMonth(),
         day: scheduledDate.getDate(),
         time: scheduledTimeStr,
-        color: '#ff4f00',
+        color: '#a855f7',
         hashtags: [],
         zernioPostId: post.zernioPostId,
         platformTargets: post.platformTargets,
@@ -1123,7 +1123,7 @@ export default function PostsOverviewPage() {
                           {displayPlatforms.map((plat, idx) => (
                             <div key={idx} className={styles.platformBadge}>
                               <PlatformIcon platform={plat as any} size={16} />
-                              <span className={styles.platformBadgeDot} style={{ backgroundColor: workspaceColorMap.get(post.workspaceId || '') || '#fdba74' }} />
+                              <span className={styles.platformBadgeDot} style={{ backgroundColor: workspaceColorMap.get(post.workspaceId || '') || '#c084fc' }} />
                             </div>
                           ))}
                         </div>
@@ -1255,7 +1255,7 @@ export default function PostsOverviewPage() {
                     const displayPlatforms = platforms.length > 0 ? platforms : ['facebook']
                     const isChecked = selectedPostIds.includes(post.id)
                     const wsName = workspaceNameMap.get(post.workspaceId || '') || activeWorkspace?.name || '—'
-                    const wsColor = workspaceColorMap.get(post.workspaceId || '') || '#fdba74'
+                    const wsColor = workspaceColorMap.get(post.workspaceId || '') || '#c084fc'
                     return (
                       <tr key={post.id} className={isChecked ? styles.selectedRow : ''} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
                         <td onClick={(e) => e.stopPropagation()}>

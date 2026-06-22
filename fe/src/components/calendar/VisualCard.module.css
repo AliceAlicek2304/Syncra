@@ -5,7 +5,7 @@
   overflow: hidden;
   cursor: grab;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-  background: #fffefb;
+  background: #fffaff;
   border: 1px solid #E5E7EB;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   width: 100%;

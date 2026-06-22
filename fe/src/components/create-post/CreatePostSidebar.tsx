@@ -119,7 +119,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
               <>
                 <span
                   className={styles.profileYellowDot}
-                  style={{ background: uniqueProfiles.find(p => p.id === state.selectedProfileIds[0])?.color || '#fdba74' }}
+                  style={{ background: uniqueProfiles.find(p => p.id === state.selectedProfileIds[0])?.color || '#c084fc' }}
                 />
                 <span className={styles.workspaceDropdownLabel}>
                   {selectedProfileNames}
@@ -134,7 +134,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                       <span
                         key={id}
                         className={styles.profileYellowDot}
-                        style={{ background: p?.color || '#fdba74' }}
+                        style={{ background: p?.color || '#c084fc' }}
                       />
                     )
                   })}
@@ -215,7 +215,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                           width: '6px',
                           height: '6px',
                           borderRadius: '50%',
-                          backgroundColor: ws?.color || '#fdba74'
+                          backgroundColor: ws?.color || '#c084fc'
                         }} />
                         {ws?.name || 'Unknown Project'}
                       </div>
@@ -233,7 +233,7 @@ export function RightPanel({ state, actions }: SidebarProps) {
                             />
                             <span
                               className={styles.profileYellowDot}
-                              style={{ background: profile.color || '#fdba74', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
+                              style={{ background: profile.color || '#c084fc', marginRight: '8px', marginLeft: '2px', flexShrink: 0 }}
                             />
                             <div className={styles.workspaceMeta}>
                               <div className={styles.workspaceName}>{profile.name}</div>

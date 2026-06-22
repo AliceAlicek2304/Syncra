@@ -93,7 +93,7 @@ export const IdeaCard = memo(function IdeaCardFn({ idea, groups, onEdit, onDelet
             onClick={handleClick}
             {...attributes}
             {...listeners}
-            whileHover={{ y: -2, borderColor: 'var(--clr-primary)', boxShadow: '0 8px 24px rgba(255, 79, 0, 0.08)' }}
+            whileHover={{ y: -2, borderColor: 'var(--clr-primary)', boxShadow: '0 8px 24px rgba(168, 85, 247, 0.08)' }}
             transition={{ duration: 0.2 }}
         >
             <div className={styles.ideaCardContent}>

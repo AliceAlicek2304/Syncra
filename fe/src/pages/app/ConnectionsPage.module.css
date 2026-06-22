@@ -1,10 +1,10 @@
 /* ── Page Layout ── */
 .page {
   padding: 32px 40px;
-  background-color: #fffefb;
+  background-color: #fffaff;
   /* Canvas */
   min-height: 100%;
-  color: #201515;
+  color: #211329;
   /* Ink */
   font-family: 'Inter', system-ui, sans-serif;
 }
@@ -21,13 +21,13 @@
   font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
-  color: #201515;
+  color: #211329;
   margin-bottom: 6px;
 }
 
 .subtitle {
   font-size: 15px;
-  color: #605d52;
+  color: #675471;
   /* Body */
 }
 
@@ -43,9 +43,9 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 18px;
-  background-color: #ff4f00;
-  /* Primary Orange */
-  color: #fffefb;
+  background-color: #a855f7;
+  /* Brand Primary */
+  color: #fffaff;
   /* On-Primary */
   font-size: 14px;
   font-weight: 600;
@@ -53,14 +53,14 @@
   border-radius: 12px;
   /* rounded.md */
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
   transition: all 0.2s ease;
 }
 
 .newConnBtn:hover {
-  background-color: #e04500;
+  background-color: #9333ea;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(255, 79, 0, 0.25);
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.25);
 }
 
 .newProfileBtn {
@@ -69,18 +69,18 @@
   justify-content: center;
   padding: 10px 18px;
   background-color: #ffffff;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .newProfileBtn:hover {
-  background-color: #f8f4f0;
-  border-color: #c5c0b1;
+  background-color: #f8f1fb;
+  border-color: #d9c8e6;
   transform: translateY(-1px);
 }
 
@@ -89,9 +89,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   /* Canvas Soft */
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   padding: 12px 20px;
   border-radius: 12px;
   margin-bottom: 24px;
@@ -106,7 +106,7 @@
 .filterLabel {
   font-size: 14px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
 }
 
 .filterRight {
@@ -127,9 +127,9 @@
   gap: 12px;
   padding: 8px 16px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 10px;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -138,8 +138,8 @@
 }
 
 .dropdownTrigger:hover {
-  background-color: #fffefb;
-  border-color: #c5c0b1;
+  background-color: #fffaff;
+  border-color: #d9c8e6;
 }
 
 .dropdownTriggerSecondary {
@@ -149,9 +149,9 @@
   gap: 8px;
   padding: 6px 12px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 10px;
-  color: #605d52;
+  color: #675471;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -160,9 +160,9 @@
 }
 
 .dropdownTriggerSecondary:hover {
-  background-color: #fffefb;
-  border-color: #c5c0b1;
-  color: #201515;
+  background-color: #fffaff;
+  border-color: #d9c8e6;
+  color: #211329;
 }
 
 .dropdownMenu {
@@ -171,7 +171,7 @@
   left: 0;
   width: 230px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(32, 21, 21, 0.08);
   padding: 6px;
@@ -193,7 +193,7 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #605d52;
+  color: #675471;
   font-size: 13px;
   font-weight: 500;
   text-align: left;
@@ -202,13 +202,13 @@
 }
 
 .dropdownItem:hover {
-  background-color: #f8f4f0;
-  color: #201515;
+  background-color: #f8f1fb;
+  color: #211329;
 }
 
 .activeItem {
-  background-color: rgba(255, 79, 0, 0.06) !important;
-  color: #ff4f00 !important;
+  background-color: rgba(168, 85, 247, 0.06) !important;
+  color: #a855f7 !important;
   font-weight: 600;
 }
 
@@ -222,7 +222,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #fdba74;
+  background-color: #c084fc;
 }
 
 .workspaceOptName {
@@ -234,16 +234,16 @@
 
 .defaultBadge {
   font-size: 9px;
-  background-color: #f8f4f0;
-  border: 1px solid #e5dfd3;
-  color: #939084;
+  background-color: #f8f1fb;
+  border: 1px solid #eadcf1;
+  color: #9a82a7;
   padding: 1px 4px;
   border-radius: 4px;
 }
 
 .dropdownDivider {
   height: 1px;
-  background-color: #e5dfd3;
+  background-color: #eadcf1;
   margin: 6px 4px;
 }
 
@@ -255,7 +255,7 @@
 }
 
 .workspaceItem:hover {
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
 }
 
 .workspaceItemBtn {
@@ -267,7 +267,7 @@
   background: transparent;
   border: none;
   border-radius: 8px 0 0 8px;
-  color: #605d52;
+  color: #675471;
   font-size: 13px;
   font-weight: 500;
   text-align: left;
@@ -277,7 +277,7 @@
 }
 
 .workspaceItemBtn:hover {
-  color: #201515;
+  color: #211329;
 }
 
 .workspaceItemActions {
@@ -296,15 +296,15 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: #c5c0b1;
+  color: #d9c8e6;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.15s;
 }
 
 .workspaceActionBtn:hover {
-  background-color: #e5dfd3;
-  color: #201515;
+  background-color: #eadcf1;
+  color: #211329;
 }
 
 .workspaceActionBtnDanger:hover {
@@ -314,7 +314,7 @@
 
 .workspaceActionCheck {
   flex-shrink: 0;
-  color: #ff4f00;
+  color: #a855f7;
 }
 
 .dropdownAddBtn {
@@ -326,7 +326,7 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #605d52;
+  color: #675471;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -334,8 +334,8 @@
 }
 
 .dropdownAddBtn:hover {
-  background-color: #f8f4f0;
-  color: #201515;
+  background-color: #f8f1fb;
+  color: #211329;
 }
 
 .platformItemRow {
@@ -356,7 +356,7 @@
   padding: 6px 10px;
   background: transparent;
   border: none;
-  color: #ff4f00;
+  color: #a855f7;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -376,7 +376,7 @@
 
 .card {
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(32, 21, 21, 0.02);
@@ -390,7 +390,7 @@
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(32, 21, 21, 0.06);
-  border-color: #c5c0b1;
+  border-color: #d9c8e6;
 }
 
 .cardHeader {
@@ -418,7 +418,7 @@
   border-radius: 8px;
   object-fit: cover;
   display: block;
-  border: 1px solid #c5c0b1;
+  border: 1px solid #d9c8e6;
 }
 
 .cardPlatformBadge {
@@ -428,8 +428,8 @@
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background-color: #fffefb;
-  border: 1.5px solid #c5c0b1;
+  background-color: #fffaff;
+  border: 1.5px solid #d9c8e6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -449,7 +449,7 @@
 .cardPlatformName {
   font-size: 16px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
 }
 
 .statusBadge {
@@ -477,7 +477,7 @@
 .infoBtn {
   background: transparent;
   border: none;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -486,7 +486,7 @@
 }
 
 .infoBtn:hover {
-  color: #201515;
+  color: #211329;
 }
 
 .cardBody {
@@ -496,30 +496,30 @@
 .workspaceDisplay {
   font-size: 14px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin-bottom: 2px;
 }
 
 .connectionMeta {
   font-size: 12px;
-  color: #939084;
+  color: #9a82a7;
   margin-bottom: 12px;
 }
 
 .handleBlock {
   display: flex;
   align-items: center;
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px dashed #e5dfd3;
+  border: 1px dashed #eadcf1;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .handleBlock:hover {
-  background-color: rgba(255, 79, 0, 0.03);
-  border-color: rgba(255, 79, 0, 0.25);
+  background-color: rgba(168, 85, 247, 0.03);
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .handleDot {
@@ -533,7 +533,7 @@
 .handleText {
   font-size: 12px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -543,7 +543,7 @@
 .copyBtn {
   background: transparent;
   border: none;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   padding: 2px;
   display: inline-flex;
@@ -551,22 +551,22 @@
 }
 
 .copyBtn:hover {
-  color: #201515;
+  color: #211329;
 }
 
 .cardActions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  border-top: 1px solid #f8f4f0;
+  border-top: 1px solid #f8f1fb;
   padding-top: 14px;
 }
 
 .managePagesBtn {
   padding: 8px 12px;
   background-color: #ffffff;
-  color: #201515;
-  border: 1px solid #e5dfd3;
+  color: #211329;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
@@ -575,15 +575,15 @@
 }
 
 .managePagesBtn:hover {
-  background-color: #f8f4f0;
-  border-color: #c5c0b1;
+  background-color: #f8f1fb;
+  border-color: #d9c8e6;
 }
 
 .disconnectBtn {
   padding: 8px 12px;
   background-color: #ffffff;
-  color: #605d52;
-  border: 1px solid #e5dfd3;
+  color: #675471;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
@@ -606,19 +606,19 @@
   justify-content: center;
   padding: 64px 24px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   text-align: center;
 }
 
 .spinner {
   animation: spin 1s linear infinite;
-  color: #ff4f00;
+  color: #a855f7;
   margin-bottom: 16px;
 }
 
 .emptyIcon {
-  color: #c5c0b1;
+  color: #d9c8e6;
   margin-bottom: 16px;
 }
 
@@ -626,12 +626,12 @@
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 8px;
-  color: #201515;
+  color: #211329;
 }
 
 .emptyState p {
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   max-width: 320px;
 }
 
@@ -663,12 +663,12 @@
   width: 100%;
   max-width: 440px;
   height: 100%;
-  background-color: #fffefb;
+  background-color: #fffaff;
   box-shadow: -10px 0 30px rgba(32, 21, 21, 0.1);
   display: flex;
   flex-direction: column;
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  border-left: 1px solid #c5c0b1;
+  border-left: 1px solid #d9c8e6;
 }
 
 @keyframes slideIn {
@@ -683,7 +683,7 @@
 
 .drawerHeader {
   padding: 24px;
-  border-bottom: 1px solid #c5c0b1;
+  border-bottom: 1px solid #d9c8e6;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -692,20 +692,20 @@
 .drawerTitle {
   font-size: 20px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
   margin-bottom: 4px;
   letter-spacing: -0.5px;
 }
 
 .drawerSubtitle {
   font-size: 13px;
-  color: #605d52;
+  color: #675471;
 }
 
 .drawerCloseBtn {
   background: transparent;
   border: none;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -714,8 +714,8 @@
 }
 
 .drawerCloseBtn:hover {
-  background-color: #f8f4f0;
-  color: #201515;
+  background-color: #f8f1fb;
+  color: #211329;
 }
 
 .drawerForm {
@@ -745,31 +745,31 @@
 .formLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
 }
 
 .formInput {
   padding: 10px 14px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   transition: border-color 0.15s;
 }
 
 .formInput:focus-visible {
-  outline: 2px solid #ff4f00;
+  outline: 2px solid #a855f7;
   outline-offset: 0;
-  border-color: #ff4f00;
+  border-color: #a855f7;
 }
 
 .formTextarea {
   padding: 10px 14px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
@@ -777,9 +777,9 @@
 }
 
 .formTextarea:focus-visible {
-  outline: 2px solid #ff4f00;
+  outline: 2px solid #a855f7;
   outline-offset: 0;
-  border-color: #ff4f00;
+  border-color: #a855f7;
 }
 
 /* ── Color Picker ── */
@@ -787,10 +787,10 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
 }
 
 .colorBox {
@@ -821,7 +821,7 @@
 }
 
 .colorPaletteBtnActive {
-  border-color: #ff4f00;
+  border-color: #a855f7;
   transform: scale(1.1);
 }
 
@@ -836,26 +836,26 @@
 .drawerSubmitBtn {
   flex: 0.6;
   padding: 12px;
-  background-color: #ff4f00;
-  color: #fffefb;
+  background-color: #a855f7;
+  color: #fffaff;
   font-size: 14px;
   font-weight: 600;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
   transition: background-color 0.15s;
 }
 
 .drawerSubmitBtn:hover {
-  background-color: #e04500;
+  background-color: #9333ea;
 }
 
 .drawerCancelBtn {
   padding: 12px 20px;
   background-color: #ffffff;
-  color: #201515;
-  border: 1px solid #e5dfd3;
+  color: #211329;
+  border: 1px solid #eadcf1;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
@@ -864,8 +864,8 @@
 }
 
 .drawerCancelBtn:hover {
-  background-color: #f8f4f0;
-  border-color: #c5c0b1;
+  background-color: #f8f1fb;
+  border-color: #d9c8e6;
 }
 
 /* ── Drawer Custom Dropdown ── */
@@ -874,10 +874,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background-color: #fffefb;
-  border: 1px solid #e5dfd3;
+  background-color: #fffaff;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
-  color: #201515;
+  color: #211329;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -889,8 +889,8 @@
   top: 100%;
   left: 0;
   right: 0;
-  background-color: #fffefb;
-  border: 1px solid #e5dfd3;
+  background-color: #fffaff;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(32, 21, 21, 0.08);
   padding: 4px;
@@ -927,8 +927,8 @@
 }
 
 .blurCard {
-  background-color: #fffefb;
-  border: 1px solid #e5dfd3;
+  background-color: #fffaff;
+  border: 1px solid #eadcf1;
   padding: 20px;
   border-radius: 12px;
   text-align: center;
@@ -939,13 +939,13 @@
 .blurCardTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
   margin-bottom: 6px;
 }
 
 .blurCardText {
   font-size: 12px;
-  color: #605d52;
+  color: #675471;
 }
 
 .platformsList {
@@ -971,7 +971,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
-  color: #939084;
+  color: #9a82a7;
   padding: 14px 4px 6px;
   text-transform: uppercase;
 }
@@ -1001,7 +1001,7 @@
 }
 
 .platformListItem:hover:not(:disabled) {
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   border-radius: 8px;
   border-bottom-color: transparent;
 }
@@ -1035,7 +1035,7 @@
 .platformListLabel {
   font-size: 13.5px;
   font-weight: 500;
-  color: #201515;
+  color: #211329;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1057,25 +1057,25 @@
   justify-content: center;
   background-color: transparent;
   border: none;
-  color: #c5c0b1;
+  color: #d9c8e6;
 }
 
 .platformListChevron {
-  color: #c5c0b1;
+  color: #d9c8e6;
 }
 
 .platformListItem:hover:not(:disabled) .platformListAction {
-  color: #605d52;
+  color: #675471;
 }
 
 .platformListItem:hover:not(:disabled) .platformListChevron {
-  color: #939084;
+  color: #9a82a7;
 }
 
 .platformListSoon {
   font-size: 11.5px;
   font-weight: 500;
-  color: #939084;
+  color: #9a82a7;
   font-style: italic;
 }
 
@@ -1105,7 +1105,7 @@
   justify-content: center;
   padding: 14px 10px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
@@ -1113,10 +1113,10 @@
 }
 
 .platformButton:hover:not(:disabled) {
-  border-color: #ff4f00;
-  background-color: #fffefb;
+  border-color: #a855f7;
+  background-color: #fffaff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.05);
 }
 
 .platformBtnIconWrap {
@@ -1133,7 +1133,7 @@
 .platformBtnLabel {
   font-size: 11px;
   font-weight: 600;
-  color: #605d52;
+  color: #675471;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -1142,7 +1142,7 @@
 }
 
 .platformButton:hover:not(:disabled) .platformBtnLabel {
-  color: #201515;
+  color: #211329;
 }
 
 .comingSoonBadge {
@@ -1151,11 +1151,11 @@
   right: 4px;
   font-size: 8px;
   font-weight: 800;
-  background-color: #f8f4f0;
-  color: #939084;
+  background-color: #f8f1fb;
+  color: #9a82a7;
   padding: 1px 4px;
   border-radius: 4px;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
 }
 
 /* ── Centered Modal (Account Health) ── */
@@ -1175,7 +1175,7 @@
 
 .modalCard {
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   max-width: 480px;
   width: 100%;
@@ -1212,19 +1212,19 @@
 .modalTitle {
   font-size: 20px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
   margin-bottom: 4px;
 }
 
 .modalSubtitle {
   font-size: 13px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .modalCloseBtn {
   background: transparent;
   border: none;
-  color: #939084;
+  color: #9a82a7;
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -1233,8 +1233,8 @@
 }
 
 .modalCloseBtn:hover {
-  background-color: #f8f4f0;
-  color: #201515;
+  background-color: #f8f1fb;
+  color: #211329;
 }
 
 .modalBody {
@@ -1277,8 +1277,8 @@
 }
 
 .modalSection {
-  background-color: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  background-color: #f8f1fb;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   padding: 16px;
 }
@@ -1286,7 +1286,7 @@
 .modalSectionTitle {
   font-size: 13px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -1306,11 +1306,11 @@
 }
 
 .metaLabel {
-  color: #605d52;
+  color: #675471;
 }
 
 .metaValue {
-  color: #201515;
+  color: #211329;
   font-weight: 500;
 }
 
@@ -1321,7 +1321,7 @@
 
 .healthLoading p {
   margin-top: 12px;
-  color: #605d52;
+  color: #675471;
   font-size: 14px;
 }
 
@@ -1375,7 +1375,7 @@
 .permSubTitle {
   font-size: 11px;
   font-weight: 600;
-  color: #939084;
+  color: #9a82a7;
   margin-bottom: 6px;
 }
 
@@ -1409,9 +1409,9 @@
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
-  background-color: #f8f4f0;
-  color: #605d52;
-  border: 1px solid #e5dfd3;
+  background-color: #f8f1fb;
+  color: #675471;
+  border: 1px solid #eadcf1;
   font-weight: 500;
 }
 
@@ -1472,8 +1472,8 @@
 .modalCloseActionBtn {
   padding: 8px 16px;
   background-color: #ffffff;
-  color: #201515;
-  border: 1px solid #e5dfd3;
+  color: #211329;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -1482,8 +1482,8 @@
 }
 
 .modalCloseActionBtn:hover {
-  background-color: #f8f4f0;
-  border-color: #c5c0b1;
+  background-color: #f8f1fb;
+  border-color: #d9c8e6;
 }
 
 /* ── Pages Selector Drawer ── */
@@ -1497,8 +1497,8 @@
   width: 100%;
   text-align: left;
   border-radius: 12px;
-  border: 1px solid #c5c0b1;
-  background-color: #fffefb;
+  border: 1px solid #d9c8e6;
+  background-color: #fffaff;
   padding: 12px;
   display: flex;
   align-items: center;
@@ -1508,8 +1508,8 @@
 }
 
 .pageSelectorBtn:hover:not(:disabled) {
-  background-color: #f8f4f0;
-  border-color: #939084;
+  background-color: #f8f1fb;
+  border-color: #9a82a7;
 }
 
 .pageSelectorBtn:disabled {
@@ -1527,7 +1527,7 @@
   border-radius: 6px;
   object-fit: cover;
   display: block;
-  border: 1px solid #c5c0b1;
+  border: 1px solid #d9c8e6;
 }
 
 .pagePlatformFallback {
@@ -1537,7 +1537,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
 }
 
 .pageInfo {
@@ -1554,7 +1554,7 @@
 .pageName {
   font-size: 14px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1565,16 +1565,16 @@
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 4px;
-  background-color: #f8f4f0;
-  color: #605d52;
-  border: 1px solid #c5c0b1;
+  background-color: #f8f1fb;
+  color: #675471;
+  border: 1px solid #d9c8e6;
   font-weight: 600;
   line-height: 1.2;
 }
 
 .pageCategory {
   font-size: 12px;
-  color: #939084;
+  color: #9a82a7;
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -1588,14 +1588,14 @@
   gap: 8px;
   padding: 32px 0;
   font-size: 14px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .pagesEmpty {
   text-align: center;
   padding: 32px 0;
   font-size: 14px;
-  color: #939084;
+  color: #9a82a7;
 }
 
 @keyframes spin {
@@ -1609,8 +1609,8 @@
 
 /* ── Disconnect Confirm Modal ── */
 .disconnectModalCard {
-  background-color: #fffefb;
-  border: 1px solid #e5dfd3;
+  background-color: #fffaff;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   max-width: 440px;
   width: 100%;
@@ -1639,14 +1639,14 @@
 }
 
 .disconnectIcon {
-  color: #ff4f00;
+  color: #a855f7;
   flex-shrink: 0;
 }
 
 .disconnectModalTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #201515;
+  color: #211329;
   margin: 0;
   line-height: 1.2;
 }
@@ -1657,21 +1657,21 @@
 
 .disconnectText {
   font-size: 14px;
-  color: #605d52;
+  color: #675471;
   margin: 0;
   line-height: 1.5;
 }
 
 .disconnectScheduledCheck {
   font-size: 13px;
-  color: #939084;
+  color: #9a82a7;
   margin: 10px 0 0;
   line-height: 1.5;
 }
 
 .disconnectScheduledText {
   font-size: 13px;
-  color: #605d52;
+  color: #675471;
   margin: 10px 0 0;
   line-height: 1.5;
 }
@@ -1684,9 +1684,9 @@
 
 .disconnectCancelBtn {
   padding: 10px 24px;
-  background-color: #fffefb;
-  color: #605d52;
-  border: 1px solid #e5dfd3;
+  background-color: #fffaff;
+  color: #675471;
+  border: 1px solid #eadcf1;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -1695,14 +1695,14 @@
 }
 
 .disconnectCancelBtn:hover:not(:disabled) {
-  background-color: #f8f4f0;
-  border-color: #c5c0b1;
-  color: #201515;
+  background-color: #f8f1fb;
+  border-color: #d9c8e6;
+  color: #211329;
 }
 
 .disconnectConfirmBtn {
   padding: 10px 24px;
-  background-color: #ff4f00;
+  background-color: #a855f7;
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -1723,9 +1723,9 @@
 
 .disconnectConfirmBtn:disabled {
   cursor: not-allowed;
-  background-color: #f8f4f0;
-  color: #939084;
-  border: 1px solid #e5dfd3;
+  background-color: #f8f1fb;
+  color: #9a82a7;
+  border: 1px solid #eadcf1;
   opacity: 1;
 }
 
@@ -1745,9 +1745,9 @@
 .disconnectBtn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  background-color: #f8f4f0;
-  color: #939084;
-  border-color: #e5dfd3;
+  background-color: #f8f1fb;
+  color: #9a82a7;
+  border-color: #eadcf1;
 }
 
 .pageLoadingWrap {
@@ -1758,7 +1758,7 @@
   width: 100%;
   padding: 8px 0;
   font-size: 13px;
-  color: #605d52;
+  color: #675471;
   font-weight: 500;
 }
 
@@ -1788,7 +1788,7 @@
 }
 
 .platformListItemHeader:hover {
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   border-radius: 8px;
 }
 
@@ -1800,15 +1800,15 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #939084;
-  background-color: #f8f4f0;
-  border: 1px solid #e5dfd3;
+  color: #9a82a7;
+  background-color: #f8f1fb;
+  border: 1px solid #eadcf1;
 }
 
 .platformListLabelConnected {
   font-size: 13.5px;
   font-weight: 500;
-  color: #939084;
+  color: #9a82a7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1824,26 +1824,26 @@
 .connectedText {
   font-size: 12px;
   font-weight: 500;
-  color: #939084;
+  color: #9a82a7;
 }
 
 .platformListItemContent {
   padding: 12px 16px 16px;
-  background-color: #f8f4f0;
+  background-color: #f8f1fb;
   border-radius: 8px;
   margin: 0 4px 10px;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
 }
 
 .connectedExplanation {
   font-size: 12px;
   line-height: 1.5;
-  color: #605d52;
+  color: #675471;
   margin: 0 0 12px 0;
 }
 
 .connectedExplanation strong {
-  color: #201515;
+  color: #211329;
   font-weight: 600;
 }
 
@@ -1859,7 +1859,7 @@
   justify-content: space-between;
   padding: 8px 12px;
   background-color: #ffffff;
-  border: 1px solid #e5dfd3;
+  border: 1px solid #eadcf1;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1868,25 +1868,25 @@
 }
 
 .eligibleWorkspaceBtn:hover:not(:disabled) {
-  background-color: #fffefb;
-  border-color: #ff4f00;
+  background-color: #fffaff;
+  border-color: #a855f7;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 79, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.05);
 }
 
 .eligibleWorkspaceBtn .workspaceName {
   font-size: 12px;
   font-weight: 600;
-  color: #201515;
+  color: #211329;
 }
 
 .eligibleWorkspaceArrow {
-  color: #c5c0b1;
+  color: #d9c8e6;
   transition: color 0.15s, transform 0.15s;
 }
 
 .eligibleWorkspaceBtn:hover:not(:disabled) .eligibleWorkspaceArrow {
-  color: #ff4f00;
+  color: #a855f7;
   transform: translateX(2px);
 }
 
@@ -1896,9 +1896,9 @@
   gap: 8px;
   padding: 8px 12px;
   background-color: transparent;
-  border: 1px dashed #c5c0b1;
+  border: 1px dashed #d9c8e6;
   border-radius: 8px;
-  color: #605d52;
+  color: #675471;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1907,9 +1907,9 @@
 }
 
 .quickCreateWorkspaceBtn:hover {
-  border-color: #ff4f00;
-  color: #ff4f00;
-  background-color: rgba(255, 79, 0, 0.02);
+  border-color: #a855f7;
+  color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.02);
 }
 
 .quickCreatePlus {
@@ -1922,10 +1922,10 @@
   gap: 8px;
   padding: 8px 12px;
   background-color: #ffffff;
-  border: 1px solid #ff4f00;
+  border: 1px solid #a855f7;
   border-radius: 8px;
   width: 100%;
-  box-shadow: 0 0 0 1px rgba(255, 79, 0, 0.1);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.1);
   transition: all 0.2s ease;
 }
 
@@ -1936,7 +1936,7 @@
   outline: none !important;
   font-size: 12px;
   font-weight: 500;
-  color: #201515;
+  color: #211329;
   padding: 0;
   margin: 0;
 }
@@ -1949,11 +1949,11 @@
 }
 
 .quickCreateInput::placeholder {
-  color: #c5c0b1;
+  color: #d9c8e6;
 }
 
 .quickCreatePlusActive {
-  color: #ff4f00;
+  color: #a855f7;
   flex-shrink: 0;
 }
 
@@ -1963,7 +1963,7 @@
   justify-content: center;
   background-color: transparent;
   border: none;
-  color: #c5c0b1;
+  color: #d9c8e6;
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
@@ -1972,8 +1972,8 @@
 }
 
 .quickCreateSubmitBtn:hover:not(:disabled) {
-  color: #ff4f00;
-  background-color: rgba(255, 79, 0, 0.05);
+  color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.05);
 }
 
 .quickCreateSubmitBtn:disabled {
