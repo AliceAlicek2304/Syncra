@@ -4,35 +4,34 @@ const STEPS = [
   {
     step: '01',
     icon: <PenSquare size={28} />,
-    title: 'Create your content',
-    desc: 'Write your post once in the editor. Syncra auto-formats it for every platform automatically.',
+    title: 'Tạo nội dung',
+    desc: 'Viết bài một lần trong editor. Syncra hỗ trợ định dạng lại để phù hợp từng nền tảng.',
   },
   {
     step: '02',
     icon: <Clock4 size={28} />,
-    title: 'Schedule or post now',
-    desc: 'Choose when to publish — instantly or at the optimal predicted time for maximum engagement.',
+    title: 'Lên lịch hoặc đăng ngay',
+    desc: 'Chọn đăng ngay hoặc đặt lịch vào khung giờ phù hợp để tăng cơ hội tiếp cận.',
   },
   {
     step: '03',
     icon: <Rocket size={28} />,
-    title: 'Grow your audience',
-    desc: 'Watch your analytics across all platforms in one view. Double down on what works.',
+    title: 'Tăng trưởng tệp người xem',
+    desc: 'Theo dõi hiệu quả trên mọi nền tảng trong một màn hình và tập trung vào nội dung đang hiệu quả.',
   },
 ]
 
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="py-16 md:py-24 bg-brand-ink text-brand-on-primary border-b border-brand-border/10 relative overflow-hidden">
-      {/* Visual background details */}
       <div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] rounded-full bg-brand-primary/5 filter blur-[120px] opacity-40 -z-10 -translate-x-1/2 -translate-y-1/2" />
-      
+
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">How it works</span>
+          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">Cách hoạt động</span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-brand-on-primary leading-tight">
-            From idea to viral —<br />
-            <span className="text-brand-primary">in 3 simple steps.</span>
+            Từ ý tưởng đến bài đăng<br />
+            <span className="text-brand-primary">chỉ trong 3 bước.</span>
           </h2>
         </div>
 

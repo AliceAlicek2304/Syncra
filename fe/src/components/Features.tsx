@@ -6,39 +6,39 @@ import {
 const FEATURES = [
   {
     icon: <PenLine size={22} />,
-    title: 'Smart Content Editor',
-    desc: 'Write once and auto-adapt your copy for each platform\'s tone, length, and format — TikTok, LinkedIn, Instagram, and beyond.',
+    title: 'Trình soạn nội dung thông minh',
+    desc: 'Viết một lần, Syncra tự gợi ý cách điều chỉnh giọng văn, độ dài và định dạng cho từng nền tảng như TikTok, LinkedIn, Instagram.',
     colorClass: 'bg-violet-100 text-violet-700',
   },
   {
     icon: <CalendarClock size={22} />,
-    title: 'Intelligent Scheduling',
-    desc: 'Pick the best time to post based on your audience activity. Set it and forget it — Syncra handles the rest.',
+    title: 'Lên lịch đăng tối ưu',
+    desc: 'Chọn khung giờ đăng dựa trên thói quen hoạt động của người xem. Bạn lên lịch, Syncra xử lý phần còn lại.',
     colorClass: 'bg-pink-100 text-pink-700',
   },
   {
     icon: <Globe2 size={22} />,
-    title: 'Multi-Platform Publishing',
-    desc: 'Publish to TikTok, Instagram, YouTube, LinkedIn, X, and Facebook simultaneously from a single dashboard.',
+    title: 'Đăng đa nền tảng',
+    desc: 'Đăng đồng thời lên TikTok, Instagram, YouTube, LinkedIn, X và Facebook từ một dashboard duy nhất.',
     colorClass: 'bg-cyan-100 text-cyan-700',
   },
   {
     icon: <BarChart3 size={22} />,
-    title: 'Unified Analytics',
-    desc: 'Track reach, engagement, and follower growth across every platform in one clean real-time dashboard.',
+    title: 'Phân tích tập trung',
+    desc: 'Theo dõi lượt tiếp cận, tương tác và tăng trưởng follower trên mọi kênh trong một màn hình rõ ràng.',
     colorClass: 'bg-amber-100 text-amber-700',
   },
   {
     icon: <Sparkles size={22} />,
-    title: 'AI Writing Assistant',
-    desc: 'Get caption ideas, hashtag suggestions, and SEO-friendly hooks powered by AI. Save hours every week.',
+    title: 'Trợ lý viết bằng AI',
+    desc: 'Nhận ý tưởng caption, hashtag và hook thân thiện SEO để tiết kiệm nhiều giờ làm nội dung mỗi tuần.',
     colorClass: 'bg-emerald-100 text-emerald-700',
-    badge: 'Coming soon',
+    badge: 'Sắp ra mắt',
   },
   {
     icon: <Repeat2 size={22} />,
-    title: 'Content Recycling',
-    desc: 'Automatically re-schedule high-performing evergreen content to maximize its long-term reach.',
+    title: 'Tái sử dụng nội dung tốt',
+    desc: 'Tự động lên lịch lại các nội dung evergreen có hiệu quả cao để kéo dài vòng đời tiếp cận.',
     colorClass: 'bg-rose-100 text-rose-700',
   },
 ]
@@ -48,14 +48,14 @@ export default function Features() {
     <section id="features" className="py-16 md:py-24 bg-brand-canvas-soft text-brand-ink border-b border-brand-border/40">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl text-left">
-          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">Features</span>
+          <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">Tính năng</span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-brand-ink leading-tight">
-            Everything a creator needs.<br />
-            <span className="text-brand-primary">Nothing they don't.</span>
+            Mọi thứ creator cần.<br />
+            <span className="text-brand-primary">Gọn, rõ, không thừa.</span>
           </h2>
           <p className="text-base sm:text-lg text-brand-body mt-4 leading-relaxed max-w-xl">
-            Built specifically for solo creators and small teams who want
-            professional-grade tools without enterprise complexity.
+            Dành cho creator cá nhân, freelancer và team marketing nhỏ tại Việt Nam
+            muốn làm nội dung chuyên nghiệp mà không phải vận hành rườm rà.
           </p>
         </div>
 

@@ -67,8 +67,8 @@
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
 
-  --gradient-hero: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #22d3ee 100%);
-  --gradient-brand: linear-gradient(135deg, #8b5cf6, #d946ef);
+  --gradient-hero: linear-gradient(135deg, #a855f7 0%, #ec4899 56%, #06b6d4 100%);
+  --gradient-brand: linear-gradient(135deg, #a855f7, #ec4899);
   --gradient-border: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
 
   --radius-md: 12px;
@@ -85,16 +85,16 @@
 /* ─── App Design Tokens ─── */
 :root {
   /* Colors */
-  --clr-primary: #ff4f00;
-  --clr-on-primary: #fffefb;
-  --clr-ink: #201515;
-  --clr-ink-soft: #2f2a26;
-  --clr-ink-mid: #36342e;
-  --clr-body: #605d52;
-  --clr-body-mid: #939084;
-  --clr-mute: #c5c0b1;
-  --clr-canvas: #fffefb;
-  --clr-canvas-soft: #f8f4f0;
+  --clr-primary: #a855f7;
+  --clr-on-primary: #fff7ff;
+  --clr-ink: #211329;
+  --clr-ink-soft: #34203f;
+  --clr-ink-mid: #4a2d59;
+  --clr-body: #675471;
+  --clr-body-mid: #9a82a7;
+  --clr-mute: #d9c8e6;
+  --clr-canvas: #fffaff;
+  --clr-canvas-soft: #f8f1fb;
 
   /* Typography */
   --font-display: 'Degular Display', 'Inter', system-ui, sans-serif;
@@ -111,9 +111,9 @@
   --spacing-4xl: 64px;
 
   /* Border */
-  --clr-border: #e5dfd3;
-  --clr-primary-hover: #e04500;
-  --clr-ring: #93c5fd;
+  --clr-border: #eadcf1;
+  --clr-primary-hover: #9333ea;
+  --clr-ring: #ec4899;
 
   /* Border Radius */
   --radius-sm: 6px;

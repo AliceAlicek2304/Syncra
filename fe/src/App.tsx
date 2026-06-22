@@ -53,8 +53,8 @@ function Homepage() {
   useEffect(() => {
     // Add light theme classes and style overrides to document body for the landing page
     document.body.classList.add('bg-brand-canvas-soft', 'text-brand-ink');
-    document.body.style.backgroundColor = '#f8f4f0';
-    document.body.style.color = '#201515';
+    document.body.style.backgroundColor = '#f8f1fb';
+    document.body.style.color = '#211329';
     document.body.style.backgroundImage = 'none';
 
     return () => {

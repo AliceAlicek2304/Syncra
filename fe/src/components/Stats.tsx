@@ -1,8 +1,8 @@
 const STATS = [
-  { value: '2,400+', label: 'Active creators' },
-  { value: '6', label: 'Platforms supported' },
-  { value: '98%', label: 'Uptime SLA' },
-  { value: '12M+', label: 'Posts scheduled' },
+  { value: '2.400+', label: 'Creator đang dùng' },
+  { value: '6', label: 'Nền tảng hỗ trợ' },
+  { value: '98%', label: 'Mức ổn định' },
+  { value: '12M+', label: 'Bài đã lên lịch' },
 ]
 
 export default function Stats() {
