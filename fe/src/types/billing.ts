@@ -34,3 +34,23 @@ export type CreatePortalSessionRequest = {
 export type CreatePortalSessionResponse = {
   portalUrl: string;
 };
+
+export type StudentVerificationStatusDto = {
+  studentEmail?: string | null;
+  verifiedAtUtc?: string | null;
+  expiresAtUtc?: string | null;
+  isVerified: boolean;
+  isExpired: boolean;
+};
+
+export type RequestStudentVerificationResponse = {
+  message: string;
+  expiresAtUtc: string;
+};
+
+export type VerifyStudentEmailResponse = {
+  studentEmail: string;
+  verifiedAtUtc: string;
+  expiresAtUtc: string;
+  isVerified: boolean;
+};

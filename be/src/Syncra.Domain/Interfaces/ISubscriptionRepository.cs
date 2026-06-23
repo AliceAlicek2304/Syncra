@@ -12,4 +12,5 @@ public interface ISubscriptionRepository
     Task<Subscription?> GetCurrentForWorkspaceAsync(Guid workspaceId);
     Task<Subscription?> GetByWorkspaceIdAsync(Guid workspaceId);
     Task<Subscription?> GetByProviderSubscriptionIdAsync(string provider, string providerSubscriptionId);
+    Task<IReadOnlyList<Subscription>> GetAllAsync(CancellationToken cancellationToken = default);
 }

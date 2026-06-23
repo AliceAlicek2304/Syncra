@@ -40,4 +40,9 @@ public class UserRepository : Repository<User>, IUserRepository
             .ThenInclude(w => w.ZernioProfiles)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.ToListAsync(cancellationToken);
+    }
 }

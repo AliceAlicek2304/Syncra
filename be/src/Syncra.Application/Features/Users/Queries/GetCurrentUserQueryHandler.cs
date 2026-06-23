@@ -66,6 +66,10 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
             user.Email.Value,
             user.HasPasswordBeenSet,
             profile,
-            workspace);
+            workspace,
+            user.StudentEmail,
+            user.StudentEmailVerifiedAtUtc,
+            user.StudentVerificationExpiresAtUtc,
+            user.HasValidStudentVerification);
     }
 }

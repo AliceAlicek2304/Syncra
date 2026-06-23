@@ -10,6 +10,7 @@ public interface IPlanRepository
     Task<Plan?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
     Task<Plan?> GetByStripeProductIdAsync(string stripeProductId, CancellationToken cancellationToken = default);
     Task<Plan?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Plan>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
     Task AddAsync(Plan plan, CancellationToken cancellationToken = default);
     Task UpdateAsync(Plan plan, CancellationToken cancellationToken = default);
 }

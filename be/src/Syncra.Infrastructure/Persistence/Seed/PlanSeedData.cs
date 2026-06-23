@@ -64,6 +64,26 @@ public static class PlanSeedData
                 SortOrder = 3,
                 CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 Version = 1
+            },
+            new Plan
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000004"),
+                Code = "STUDENT",
+                Name = "Student",
+                Description = "Discounted plan for verified students.",
+                PriceMonthly = 59_000m,
+                PriceYearly = 49_000m,
+                MaxMembers = 1,
+                MaxSocialAccounts = 20,
+                MaxScheduledPostsPerMonth = int.MaxValue,
+                MaxRepurposeGenerationsPerMonth = 15,
+                StripeProductId = "prod_placeholder_student",
+                StripeMonthlyPriceId = "price_placeholder_student_monthly",
+                StripeYearlyPriceId = "price_placeholder_student_yearly",
+                IsActive = true,
+                SortOrder = 4,
+                CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Version = 1
             }
         );
     }

@@ -9,6 +9,10 @@ export interface User {
   locale?: string;
   hasPasswordBeenSet?: boolean;
   emailVerifiedAtUtc?: string | null;
+  studentEmail?: string | null;
+  studentEmailVerifiedAtUtc?: string | null;
+  studentVerificationExpiresAtUtc?: string | null;
+  hasValidStudentVerification?: boolean;
 
 }
 

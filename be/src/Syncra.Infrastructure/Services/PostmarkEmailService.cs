@@ -119,6 +119,36 @@ public class PostmarkEmailService : IEmailService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task SendStudentVerificationCodeAsync(string studentEmail, string verificationCode, CancellationToken cancellationToken = default)
+    {
+        if (ShouldSkipEmailDelivery())
+        {
+            return;
+        }
+
+        var htmlBody = BuildStudentVerificationHtmlBody(verificationCode);
+        var textBody = BuildStudentVerificationTextBody(verificationCode);
+
+        var payload = new
+        {
+            From = $"{_options.FromName} <{_options.FromEmail}>",
+            To = studentEmail,
+            Subject = "Verify your student email for Syncra",
+            HtmlBody = htmlBody,
+            TextBody = textBody
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.postmarkapp.com/email")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("X-Postmark-Server-Token", _options.ApiKey);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     private bool ShouldSkipEmailDelivery()
     {
         return _environment?.IsDevelopment() == true || string.IsNullOrWhiteSpace(_options.ApiKey);
@@ -250,6 +280,48 @@ public class PostmarkEmailService : IEmailService
     private static string BuildEmailVerificationTextBody(string verificationUrl)
     {
         return $"Verify your email address\n\nClick the link below to verify your email address and complete your registration.\n\n{verificationUrl}\n\nThis link expires in 7 days and can only be used once.\n\nIf you didn't create this account, ignore this email.";
+    }
+
+    private static string BuildStudentVerificationHtmlBody(string verificationCode)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #080b14; padding: 40px 20px;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+        <tr><td align=""center"">
+            <table style=""max-width: 480px; width: 100%; background: #0f1220; border-radius: 18px; padding: 40px; border: 1px solid rgba(255,255,255,0.06);"">
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <h1 style=""color: #fff; font-size: 24px; font-weight: 800; margin: 0;"">Syncra</h1>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 8px;"">
+                    <h2 style=""color: #e4e6f0; font-size: 18px; font-weight: 700; margin: 0;"">Verify your student email</h2>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 20px;"">
+                    <p style=""color: #8b8fa3; font-size: 14px; line-height: 1.6; margin: 0;"">
+                        Enter this code in Syncra to unlock the student plan.
+                    </p>
+                </td></tr>
+                <tr><td align=""center"" style=""padding-bottom: 24px;"">
+                    <div style=""display: inline-block; padding: 14px 24px; border-radius: 12px; background: #171a2a; color: #fff; font-size: 28px; font-weight: 800; letter-spacing: 0.18em;"">
+                        {verificationCode}
+                    </div>
+                </td></tr>
+                <tr><td align=""center"">
+                    <p style=""color: #6b6f82; font-size: 12px; line-height: 1.5; margin: 0;"">
+                        This code expires in 15 minutes. If you didn't request this, ignore this email.
+                    </p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private static string BuildStudentVerificationTextBody(string verificationCode)
+    {
+        return $"Verify your student email for Syncra\n\nYour verification code is: {verificationCode}\n\nThis code expires in 15 minutes. If you didn't request this, ignore this email.";
     }
 }
 

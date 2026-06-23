@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
@@ -28,6 +29,11 @@ import AppLayout from './pages/app/AppLayout'
 import IdeasPage from './pages/app/IdeasPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/Dashboard'
+import AdminUserGrowth from './pages/admin/UserGrowth'
+import PostAnalytics from './pages/admin/PostAnalytics'
+import RevenueAnalytics from './pages/admin/RevenueAnalytics'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
 import LoginPage from './pages/LoginPage'
@@ -48,6 +54,10 @@ import SettingsPage from './pages/app/SettingsPage'
 import BillingPage from './pages/app/BillingPage'
 import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 
+
+interface AdminGuardProps {
+  children: ReactNode
+}
 
 function Homepage() {
   useEffect(() => {
@@ -81,12 +91,27 @@ function Homepage() {
   )
 }
 
+const AdminGuard = ({ children }: AdminGuardProps) => {
+  // Set VITE_ADMIN_OPEN=true in fe/.env.local to bypass auth temporarily
+  return import.meta.env.VITE_ADMIN_OPEN === 'true' ? <>{children}</> : <ProtectedRoute>{children}</ProtectedRoute>
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
+        <Route path="/admin" element={
+          <AdminGuard>
+            <AdminLayout />
+          </AdminGuard>
+        }>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUserGrowth />} />
+          <Route path="posts" element={<PostAnalytics />} />
+          <Route path="revenue" element={<RevenueAnalytics />} />
+        </Route>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

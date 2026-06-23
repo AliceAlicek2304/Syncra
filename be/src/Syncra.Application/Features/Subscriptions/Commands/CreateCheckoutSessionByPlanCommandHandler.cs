@@ -13,17 +13,20 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IPlanRepository _planRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IPaymentProviderResolver _paymentProviderResolver;
 
     public CreateCheckoutSessionByPlanCommandHandler(
         IWorkspaceRepository workspaceRepository,
         ISubscriptionRepository subscriptionRepository,
         IPlanRepository planRepository,
+        IUserRepository userRepository,
         IPaymentProviderResolver paymentProviderResolver)
     {
         _workspaceRepository = workspaceRepository;
         _subscriptionRepository = subscriptionRepository;
         _planRepository = planRepository;
+        _userRepository = userRepository;
         _paymentProviderResolver = paymentProviderResolver;
     }
 
@@ -55,6 +58,19 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
         if (!plan.IsActive)
         {
             throw new DomainException("plan_inactive", $"Plan '{request.PlanCode}' is not active.");
+        }
+
+        if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase))
+        {
+            var user = await _userRepository.GetByIdAsync(request.UserId)
+                ?? throw new DomainException("not_found", "User not found.");
+
+            if (!user.HasValidStudentVerification)
+            {
+                throw new DomainException(
+                    "student_verification_required",
+                    "Please verify your student email before choosing the Student plan.");
+            }
         }
 
         var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);

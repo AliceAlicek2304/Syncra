@@ -40,6 +40,14 @@ public class PlanRepository : IPlanRepository
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Plan>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        return await _context.Plans
+            .Where(p => ids.Contains(p.Id))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
     public Task AddAsync(Plan plan, CancellationToken cancellationToken = default)
     {
         _context.Plans.Add(plan);

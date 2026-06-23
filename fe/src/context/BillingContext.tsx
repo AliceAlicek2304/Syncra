@@ -6,7 +6,10 @@ import type{
   CreateCheckoutSessionByPlanRequest, 
   CreateCheckoutSessionResponse,
   CreatePortalSessionRequest,
-  CreatePortalSessionResponse
+  CreatePortalSessionResponse,
+  StudentVerificationStatusDto,
+  RequestStudentVerificationResponse,
+  VerifyStudentEmailResponse
 } from '../types/billing';
 
 interface BillingContextType {
@@ -14,7 +17,11 @@ interface BillingContextType {
   loading: boolean;
   error: string | null;
   redirecting: boolean;
+  studentStatus: StudentVerificationStatusDto | null;
   loadCurrentSubscription: () => Promise<void>;
+  loadStudentVerificationStatus: () => Promise<void>;
+  requestStudentVerificationCode: (studentEmail: string) => Promise<RequestStudentVerificationResponse>;
+  verifyStudentEmailCode: (studentEmail: string, code: string) => Promise<VerifyStudentEmailResponse>;
   startCheckout: (planCode: string, interval: 'month' | 'year', skipTrial?: boolean) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -26,6 +33,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [studentStatus, setStudentStatus] = useState<StudentVerificationStatusDto | null>(null);
 
   const { activeWorkspace } = useWorkspace();
   const workspaceId = activeWorkspace?.id;
@@ -99,6 +107,47 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [workspaceId]);
 
+  const loadStudentVerificationStatus = useCallback(async () => {
+    setError(null);
+    try {
+      const data = await apiFetch<StudentVerificationStatusDto>('/api/v1/student-verification/status');
+      setStudentStatus(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load student verification status');
+    }
+  }, []);
+
+  const requestStudentVerificationCode = useCallback(async (studentEmail: string) => {
+    setError(null);
+    const response = await apiFetch<RequestStudentVerificationResponse>(
+      '/api/v1/student-verification/request-code',
+      {
+        method: 'POST',
+        body: JSON.stringify({ studentEmail })
+      }
+    );
+    return response;
+  }, []);
+
+  const verifyStudentEmailCode = useCallback(async (studentEmail: string, code: string) => {
+    setError(null);
+    const response = await apiFetch<VerifyStudentEmailResponse>(
+      '/api/v1/student-verification/verify-code',
+      {
+        method: 'POST',
+        body: JSON.stringify({ studentEmail, code })
+      }
+    );
+    setStudentStatus({
+      studentEmail: response.studentEmail,
+      verifiedAtUtc: response.verifiedAtUtc,
+      expiresAtUtc: response.expiresAtUtc,
+      isVerified: response.isVerified,
+      isExpired: false
+    });
+    return response;
+  }, []);
+
   const openPortal = useCallback(async () => {
     if (!workspaceId) {
       setError('Workspace ID not found.');
@@ -139,7 +188,11 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       redirecting,
+      studentStatus,
       loadCurrentSubscription,
+      loadStudentVerificationStatus,
+      requestStudentVerificationCode,
+      verifyStudentEmailCode,
       startCheckout,
       openPortal
     }}>

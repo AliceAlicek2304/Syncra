@@ -13,4 +13,5 @@ public interface IUserRepository
     Task<User?> GetByEmailWithOrganizationsAsync(string email);
     Task<User?> GetByIdWithProfileAsync(Guid id);
     Task<User?> GetByIdWithProfileAndWorkspacesAsync(Guid id);
+    Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default);
 }

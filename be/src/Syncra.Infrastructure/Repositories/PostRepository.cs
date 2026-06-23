@@ -200,4 +200,45 @@ public class PostRepository : Repository<Post>, IPostRepository
                              p.CreatedAtUtc >= monthStart && p.CreatedAtUtc <= monthEnd,
                         cancellationToken);
     }
+
+    public async Task<Dictionary<string, List<int>>> GetPostsByPlatformMonthlyAsync(
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var posts = await _dbSet
+            .AsNoTracking()
+            .Include(p => p.PlatformTargets)
+            .Where(p => p.CreatedAtUtc >= startUtc && p.CreatedAtUtc <= endUtc)
+            .ToListAsync(cancellationToken);
+
+        var result = new Dictionary<string, List<int>>();
+        var months = new List<DateTime>();
+        
+        for (var date = startUtc; date < endUtc; date = date.AddMonths(1))
+        {
+            months.Add(new DateTime(date.Year, date.Month, 1));
+        }
+
+        var platforms = posts
+            .SelectMany(p => p.PlatformTargets)
+            .Select(pt => pt.Platform.ToLower())
+            .Distinct()
+            .ToList();
+
+        foreach (var platform in platforms)
+        {
+            result[platform] = new List<int>();
+            foreach (var month in months)
+            {
+                var monthEnd = month.AddMonths(1).AddDays(-1);
+                var count = posts
+                    .Count(p => p.CreatedAtUtc >= month && p.CreatedAtUtc <= monthEnd &&
+                               p.PlatformTargets.Any(pt => pt.Platform.ToLower() == platform));
+                result[platform].Add(count);
+            }
+        }
+
+        return result;
+    }
 }

@@ -25,5 +25,9 @@ public record UserDto(
     string Email,
     bool HasPasswordBeenSet,
     UserProfileDto? Profile,
-    CurrentUserWorkspaceDto? Workspace
+    CurrentUserWorkspaceDto? Workspace,
+    string? StudentEmail,
+    DateTime? StudentEmailVerifiedAtUtc,
+    DateTime? StudentVerificationExpiresAtUtc,
+    bool HasValidStudentVerification
 );
