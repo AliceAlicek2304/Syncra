@@ -130,7 +130,7 @@ export default function RevenueAnalytics() {
                 width: 48, 
                 height: 48, 
                 borderRadius: 12, 
-                background: m.id === 'revenue' ? '#4FFF4F' : m.id === 'subscriptions' ? '#4F8FFF' : m.id === 'active' ? '#FFC84F' : '#8F4FFF',
+                background: m.id === 'revenue' ? '#10B981' : m.id === 'subscriptions' ? '#2563EB' : m.id === 'active' ? '#8B5CF6' : '#8F4FFF',
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -145,7 +145,7 @@ export default function RevenueAnalytics() {
               <div>
                 <div style={{ fontSize: 12, color: '#605d52', fontWeight: 600 }}>{m.title}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{m.value}</div>
-                <div style={{ fontSize: 12, color: m.trend === 'up' ? '#4FFF4F' : '#FF4F4F', fontWeight: 600 }}>
+                <div style={{ fontSize: 12, color: m.trend === 'up' ? '#10B981' : '#FF4F4F', fontWeight: 600 }}>
                   {m.growth}
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function RevenueAnalytics() {
               <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Xu hướng doanh thu (12 tháng)</div>
               <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>
                 ${trends?.currentMonthRevenue ?? trends?.CurrentMonthRevenue ?? 0}{' '}
-                <span style={{fontSize: 14, color: '#4FFF4F', fontWeight: 600}}>
+                <span style={{fontSize: 14, color: '#10B981', fontWeight: 600}}>
                   {(trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0) >= 0 ? '+' : ''}${trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function RevenueAnalytics() {
                   <div style={{ fontSize: 11, color: '#888' }}>{plan.workspaceCount} workspace</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#4FFF4F' }}>${plan.monthlyRevenue}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#10B981' }}>${plan.monthlyRevenue}</div>
                   <div style={{ fontSize: 11, color: '#666' }}>{plan.percentage}%</div>
                 </div>
               </div>
@@ -209,13 +209,13 @@ export default function RevenueAnalytics() {
         <BarChart 
           data={planGrowth.map((p: any) => p.growth)} 
           labels={planGrowth.map((p: any) => p.planName)}
-          colors={['#4FFF4F', '#4F8FFF', '#FFC84F', '#8F4FFF', '#FF4F4F']}
+          colors={['#10B981', '#2563EB', '#8B5CF6', '#8F4FFF', '#FF4F4F']}
         />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, fontSize: 11, color: '#666', fontWeight: 600 }}>
           {planGrowth.length > 0 ? planGrowth.map((p: any, i: number) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>{p.planName}</span>
-              <span style={{ color: p.growth >= 0 ? '#4FFF4F' : '#FF4F4F' }}>
+              <span style={{ color: p.growth >= 0 ? '#10B981' : '#FF4F4F' }}>
                 {p.growth >= 0 ? '+' : ''}{p.growth} ({p.currentCount} hiện tại)
               </span>
             </div>
@@ -275,7 +275,7 @@ export default function RevenueAnalytics() {
                 <div style={{ fontSize: 11, color: '#888' }}>ID: {ws.workspaceId}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: ws.status === 'Active' ? '#4FFF4F' : '#FFC84F' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: ws.status === 'Active' ? '#10B981' : '#8B5CF6' }}>
                   {ws.planName}
                 </div>
                 <div style={{ fontSize: 11, color: '#666' }}>{ws.status}</div>

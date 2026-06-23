@@ -7,7 +7,7 @@ type Props = { data: number[]; labels?: string[]; colors?: string[] }
 
 export default function DonutChart({ data, labels, colors }: Props) {
   const defaultColors = colors ?? [
-    '#FF4F4F', '#FF8F4F', '#FFC84F', '#4FFF4F', '#4F8FFF', '#8F4FFF', '#FF4FFF'
+    '#FF4F4F', '#FF8F4F', '#8B5CF6', '#10B981', '#2563EB', '#8F4FFF', '#FF4FFF'
   ]
   
   const chartData = {

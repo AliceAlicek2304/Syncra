@@ -20,7 +20,7 @@ const PLATFORMS = [
   { id: 'pinterest', name: 'Pinterest', icon: FaPinterest, color: '#BD081C' },
   { id: 'telegram', name: 'Telegram', icon: FaTelegram, color: '#0088cc' },
   { id: 'snapchat', name: 'Snapchat', icon: FaSnapchat, color: '#FFFC00' },
-  { id: 'reddit', name: 'Reddit', icon: FaReddit, color: '#FF4500' },
+  { id: 'reddit', name: 'Reddit', icon: FaReddit, color: '#64748B' },
   { id: 'discord', name: 'Discord', icon: FaDiscord, color: '#5865F2' },
 ]
 
@@ -101,7 +101,10 @@ export default function AdminDashboard() {
   }, [data, isLoading])
 
   const postStatusTrends = useMemo(() => {
-    const raw = data?.overview?.EngagementByPlatform?.All || data?.overview?.engagementByPlatform?.all
+    const raw =
+      data?.overview?.EngagementByPlatform?.all ||
+      data?.overview?.EngagementByPlatform?.All ||
+      data?.overview?.engagementByPlatform?.all
     const cleanEmpty = { published: Array(12).fill(0), scheduled: Array(12).fill(0), failed: Array(12).fill(0) }
 
     if (raw) {
@@ -117,21 +120,17 @@ export default function AdminDashboard() {
 
   // FIX TRIỆT ĐỂ: Ép mảng doanh thu tổng hợp dứt khoát về 0 từ M1->M11. Chỉ gán vào M12 số thực.
   const revenueTrendData = useMemo(() => {
-    const baseTrend = Array(12).fill(0)
-
-    const freeRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'FREE')?.monthlyRevenue || 0
-    const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 57
-    const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 49
-    
-    baseTrend[11] = freeRevenue + proRevenue + teamRevenue
-    return baseTrend
+    const monthlyRevenue = revenueData?.trends?.monthlyRevenue ?? revenueData?.Trends?.MonthlyRevenue ?? []
+    if (!Array.isArray(monthlyRevenue)) return Array(12).fill(0)
+    if (monthlyRevenue.length >= 12) return monthlyRevenue.slice(-12).map(Number)
+    return [...Array(12 - monthlyRevenue.length).fill(0), ...monthlyRevenue.map(Number)]
   }, [revenueData])
 
   // FIX TRIỆT ĐỂ: Các mảng nhỏ sparkline và biểu đồ doanh thu chi tiết cũng ép cứng về 0 từ M1 -> M11
   const revenueByPlan = useMemo(() => {
     const freeRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'FREE')?.monthlyRevenue || 0
-    const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 57
-    const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 49
+    const proRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'PRO')?.monthlyRevenue || 0
+    const teamRevenue = revenueData?.plansByUsage?.find((p: any) => p.planCode === 'TEAM')?.monthlyRevenue || 0
 
     const baseFree = Array(12).fill(0); baseFree[11] = freeRevenue;
     const basePro = Array(12).fill(0); basePro[11] = proRevenue;
@@ -218,13 +217,13 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div className={dashStyles.metricTitle}>{m.title}</div>
                 {m.id === 'posts' && <FaChartLine color="#FF4F4F" size={18} />}
-                {m.id === 'scheduled' && <FaCheckCircle color="#4FFF4F" size={18} />}
-                {m.id === 'accounts' && <FaUsers color="#4F8FFF" size={18} />}
-                {m.id === 'workspaces' && <FaDollarSign color="#FFC84F" size={18} />}
+                {m.id === 'scheduled' && <FaCheckCircle color="#10B981" size={18} />}
+                {m.id === 'accounts' && <FaUsers color="#2563EB" size={18} />}
+                {m.id === 'workspaces' && <FaDollarSign color="#8B5CF6" size={18} />}
               </div>
               <div className={dashStyles.metricValue}>{m.value}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                <Sparkline data={sparklineData} color={m.id === 'posts' ? '#FF4F4F' : m.id === 'scheduled' ? '#4FFF4F' : m.id === 'accounts' ? '#4F8FFF' : '#FFC84F'} />
+                <Sparkline data={sparklineData} color={m.id === 'posts' ? '#FF4F4F' : m.id === 'scheduled' ? '#10B981' : m.id === 'accounts' ? '#2563EB' : '#8B5CF6'} />
               </div>
             </div>
           );
@@ -265,13 +264,13 @@ export default function AdminDashboard() {
         </div>
 
         <div style={{ display: 'grid', gap: 12 }}>
-          <div className={styles.card} style={{ background: 'linear-gradient(135deg, #4FFF4F 0%, #3FCC3F 100%)', color: '#fff' }}>
+          <div className={styles.card} style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#fff' }}>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Tài khoản MXH mới</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>{data?.overview?.newAccounts24h ?? '0'}</div>
             <div style={{ marginTop: 8, fontSize: 11, opacity: 0.8 }}>24 giờ qua</div>
           </div>
 
-          <div className={styles.card} style={{ background: 'linear-gradient(135deg, #4F8FFF 0%, #3F70CC 100%)', color: '#fff' }}>
+          <div className={styles.card} style={{ background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff' }}>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Tỷ lệ thành công</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>
               {calculateSuccessRate(postStatusTrends.published, postStatusTrends.failed)}%
@@ -290,9 +289,9 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Bài viết đã đăng</div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.published[11] ?? 0).toLocaleString()}</div>
             </div>
-            <ProgressRing value={postStatusTrends.published[11] ?? 0} max={100} color="#4FFF4F" />
+            <ProgressRing value={postStatusTrends.published[11] ?? 0} max={100} color="#10B981" />
           </div>
-          <BarChart data={postStatusTrends.published} colors={postStatusTrends.published.map(() => '#4FFF4F')} labels={yearlyLabels} />
+          <BarChart data={postStatusTrends.published} colors={postStatusTrends.published.map(() => '#10B981')} labels={yearlyLabels} />
         </div>
 
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
@@ -301,9 +300,9 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Bài viết lên lịch</div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{(postStatusTrends.scheduled[11] ?? 0).toLocaleString()}</div>
             </div>
-            <ProgressRing value={postStatusTrends.scheduled[11] ?? 0} max={50} color="#4F8FFF" />
+            <ProgressRing value={postStatusTrends.scheduled[11] ?? 0} max={50} color="#2563EB" />
           </div>
-          <BarChart data={postStatusTrends.scheduled} colors={postStatusTrends.scheduled.map(() => '#4F8FFF')} labels={yearlyLabels} />
+          <BarChart data={postStatusTrends.scheduled} colors={postStatusTrends.scheduled.map(() => '#2563EB')} labels={yearlyLabels} />
         </div>
 
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
@@ -329,13 +328,13 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Free</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFC84F' }}>${(revenueByPlan.free[11] ?? 0).toLocaleString()}</div>
-              <Sparkline data={revenueByPlan.free} color="#FFC84F" />
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#8B5CF6' }}>${(revenueByPlan.free[11] ?? 0).toLocaleString()}</div>
+              <Sparkline data={revenueByPlan.free} color="#8B5CF6" />
             </div>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Pro</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#4F8FFF' }}>${(revenueByPlan.pro[11] ?? 0).toLocaleString()}</div>
-              <Sparkline data={revenueByPlan.pro} color="#4F8FFF" />
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>${(revenueByPlan.pro[11] ?? 0).toLocaleString()}</div>
+              <Sparkline data={revenueByPlan.pro} color="#2563EB" />
             </div>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Team</div>
@@ -362,7 +361,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ marginTop: 0 }}>Chuyển đổi người dùng</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <FaUsers color="#4F8FFF" size={20} />
+              <FaUsers color="#2563EB" size={20} />
               <div style={{ fontSize: 18, fontWeight: 700 }}>{userConversion.newUsers[11] ?? 0}</div>
             </div>
           </div>

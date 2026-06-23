@@ -6,6 +6,7 @@ import { X, Eye, EyeOff, Mail } from "lucide-react";
 import logo from "@/assets/syncra-logo.png";
 import { useAuth } from "@/context/AuthContext";
 import { authApi } from "@/api/auth";
+import { adminApi } from "@/api/admin";
 
 interface PupilProps {
   size?: number;
@@ -274,6 +275,15 @@ function SignupPage() {
   const yellowPos = calculatePosition(yellowRef);
   const orangePos = calculatePosition(orangeRef);
 
+  const redirectAfterAuth = async (fallbackPath = '/app/connections') => {
+    try {
+      await adminApi.checkAccess();
+      navigate('/admin', { replace: true });
+    } catch {
+      navigate(fallbackPath, { replace: true });
+    }
+  };
+
   const validate = () => {
     const errors: Record<string, string> = {};
     if (!firstName.trim()) errors.firstName = 'First name is required';
@@ -306,10 +316,8 @@ function SignupPage() {
       const loginRes = await login({ email, password, flow, plan });
       if (loginRes?.checkoutUrl) {
         window.location.assign(loginRes.checkoutUrl);
-      } else if (plan?.toLowerCase() === 'student') {
-        navigate('/app/billing');
       } else {
-        navigate('/app/connections');
+        await redirectAfterAuth(plan?.toLowerCase() === 'student' ? '/app/billing' : '/app/connections');
       }
     } catch (err: unknown) {
       const errorData = (err as { response?: { data?: { code?: string, message?: string } } })?.response?.data;
@@ -328,7 +336,7 @@ function SignupPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const { loginUrl } = await authApi.getOAuthLoginUrl('google', '/app/connections');
+      const { loginUrl } = await authApi.getOAuthLoginUrl('google', '/admin');
       window.location.href = loginUrl;
     } catch (err: unknown) {
       console.error('Google login error:', err);

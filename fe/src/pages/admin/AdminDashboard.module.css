@@ -5,10 +5,10 @@
 }
 .metricCard{
   background: var(--color-canvas);
-  border: 1px solid #f0ece8;
+  border: 1px solid var(--color-border);
   padding: calc(var(--spacing-lg) + 4px);
   border-radius: calc(var(--rounded-md) + 4px);
-  box-shadow: 0 6px 20px rgba(32,21,21,0.04);
+  box-shadow: 0 6px 20px rgba(15,23,42,0.04);
 }
 .metricTitle{
   color: var(--color-body);
@@ -22,15 +22,15 @@
 .metricSpark{
   height:36px;
   margin-top:10px;
-  background: linear-gradient(90deg, rgba(255,79,0,0.12), rgba(32,21,21,0.03));
+  background: linear-gradient(90deg, rgba(37,99,235,0.12), rgba(15,23,42,0.03));
   border-radius: var(--rounded-sm);
 }
 .chartPlaceholder{
   height:84px;
   margin-top: var(--spacing-md);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(240,236,232,0.6), rgba(240,236,232,0.3));
-  border: 1px dashed rgba(197,192,177,0.5);
+  background: linear-gradient(180deg, rgba(226,232,240,0.7), rgba(248,250,252,0.7));
+  border: 1px dashed rgba(148,163,184,0.5);
 }
 .salesReportRow{
   display:grid;

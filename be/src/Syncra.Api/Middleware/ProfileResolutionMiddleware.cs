@@ -31,6 +31,8 @@ public class ProfileResolutionMiddleware
         // 1. Skip validation for Auth, User profile, and Workspace list routes
         if (context.Request.Path.StartsWithSegments("/api/v1/Auth", StringComparison.OrdinalIgnoreCase) ||
             context.Request.Path.StartsWithSegments("/api/v1/Users/me", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/v1/admin", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/admin", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(context.Request.Path.Value?.TrimEnd('/'), "/api/v1/workspaces", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);

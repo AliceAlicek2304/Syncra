@@ -42,8 +42,9 @@ api.interceptors.request.use((config) => {
 
   const lowercaseUrl = config.url?.toLowerCase() || '';
   const isMeRequest = lowercaseUrl.includes('users/me') || lowercaseUrl.includes('auth/me');
+  const isAdminRequest = lowercaseUrl.includes('/admin');
 
-  if (isMeRequest) {
+  if (isMeRequest || isAdminRequest) {
     delete config.headers['X-Workspace-Id'];
     delete config.headers['X-Profile-Id'];
   } else {
@@ -102,7 +103,7 @@ api.interceptors.response.use(
         localStorage.removeItem('syncra_access_token');
         window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');
       }
-    } else {
+    } else if (!(error.config as any)?.skipGlobalError) {
       // We'll handle global errors via a callback registered from ToastContext
       if (globalErrorHandler) {
         globalErrorHandler(error.response?.data?.message || error.message || 'An error occurred');

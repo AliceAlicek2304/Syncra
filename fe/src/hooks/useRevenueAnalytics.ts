@@ -7,13 +7,8 @@ export function useRevenueAnalytics() {
   return useQuery({
     queryKey: ['admin', 'revenue-analytics'],
     queryFn: async (): Promise<RevenueAnalyticsResult> => {
-      try {
-        const data = await adminApi.getRevenueAnalytics()
-        return data
-      } catch (error) {
-        throw error
-      }
+      return adminApi.getRevenueAnalytics()
     },
-    staleTime: 0, // Disable cache to force fresh data
+    staleTime: 30_000,
   })
 }

@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import LinkAccountModal from '../components/auth/LinkAccountModal';
 import { useAuth } from '../context/AuthContext';
 import { PageWrapper } from '../components/PageWrapper';
+import { adminApi } from '../api/admin';
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -61,7 +62,12 @@ export default function OAuthCallbackPage() {
         setStatus('Success! Syncing account...');
         await hydrateSession();
         setStatus('Redirecting...');
-        navigate('/app/connections', { replace: true });
+        try {
+          await adminApi.checkAccess();
+          navigate('/admin', { replace: true });
+        } catch {
+          navigate('/app/connections', { replace: true });
+        }
       } catch (err: unknown) {
         console.error('OAuth callback error:', err);
         
@@ -95,7 +101,12 @@ export default function OAuthCallbackPage() {
     await hydrateSession();
     setStatus('Redirecting...');
     setLinkingState(prev => ({ ...prev, showModal: false }));
-    navigate('/app/connections', { replace: true });
+    try {
+      await adminApi.checkAccess();
+      navigate('/admin', { replace: true });
+    } catch {
+      navigate('/app/connections', { replace: true });
+    }
   };
 
   return (

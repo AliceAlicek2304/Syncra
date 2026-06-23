@@ -32,6 +32,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         return await _dbSet
             .Where(p => p.WorkspaceId == workspaceId)
             .Include(p => p.Media)
+            .Include(p => p.PlatformTargets)
             .ToListAsync();
     }
 

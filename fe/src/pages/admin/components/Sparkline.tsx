@@ -48,7 +48,7 @@ export default function Sparkline({ data, color = '#FF4F4F', showTrend = true }:
       {showTrend && (
         <span style={{ 
           fontSize: 11, 
-          color: trend === 'up' ? '#4FFF4F' : trend === 'down' ? '#FF4F4F' : '#939084',
+          color: trend === 'up' ? '#10B981' : trend === 'down' ? '#FF4F4F' : '#939084',
           fontWeight: 600
         }}>
           {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '—'} {trendText}

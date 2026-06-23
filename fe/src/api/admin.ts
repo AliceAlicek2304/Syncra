@@ -2,7 +2,7 @@ import api from '../lib/axios'
 
 export const adminApi = {
   checkAccess: async (): Promise<{ allowed: boolean }> => {
-    const res = await api.get('/admin/access')
+    const res = await api.get('/admin/access', { skipGlobalError: true } as any)
     return res.data
   },
   getOverview: async () => {

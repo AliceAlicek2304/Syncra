@@ -36,6 +36,7 @@ public class WorkspaceRepository : Repository<Workspace>, IWorkspaceRepository
     public async Task<IReadOnlyList<Workspace>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbSet
+            .Include(w => w.Members)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }

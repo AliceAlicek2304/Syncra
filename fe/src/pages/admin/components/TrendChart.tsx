@@ -19,13 +19,13 @@ export default function TrendChart({ data, labels }: Props) {
     datasets: [
       {
         data,
-        borderColor: '#FF4F00',
-        backgroundColor: 'rgba(255,79,0,0.08)',
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.08)',
         tension: 0.3,
         borderWidth: 2,
         pointRadius: 3,
-        pointBackgroundColor: '#FF4F00',
-        pointBorderColor: '#FF4F00',
+        pointBackgroundColor: '#2563EB',
+        pointBorderColor: '#2563EB',
         fill: true,
       },
     ],

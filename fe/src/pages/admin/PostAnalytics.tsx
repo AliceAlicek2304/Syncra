@@ -57,7 +57,7 @@ export default function PostAnalytics() {
                 width: 48, 
                 height: 48, 
                 borderRadius: 12, 
-                background: m.id === 'total' ? '#4F8FFF' : m.id === 'published' ? '#4FFF4F' : m.id === 'scheduled' ? '#FFC84F' : '#e5e5e5',
+                background: m.id === 'total' ? '#2563EB' : m.id === 'published' ? '#10B981' : m.id === 'scheduled' ? '#8B5CF6' : '#e5e5e5',
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -72,7 +72,7 @@ export default function PostAnalytics() {
               <div>
                 <div style={{ fontSize: 12, color: '#605d52', fontWeight: 600 }}>{m.title}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{m.value}</div>
-                <div style={{ fontSize: 12, color: m.trend === 'up' ? '#4FFF4F' : '#FF4F4F', fontWeight: 600 }}>
+                <div style={{ fontSize: 12, color: m.trend === 'up' ? '#10B981' : '#FF4F4F', fontWeight: 600 }}>
                   {m.growth}
                 </div>
               </div>
@@ -92,7 +92,7 @@ export default function PostAnalytics() {
               <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Xu hướng bài đăng (12 tháng)</div>
               <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>
                 {trends?.currentMonthPosts ?? trends?.CurrentMonthPosts ?? 0}{' '}
-                <span style={{fontSize: 14, color: '#4FFF4F', fontWeight: 600}}>
+                <span style={{fontSize: 14, color: '#10B981', fontWeight: 600}}>
                   {(trends?.postsGrowth ?? trends?.PostsGrowth ?? 0) >= 0 ? '+' : ''}{trends?.postsGrowth ?? trends?.PostsGrowth ?? 0}
                 </span>
               </div>
@@ -111,7 +111,7 @@ export default function PostAnalytics() {
             {postsByStatus.length > 0 ? postsByStatus.map((status: any, i: number) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{status.status}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#4F8FFF' }}>{status.count}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>{status.count}</div>
               </div>
             )) : (
               <div style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>
@@ -149,7 +149,7 @@ export default function PostAnalytics() {
           <BarChart 
             data={filteredPostsByPlatform.map((p: any) => p.count)} 
             labels={filteredPostsByPlatform.map((p: any) => p.platform)}
-            colors={['#4F8FFF', '#4FFF4F', '#FFC84F', '#8F4FFF', '#FF4F4F']}
+            colors={['#2563EB', '#10B981', '#8B5CF6', '#8F4FFF', '#FF4F4F']}
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, fontSize: 11, color: '#666', fontWeight: 600 }}>
             {filteredPostsByPlatform.length > 0 ? filteredPostsByPlatform.map((p: any, i: number) => (
@@ -173,7 +173,7 @@ export default function PostAnalytics() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{poster.userName}</div>
                   <div style={{ fontSize: 11, color: '#888' }}>{poster.email}</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#4F8FFF' }}>{poster.postCount}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>{poster.postCount}</div>
               </div>
             )) : (
               <div style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>

@@ -43,6 +43,9 @@ public class UserRepository : Repository<User>, IUserRepository
 
     public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        return await _dbSet
+            .Include(u => u.Profile)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 }

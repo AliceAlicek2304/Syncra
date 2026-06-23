@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/AuthContext'
-import { AnimatePresence } from 'framer-motion'
 import { PageWrapper } from './components/PageWrapper'
 
 // Homepage components
@@ -25,7 +24,6 @@ import { CreatePostModalProvider } from './context/createPostModalContext'
 import { BillingProvider } from './context/BillingContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { ToastProvider } from './context/ToastContext'
-import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './pages/app/AppLayout'
 import IdeasPage from './pages/app/IdeasPage'
 import RepurposePage from './pages/app/RepurposePage'
@@ -58,6 +56,10 @@ import { adminApi } from './api/admin'
 
 
 interface AdminGuardProps {
+  children: ReactNode
+}
+
+interface UserAppGuardProps {
   children: ReactNode
 }
 
@@ -128,12 +130,46 @@ const AdminGuard = ({ children }: AdminGuardProps) => {
   return <>{children}</>
 }
 
+const UserAppGuard = ({ children }: UserAppGuardProps) => {
+  const { user, loading } = useAuth()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (loading) return
+
+    if (!user) {
+      setIsAdmin(false)
+      return
+    }
+
+    let cancelled = false
+    setIsAdmin(null)
+    adminApi
+      .checkAccess()
+      .then(() => {
+        if (!cancelled) setIsAdmin(true)
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [loading, user])
+
+  if (loading || (user && isAdmin === null)) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (isAdmin) return <Navigate to="/admin" replace />
+
+  return <>{children}</>
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
         <Route path="/admin" element={
           <AdminGuard>
             <AdminLayout />
@@ -155,7 +191,7 @@ function AnimatedRoutes() {
 
 
         <Route path="/app" element={
-          <ProtectedRoute>
+          <UserAppGuard>
             <BillingProvider>
               <CalendarProvider>
                 <CreatePostModalProvider>
@@ -163,7 +199,7 @@ function AnimatedRoutes() {
                 </CreatePostModalProvider>
               </CalendarProvider>
             </BillingProvider>
-          </ProtectedRoute>
+          </UserAppGuard>
         }>
           <Route index element={<Navigate to="connections" replace />} />
           <Route path="dashboard" element={<Navigate to="/app/connections" replace />} />
@@ -186,7 +222,6 @@ function AnimatedRoutes() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AnimatePresence>
   )
 }
 

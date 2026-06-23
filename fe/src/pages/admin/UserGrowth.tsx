@@ -107,14 +107,14 @@ export default function UserGrowth() {
             <div key={m.id} className={dashStyles.metricCard} style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div className={dashStyles.metricTitle}>{m.title}</div>
-                {m.id === 'total' && <FaUsers color="#4F8FFF" size={18} />}
-                {m.id === 'active' && <FaUserCheck color="#4FFF4F" size={18} />}
-                {m.id === 'accounts' && <FaShareAlt color="#FFC84F" size={18} />}
+                {m.id === 'total' && <FaUsers color="#2563EB" size={18} />}
+                {m.id === 'active' && <FaUserCheck color="#10B981" size={18} />}
+                {m.id === 'accounts' && <FaShareAlt color="#8B5CF6" size={18} />}
                 {m.id === 'workspaces' && <FaUserPlus color="#8F4FFF" size={18} />}
               </div>
               <div className={dashStyles.metricValue}>{m.value}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                <Sparkline data={sparkData} color={m.id === 'total' ? '#4F8FFF' : m.id === 'active' ? '#4FFF4F' : m.id === 'accounts' ? '#FFC84F' : '#8F4FFF'} />
+                <Sparkline data={sparkData} color={m.id === 'total' ? '#2563EB' : m.id === 'active' ? '#10B981' : m.id === 'accounts' ? '#8B5CF6' : '#8F4FFF'} />
                 <span style={{ fontSize: 11, color: '#2eab2e', fontWeight: 600 }}>{m.growth}</span>
               </div>
             </div>
@@ -152,11 +152,11 @@ export default function UserGrowth() {
           </div>
           <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Workspace hoạt động (30d)</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#4FFF4F' }}>{workspaceStats.activeWorkspaces}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#10B981' }}>{workspaceStats.activeWorkspaces}</div>
           </div>
           <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>TB tài khoản/Workspace</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#4F8FFF' }}>{workspaceStats.avgAccountsPerWorkspace}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#2563EB' }}>{workspaceStats.avgAccountsPerWorkspace}</div>
           </div>
         </div>
 
@@ -180,8 +180,8 @@ export default function UserGrowth() {
                   >
                     <td style={{ padding: '12px 16px', fontWeight: 600 }}>{w.name}</td>
                     <td style={{ padding: '12px 16px', color: '#666' }}>{w.slug}</td>
-                    <td style={{ padding: '12px 16px', color: '#4F8FFF', fontWeight: 600 }}>{w.memberCount}</td>
-                    <td style={{ padding: '12px 16px', color: '#FFC84F', fontWeight: 600 }}>{w.accountCount}</td>
+                    <td style={{ padding: '12px 16px', color: '#2563EB', fontWeight: 600 }}>{w.memberCount}</td>
+                    <td style={{ padding: '12px 16px', color: '#8B5CF6', fontWeight: 600 }}>{w.accountCount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -235,7 +235,7 @@ export default function UserGrowth() {
                           fontSize: 11, 
                           fontWeight: 600,
                           background: u.plan === 'Pro' ? 'rgba(79, 143, 255, 0.15)' : u.plan === 'Enterprise' ? 'rgba(143, 79, 255, 0.15)' : 'rgba(255, 200, 79, 0.15)',
-                          color: u.plan === 'Pro' ? '#2a6fdb' : u.plan === 'Enterprise' ? '#6b2adb' : '#d49b22',
+                          color: u.plan === 'Pro' ? '#2563eb' : u.plan === 'Enterprise' ? '#6b2adb' : '#64748b',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 4
@@ -260,14 +260,14 @@ export default function UserGrowth() {
             <BarChart 
               data={planDistribution.values} 
               labels={planDistribution.labels} 
-              colors={['#FFC84F', '#4F8FFF', '#8F4FFF']} 
+              colors={['#8B5CF6', '#2563EB', '#8F4FFF']} 
             />
           </div>
           <div style={{ marginTop: 20, fontSize: 12, color: '#666', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {planDistribution.labels.map((l: string, idx: number) => (
               <div key={l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: ['#FFC84F', '#4F8FFF', '#8F4FFF'][idx] }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: ['#8B5CF6', '#2563EB', '#8F4FFF'][idx] }} />
                   {l}
                 </span>
                 <span style={{ fontWeight: 600 }}>{planDistribution.values[idx]}%</span>
