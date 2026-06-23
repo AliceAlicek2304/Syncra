@@ -284,6 +284,8 @@ function LoginPage() {
       const loginRes = await login({ email, password, flow, plan });
       if (loginRes?.checkoutUrl) {
         window.location.assign(loginRes.checkoutUrl);
+      } else if (plan?.toLowerCase() === 'student') {
+        navigate('/app/billing');
       } else {
         navigate('/app/connections');
       }

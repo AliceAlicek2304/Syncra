@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './context/AuthContext'
 import { AnimatePresence } from 'framer-motion'
 import { PageWrapper } from './components/PageWrapper'
 
@@ -53,6 +54,7 @@ import CommentsPage from './pages/app/CommentsPage'
 import SettingsPage from './pages/app/SettingsPage'
 import BillingPage from './pages/app/BillingPage'
 import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
+import { adminApi } from './api/admin'
 
 
 interface AdminGuardProps {
@@ -92,8 +94,38 @@ function Homepage() {
 }
 
 const AdminGuard = ({ children }: AdminGuardProps) => {
-  // Set VITE_ADMIN_OPEN=true in fe/.env.local to bypass auth temporarily
-  return import.meta.env.VITE_ADMIN_OPEN === 'true' ? <>{children}</> : <ProtectedRoute>{children}</ProtectedRoute>
+  const { user, loading } = useAuth()
+  const [allowed, setAllowed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (loading) return
+
+    if (!user) {
+      setAllowed(false)
+      return
+    }
+
+    let cancelled = false
+    setAllowed(null)
+    adminApi
+      .checkAccess()
+      .then(() => {
+        if (!cancelled) setAllowed(true)
+      })
+      .catch(() => {
+        if (!cancelled) setAllowed(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [loading, user])
+
+  if (loading || (user && allowed === null)) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!allowed) return <Navigate to="/app/connections" replace />
+
+  return <>{children}</>
 }
 
 function AnimatedRoutes() {

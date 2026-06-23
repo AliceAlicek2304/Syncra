@@ -8,6 +8,7 @@ namespace Syncra.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin")]
+[Authorize(Policy = "AdminOnly")]
 public class AdminController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -15,6 +16,12 @@ public class AdminController : ControllerBase
     public AdminController(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    [HttpGet("access")]
+    public IActionResult CheckAccess()
+    {
+        return Ok(new { allowed = true });
     }
 
     [HttpGet("overview")]

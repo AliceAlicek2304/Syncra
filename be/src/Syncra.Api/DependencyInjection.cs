@@ -170,7 +170,37 @@
                 };
             });
 
-            services.AddAuthorization();
+            var adminEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var configuredAdminEmails = configuration.GetSection("Admin:Emails").Get<string[]>() ?? Array.Empty<string>();
+            foreach (var email in configuredAdminEmails)
+            {
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    adminEmails.Add(email.Trim());
+                }
+            }
+
+            var flatAdminEmails = configuration["Admin:Emails"];
+            if (!string.IsNullOrWhiteSpace(flatAdminEmails))
+            {
+                foreach (var email in flatAdminEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    adminEmails.Add(email.Trim());
+                }
+            }
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOnly", policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+                    policy.RequireAssertion(context =>
+                    {
+                        var email = context.User.FindFirstValue(ClaimTypes.Email);
+                        return !string.IsNullOrWhiteSpace(email) && adminEmails.Contains(email.Trim());
+                    });
+                });
+            });
 
             return services;
         }

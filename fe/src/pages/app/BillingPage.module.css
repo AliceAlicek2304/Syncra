@@ -219,7 +219,7 @@
 
 .pricingGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -246,12 +246,29 @@
   background: rgba(168, 85, 247, 0.02);
 }
 
+.highlightPlanCard {
+  border-color: rgba(168, 85, 247, 0.45);
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.08);
+}
+
 .currentBadge {
   position: absolute;
   top: 12px;
   right: 12px;
   background: #a855f7;
   color: #fffaff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.studentBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
@@ -367,6 +384,130 @@
   transform: translateY(-1px);
 }
 
+.actionBtn:disabled,
+.actionBtnCompact:disabled,
+.secondaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.studentPanel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.4fr);
+  gap: 18px;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(20, 184, 166, 0.08));
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 28px;
+}
+
+.studentCopy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.studentCopy h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #211329;
+}
+
+.studentCopy p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #675471;
+}
+
+.studentIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fffaff;
+  color: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #eadcf1;
+}
+
+.studentControls {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto 96px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.studentInput,
+.codeInput {
+  height: 40px;
+  border: 1px solid #eadcf1;
+  border-radius: 10px;
+  background: #fffaff;
+  color: #211329;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.studentInput:focus,
+.codeInput:focus {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+}
+
+.secondaryBtn,
+.actionBtnCompact {
+  height: 40px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+
+.secondaryBtn {
+  background: #fffaff;
+  border: 1px solid #eadcf1;
+  color: #211329;
+  padding: 0 14px;
+}
+
+.secondaryBtn:hover {
+  border-color: #a855f7;
+}
+
+.actionBtnCompact {
+  background: #a855f7;
+  border: none;
+  color: #fffaff;
+  padding: 0 16px;
+}
+
+.actionBtnCompact:hover {
+  background: #9333ea;
+  transform: translateY(-1px);
+}
+
+.studentStatus {
+  grid-column: 1 / -1;
+  color: #675471;
+  font-size: 13px;
+}
+
+.studentStatus span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .ownerNotice {
   display: flex;
   align-items: center;
@@ -401,4 +542,35 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1180px) {
+  .pricingGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: 24px 18px;
+  }
+
+  .header,
+  .studentPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    display: grid;
+    gap: 14px;
+  }
+
+  .summaryGrid,
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .studentControls {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,3 +1,5 @@
+using Syncra.Application.DTOs;
+
 namespace Syncra.Application.Features.Admin.Queries.UserGrowth;
 
 public class UserGrowthDto
@@ -9,6 +11,8 @@ public class UserGrowthDto
     public IEnumerable<RecentUserDto> RecentUsers { get; set; } = new List<RecentUserDto>();
     public RetentionChurnDto RetentionChurn { get; set; } = new RetentionChurnDto();
     public IEnumerable<PlanChangeDto> RecentPlanChanges { get; set; } = new List<PlanChangeDto>();
+    public WorkspaceStatisticsDto WorkspaceStatistics { get; set; } = new WorkspaceStatisticsDto();
+    public SocialAccountTrendsDto SocialAccountTrends { get; set; } = new SocialAccountTrendsDto();
 }
 
 public class UserGrowthMetricDto
@@ -60,4 +64,18 @@ public class PlanChangeDto
     public string From { get; set; } = string.Empty;
     public string To { get; set; } = string.Empty;
     public string Time { get; set; } = string.Empty;
+}
+
+public class WorkspaceStatisticsDto
+{
+    public int TotalWorkspaces { get; set; }
+    public int ActiveWorkspaces { get; set; }
+    public double AvgAccountsPerWorkspace { get; set; }
+    public IEnumerable<WorkspaceSummaryDto> TopWorkspaces { get; set; } = new List<WorkspaceSummaryDto>();
+}
+
+public class SocialAccountTrendsDto
+{
+    public IEnumerable<int> MonthlyAccounts { get; set; } = new List<int>();
+    public Dictionary<string, IEnumerable<int>> AccountsByPlatformMonthly { get; set; } = new();
 }

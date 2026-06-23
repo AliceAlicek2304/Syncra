@@ -129,7 +129,10 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         string? checkoutUrl = null;
-        if (string.Equals(request.Flow, "checkout", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(request.Plan))
+        var isStudentPlanRequest = string.Equals(request.Plan, "student", StringComparison.OrdinalIgnoreCase);
+        if (string.Equals(request.Flow, "checkout", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(request.Plan) &&
+            !isStudentPlanRequest)
         {
             var plan = await _planRepository.GetByCodeAsync(request.Plan.ToUpper(), cancellationToken);
             if (plan != null && plan.IsActive)
@@ -184,7 +187,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _workspaceRepository.AddAsync(workspace);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (string.Equals(flow, "trial", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(planCode))
+        if (string.Equals(flow, "trial", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(planCode) &&
+            !string.Equals(planCode, "student", StringComparison.OrdinalIgnoreCase))
         {
             var plan = await _planRepository.GetByCodeAsync(planCode.ToUpper(), cancellationToken);
             if (plan != null && plan.IsActive)

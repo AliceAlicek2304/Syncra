@@ -2,11 +2,11 @@ import styles from './AdminLayout.module.css'
 import TrendChart from './components/TrendChart'
 import BarChart from './components/BarChart'
 import { useState, useMemo } from 'react'
-import { FaDollarSign, FaCreditCard, FaCheckCircle, FaBuilding, FaChartLine, FaSearch } from 'react-icons/fa'
+import { FaDollarSign, FaCreditCard, FaCheckCircle, FaBuilding, FaSearch } from 'react-icons/fa'
 import { useRevenueAnalytics } from '../../hooks/useRevenueAnalytics'
 
 export default function RevenueAnalytics() {
-  const { data, isLoading, isError } = useRevenueAnalytics()
+  const { data, isLoading } = useRevenueAnalytics()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [selectedPlanFilter, setSelectedPlanFilter] = useState<string>('all')
 

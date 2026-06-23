@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Syncra.Domain.Enums;
@@ -7,6 +8,7 @@ namespace Syncra.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/webhooks")]
+[Authorize(Policy = "AdminOnly")]
 public class AdminWebhookController : ControllerBase
 {
     private readonly AppDbContext _db;

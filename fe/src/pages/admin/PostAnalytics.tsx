@@ -1,14 +1,12 @@
 import styles from './AdminLayout.module.css'
-import dashStyles from './AdminDashboard.module.css'
 import TrendChart from './components/TrendChart'
 import BarChart from './components/BarChart'
 import { useState, useMemo } from 'react'
-import { FaNewspaper, FaCheckCircle, FaClock, FaEdit, FaExclamationTriangle, FaChartLine } from 'react-icons/fa'
+import { FaNewspaper, FaCheckCircle, FaClock, FaEdit } from 'react-icons/fa'
 import { usePostAnalytics } from '../../hooks/usePostAnalytics'
 
 export default function PostAnalytics() {
-  const { data, isLoading, isError } = usePostAnalytics()
-  const [timePeriod, setTimePeriod] = useState<string>('30d')
+  const { data, isLoading } = usePostAnalytics()
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
 
   const postMetrics = useMemo(() => {

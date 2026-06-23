@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncra.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncra.Infrastructure.Persistence;
 namespace Syncra.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260613142622_UpdateSubscriptionSeedData")]
+    partial class UpdateSubscriptionSeedData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,11 +50,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("correlation_id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("DetailsJson")
@@ -86,7 +89,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("result");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<string>("UserAgent")
@@ -127,13 +130,13 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Metadata")
                         .HasColumnType("text");
@@ -143,10 +146,10 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UsedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -174,19 +177,19 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("access_token");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime?>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<DateTime>("LastUsedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_used_at_utc");
 
                     b.Property<string>("Metadata")
@@ -211,7 +214,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("refresh_token");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserId")
@@ -241,11 +244,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Metadata")
@@ -259,7 +262,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("name");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -287,11 +290,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Description")
@@ -322,7 +325,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("title");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -355,15 +358,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("attempt_count");
 
                     b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("completed_at_utc");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Endpoint")
@@ -373,7 +376,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("endpoint");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<string>("Key")
@@ -387,7 +390,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("last_error");
 
                     b.Property<DateTime?>("LockedUntilUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_until_utc");
 
                     b.Property<string>("Metadata")
@@ -421,7 +424,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid?>("UserId")
@@ -455,11 +458,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Metadata")
@@ -467,11 +470,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("metadata");
 
                     b.Property<DateTime>("SentAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("sent_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -505,19 +508,19 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<DateTime>("LastFetchedUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_fetched_utc");
 
                     b.Property<string>("Metadata")
@@ -530,7 +533,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("payload_json");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -582,11 +585,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("comment_count");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<bool?>("IsAd")
@@ -634,7 +637,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("post_preview_thumbnail_url");
 
                     b.Property<DateTime>("ReceivedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at_utc");
 
                     b.Property<Guid?>("SocialAccountId")
@@ -647,7 +650,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("subreddit");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -698,11 +701,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<bool>("IsRead")
@@ -712,7 +715,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("is_read");
 
                     b.Property<DateTime?>("LastMessageAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_message_at_utc");
 
                     b.Property<string>("LastMessageText")
@@ -751,7 +754,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("unread_count");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -795,11 +798,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("body_text");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Direction")
@@ -817,11 +820,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("metadata");
 
                     b.Property<DateTime>("SentAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("sent_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -862,11 +865,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<bool>("HasReply")
@@ -892,11 +895,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("platform");
 
                     b.Property<DateTime>("ReceivedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at_utc");
 
                     b.Property<DateTime?>("ReplyCreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("reply_created_at_utc");
 
                     b.Property<string>("ReplyText")
@@ -929,7 +932,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("star_rating");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -977,15 +980,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("access_token");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime?>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<string>("ExternalAccountId")
@@ -1025,7 +1028,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("token_refresh_health_status");
 
                     b.Property<DateTime?>("TokenRefreshLastAttemptAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("token_refresh_last_attempt_at_utc");
 
                     b.Property<string>("TokenRefreshLastError")
@@ -1034,11 +1037,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("token_refresh_last_error");
 
                     b.Property<DateTime?>("TokenRefreshLastSuccessAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("token_refresh_last_success_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -1065,11 +1068,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("FileName")
@@ -1109,7 +1112,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("size_bytes");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -1144,11 +1147,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("body");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Metadata")
@@ -1176,7 +1179,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("type");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid?>("UserId")
@@ -1209,15 +1212,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<string>("Metadata")
@@ -1231,11 +1234,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("token_hash");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<DateTime?>("UsedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("used_at_utc");
 
                     b.Property<Guid>("UserId")
@@ -1270,11 +1273,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("code");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Description")
@@ -1289,15 +1292,12 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("is_active");
 
                     b.Property<DateTime?>("LastEventTimestampUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_event_timestamp_utc");
 
                     b.Property<int>("MaxMembers")
                         .HasColumnType("integer")
                         .HasColumnName("max_members");
-
-                    b.Property<int>("MaxRepurposeGenerationsPerMonth")
-                        .HasColumnType("integer");
 
                     b.Property<int>("MaxScheduledPostsPerMonth")
                         .HasColumnType("integer")
@@ -1347,7 +1347,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("stripe_yearly_price_id");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -1374,21 +1374,19 @@ namespace Syncra.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                            Code = "BASIC",
+                            Code = "FREE",
                             CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Perfect for testing the platform.",
+                            Description = "Basic features for individuals",
                             IsActive = true,
                             MaxMembers = 1,
-                            MaxRepurposeGenerationsPerMonth = 15,
-                            MaxScheduledPostsPerMonth = 2147483647,
-                            MaxSocialAccounts = 20,
-                            Name = "Basic",
-                            PriceMonthly = 99000m,
-                            PriceYearly = 79000m,
+                            MaxScheduledPostsPerMonth = 10,
+                            MaxSocialAccounts = 3,
+                            Name = "Free Plan",
+                            PriceMonthly = 0m,
+                            PriceYearly = 0m,
                             SortOrder = 1,
-                            StripeMonthlyPriceId = "price_placeholder_basic_monthly",
-                            StripeProductId = "prod_placeholder_basic",
-                            StripeYearlyPriceId = "price_placeholder_basic_yearly",
+                            StripeMonthlyPriceId = "price_placeholder_free",
+                            StripeProductId = "prod_placeholder_free",
                             Version = 1L
                         },
                         new
@@ -1396,59 +1394,35 @@ namespace Syncra.Infrastructure.Migrations
                             Id = new Guid("00000000-0000-0000-0000-000000000002"),
                             Code = "PRO",
                             CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "For serious content creators.",
+                            Description = "Professional features for content creators",
                             IsActive = true,
-                            MaxMembers = 1,
-                            MaxRepurposeGenerationsPerMonth = 15,
-                            MaxScheduledPostsPerMonth = 2147483647,
-                            MaxSocialAccounts = 50,
-                            Name = "Pro",
-                            PriceMonthly = 149000m,
-                            PriceYearly = 119000m,
+                            MaxMembers = 3,
+                            MaxScheduledPostsPerMonth = 100,
+                            MaxSocialAccounts = 10,
+                            Name = "Pro Plan",
+                            PriceMonthly = 19.99m,
+                            PriceYearly = 199.99m,
                             SortOrder = 2,
-                            StripeMonthlyPriceId = "price_placeholder_pro_monthly",
+                            StripeMonthlyPriceId = "price_placeholder_pro",
                             StripeProductId = "prod_placeholder_pro",
-                            StripeYearlyPriceId = "price_placeholder_pro_yearly",
                             Version = 1L
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000003"),
-                            Code = "MAX",
+                            Code = "TEAM",
                             CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "For teams & power creators.",
+                            Description = "Advanced features for teams and agencies",
                             IsActive = true,
                             MaxMembers = 10,
-                            MaxRepurposeGenerationsPerMonth = 15,
-                            MaxScheduledPostsPerMonth = 2147483647,
-                            MaxSocialAccounts = 2147483647,
-                            Name = "Max",
-                            PriceMonthly = 199000m,
-                            PriceYearly = 159000m,
+                            MaxScheduledPostsPerMonth = 1000,
+                            MaxSocialAccounts = 30,
+                            Name = "Team Plan",
+                            PriceMonthly = 49.99m,
+                            PriceYearly = 499.99m,
                             SortOrder = 3,
-                            StripeMonthlyPriceId = "price_placeholder_max_monthly",
-                            StripeProductId = "prod_placeholder_max",
-                            StripeYearlyPriceId = "price_placeholder_max_yearly",
-                            Version = 1L
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
-                            Code = "STUDENT",
-                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Discounted plan for verified students.",
-                            IsActive = true,
-                            MaxMembers = 1,
-                            MaxRepurposeGenerationsPerMonth = 15,
-                            MaxScheduledPostsPerMonth = 2147483647,
-                            MaxSocialAccounts = 20,
-                            Name = "Student",
-                            PriceMonthly = 59000m,
-                            PriceYearly = 49000m,
-                            SortOrder = 4,
-                            StripeMonthlyPriceId = "price_placeholder_student_monthly",
-                            StripeProductId = "prod_placeholder_student",
-                            StripeYearlyPriceId = "price_placeholder_student_yearly",
+                            StripeMonthlyPriceId = "price_placeholder_team",
+                            StripeProductId = "prod_placeholder_team",
                             Version = 1L
                         });
                 });
@@ -1466,21 +1440,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("content");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<Guid?>("IntegrationId")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("IsSplitVideoPost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_split_video_post");
 
                     b.Property<string>("Metadata")
                         .HasColumnType("jsonb")
@@ -1497,7 +1465,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("publish_external_url");
 
                     b.Property<DateTime?>("PublishLastAttemptAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("publish_last_attempt_at_utc");
 
                     b.Property<string>("PublishLastError")
@@ -1510,11 +1478,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("publish_provider_response_metadata");
 
                     b.Property<DateTime?>("PublishedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at_utc");
 
                     b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at_utc");
 
                     b.Property<string>("Status")
@@ -1529,7 +1497,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("title");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserId")
@@ -1581,11 +1549,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("attempt_count");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("ErrorMessage")
@@ -1604,7 +1572,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("external_post_url");
 
                     b.Property<DateTime?>("LastAttemptAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_attempt_at_utc");
 
                     b.Property<string>("Metadata")
@@ -1628,7 +1596,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -1662,15 +1630,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<string>("Metadata")
@@ -1682,11 +1650,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("replaced_by_token_id");
 
                     b.Property<DateTime?>("RevokedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at_utc");
 
                     b.Property<DateTime?>("RotatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("rotated_at_utc");
 
                     b.Property<string>("TokenHash")
@@ -1696,7 +1664,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("token_hash");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserSessionId")
@@ -1718,168 +1686,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeAtom", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("MediaType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("media_type");
-
-                    b.Property<string>("MediaUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("media_url");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("platform");
-
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("session_id");
-
-                    b.Property<string>("SuggestedCTA")
-                        .HasColumnType("text")
-                        .HasColumnName("suggested_cta");
-
-                    b.Property<string>("SuggestedHashtags")
-                        .HasColumnType("text")
-                        .HasColumnName("suggested_hashtags");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("repurpose_atoms", (string)null);
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ContentLength")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("content_length");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("deleted_at_utc");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<bool>("ExtractAtoms")
-                        .HasColumnType("boolean")
-                        .HasColumnName("extract_atoms");
-
-                    b.Property<string>("Language")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("language");
-
-                    b.Property<string>("Metadata")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
-
-                    b.Property<string>("SourceText")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("source_text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SupportingSourcesJson")
-                        .HasColumnType("text")
-                        .HasColumnName("supporting_sources_json");
-
-                    b.Property<string>("TargetPlatforms")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("target_platforms");
-
-                    b.Property<string>("Tone")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("tone");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId", "CreatedAtUtc");
-
-                    b.ToTable("repurpose_sessions", (string)null);
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.SocialAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1893,15 +1699,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("avatar_url");
 
                     b.Property<DateTime?>("ConnectedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("connected_at_utc");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("DisplayName")
@@ -1933,7 +1739,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("platform");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -1966,23 +1772,23 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime?>("CanceledAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("canceled_at_utc");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<DateTime?>("EndsAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("ends_at_utc");
 
                     b.Property<DateTime?>("LastEventTimestampUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_event_timestamp_utc");
 
                     b.Property<string>("Metadata")
@@ -2009,7 +1815,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("provider_subscription_id");
 
                     b.Property<DateTime>("StartsAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("starts_at_utc");
 
                     b.Property<string>("Status")
@@ -2019,11 +1825,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("TrialEndsAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("trial_ends_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -2044,6 +1850,93 @@ namespace Syncra.Infrastructure.Migrations
                         .HasDatabaseName("ix_subscriptions_workspace_id");
 
                     b.ToTable("subscriptions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001001"),
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000003"),
+                            Provider = "stripe",
+                            ProviderCustomerId = "cus_workspace1",
+                            ProviderSubscriptionId = "sub_workspace1_team",
+                            StartsAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000100")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001002"),
+                            CreatedAtUtc = new DateTime(2024, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000002"),
+                            Provider = "stripe",
+                            ProviderCustomerId = "cus_workspace2",
+                            ProviderSubscriptionId = "sub_workspace2_pro",
+                            StartsAtUtc = new DateTime(2024, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000200")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001003"),
+                            CreatedAtUtc = new DateTime(2024, 3, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000002"),
+                            Provider = "stripe",
+                            ProviderCustomerId = "cus_workspace3",
+                            ProviderSubscriptionId = "sub_workspace3_pro",
+                            StartsAtUtc = new DateTime(2024, 3, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000300")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001004"),
+                            CreatedAtUtc = new DateTime(2024, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            StartsAtUtc = new DateTime(2024, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000400")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001005"),
+                            CreatedAtUtc = new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000002"),
+                            Provider = "stripe",
+                            ProviderCustomerId = "cus_workspace5",
+                            ProviderSubscriptionId = "sub_workspace5_pro_trial",
+                            StartsAtUtc = new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            TrialEndsAtUtc = new DateTime(2026, 6, 27, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000500")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000001006"),
+                            CreatedAtUtc = new DateTime(2024, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastEventTimestampUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            PlanId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            StartsAtUtc = new DateTime(2024, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Status = "Active",
+                            UpdatedAtUtc = new DateTime(2026, 6, 13, 14, 26, 21, 981, DateTimeKind.Utc).AddTicks(9981),
+                            Version = 1L,
+                            WorkspaceId = new Guid("00000000-0000-0000-0000-000000000600")
+                        });
                 });
 
             modelBuilder.Entity("Syncra.Domain.Entities.UsageCounter", b =>
@@ -2054,11 +1947,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Metadata")
@@ -2072,15 +1965,15 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("metric_code");
 
                     b.Property<DateTime>("PeriodEndUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("period_end_utc");
 
                     b.Property<DateTime>("PeriodStartUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("period_start_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Value")
@@ -2112,11 +2005,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Email")
@@ -2126,14 +2019,14 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("email");
 
                     b.Property<DateTime?>("EmailVerifiedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("email_verified_at_utc");
 
                     b.Property<bool>("HasPasswordBeenSet")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastLoginAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at_utc");
 
                     b.Property<string>("Metadata")
@@ -2161,21 +2054,8 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
 
-                    b.Property<string>("StudentEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("student_email");
-
-                    b.Property<DateTime?>("StudentEmailVerifiedAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("student_email_verified_at_utc");
-
-                    b.Property<DateTime?>("StudentVerificationExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("student_verification_expires_at_utc");
-
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -2207,11 +2087,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("avatar_url");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("DisplayName")
@@ -2244,7 +2124,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("timezone");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserId")
@@ -2272,11 +2152,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("DeviceName")
@@ -2285,7 +2165,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("device_name");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
 
                     b.Property<string>("IpAddress")
@@ -2294,11 +2174,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("ip_address");
 
                     b.Property<DateTime>("IssuedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("issued_at_utc");
 
                     b.Property<DateTime?>("LastSeenAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_seen_at_utc");
 
                     b.Property<string>("Metadata")
@@ -2306,11 +2186,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("metadata");
 
                     b.Property<DateTime?>("RevokedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at_utc");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<string>("UserAgent")
@@ -2357,11 +2237,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("color");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Description")
@@ -2393,7 +2273,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -2417,11 +2297,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<Guid?>("InvitedByUserId")
@@ -2429,7 +2309,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("invited_by_user_id");
 
                     b.Property<DateTime?>("JoinedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at_utc");
 
                     b.Property<string>("Metadata")
@@ -2449,7 +2329,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserId")
@@ -2488,11 +2368,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("avatar_url");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("DisplayName")
@@ -2518,7 +2398,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("platform");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -2554,11 +2434,11 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("ErrorMessage")
@@ -2586,7 +2466,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("post_id");
 
                     b.Property<DateTime?>("ProcessedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at_utc");
 
                     b.Property<string>("Status")
@@ -2596,7 +2476,7 @@ namespace Syncra.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
                     b.Property<long>("Version")
@@ -2850,28 +2730,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeAtom", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.RepurposeSession", "Session")
-                        .WithMany("Atoms")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Session");
-                });
-
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
-                        .WithMany()
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workspace");
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.SocialAccount", b =>
                 {
                     b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
@@ -2965,7 +2823,7 @@ namespace Syncra.Infrastructure.Migrations
             modelBuilder.Entity("Syncra.Domain.Entities.ZernioProfile", b =>
                 {
                     b.HasOne("Syncra.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("ZernioProfiles")
+                        .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3003,11 +2861,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Navigation("PlatformTargets");
                 });
 
-            modelBuilder.Entity("Syncra.Domain.Entities.RepurposeSession", b =>
-                {
-                    b.Navigation("Atoms");
-                });
-
             modelBuilder.Entity("Syncra.Domain.Entities.User", b =>
                 {
                     b.Navigation("Posts");
@@ -3039,8 +2892,6 @@ namespace Syncra.Infrastructure.Migrations
                     b.Navigation("Subscription");
 
                     b.Navigation("UsageCounters");
-
-                    b.Navigation("ZernioProfiles");
                 });
 
             modelBuilder.Entity("Syncra.Domain.Entities.ZernioProfile", b =>

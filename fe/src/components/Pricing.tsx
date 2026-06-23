@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, GraduationCap } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
@@ -7,6 +7,7 @@ import logo from '../assets/syncra-logo.png'
 const PLANS = [
   {
     name: 'Basic',
+    code: 'basic',
     icon: <img src={logo} alt="Syncra" className="w-5 h-5 object-contain" />,
     price: { monthly: 99, yearly: 79 },
     desc: 'Phù hợp để bắt đầu thử nền tảng.',
@@ -18,11 +19,11 @@ const PLANS = [
       'Hỗ trợ cộng đồng',
       'Trợ lý AI giới hạn',
     ],
-    cta: 'Dùng thử 14 ngày',
     highlight: false,
   },
   {
     name: 'Pro',
+    code: 'pro',
     icon: <img src={logo} alt="Syncra" className="w-5 h-5 object-contain invert" />,
     price: { monthly: 149, yearly: 119 },
     desc: 'Dành cho creator làm nội dung nghiêm túc.',
@@ -35,12 +36,12 @@ const PLANS = [
       'Hỗ trợ ưu tiên',
       'Trợ lý AI',
     ],
-    cta: 'Dùng thử 14 ngày',
     highlight: true,
     badge: 'Phổ biến nhất',
   },
   {
     name: 'Max',
+    code: 'max',
     icon: <img src={logo} alt="Syncra" className="w-5 h-5 object-contain" />,
     price: { monthly: 199, yearly: 159 },
     desc: 'Cho team nhỏ và creator cần nhiều quyền hơn.',
@@ -53,8 +54,24 @@ const PLANS = [
       'Hỗ trợ riêng',
       'Tích hợp tuỳ chỉnh',
     ],
-    cta: 'Dùng thử 14 ngày',
     highlight: false,
+  },
+  {
+    name: 'Student',
+    code: 'student',
+    icon: <GraduationCap size={20} />,
+    price: { monthly: 59, yearly: 49 },
+    desc: 'Ưu đãi cho sinh viên xác thực bằng email .edu hoặc .edu.vn.',
+    features: [
+      'Giá sinh viên 59.000đ/tháng',
+      'Xác thực bằng email trường',
+      'Hiệu lực 12 tháng',
+      'Kết nối 20 tài khoản mạng xã hội',
+      'Lên lịch bài đăng không giới hạn',
+      'Trợ lý AI giới hạn',
+    ],
+    highlight: false,
+    badge: 'Sinh viên',
   },
 ]
 
@@ -68,10 +85,10 @@ export default function Pricing() {
           <span className="text-xs font-bold text-brand-primary uppercase tracking-widest block mb-3">Bảng giá</span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-brand-ink leading-tight">
             Giá rõ ràng, dễ bắt đầu.<br />
-            <span className="text-brand-primary">Nâng cấp khi bạn sẵn sàng.</span>
+            <span className="text-brand-primary">Có gói riêng cho sinh viên.</span>
           </h2>
           <p className="text-base sm:text-lg text-brand-body mt-4 max-w-xl mx-auto leading-relaxed">
-            Bắt đầu với 14 ngày dùng thử miễn phí. Không cần thẻ tín dụng. Huỷ bất cứ lúc nào.
+            Bắt đầu với 14 ngày dùng thử miễn phí. Sinh viên có thể xác thực email trường để dùng Syncra từ 59.000đ/tháng.
           </p>
 
           <div className="flex items-center justify-center gap-4 mt-10">
@@ -102,11 +119,11 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
           {PLANS.map(plan => (
             <div
               key={plan.name}
-              className={`rounded-brand-md p-8 flex flex-col shadow-sm relative transition-all duration-150 hover:shadow-md border ${
+              className={`rounded-brand-md p-7 flex flex-col shadow-sm relative transition-all duration-150 hover:shadow-md border ${
                 plan.highlight
                   ? 'border-brand-ink bg-brand-ink text-brand-on-primary'
                   : 'border-brand-border bg-brand-canvas text-brand-ink'
@@ -123,7 +140,7 @@ export default function Pricing() {
                   <div className={`w-8 h-8 rounded-brand-sm flex items-center justify-center p-1.5 border ${
                     plan.highlight
                       ? 'bg-brand-ink-soft border-brand-ink-soft'
-                      : 'bg-brand-canvas border-brand-border'
+                      : 'bg-brand-canvas border-brand-border text-brand-primary'
                   }`}>
                     {plan.icon}
                   </div>
@@ -156,24 +173,24 @@ export default function Pricing() {
 
               <div className="flex flex-col gap-2.5 mt-auto w-full">
                 <Link
-                  to={`/signup?flow=trial&plan=${plan.name.toLowerCase()}`}
+                  to={plan.code === 'student' ? `/signup?flow=checkout&plan=${plan.code}` : `/signup?flow=trial&plan=${plan.code}`}
                   className={`w-full py-2.5 font-bold rounded-brand-md text-sm transition-all inline-flex items-center justify-center shadow-sm hover:shadow ${
                     plan.highlight
                       ? 'bg-brand-primary text-brand-on-primary hover:bg-brand-primary-hover'
                       : 'bg-brand-canvas border border-brand-border text-brand-ink hover:bg-brand-canvas-soft'
                   }`}
                 >
-                  Dùng thử miễn phí
+                  {plan.code === 'student' ? 'Xác thực sinh viên' : 'Dùng thử miễn phí'}
                 </Link>
                 <Link
-                  to={`/signup?flow=checkout&plan=${plan.name.toLowerCase()}`}
+                  to={`/signup?flow=checkout&plan=${plan.code}`}
                   className={`w-full py-2.5 font-bold rounded-brand-md text-sm transition-all inline-flex items-center justify-center shadow-sm hover:shadow ${
                     plan.highlight
                       ? 'bg-brand-on-primary text-brand-ink hover:bg-brand-canvas-soft'
                       : 'bg-brand-ink text-brand-on-primary hover:bg-brand-ink-soft'
                   }`}
                 >
-                  Mua ngay
+                  {plan.code === 'student' ? 'Xác thực sinh viên' : 'Mua ngay'}
                 </Link>
               </div>
             </div>
@@ -181,7 +198,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-xs text-brand-body-mid mt-10">
-          Tất cả gói đều có 14 ngày đảm bảo hoàn tiền. Không hợp đồng dài hạn.
+          Gói Student cần xác thực lại sau 12 tháng. Các gói trả phí khác có 14 ngày đảm bảo hoàn tiền.
         </p>
       </div>
     </section>

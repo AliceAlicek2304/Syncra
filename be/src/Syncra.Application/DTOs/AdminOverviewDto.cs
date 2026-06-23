@@ -65,4 +65,5 @@ public class WorkspaceSummaryDto
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public int MemberCount { get; set; }
+    public int AccountCount { get; set; }
 }

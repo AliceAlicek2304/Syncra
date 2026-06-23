@@ -1,4 +1,5 @@
 using MediatR;
+using Syncra.Application.DTOs;
 using Microsoft.Extensions.Logging;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Common;

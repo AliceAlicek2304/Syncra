@@ -14,6 +14,9 @@ public sealed class User : EntityBase
     public string Status { get; private set; } = "active";
     public DateTime? EmailVerifiedAtUtc { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
+    public string? StudentEmail { get; private set; }
+    public DateTime? StudentEmailVerifiedAtUtc { get; private set; }
+    public DateTime? StudentVerificationExpiresAtUtc { get; private set; }
     public bool HasPasswordBeenSet { get; private set; } = true;
     private string _securityStamp = Guid.NewGuid().ToString();
     public string SecurityStamp
@@ -56,6 +59,10 @@ public sealed class User : EntityBase
     public bool IsDeleted => Status == "deleted";
 
     public bool IsEmailVerified => EmailVerifiedAtUtc.HasValue;
+    public bool HasValidStudentVerification =>
+        StudentEmailVerifiedAtUtc.HasValue &&
+        StudentVerificationExpiresAtUtc.HasValue &&
+        StudentVerificationExpiresAtUtc.Value > DateTime.UtcNow;
 
     public void VerifyEmail()
     {
@@ -65,6 +72,22 @@ public sealed class User : EntityBase
         }
 
         EmailVerifiedAtUtc = DateTime.UtcNow;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void VerifyStudentEmail(string studentEmail, DateTime verifiedAtUtc)
+    {
+        StudentEmail = Email.Create(studentEmail).Value;
+        StudentEmailVerifiedAtUtc = verifiedAtUtc;
+        StudentVerificationExpiresAtUtc = verifiedAtUtc.AddYears(1);
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void ClearStudentVerification()
+    {
+        StudentEmail = null;
+        StudentEmailVerifiedAtUtc = null;
+        StudentVerificationExpiresAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

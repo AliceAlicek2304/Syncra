@@ -94,6 +94,15 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
             var plan = await _planRepository.GetByCodeAsync(request.Plan.ToUpper(), cancellationToken);
             if (plan != null && plan.IsActive)
             {
+                if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase) &&
+                    !user.HasValidStudentVerification)
+                {
+                    plan = null;
+                }
+            }
+
+            if (plan != null && plan.IsActive)
+            {
                 if (string.Equals(request.Flow, "trial", StringComparison.OrdinalIgnoreCase))
                 {
                     var existingSub = await _subscriptionRepository.GetByWorkspaceIdAsync(workspace.Id);

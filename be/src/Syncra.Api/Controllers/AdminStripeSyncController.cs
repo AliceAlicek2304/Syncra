@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,7 @@ namespace Syncra.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/stripe")]
+[Authorize(Policy = "AdminOnly")]
 public class AdminStripeSyncController : ControllerBase
 {
     private readonly AppDbContext _dbContext;

@@ -13,17 +13,20 @@ public sealed class StartTrialCommandHandler : IRequestHandler<StartTrialCommand
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IPlanRepository _planRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public StartTrialCommandHandler(
         IWorkspaceRepository workspaceRepository,
         ISubscriptionRepository subscriptionRepository,
         IPlanRepository planRepository,
+        IUserRepository userRepository,
         IUnitOfWork unitOfWork)
     {
         _workspaceRepository = workspaceRepository;
         _subscriptionRepository = subscriptionRepository;
         _planRepository = planRepository;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -43,6 +46,19 @@ public sealed class StartTrialCommandHandler : IRequestHandler<StartTrialCommand
         if (!plan.IsActive)
         {
             throw new DomainException("plan_inactive", $"Plan '{request.PlanCode}' is not active.");
+        }
+
+        if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase))
+        {
+            var user = await _userRepository.GetByIdAsync(request.UserId)
+                ?? throw new DomainException("not_found", "User not found.");
+
+            if (!user.HasValidStudentVerification)
+            {
+                throw new DomainException(
+                    "student_verification_required",
+                    "Please verify your student email before starting the Student plan.");
+            }
         }
 
         var existingSub = await _subscriptionRepository.GetByWorkspaceIdAsync(workspace.Id)

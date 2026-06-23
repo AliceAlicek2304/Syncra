@@ -14,5 +14,6 @@ public interface IEmailService
     /// Per D-03 decision: OAuth users skip this (auto-verified by Google).
     /// </summary>
     Task SendEmailVerificationAsync(User user, string verificationToken, CancellationToken cancellationToken = default);
+    Task SendStudentVerificationCodeAsync(string studentEmail, string verificationCode, CancellationToken cancellationToken = default);
 }
 
