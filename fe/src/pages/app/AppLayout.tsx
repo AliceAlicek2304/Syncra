@@ -28,11 +28,11 @@ import styles from './AppLayout.module.css'
 import logo from '../../assets/syncra-logo.png'
 
 const NAV_ITEMS: { to: string; icon: React.ReactNode; label: string; badge?: string }[] = [
-  { to: '/app/connections', icon: <Plug size={18} />, label: 'Connections' },
-  { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ideas' },
-  { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'Repurpose'},
-  { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
-  { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
+  { to: '/app/connections', icon: <Plug size={18} />, label: 'Kết nối' },
+  { to: '/app/ideas', icon: <Lightbulb size={18} />, label: 'Ý tưởng' },
+  { to: '/app/repurpose', icon: <Repeat size={18} />, label: 'Tái sử dụng'},
+  { to: '/app/analytics', icon: <BarChart3 size={18} />, label: 'Phân tích' },
+  { to: '/app/help', icon: <HelpCircle size={18} />, label: 'Trung tâm trợ giúp' },
 ]
 
 export default function AppLayout() {
@@ -120,7 +120,7 @@ export default function AppLayout() {
             }
           >
             <span className={styles.navIcon}><Plug size={18} /></span>
-            {!collapsed && <span className={styles.navLabel}>Connections</span>}
+            {!collapsed && <span className={styles.navLabel}>Kết nối</span>}
           </NavLink>
 
           {/* Collapsible Posts Section */}
@@ -143,7 +143,7 @@ export default function AppLayout() {
               <span className={styles.navIcon}><FileText size={18} /></span>
               {!collapsed && (
                 <>
-                  <span className={styles.navLabel}>Posts</span>
+                  <span className={styles.navLabel}>Bài viết</span>
                   <span className={styles.subChevron}>
                     {postsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </span>
@@ -163,7 +163,7 @@ export default function AppLayout() {
                   <span className={styles.subMenuIcon}>
                     <LayoutDashboard size={14} />
                   </span>
-                  <span className={styles.navLabel}>Overview</span>
+                  <span className={styles.navLabel}>Tổng quan</span>
                 </NavLink>
                 <NavLink
                   to="/app/posts/queues"
@@ -174,7 +174,7 @@ export default function AppLayout() {
                   <span className={styles.subMenuIcon}>
                     <Layers size={14} />
                   </span>
-                  <span className={styles.navLabel}>Queues</span>
+                  <span className={styles.navLabel}>Hàng đợi</span>
                 </NavLink>
               </div>
             )}
@@ -200,7 +200,7 @@ export default function AppLayout() {
               <span className={styles.navIcon}><Inbox size={18} /></span>
               {!collapsed && (
                 <>
-                  <span className={styles.navLabel}>Inbox</span>
+                  <span className={styles.navLabel}>Hộp thư</span>
                   <span className={styles.subChevron}>
                     {inboxOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </span>
@@ -220,7 +220,7 @@ export default function AppLayout() {
                   <span className={styles.subMenuIcon}>
                     <MessageSquare size={14} />
                   </span>
-                  <span className={styles.navLabel}>Messages</span>
+                  <span className={styles.navLabel}>Tin nhắn</span>
                 </NavLink>
                 <NavLink
                   to="/app/inbox/comments"
@@ -231,7 +231,7 @@ export default function AppLayout() {
                   <span className={styles.subMenuIcon}>
                     <MessageCircle size={14} />
                   </span>
-                  <span className={styles.navLabel}>Comments</span>
+                  <span className={styles.navLabel}>Bình luận</span>
                 </NavLink>
               </div>
             )}
@@ -281,20 +281,20 @@ export default function AppLayout() {
             <DropdownMenuContent align="start" side="top" className={styles.userMenuContent}>
               <DropdownMenuItem onClick={() => navigate('/app/settings')}>
                 <BarChart3 size={16} />
-                Usage
+                Sử dụng
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/app/billing')}>
                 <CreditCard size={16} />
-                Billing
+                Thanh toán
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/app/settings')}>
                 <Settings size={16} />
-                Settings
+                Cài đặt
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className={styles.signOutItem}>
                 <LogOut size={16} />
-                Sign out
+                Đăng xuất
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
