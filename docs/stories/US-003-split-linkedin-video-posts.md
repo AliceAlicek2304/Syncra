@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -21,13 +21,13 @@ When a post contains video media and targets both LinkedIn and other platforms, 
 
 ## Acceptance Criteria
 
-- [ ] Create a property `IsSplitVideoPost` on `Post` entity, mapping it to database.
-- [ ] If a post contains video media and targets both LinkedIn and other platforms, split it into two separate Zernio requests.
-- [ ] Persist both post entities in the local database, marked with `IsSplitVideoPost = true`.
-- [ ] Return the DTO of Post 2 (other platforms) to the frontend.
-- [ ] Return the `IsSplitVideoPost` flag in `PostDto` and map it for both get and list endpoints.
-- [ ] On the frontend, if a post is a split video post, editing it is disabled. Attempting to edit will show a toast error message and close the modal.
-- [ ] On the backend, attempting to edit a split video post throws a domain exception.
+- [x] Create a property `IsSplitVideoPost` on `Post` entity, mapping it to database.
+- [x] If a post contains video media and targets both LinkedIn and other platforms, split it into two separate Zernio requests.
+- [x] Persist both post entities in the local database, marked with `IsSplitVideoPost = true`.
+- [x] Return the DTO of Post 2 (other platforms) to the frontend.
+- [x] Return the `IsSplitVideoPost` flag in `PostDto` and map it for both get and list endpoints.
+- [x] On the frontend, if a post is a split video post, editing it is disabled. Attempting to edit will show a toast error message and close the modal.
+- [x] On the backend, attempting to edit a split video post throws a domain exception.
 
 ## Design Notes
 

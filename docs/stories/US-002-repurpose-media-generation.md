@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -22,13 +22,13 @@ Users can generate media files (images or videos) from the sources added to the 
 
 ## Acceptance Criteria
 
-- [ ] "Tạo Media" toggle added to AI Settings on the Repurpose page.
-- [ ] Toggling media generation restricts target platforms to 1.
-- [ ] Media options (Image/Video) dynamically adapt to platform capabilities (YouTube video-only, Google Business image-only, others both).
-- [ ] Model parameters `gemini-3.1-flash-image` (Image) and `veo-3.1-lite-generate-preview` (Video) are sent to the backend.
-- [ ] Backend generates assets via Gemini SDK, saves files to `wwwroot/uploads/` and returns public path.
-- [ ] Backend falls back to robust mock assets if GenAI API keys fail or lack quota.
-- [ ] Frontend displays the image or video preview inside the resulting card.
+- [x] "Tạo Media" toggle added to AI Settings on the Repurpose page.
+- [x] Toggling media generation restricts target platforms to 1.
+- [x] Media options (Image/Video) dynamically adapt to platform capabilities (YouTube video-only, Google Business image-only, others both).
+- [x] Model parameters `gemini-3.1-flash-image` (Image) and `veo-3.1-lite-generate-preview` (Video) are sent to the backend.
+- [x] Backend generates assets via Gemini SDK, saves files to `wwwroot/uploads/` and returns public path.
+- [x] Backend falls back to robust mock assets if GenAI API keys fail or lack quota.
+- [x] Frontend displays the image or video preview inside the resulting card.
 
 ## Design Notes
 
