@@ -51,9 +51,15 @@ public sealed class GetPostAnalyticsQueryHandler
             var draftPosts = allPosts.Count(p => p.Status == PostStatus.Draft);
             var failedPosts = allPosts.Count(p => p.Status == PostStatus.Failed);
 
+            // Count total platform publish events (1 post × N platforms = N counts)
+            var totalPlatformPublishes = allPosts
+                .Where(p => p.Status == PostStatus.Published)
+                .Sum(p => p.PlatformTargets.Count);
+            if (totalPlatformPublishes == 0) totalPlatformPublishes = publishedPosts;
+
             dto.Metrics = new List<PostMetricDto>
             {
-                new() { Id = "total", Title = "Tổng bài đăng", Value = totalPosts.ToString("N0"), Growth = "+0", Trend = "up" },
+                new() { Id = "total", Title = "Tổng bài đăng", Value = totalPlatformPublishes.ToString("N0"), Growth = "+0", Trend = "up" },
                 new() { Id = "published", Title = "Đã đăng", Value = publishedPosts.ToString("N0"), Growth = "+0", Trend = "up" },
                 new() { Id = "scheduled", Title = "Đã lên lịch", Value = scheduledPosts.ToString("N0"), Growth = "+0", Trend = "up" },
                 new() { Id = "draft", Title = "Bản nháp", Value = draftPosts.ToString("N0"), Growth = "+0", Trend = "flat" }
@@ -70,7 +76,7 @@ public sealed class GetPostAnalyticsQueryHandler
                 .ToList();
             dto.PostsByStatus = statusCounts;
 
-            // Posts by platform
+            // Posts by platform — count PlatformTarget entries (not distinct posts)
             var platformCounts = new Dictionary<string, int>();
             foreach (var post in allPosts)
             {
@@ -86,12 +92,15 @@ public sealed class GetPostAnalyticsQueryHandler
                 }
             }
 
+            var platformTotal = platformCounts.Values.Sum();
+            if (platformTotal == 0) platformTotal = 1;
+
             var postsByPlatform = platformCounts
                 .Select(kvp => new PostByPlatformDto
                 {
                     Platform = char.ToUpper(kvp.Key[0]) + kvp.Key.Substring(1),
                     Count = kvp.Value,
-                    Percentage = totalPosts > 0 ? Math.Round((double)kvp.Value / totalPosts * 100, 1) : 0
+                    Percentage = Math.Round((double)kvp.Value / platformTotal * 100, 1)
                 })
                 .OrderByDescending(p => p.Count)
                 .ToList();

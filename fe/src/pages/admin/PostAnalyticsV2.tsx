@@ -17,9 +17,22 @@ export default function PostAnalyticsV2() {
   const trends = pick<any>(data, 'Trends', 'trends', {})
 
   const statById = (id: string) => metrics.find((item) => String(item.id).toLowerCase() === id)
+
   const filteredPlatforms = platform === 'all'
     ? postsByPlatform
     : postsByPlatform.filter((item) => String(item.platform).toLowerCase() === platform)
+
+  // Khi filter theo platform, tính lại tổng từ postsByPlatform thay vì lấy giá trị cố định từ API
+  const filteredTotal = useMemo(() => {
+    if (platform === 'all') return statById('total')?.value ?? 0
+    return filteredPlatforms.reduce((sum, item) => sum + (item.count ?? 0), 0)
+  }, [platform, filteredPlatforms, metrics])
+
+  const filteredPublished = useMemo(() => {
+    if (platform === 'all') return statById('published')?.value ?? 0
+    // published = tổng count của platform đó (API trả về theo published posts)
+    return filteredPlatforms.reduce((sum, item) => sum + (item.count ?? 0), 0)
+  }, [platform, filteredPlatforms, metrics])
 
   return (
     <div>
@@ -27,21 +40,26 @@ export default function PostAnalyticsV2() {
         eyebrow="Content"
         title="Phân tích bài đăng"
         subtitle="Theo dõi volume nội dung, trạng thái xuất bản, nền tảng và nhóm người dùng tạo bài nhiều nhất."
-        actions={
-          <select className={styles.select} value={platform} onChange={(event) => setPlatform(event.target.value)}>
-            <option value="all">Tất cả nền tảng</option>
-            {postsByPlatform.map((item) => <option key={item.platform} value={String(item.platform).toLowerCase()}>{item.platform}</option>)}
-          </select>
-        }
       />
 
       {isLoading ? <LoadingState /> : (
         <>
           <div className={styles.statsGrid}>
-            <StatCard label="Tổng bài viết" value={statById('total')?.value ?? '0'} hint={statById('total')?.growth ?? 'Tất cả trạng thái'} trendClassName={trendClass(statById('total')?.growth, styles)} icon={<Newspaper size={20} />} />
-            <StatCard label="Đã xuất bản" value={statById('published')?.value ?? '0'} hint={statById('published')?.growth ?? 'Published'} trendClassName={trendClass(statById('published')?.growth, styles)} icon={<CheckCircle2 size={20} />} tone="#10b981" />
+            <StatCard label="Tổng bài viết" value={filteredTotal} hint={platform === 'all' ? 'Tất cả trạng thái' : `Nền tảng: ${platform}`} trendClassName={trendClass(statById('total')?.growth, styles)} icon={<Newspaper size={20} />} />
+            <StatCard label="Đã xuất bản" value={platform === 'all' ? (statById('published')?.value ?? '0') : filteredPublished} hint={statById('published')?.growth ?? 'Published'} trendClassName={trendClass(statById('published')?.growth, styles)} icon={<CheckCircle2 size={20} />} tone="#10b981" />
             <StatCard label="Lên lịch" value={statById('scheduled')?.value ?? '0'} hint={statById('scheduled')?.growth ?? 'Scheduled'} trendClassName={trendClass(statById('scheduled')?.growth, styles)} icon={<Clock3 size={20} />} tone="#8b5cf6" />
             <StatCard label="Bản nháp" value={statById('draft')?.value ?? '0'} hint={statById('draft')?.growth ?? 'Draft'} trendClassName={trendClass(statById('draft')?.growth, styles)} icon={<Edit3 size={20} />} tone="#06b6d4" />
+          </div>
+
+          {/* Filter nền tảng — đặt trên biểu đồ xu hướng */}
+          <div className={styles.filterRow}>
+            <span className={styles.filterLabel}>Lọc theo nền tảng</span>
+            <select className={styles.select} value={platform} onChange={(event) => setPlatform(event.target.value)}>
+              <option value="all">Tất cả nền tảng</option>
+              {postsByPlatform.map((item) => (
+                <option key={item.platform} value={String(item.platform).toLowerCase()}>{item.platform}</option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.chartGrid}>
@@ -64,7 +82,7 @@ export default function PostAnalyticsV2() {
           </div>
 
           <div className={styles.grid2}>
-            <Card title="Bài đăng theo nền tảng" meta="Có thể lọc theo từng kênh">
+            <Card title="Bài đăng theo nền tảng" meta={platform === 'all' ? 'Có thể lọc theo từng kênh' : `Đang xem: ${platform}`}>
               <ModernBarChart
                 data={filteredPlatforms.map((item) => item.count ?? 0)}
                 labels={filteredPlatforms.map((item) => item.platform ?? '-')}

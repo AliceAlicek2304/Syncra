@@ -35,13 +35,14 @@ export default function DashboardV2() {
   }, [postsByPlatform])
 
   const statById = (id: string) => metrics.find((item) => String(item.id).toLowerCase() === id)
-  const posted = sum(engagement.published)
-  const failed = sum(engagement.failed)
-  const successRate = posted + failed > 0 ? (posted / (posted + failed)) * 100 : 0
   const platformEntries = Object.entries(postsByPlatform).map(([platform, values]) => ({
     platform,
     count: sum(normalizeMonths(values)),
   }))
+  // posted = sum of all platform publish counts (consistent with postsByPlatform breakdown)
+  const posted = platformEntries.reduce((acc, item) => acc + item.count, 0) || sum(engagement.published)
+  const failed = sum(engagement.failed)
+  const successRate = posted + failed > 0 ? (posted / (posted + failed)) * 100 : 0
 
   return (
     <div>
