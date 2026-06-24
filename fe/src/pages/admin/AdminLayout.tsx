@@ -20,7 +20,7 @@ export default function AdminLayout() {
   return (
     <div className={styles.layout}>
       <AdminSidebar />
-      <div style={{flex:1, display:'flex', flexDirection:'column'}}>
+      <div className={styles.contentShell}>
         <AdminHeader />
         <main className={styles.main}>
           <Outlet />

@@ -233,7 +233,7 @@ export default function AdminDashboard() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className={styles.chartGrid}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div className={styles.stackGrid}>
           <div className={styles.card} style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#fff' }}>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Tài khoản MXH mới</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>{data?.overview?.newAccounts24h ?? '0'}</div>
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+      <div className={styles.responsiveGrid3}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f0f0f0 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className={styles.chartGrid}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <h3 style={{ marginTop: 0, marginBottom: 16 }}>Doanh thu tổng hợp theo các gói (12 tháng)</h3>
           <div style={{ height: 200 }}>
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className={styles.responsiveGrid2}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ marginTop: 0 }}>Chuyển đổi người dùng</h3>

@@ -123,7 +123,7 @@ export default function RevenueAnalytics() {
       </div>
 
       {/* Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 20 }}>
+      <div className={styles.responsiveGrid4} style={{ marginTop: 20 }}>
         {revenueMetrics.map((m: any) => (
           <div key={m.id} className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -158,7 +158,7 @@ export default function RevenueAnalytics() {
       <div style={{ height: 20 }} />
 
       {/* Main Trends Area */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className={styles.chartGrid}>
         {/* Revenue Trend Chart */}
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

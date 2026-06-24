@@ -9,7 +9,7 @@ export default function SalesReport() {
   ]
 
   return (
-    <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16}}>
+    <div className={styles.responsiveGrid3}>
       {cards.map((c) => (
         <div key={c.id} className={styles.card} style={{padding:16}}>
           <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:8}}>

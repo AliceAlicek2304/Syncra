@@ -49,7 +49,7 @@ export default function PostAnalytics() {
       </div>
 
       {/* Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 20 }}>
+      <div className={styles.responsiveGrid4} style={{ marginTop: 20 }}>
         {postMetrics.map((m: any) => (
           <div key={m.id} className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -84,7 +84,7 @@ export default function PostAnalytics() {
       <div style={{ height: 20 }} />
 
       {/* Main Trends Area */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className={styles.chartGrid}>
         {/* Line Chart */}
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -125,7 +125,7 @@ export default function PostAnalytics() {
       <div style={{ height: 20 }} />
 
       {/* Posts by Platform */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className={styles.responsiveGrid2}>
         <div className={styles.card} style={{ background: 'linear-gradient(135deg, #fff 0%, #f8f8f8 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>Bài đăng theo nền tảng</h3>
