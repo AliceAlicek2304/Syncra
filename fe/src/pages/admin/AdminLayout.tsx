@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom'
 import { useEffect } from 'react'
-import styles from './AdminLayout.module.css'
-import AdminSidebar from './components/AdminSidebar'
-import AdminHeader from './components/AdminHeader'
+import styles from './AdminModern.module.css'
+import AdminSidebarV2 from './components/AdminSidebarV2'
+import AdminHeaderV2 from './components/AdminHeaderV2'
 
 export default function AdminLayout() {
   useEffect(() => {
@@ -19,9 +19,9 @@ export default function AdminLayout() {
 
   return (
     <div className={styles.layout}>
-      <AdminSidebar />
-      <div className={styles.contentShell}>
-        <AdminHeader />
+      <AdminSidebarV2 />
+      <div className={styles.shell}>
+        <AdminHeaderV2 />
         <main className={styles.main}>
           <Outlet />
         </main>
