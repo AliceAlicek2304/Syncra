@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Syncra.Infrastructure.Persistence.Seed;
 
 #nullable disable
 
@@ -53,12 +52,8 @@ namespace Syncra.Infrastructure.Migrations
                 keyValue: new Guid("00000000-0000-0000-0000-000000001006"),
                 columns: new[] { "last_event_timestamp_utc", "updated_at_utc" },
                 values: new object[] { new DateTime(2026, 6, 13, 13, 12, 48, 759, DateTimeKind.Utc).AddTicks(1375), new DateTime(2026, 6, 13, 13, 12, 48, 759, DateTimeKind.Utc).AddTicks(1375) });
-
-            // Insert post platform targets
-            var now = DateTime.UtcNow;
-            migrationBuilder.Sql(PostSeedData.GetInsertPostPlatformTargetSql(now));
         }
-
+    
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
