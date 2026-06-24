@@ -86,7 +86,8 @@ public sealed class GetAdminOverviewQueryHandler
             foreach (var workspace in allWorkspaces)
             {
                 var posts = await _postRepository.GetByWorkspaceIdAsync(workspace.Id);
-                scheduledPosts += posts.Count(p => p.Status == PostStatus.Scheduled);
+                scheduledPosts += posts.Where(p => p.Status == PostStatus.Scheduled)
+                    .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
             }
 
             // Get social accounts count
@@ -288,25 +289,28 @@ public sealed class GetAdminOverviewQueryHandler
                     var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
                     var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-                    var publishedInMonth = allPosts.Count(p => 
+                    var publishedInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Published && 
                         p.PublishedAtUtc.HasValue &&
                         p.PublishedAtUtc.Value >= monthStart && 
-                        p.PublishedAtUtc.Value <= monthEnd);
+                        p.PublishedAtUtc.Value <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyPublished.Add(publishedInMonth);
 
-                    var scheduledInMonth = allPosts.Count(p => 
+                    var scheduledInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Scheduled && 
                         !p.ScheduledAt.IsNone &&
                         p.ScheduledAt.UtcValue >= monthStart && 
-                        p.ScheduledAt.UtcValue <= monthEnd);
+                        p.ScheduledAt.UtcValue <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyScheduled.Add(scheduledInMonth);
 
-                    var failedInMonth = allPosts.Count(p => 
+                    var failedInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Failed && 
                         p.PublishLastAttemptAtUtc.HasValue &&
                         p.PublishLastAttemptAtUtc.Value >= monthStart && 
-                        p.PublishLastAttemptAtUtc.Value <= monthEnd);
+                        p.PublishLastAttemptAtUtc.Value <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyFailed.Add(failedInMonth);
                 }
 

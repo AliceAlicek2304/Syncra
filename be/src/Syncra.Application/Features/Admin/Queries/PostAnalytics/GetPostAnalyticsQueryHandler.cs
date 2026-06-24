@@ -46,10 +46,18 @@ public sealed class GetPostAnalyticsQueryHandler
             }
 
             var totalPosts = allPosts.Count;
-            var publishedPosts = allPosts.Count(p => p.Status == PostStatus.Published);
-            var scheduledPosts = allPosts.Count(p => p.Status == PostStatus.Scheduled);
-            var draftPosts = allPosts.Count(p => p.Status == PostStatus.Draft);
-            var failedPosts = allPosts.Count(p => p.Status == PostStatus.Failed);
+            
+            var publishedPosts = allPosts.Where(p => p.Status == PostStatus.Published)
+                .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
+                
+            var scheduledPosts = allPosts.Where(p => p.Status == PostStatus.Scheduled)
+                .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
+                
+            var draftPosts = allPosts.Where(p => p.Status == PostStatus.Draft)
+                .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
+                
+            var failedPosts = allPosts.Where(p => p.Status == PostStatus.Failed)
+                .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
 
             // Posts by status
             var statusCounts = allPosts
@@ -57,7 +65,7 @@ public sealed class GetPostAnalyticsQueryHandler
                 .Select(g => new PostByStatusDto
                 {
                     Status = g.Key,
-                    Count = g.Count()
+                    Count = g.Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1)
                 })
                 .ToList();
             dto.PostsByStatus = statusCounts;
