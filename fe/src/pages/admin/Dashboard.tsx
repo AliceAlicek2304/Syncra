@@ -8,7 +8,8 @@ import ProgressRing from './components/ProgressRing'
 import { useAdminOverview } from '../../hooks/useAdminOverview'
 import { useRevenueAnalytics } from '../../hooks/useRevenueAnalytics'
 import { useMemo, useState } from 'react'
-import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord, FaChartLine, FaUsers, FaDollarSign, FaCheckCircle } from 'react-icons/fa'
+import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin, FaTiktok, FaYoutube, FaPinterest, FaTelegram, FaSnapchat, FaReddit, FaDiscord, FaChartLine, FaUsers, FaMoneyBillWave, FaCheckCircle } from 'react-icons/fa'
+import { formatVnd } from './utils/currency'
 
 const PLATFORMS = [
   { id: 'twitter', name: 'Twitter/X', icon: FaTwitter, color: '#1DA1F2' },
@@ -219,7 +220,7 @@ export default function AdminDashboard() {
                 {m.id === 'posts' && <FaChartLine color="#FF4F4F" size={18} />}
                 {m.id === 'scheduled' && <FaCheckCircle color="#10B981" size={18} />}
                 {m.id === 'accounts' && <FaUsers color="#2563EB" size={18} />}
-                {m.id === 'workspaces' && <FaDollarSign color="#8B5CF6" size={18} />}
+                {m.id === 'workspaces' && <FaMoneyBillWave color="#8B5CF6" size={18} />}
               </div>
               <div className={dashStyles.metricValue}>{m.value}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
@@ -328,17 +329,17 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Free</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#8B5CF6' }}>${(revenueByPlan.free[11] ?? 0).toLocaleString()}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#8B5CF6' }}>{formatVnd(revenueByPlan.free[11])}</div>
               <Sparkline data={revenueByPlan.free} color="#8B5CF6" />
             </div>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Pro</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>${(revenueByPlan.pro[11] ?? 0).toLocaleString()}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>{formatVnd(revenueByPlan.pro[11])}</div>
               <Sparkline data={revenueByPlan.pro} color="#2563EB" />
             </div>
             <div style={{ flex: 1, minWidth: 150, padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 12, color: '#605d52', marginBottom: 4 }}>Team</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#8F4FFF' }}>${(revenueByPlan.team[11] ?? 0).toLocaleString()}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#8F4FFF' }}>{formatVnd(revenueByPlan.team[11])}</div>
               <Sparkline data={revenueByPlan.team} color="#8F4FFF" />
             </div>
           </div>

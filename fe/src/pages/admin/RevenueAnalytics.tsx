@@ -2,8 +2,9 @@ import styles from './AdminLayout.module.css'
 import TrendChart from './components/TrendChart'
 import BarChart from './components/BarChart'
 import { useState, useMemo } from 'react'
-import { FaDollarSign, FaCreditCard, FaCheckCircle, FaBuilding, FaSearch } from 'react-icons/fa'
+import { FaMoneyBillWave, FaCreditCard, FaCheckCircle, FaBuilding, FaSearch } from 'react-icons/fa'
 import { useRevenueAnalytics } from '../../hooks/useRevenueAnalytics'
+import { formatVnd } from './utils/currency'
 
 export default function RevenueAnalytics() {
   const { data, isLoading } = useRevenueAnalytics()
@@ -137,14 +138,14 @@ export default function RevenueAnalytics() {
                 color: '#fff',
                 fontSize: 20
               }}>
-                {m.id === 'revenue' && <FaDollarSign />}
+                {m.id === 'revenue' && <FaMoneyBillWave />}
                 {m.id === 'subscriptions' && <FaCreditCard />}
                 {m.id === 'active' && <FaCheckCircle />}
                 {m.id === 'workspaces' && <FaBuilding />}
               </div>
               <div>
                 <div style={{ fontSize: 12, color: '#605d52', fontWeight: 600 }}>{m.title}</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{m.value}</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{m.id === 'revenue' ? formatVnd(m.value) : m.value}</div>
                 <div style={{ fontSize: 12, color: m.trend === 'up' ? '#10B981' : '#FF4F4F', fontWeight: 600 }}>
                   {m.growth}
                 </div>
@@ -164,9 +165,9 @@ export default function RevenueAnalytics() {
             <div>
               <div style={{ fontSize: 13, color: 'var(--color-body)', fontWeight: 600 }}>Xu hướng doanh thu (12 tháng)</div>
               <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>
-                ${trends?.currentMonthRevenue ?? trends?.CurrentMonthRevenue ?? 0}{' '}
+                {formatVnd(trends?.currentMonthRevenue ?? trends?.CurrentMonthRevenue ?? 0)}{' '}
                 <span style={{fontSize: 14, color: '#10B981', fontWeight: 600}}>
-                  {(trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0) >= 0 ? '+' : ''}${trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0}
+                  {(trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0) >= 0 ? '+' : ''}{formatVnd(trends?.revenueGrowth ?? trends?.RevenueGrowth ?? 0)}
                 </span>
               </div>
             </div>
@@ -188,7 +189,7 @@ export default function RevenueAnalytics() {
                   <div style={{ fontSize: 11, color: '#888' }}>{plan.workspaceCount} workspace</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#10B981' }}>${plan.monthlyRevenue}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#10B981' }}>{formatVnd(plan.monthlyRevenue)}</div>
                   <div style={{ fontSize: 11, color: '#666' }}>{plan.percentage}%</div>
                 </div>
               </div>

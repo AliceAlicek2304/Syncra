@@ -59,7 +59,7 @@ public sealed class GetRevenueAnalyticsQueryHandler
 
             dto.Metrics = new List<RevenueMetricDto>
             {
-                new() { Id = "revenue", Title = "Doanh thu hàng tháng", Value = $"${totalMonthlyRevenue:N0}", Growth = "+0", Trend = "up" },
+                new() { Id = "revenue", Title = "Doanh thu hàng tháng", Value = $"{totalMonthlyRevenue:N0} ₫", Growth = "+0", Trend = "up" },
                 new() { Id = "subscriptions", Title = "Tổng subscription", Value = totalSubscriptions.ToString("N0"), Growth = "+0", Trend = "up" },
                 new() { Id = "active", Title = "Subscription active", Value = activeSubscriptionsCount.ToString("N0"), Growth = "+0", Trend = "up" },
                 new() { Id = "workspaces", Title = "Workspace đang dùng", Value = totalWorkspaces.ToString("N0"), Growth = "+0", Trend = "up" }
