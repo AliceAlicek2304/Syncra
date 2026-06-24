@@ -34,6 +34,18 @@ export default function PostAnalyticsV2() {
     return filteredPlatforms.reduce((sum, item) => sum + (item.count ?? 0), 0)
   }, [platform, filteredPlatforms, metrics])
 
+  const filteredMonthlyPosts = useMemo(() => {
+    if (platform === 'all') return normalizeMonths(trends.monthlyPosts ?? trends.MonthlyPosts)
+    const byPlatform = trends.monthlyPostsByPlatform ?? trends.MonthlyPostsByPlatform ?? {}
+    return normalizeMonths(byPlatform[platform.toLowerCase()] ?? [])
+  }, [platform, trends])
+
+  const filteredPublishedPosts = useMemo(() => {
+    if (platform === 'all') return normalizeMonths(trends.publishedPosts ?? trends.PublishedPosts)
+    const byPlatform = trends.publishedPostsByPlatform ?? trends.PublishedPostsByPlatform ?? {}
+    return normalizeMonths(byPlatform[platform.toLowerCase()] ?? [])
+  }, [platform, trends])
+
   return (
     <div>
       <PageHeader
@@ -67,8 +79,8 @@ export default function PostAnalyticsV2() {
               <ModernLineChart
                 labels={monthLabels}
                 datasets={[
-                  { label: 'Tổng bài', data: normalizeMonths(trends.monthlyPosts ?? trends.MonthlyPosts), color: '#2563eb' },
-                  { label: 'Đã xuất bản', data: normalizeMonths(trends.publishedPosts ?? trends.PublishedPosts), color: '#10b981' },
+                  { label: 'Tổng bài', data: filteredMonthlyPosts, color: '#2563eb' },
+                  { label: 'Đã xuất bản', data: filteredPublishedPosts, color: '#10b981' },
                 ]}
               />
             </Card>

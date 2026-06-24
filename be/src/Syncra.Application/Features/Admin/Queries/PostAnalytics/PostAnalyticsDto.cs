@@ -35,6 +35,8 @@ public class PostTrendsDto
 {
     public IEnumerable<int> MonthlyPosts { get; set; } = new List<int>();
     public IEnumerable<int> PublishedPosts { get; set; } = new List<int>();
+    public Dictionary<string, IEnumerable<int>> MonthlyPostsByPlatform { get; set; } = new();
+    public Dictionary<string, IEnumerable<int>> PublishedPostsByPlatform { get; set; } = new();
     public int CurrentMonthPosts { get; set; }
     public int PostsGrowth { get; set; }
 }
