@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom'
-import { BarChart3, LayoutDashboard, Newspaper, ReceiptText, UsersRound, Zap } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { BarChart3, LayoutDashboard, Newspaper, ReceiptText, UsersRound, Zap, LogOut } from 'lucide-react'
+import { useAuth } from '../../../context/AuthContext'
 import styles from '../AdminModern.module.css'
 
 const links = [
@@ -10,6 +11,14 @@ const links = [
 ]
 
 export default function AdminSidebarV2() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
@@ -39,6 +48,18 @@ export default function AdminSidebarV2() {
       <div className={styles.navItem} aria-hidden>
         <BarChart3 size={18} />
         <span>Realtime metrics</span>
+      </div>
+
+      <div style={{ flex: 1 }} />
+      <div 
+        className={styles.navItem} 
+        style={{ color: '#ef4444', marginTop: 'auto', borderTop: '1px solid #e2e8f0', paddingTop: '16px', cursor: 'pointer' }}
+        onClick={handleLogout}
+        role="button"
+        tabIndex={0}
+      >
+        <LogOut size={18} />
+        <span>Đăng xuất</span>
       </div>
     </aside>
   )
