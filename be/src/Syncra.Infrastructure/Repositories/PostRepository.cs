@@ -207,16 +207,22 @@ public class PostRepository : Repository<Post>, IPostRepository
         DateTime endUtc,
         CancellationToken cancellationToken = default)
     {
+        var startMonth = new DateTime(startUtc.Year, startUtc.Month, 1);
+        var endMonth = new DateTime(endUtc.Year, endUtc.Month, 1);
+
         var posts = await _dbSet
             .AsNoTracking()
             .Include(p => p.PlatformTargets)
-            .Where(p => p.CreatedAtUtc >= startUtc && p.CreatedAtUtc <= endUtc)
+            .Where(p => p.Status == PostStatus.Published &&
+                        p.PublishedAtUtc.HasValue &&
+                        p.PublishedAtUtc.Value >= startMonth &&
+                        p.PublishedAtUtc.Value < endMonth.AddMonths(1))
             .ToListAsync(cancellationToken);
 
         var result = new Dictionary<string, List<int>>();
         var months = new List<DateTime>();
         
-        for (var date = startUtc; date < endUtc; date = date.AddMonths(1))
+        for (var date = startMonth; date <= endMonth; date = date.AddMonths(1))
         {
             months.Add(new DateTime(date.Year, date.Month, 1));
         }
@@ -232,9 +238,9 @@ public class PostRepository : Repository<Post>, IPostRepository
             result[platform] = new List<int>();
             foreach (var month in months)
             {
-                var monthEnd = month.AddMonths(1).AddDays(-1);
+                var monthEnd = month.AddMonths(1);
                 var count = posts
-                    .Count(p => p.CreatedAtUtc >= month && p.CreatedAtUtc <= monthEnd &&
+                    .Count(p => p.PublishedAtUtc >= month && p.PublishedAtUtc < monthEnd &&
                                p.PlatformTargets.Any(pt => pt.Platform.ToLower() == platform));
                 result[platform].Add(count);
             }
