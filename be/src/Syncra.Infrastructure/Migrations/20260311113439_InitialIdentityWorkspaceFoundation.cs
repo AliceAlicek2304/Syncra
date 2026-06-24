@@ -411,16 +411,6 @@ namespace Syncra.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "plans",
-                columns: new[] { "id", "code", "created_at_utc", "deleted_at_utc", "description", "is_active", "max_members", "max_scheduled_posts_per_month", "max_social_accounts", "metadata", "name", "price_monthly", "price_yearly", "sort_order", "updated_at_utc", "version" },
-                values: new object[,]
-                {
-                    { new Guid("00000000-0000-0000-0000-000000000001"), "FREE", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Basic features for individuals", true, 1, 10, 3, null, "Free Plan", 0m, 0m, 1, null, 1L },
-                    { new Guid("00000000-0000-0000-0000-000000000002"), "PRO", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Professional features for content creators", true, 3, 100, 10, null, "Pro Plan", 19.99m, 199.99m, 2, null, 1L },
-                    { new Guid("00000000-0000-0000-0000-000000000003"), "TEAM", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Advanced features for teams and agencies", true, 10, 1000, 30, null, "Team Plan", 49.99m, 499.99m, 3, null, 1L }
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_audit_logs_created_at_utc",
                 table: "audit_logs",

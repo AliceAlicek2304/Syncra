@@ -36,26 +36,6 @@ namespace Syncra.Infrastructure.Migrations
                 type: "jsonb",
                 nullable: true);
 
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000001"),
-                column: "last_event_timestamp_utc",
-                value: null);
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000002"),
-                column: "last_event_timestamp_utc",
-                value: null);
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000003"),
-                column: "last_event_timestamp_utc",
-                value: null);
         }
 
         /// <inheritdoc />

@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Syncra.Domain.Entities;
-using Syncra.Infrastructure.Persistence.Seed;
 
 namespace Syncra.Infrastructure.Persistence;
 
@@ -56,7 +55,6 @@ public class AppDbContext : DbContext
         
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         
-        PlanSeedData.Seed(modelBuilder);
         // User seed data is handled via SQL in migration (User entity has private setters)
     }
 }

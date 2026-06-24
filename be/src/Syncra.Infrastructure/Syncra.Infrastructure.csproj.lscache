@@ -124,7 +124,6 @@ Persistence/
  Converters/ValueObjectConverters.cs
  Interceptors/AuditInterceptor.cs
  Seed/
-  PlanSeedData.cs
   UserSeedData.cs
 Publishing/Adapters/Facebook/
  FacebookApiModels.cs
