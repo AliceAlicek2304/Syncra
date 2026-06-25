@@ -4,5 +4,5 @@ public sealed class PaymentOptions
 {
     public const string SectionName = "Payments";
 
-    public string DefaultProvider { get; set; } = "stripe";
+    public string DefaultProvider { get; set; } = "sepay";
 }

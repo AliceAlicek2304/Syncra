@@ -15,7 +15,7 @@ public sealed class PaymentProviderResolver : IPaymentProviderResolver
     {
         _providers = providers.ToDictionary(p => p.ProviderKey.ToLowerInvariant(), p => p);
         _defaultProviderKey = string.IsNullOrWhiteSpace(paymentOptions.Value.DefaultProvider)
-            ? "stripe"
+            ? "sepay"
             : paymentOptions.Value.DefaultProvider.Trim().ToLowerInvariant();
     }
 
