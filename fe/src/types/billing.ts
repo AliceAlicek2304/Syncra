@@ -46,6 +46,9 @@ export type StudentVerificationStatusDto = {
 export type RequestStudentVerificationResponse = {
   message: string;
   expiresAtUtc: string;
+  studentEmail?: string | null;
+  verifiedAtUtc?: string | null;
+  isVerified?: boolean;
 };
 
 export type VerifyStudentEmailResponse = {

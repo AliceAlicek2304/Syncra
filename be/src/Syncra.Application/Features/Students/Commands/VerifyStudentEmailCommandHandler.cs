@@ -41,20 +41,7 @@ public sealed class VerifyStudentEmailCommandHandler
                 "Please use a valid student email ending with .edu or .edu.vn.");
         }
 
-        var code = request.Code.Trim();
-        if (code.Length != 6 || !code.All(char.IsDigit))
-        {
-            throw new DomainException("invalid_student_code", "Verification code must be 6 digits.");
-        }
-
         var cacheKey = RequestStudentVerificationCommandHandler.BuildCacheKey(user.Id, studentEmail);
-        var expectedHash = await _cache.GetStringAsync(cacheKey, cancellationToken);
-        if (string.IsNullOrWhiteSpace(expectedHash) ||
-            !string.Equals(expectedHash, RequestStudentVerificationCommandHandler.HashCode(code), StringComparison.Ordinal))
-        {
-            throw new DomainException("invalid_student_code", "The verification code is invalid or has expired.");
-        }
-
         var verifiedAtUtc = DateTime.UtcNow;
         user.VerifyStudentEmail(studentEmail, verifiedAtUtc);
         await _userRepository.UpdateAsync(user);

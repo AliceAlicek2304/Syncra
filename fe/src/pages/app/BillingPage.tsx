@@ -83,14 +83,14 @@ export default function BillingPage() {
   const {
     subscription, loading, error, redirecting, studentStatus,
     loadCurrentSubscription, loadStudentVerificationStatus,
-    requestStudentVerificationCode, verifyStudentEmailCode,
+    requestStudentVerificationCode,
     startCheckout, openPortal
   } = useBilling();
   const { activeWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const [yearly, setYearly] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
-  const [studentCode, setStudentCode] = useState('');
+  
   const [studentLoading, setStudentLoading] = useState(false);
   const [banner, setBanner] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
 
@@ -144,7 +144,8 @@ export default function BillingPage() {
       return;
     }
 
-    await startCheckout(planCode, yearly ? 'year' : 'month', !isEligibleForTrial);
+    const skipTrial = planCode === 'STUDENT' || !isEligibleForTrial;
+    await startCheckout(planCode, yearly ? 'year' : 'month', skipTrial);
   };
 
   const handleRequestStudentCode = async () => {
@@ -152,23 +153,9 @@ export default function BillingPage() {
     setBanner(null);
     try {
       await requestStudentVerificationCode(studentEmail);
-      setBanner({ type: 'success', message: 'Mã xác thực đã được gửi tới email sinh viên của bạn.' });
-    } catch (err) {
-      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Không gửi được mã xác thực.' });
-    } finally {
-      setStudentLoading(false);
-    }
-  };
-
-  const handleVerifyStudentCode = async () => {
-    setStudentLoading(true);
-    setBanner(null);
-    try {
-      await verifyStudentEmailCode(studentEmail, studentCode);
-      setStudentCode('');
       setBanner({ type: 'success', message: 'Email sinh viên đã được xác thực. Bạn có thể mua gói Student.' });
     } catch (err) {
-      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Mã xác thực không hợp lệ.' });
+      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Không xác thực được email sinh viên.' });
     } finally {
       setStudentLoading(false);
     }
@@ -264,19 +251,8 @@ export default function BillingPage() {
               className={styles.studentInput}
               disabled={studentLoading}
             />
-            <button className={styles.secondaryBtn} onClick={handleRequestStudentCode} disabled={studentLoading || !studentEmail.trim()}>
-              Gửi mã
-            </button>
-            <input
-              value={studentCode}
-              onChange={e => setStudentCode(e.target.value)}
-              placeholder="Mã 6 số"
-              className={styles.codeInput}
-              maxLength={6}
-              disabled={studentLoading}
-            />
-            <button className={styles.actionBtnCompact} onClick={handleVerifyStudentCode} disabled={studentLoading || studentCode.trim().length !== 6}>
-              Xác thực
+            <button className={styles.actionBtnCompact} onClick={handleRequestStudentCode} disabled={studentLoading || !studentEmail.trim()}>
+              Xác thực email
             </button>
           </div>
           <div className={styles.studentStatus}>
@@ -333,7 +309,13 @@ export default function BillingPage() {
                     <span className={styles.currentLabel}>Đang dùng</span>
                   ) : (
                     <button className={styles.actionBtn} onClick={() => handleCheckout(plan.code)} disabled={redirecting || studentLocked}>
-                      {redirecting ? 'Đang chuyển...' : studentLocked ? 'Cần xác thực sinh viên' : (isEligibleForTrial ? 'Dùng thử 14 ngày' : `Nâng cấp ${plan.name}`)}
+                      {redirecting
+                        ? 'Đang chuyển...'
+                        : studentLocked
+                          ? 'Cần xác thực sinh viên'
+                          : plan.code === 'STUDENT'
+                            ? 'Thanh toán Student'
+                            : (isEligibleForTrial ? 'Dùng thử 14 ngày' : `Nâng cấp ${plan.name}`)}
                     </button>
                   )}
                 </div>

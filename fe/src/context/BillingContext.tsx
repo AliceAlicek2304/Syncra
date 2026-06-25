@@ -126,6 +126,15 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ studentEmail })
       }
     );
+    if (response.isVerified && response.studentEmail && response.verifiedAtUtc) {
+      setStudentStatus({
+        studentEmail: response.studentEmail,
+        verifiedAtUtc: response.verifiedAtUtc,
+        expiresAtUtc: response.expiresAtUtc,
+        isVerified: true,
+        isExpired: false
+      });
+    }
     return response;
   }, []);
 
