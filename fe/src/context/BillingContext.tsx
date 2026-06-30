@@ -22,7 +22,7 @@ interface BillingContextType {
   loadStudentVerificationStatus: () => Promise<void>;
   requestStudentVerificationCode: (studentEmail: string) => Promise<RequestStudentVerificationResponse>;
   verifyStudentEmailCode: (studentEmail: string, code: string) => Promise<VerifyStudentEmailResponse>;
-  startCheckout: (planCode: string, interval: 'month' | 'year', skipTrial?: boolean) => Promise<void>;
+  startCheckout: (planCode: string, interval: 'month' | 'year', skipTrial?: boolean, discountCode?: string | null) => Promise<void>;
   openPortal: () => Promise<void>;
 }
 
@@ -68,7 +68,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [workspaceId]);
 
-  const startCheckout = useCallback(async (planCode: string, interval: 'month' | 'year', skipTrial: boolean = false) => {
+  const startCheckout = useCallback(async (planCode: string, interval: 'month' | 'year', skipTrial: boolean = false, discountCode?: string | null) => {
     if (!workspaceId) {
       setError('Workspace ID not found.');
       return;
@@ -87,6 +87,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
         interval,
         successUrl,
         cancelUrl,
+        discountCode,
         skipTrial
       };
 

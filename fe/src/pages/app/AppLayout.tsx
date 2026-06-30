@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Lightbulb,
   BarChart3, LogOut, ChevronLeft, Menu, Repeat, HelpCircle, Plug,
   FileText, ChevronDown, ChevronUp, Layers, Inbox, MessageSquare, MessageCircle,
-  ChevronsUpDown, CreditCard, Settings
+  ChevronsUpDown, CreditCard, Settings, GraduationCap
 } from 'lucide-react'
 
 import {
@@ -67,6 +67,7 @@ export default function AppLayout() {
                         location.pathname.includes('/analytics') ||
                         location.pathname.includes('/inbox') ||
                         location.pathname.includes('/billing') ||
+                        location.pathname.includes('/student') ||
                         location.pathname.includes('/settings') ||
                         location.pathname.includes('/sepay-checkout')
 
@@ -286,6 +287,10 @@ export default function AppLayout() {
               <DropdownMenuItem onClick={() => navigate('/app/billing')}>
                 <CreditCard size={16} />
                 Thanh toán
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/student')}>
+                <GraduationCap size={16} />
+                Sinh viên
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/app/settings')}>
                 <Settings size={16} />

@@ -23,6 +23,9 @@ public class UserConfiguration : BaseEntityConfiguration<User>
         builder.Property(e => e.EmailVerifiedAtUtc).HasColumnName("email_verified_at_utc");
         builder.Property(e => e.LastLoginAtUtc).HasColumnName("last_login_at_utc");
         builder.Property(e => e.StudentEmail).HasMaxLength(256).HasColumnName("student_email");
+        builder.HasIndex(e => e.StudentEmail)
+            .IsUnique()
+            .HasFilter("student_email IS NOT NULL AND deleted_at_utc IS NULL");
         builder.Property(e => e.StudentEmailVerifiedAtUtc).HasColumnName("student_email_verified_at_utc");
         builder.Property(e => e.StudentVerificationExpiresAtUtc).HasColumnName("student_verification_expires_at_utc");
 

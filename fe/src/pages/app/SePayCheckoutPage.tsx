@@ -11,10 +11,15 @@ export default function SePayCheckoutPage() {
 
   const paymentCode = searchParams.get('code') || '';
   const amountStr = searchParams.get('amount') || '0';
+  const originalAmountStr = searchParams.get('originalAmount') || '';
+  const discountCode = searchParams.get('discountCode') || '';
+  const discountPercent = searchParams.get('discountPercent') || '';
   const planCode = searchParams.get('plan') || '';
   const interval = searchParams.get('interval') || 'month';
 
   const amount = parseInt(amountStr, 10);
+  const originalAmount = originalAmountStr ? parseInt(originalAmountStr, 10) : 0;
+  const hasDiscount = !!discountCode && originalAmount > amount;
 
   const accountNumber = searchParams.get('accountNumber') || import.meta.env.VITE_SEPAY_ACCOUNT_NUMBER || '1017588888';
   const bankCode = searchParams.get('bankCode') || import.meta.env.VITE_SEPAY_BANK_CODE || 'Vietinbank';
@@ -108,6 +113,18 @@ export default function SePayCheckoutPage() {
                 <span className={styles.summaryLabel}>Gói cước nâng cấp</span>
                 <span className={styles.summaryValue}>Syncra {planCode} ({interval === 'year' ? '1 Năm' : '1 Tháng'})</span>
               </div>
+              {hasDiscount && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Ưu đãi</span>
+                  <span className={styles.summaryValue}>{discountCode} -{discountPercent || '50'}%</span>
+                </div>
+              )}
+              {hasDiscount && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Giá gốc</span>
+                  <span className={styles.summaryValue}>{originalAmount.toLocaleString('vi-VN')} đ</span>
+                </div>
+              )}
               <div className={styles.summaryRow}>
                 <span className={styles.summaryLabel}>Tổng số tiền</span>
                 <span className={`${styles.summaryValue} ${styles.priceTotal}`}>

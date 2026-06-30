@@ -1,6 +1,7 @@
 using MediatR;
 using Syncra.Application.DTOs.Payments;
 using Syncra.Application.DTOs.Subscriptions;
+using Syncra.Application.Features.Subscriptions;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
@@ -62,15 +63,22 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
 
         if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase))
         {
-            var user = await _userRepository.GetByIdAsync(request.UserId)
-                ?? throw new DomainException("not_found", "User not found.");
+            throw new DomainException(
+                "plan_removed",
+                "Student is no longer a standalone plan. Use the student discount on Basic or Max.");
+        }
 
-            if (!user.HasValidStudentVerification)
-            {
-                throw new DomainException(
-                    "student_verification_required",
-                    "Please verify your student email before choosing the Student plan.");
-            }
+        var user = string.IsNullOrWhiteSpace(request.DiscountCode)
+            ? null
+            : await _userRepository.GetByIdAsync(request.UserId)
+                ?? throw new DomainException("not_found", "User not found.");
+        var discount = BillingDiscountPolicy.Resolve(plan.Code, request.DiscountCode, user);
+
+        if (discount != null && !providerKey.Equals("sepay", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new DomainException(
+                "discount_provider_unsupported",
+                $"Discount code '{discount.Code}' is not supported by provider '{providerKey}'.");
         }
 
         var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
@@ -94,6 +102,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
                 PriceId: priceId,
                 SuccessUrl: request.SuccessUrl ?? string.Empty,
                 CancelUrl: request.CancelUrl ?? string.Empty,
+                Interval: isYearly ? "year" : "month",
+                Discount: discount,
                 SkipTrial: request.SkipTrial),
             cancellationToken);
 

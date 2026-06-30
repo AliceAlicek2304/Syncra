@@ -10,6 +10,7 @@ public record CreateCheckoutSessionByPlanRequest(
     string? Interval,
     string? SuccessUrl,
     string? CancelUrl,
+    string? DiscountCode = null,
     bool SkipTrial = false);
 
 public record CreateCheckoutSessionResponse(

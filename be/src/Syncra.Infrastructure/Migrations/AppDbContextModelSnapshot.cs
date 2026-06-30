@@ -2110,6 +2110,10 @@ namespace Syncra.Infrastructure.Migrations
                     b.HasIndex("NormalizedEmail")
                         .IsUnique();
 
+                    b.HasIndex("StudentEmail")
+                        .IsUnique()
+                        .HasFilter("student_email IS NOT NULL AND deleted_at_utc IS NULL");
+
                     b.ToTable("users", (string)null);
                 });
 

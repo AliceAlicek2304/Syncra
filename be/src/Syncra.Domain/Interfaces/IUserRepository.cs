@@ -10,6 +10,7 @@ public interface IUserRepository
     Task UpdateAsync(User entity);
     Task DeleteAsync(Guid id);
     Task<User?> GetByEmailAsync(string email);
+    Task<User?> GetByStudentEmailAsync(string studentEmail, CancellationToken cancellationToken = default);
     Task<User?> GetByEmailWithOrganizationsAsync(string email);
     Task<User?> GetByIdWithProfileAsync(Guid id);
     Task<User?> GetByIdWithProfileAndWorkspacesAsync(Guid id);

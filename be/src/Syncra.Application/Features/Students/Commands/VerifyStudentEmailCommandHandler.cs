@@ -41,6 +41,14 @@ public sealed class VerifyStudentEmailCommandHandler
                 "Please use a valid student email ending with .edu or .edu.vn.");
         }
 
+        var studentEmailOwner = await _userRepository.GetByStudentEmailAsync(studentEmail, cancellationToken);
+        if (studentEmailOwner != null && studentEmailOwner.Id != user.Id)
+        {
+            throw new DomainException(
+                "student_email_already_used",
+                "This student email is already linked to another account.");
+        }
+
         var cacheKey = RequestStudentVerificationCommandHandler.BuildCacheKey(user.Id, studentEmail);
         var verifiedAtUtc = DateTime.UtcNow;
         user.VerifyStudentEmail(studentEmail, verifiedAtUtc);

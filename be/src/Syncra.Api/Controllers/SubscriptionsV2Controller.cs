@@ -52,6 +52,7 @@ public class SubscriptionsV2Controller : ControllerBase
             request.Interval,
             request.SuccessUrl,
             request.CancelUrl,
+            request.DiscountCode,
             request.SkipTrial);
 
         var result = await _mediator.Send(command, cancellationToken);

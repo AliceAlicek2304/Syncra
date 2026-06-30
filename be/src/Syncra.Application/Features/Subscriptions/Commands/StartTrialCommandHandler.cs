@@ -50,15 +50,9 @@ public sealed class StartTrialCommandHandler : IRequestHandler<StartTrialCommand
 
         if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase))
         {
-            var user = await _userRepository.GetByIdAsync(request.UserId)
-                ?? throw new DomainException("not_found", "User not found.");
-
-            if (!user.HasValidStudentVerification)
-            {
-                throw new DomainException(
-                    "student_verification_required",
-                    "Please verify your student email before starting the Student plan.");
-            }
+            throw new DomainException(
+                "plan_removed",
+                "Student is no longer a standalone plan. Use the student discount on Basic or Max.");
         }
 
         var existingSub = await _subscriptionRepository.GetByWorkspaceIdAsync(workspace.Id)

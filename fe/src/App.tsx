@@ -51,6 +51,7 @@ import MessagesPage from './pages/app/MessagesPage'
 import CommentsPage from './pages/app/CommentsPage'
 import SettingsPage from './pages/app/SettingsPage'
 import BillingPage from './pages/app/BillingPage'
+import StudentPage from './pages/app/StudentPage'
 import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 import { adminApi } from './api/admin'
 
@@ -216,6 +217,7 @@ function AnimatedRoutes() {
           <Route path="inbox/messages" element={<PageWrapper><MessagesPage /></PageWrapper>} />
           <Route path="inbox/comments" element={<PageWrapper><CommentsPage /></PageWrapper>} />
           <Route path="billing" element={<PageWrapper><BillingPage /></PageWrapper>} />
+          <Route path="student" element={<PageWrapper><StudentPage /></PageWrapper>} />
           <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
           <Route path="sepay-checkout" element={<PageWrapper><SePayCheckoutPage /></PageWrapper>} />
         </Route>
