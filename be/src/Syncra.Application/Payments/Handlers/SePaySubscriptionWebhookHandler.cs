@@ -12,6 +12,7 @@ namespace Syncra.Application.Payments.Handlers;
 public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
 {
     private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IBillingPaymentRepository _billingPaymentRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<SePaySubscriptionWebhookHandler> _logger;
 
@@ -22,10 +23,12 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
 
     public SePaySubscriptionWebhookHandler(
         ISubscriptionRepository subscriptionRepository,
+        IBillingPaymentRepository billingPaymentRepository,
         IUnitOfWork unitOfWork,
         ILogger<SePaySubscriptionWebhookHandler> logger)
     {
         _subscriptionRepository = subscriptionRepository;
+        _billingPaymentRepository = billingPaymentRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -46,10 +49,15 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
 
         webhookEvent.Metadata.TryGetValue("Interval", out var interval);
         var isYearly = string.Equals(interval, "year", StringComparison.OrdinalIgnoreCase);
+        var paidAmount = TryGetDecimal(webhookEvent.Metadata, "Amount");
+        var originalAmount = TryGetDecimal(webhookEvent.Metadata, "OriginalAmount");
+        webhookEvent.Metadata.TryGetValue("DiscountCode", out var discountCode);
+        var discountPercentOff = TryGetDecimal(webhookEvent.Metadata, "DiscountPercentOff");
 
         var existing = await _subscriptionRepository.GetByWorkspaceIdAsync(webhookEvent.WorkspaceId.Value);
         var now = DateTime.UtcNow;
         var periodEnd = isYearly ? now.AddYears(1) : now.AddMonths(1);
+        Subscription subscriptionForPayment;
 
         if (existing == null)
         {
@@ -69,6 +77,7 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
             };
 
             await _subscriptionRepository.AddAsync(subscription);
+            subscriptionForPayment = subscription;
             _logger.LogInformation("Created new SePay subscription for workspace {WorkspaceId} on plan {PlanId}", webhookEvent.WorkspaceId, planId);
         }
         else
@@ -85,9 +94,39 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
             existing.LastEventTimestampUtc = now;
 
             await _subscriptionRepository.UpdateAsync(existing);
+            subscriptionForPayment = existing;
             _logger.LogInformation("Updated existing SePay subscription to Active for workspace {WorkspaceId} on plan {PlanId}", webhookEvent.WorkspaceId, planId);
         }
 
+        if (!string.IsNullOrWhiteSpace(webhookEvent.EventId)
+            && paidAmount.HasValue
+            && !await _billingPaymentRepository.ExistsAsync(webhookEvent.Provider, webhookEvent.EventId, cancellationToken))
+        {
+            await _billingPaymentRepository.AddAsync(new BillingPayment
+            {
+                WorkspaceId = webhookEvent.WorkspaceId.Value,
+                SubscriptionId = subscriptionForPayment.Id,
+                PlanId = planId,
+                Provider = webhookEvent.Provider,
+                ProviderPaymentId = webhookEvent.EventId,
+                ProviderSubscriptionId = webhookEvent.ProviderSubscriptionId,
+                Amount = paidAmount.Value,
+                OriginalAmount = originalAmount,
+                Currency = "VND",
+                Interval = isYearly ? "year" : "month",
+                DiscountCode = string.IsNullOrWhiteSpace(discountCode) ? null : discountCode,
+                DiscountPercentOff = discountPercentOff,
+                PaidAtUtc = webhookEvent.EventCreatedAtUtc ?? now
+            }, cancellationToken);
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static decimal? TryGetDecimal(IReadOnlyDictionary<string, string> metadata, string key)
+    {
+        return metadata.TryGetValue(key, out var value) && decimal.TryParse(value, out var parsed)
+            ? parsed
+            : null;
     }
 }

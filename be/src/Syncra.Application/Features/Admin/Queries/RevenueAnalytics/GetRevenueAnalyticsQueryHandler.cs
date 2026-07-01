@@ -11,17 +11,20 @@ public sealed class GetRevenueAnalyticsQueryHandler
     : IRequestHandler<GetRevenueAnalyticsQuery, Result<RevenueAnalyticsDto>>
 {
     private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IBillingPaymentRepository _billingPaymentRepository;
     private readonly IPlanRepository _planRepository;
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly ILogger<GetRevenueAnalyticsQueryHandler> _logger;
 
     public GetRevenueAnalyticsQueryHandler(
         ISubscriptionRepository subscriptionRepository,
+        IBillingPaymentRepository billingPaymentRepository,
         IPlanRepository planRepository,
         IWorkspaceRepository workspaceRepository,
         ILogger<GetRevenueAnalyticsQueryHandler> logger)
     {
         _subscriptionRepository = subscriptionRepository;
+        _billingPaymentRepository = billingPaymentRepository;
         _planRepository = planRepository;
         _workspaceRepository = workspaceRepository;
         _logger = logger;
@@ -36,10 +39,14 @@ public sealed class GetRevenueAnalyticsQueryHandler
         try
         {
             var allSubscriptions = await _subscriptionRepository.GetAllAsync(cancellationToken);
+            var allPayments = await _billingPaymentRepository.GetAllAsync(cancellationToken);
             var allWorkspaces = await _workspaceRepository.GetAllAsync(cancellationToken);
 
             // Load plan data separately to avoid timeout
-            var planIds = allSubscriptions.Select(s => s.PlanId).Distinct().ToList();
+            var planIds = allSubscriptions.Select(s => s.PlanId)
+                .Concat(allPayments.Select(p => p.PlanId))
+                .Distinct()
+                .ToList();
             var plans = await _planRepository.GetByIdsAsync(planIds, cancellationToken);
 
             var activeSubscriptions = allSubscriptions.Where(s => s.Status == SubscriptionStatus.Active).ToList();
@@ -55,16 +62,23 @@ public sealed class GetRevenueAnalyticsQueryHandler
 
             // Calculate current month new subscriptions
             var currentMonthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var currentMonthEnd = currentMonthStart.AddMonths(1);
             var newSubscriptionsThisMonth = allSubscriptions.Count(s => s.StartsAtUtc >= currentMonthStart);
+            var actualRevenueThisMonth = allPayments
+                .Where(p => p.PaidAtUtc >= currentMonthStart && p.PaidAtUtc < currentMonthEnd)
+                .Sum(p => p.Amount);
+            var totalActualRevenue = allPayments.Sum(p => p.Amount);
 
             dto.Metrics = new List<RevenueMetricDto>
             {
-                new() { Id = "revenue", Title = "Doanh thu hàng tháng", Value = $"{totalMonthlyRevenue:N0} ₫", Growth = "+0", Trend = "up" },
-                new() { Id = "subscriptions", Title = "Tổng subscription", Value = totalSubscriptions.ToString("N0"), Growth = "+0", Trend = "up" },
+                new() { Id = "actual_revenue", Title = "Doanh thu thuc thu", Value = $"{actualRevenueThisMonth:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "mrr", Title = "MRR du kien", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "revenue", Title = "MRR du kien", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "total_collected", Title = "Tong tien da thu", Value = $"{totalActualRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "subscriptions", Title = "Tong subscription", Value = totalSubscriptions.ToString("N0"), Growth = $"+{newSubscriptionsThisMonth:N0}", Trend = "up" },
                 new() { Id = "active", Title = "Subscription active", Value = activeSubscriptionsCount.ToString("N0"), Growth = "+0", Trend = "up" },
-                new() { Id = "workspaces", Title = "Workspace đang dùng", Value = totalWorkspaces.ToString("N0"), Growth = "+0", Trend = "up" }
+                new() { Id = "workspaces", Title = "Workspace dang dung", Value = totalWorkspaces.ToString("N0"), Growth = "+0", Trend = "up" }
             };
-
             // Plans by usage
             var planUsage = activeSubscriptions
                 .GroupBy(s => s.PlanId)
@@ -90,7 +104,9 @@ public sealed class GetRevenueAnalyticsQueryHandler
                         PlanName = plan.Name,
                         PlanCode = plan.Code,
                         WorkspaceCount = item.Count,
+                        SubscriptionCount = item.Count,
                         MonthlyRevenue = item.Revenue,
+                        ActualRevenue = allPayments.Where(payment => payment.PlanId == item.PlanId).Sum(payment => payment.Amount),
                         Percentage = activeSubscriptionsCount > 0 ? Math.Round((double)item.Count / activeSubscriptionsCount * 100, 1) : 0
                     });
                 }
@@ -99,39 +115,51 @@ public sealed class GetRevenueAnalyticsQueryHandler
 
             // Monthly trends
             var monthlyRevenue = new List<decimal>();
+            var monthlyActualRevenue = new List<decimal>();
             var monthlyNewSubs = new List<int>();
             
             for (int i = 11; i >= 0; i--)
             {
                 var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
-                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                var monthEnd = monthStart.AddMonths(1);
                 
                 // Revenue for this month (from active subscriptions at end of month)
                 var activeInMonth = allSubscriptions.Where(s => 
-                    s.StartsAtUtc <= monthEnd && 
-                    (!s.EndsAtUtc.HasValue || s.EndsAtUtc.Value > monthStart) &&
+                    s.StartsAtUtc < monthEnd && 
+                    (!s.EndsAtUtc.HasValue || s.EndsAtUtc.Value >= monthStart) &&
                     s.Status == SubscriptionStatus.Active).ToList();
                 var revenueInMonth = activeInMonth.Sum(s => {
                     var plan = plans.FirstOrDefault(p => p.Id == s.PlanId);
                     return plan?.PriceMonthly ?? 0m;
                 });
                 monthlyRevenue.Add(revenueInMonth);
+
+                var actualRevenueInMonth = allPayments
+                    .Where(p => p.PaidAtUtc >= monthStart && p.PaidAtUtc < monthEnd)
+                    .Sum(p => p.Amount);
+                monthlyActualRevenue.Add(actualRevenueInMonth);
                 
                 // New subscriptions in this month
-                var newSubsInMonth = allSubscriptions.Count(s => s.StartsAtUtc >= monthStart && s.StartsAtUtc <= monthEnd);
+                var newSubsInMonth = allSubscriptions.Count(s => s.StartsAtUtc >= monthStart && s.StartsAtUtc < monthEnd);
                 monthlyNewSubs.Add(newSubsInMonth);
             }
 
             var currentMonthRevenue = monthlyRevenue.LastOrDefault();
             var previousMonthRevenue = monthlyRevenue.Count > 1 ? monthlyRevenue[monthlyRevenue.Count - 2] : 0m;
             var revenueGrowth = currentMonthRevenue - previousMonthRevenue;
+            var currentMonthActualRevenue = monthlyActualRevenue.LastOrDefault();
+            var previousMonthActualRevenue = monthlyActualRevenue.Count > 1 ? monthlyActualRevenue[monthlyActualRevenue.Count - 2] : 0m;
+            var actualRevenueGrowth = currentMonthActualRevenue - previousMonthActualRevenue;
 
             dto.Trends = new RevenueTrendsDto
             {
                 MonthlyRevenue = monthlyRevenue,
+                ActualRevenue = monthlyActualRevenue,
                 NewSubscriptions = monthlyNewSubs,
                 CurrentMonthRevenue = currentMonthRevenue,
-                RevenueGrowth = revenueGrowth
+                CurrentMonthActualRevenue = currentMonthActualRevenue,
+                RevenueGrowth = revenueGrowth,
+                ActualRevenueGrowth = actualRevenueGrowth
             };
 
             // Plan growth

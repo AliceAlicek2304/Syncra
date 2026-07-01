@@ -28,7 +28,8 @@ export default function DashboardV2() {
     }
   }, [overview])
 
-  const revenueTrend = normalizeMonths(revenueData?.trends?.monthlyRevenue ?? revenueData?.Trends?.MonthlyRevenue ?? [])
+  const expectedRevenueTrend = normalizeMonths(revenueData?.trends?.monthlyRevenue ?? revenueData?.Trends?.MonthlyRevenue ?? [])
+  const actualRevenueTrend = normalizeMonths(revenueData?.trends?.actualRevenue ?? revenueData?.Trends?.ActualRevenue ?? [])
   const totalPostsByMonth = useMemo(() => {
     const values = Object.values(postsByPlatform).map((item) => normalizeMonths(item))
     return monthLabels.map((_, index) => values.reduce((total, item) => total + asNumber(item[index]), 0))
@@ -82,8 +83,8 @@ export default function DashboardV2() {
             />
             <StatCard
               label="Doanh thu tháng"
-              value={formatVnd(revenueData?.trends?.currentMonthRevenue ?? revenueData?.Trends?.CurrentMonthRevenue ?? 0)}
-              hint="Tổng doanh thu subscription"
+              value={formatVnd(revenueData?.trends?.currentMonthActualRevenue ?? revenueData?.Trends?.CurrentMonthActualRevenue ?? 0)}
+              hint="Tien thuc thu trong thang"
               icon={<CircleDollarSign size={20} />}
               tone="#06b6d4"
             />
@@ -125,8 +126,15 @@ export default function DashboardV2() {
           </div>
 
           <div className={styles.grid2}>
-            <Card title="Doanh thu 12 tháng" meta="Đơn vị VND, lấy từ API revenue">
-              <ModernLineChart data={revenueTrend} labels={monthLabels} formatter={formatVnd} />
+            <Card title="Doanh thu 12 thang" meta="Thuc thu va MRR du kien tu API revenue">
+              <ModernLineChart
+                labels={monthLabels}
+                datasets={[
+                  { label: 'Thuc thu', data: actualRevenueTrend, color: '#10b981' },
+                  { label: 'MRR du kien', data: expectedRevenueTrend, color: '#2563eb' },
+                ]}
+                formatter={formatVnd}
+              />
             </Card>
             <Card title="Nền tảng nội dung" meta="Phân bổ bài đăng theo kênh">
               <ModernDonutChart

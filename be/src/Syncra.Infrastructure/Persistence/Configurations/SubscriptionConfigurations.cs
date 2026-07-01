@@ -58,3 +58,39 @@ public class SubscriptionConfiguration : BaseWorkspaceEntityConfiguration<Subscr
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class BillingPaymentConfiguration : BaseWorkspaceEntityConfiguration<BillingPayment>
+{
+    public override void Configure(EntityTypeBuilder<BillingPayment> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("billing_payments");
+
+        builder.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+        builder.Property(e => e.PlanId).HasColumnName("plan_id");
+        builder.Property(e => e.Provider).IsRequired().HasMaxLength(50).HasColumnName("provider");
+        builder.Property(e => e.ProviderPaymentId).IsRequired().HasMaxLength(200).HasColumnName("provider_payment_id");
+        builder.Property(e => e.ProviderSubscriptionId).HasMaxLength(200).HasColumnName("provider_subscription_id");
+        builder.Property(e => e.Amount).HasPrecision(18, 2).HasColumnName("amount");
+        builder.Property(e => e.OriginalAmount).HasPrecision(18, 2).HasColumnName("original_amount");
+        builder.Property(e => e.Currency).IsRequired().HasMaxLength(10).HasColumnName("currency");
+        builder.Property(e => e.Interval).IsRequired().HasMaxLength(20).HasColumnName("interval");
+        builder.Property(e => e.DiscountCode).HasMaxLength(100).HasColumnName("discount_code");
+        builder.Property(e => e.DiscountPercentOff).HasPrecision(5, 2).HasColumnName("discount_percent_off");
+        builder.Property(e => e.PaidAtUtc).HasColumnName("paid_at_utc");
+
+        builder.HasIndex(e => new { e.Provider, e.ProviderPaymentId }).IsUnique();
+        builder.HasIndex(e => e.WorkspaceId).HasDatabaseName("ix_billing_payments_workspace_id");
+        builder.HasIndex(e => e.PaidAtUtc).HasDatabaseName("ix_billing_payments_paid_at_utc");
+
+        builder.HasOne(e => e.Plan)
+            .WithMany()
+            .HasForeignKey(e => e.PlanId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Subscription)
+            .WithMany()
+            .HasForeignKey(e => e.SubscriptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}

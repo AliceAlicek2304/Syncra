@@ -32,16 +32,21 @@ public class PlanUsageDto
     public string PlanName { get; set; } = string.Empty;
     public string PlanCode { get; set; } = string.Empty;
     public int WorkspaceCount { get; set; }
+    public int SubscriptionCount { get; set; }
     public decimal MonthlyRevenue { get; set; }
+    public decimal ActualRevenue { get; set; }
     public double Percentage { get; set; }
 }
 
 public class RevenueTrendsDto
 {
     public IEnumerable<decimal> MonthlyRevenue { get; set; } = new List<decimal>();
+    public IEnumerable<decimal> ActualRevenue { get; set; } = new List<decimal>();
     public IEnumerable<int> NewSubscriptions { get; set; } = new List<int>();
     public decimal CurrentMonthRevenue { get; set; }
+    public decimal CurrentMonthActualRevenue { get; set; }
     public decimal RevenueGrowth { get; set; }
+    public decimal ActualRevenueGrowth { get; set; }
 }
 
 public class PlanGrowthDto

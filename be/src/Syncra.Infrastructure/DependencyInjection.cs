@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IMediaRepository, MediaRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IBillingPaymentRepository, BillingPaymentRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();

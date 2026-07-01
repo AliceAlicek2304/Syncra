@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<BillingPayment> BillingPayments => Set<BillingPayment>();
     public DbSet<UsageCounter> UsageCounters => Set<UsageCounter>();
     
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

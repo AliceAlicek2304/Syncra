@@ -525,3 +525,148 @@
   opacity: 0.5;
 }
 
+@media (max-width: 860px) {
+  .layout,
+  .collapsed {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar,
+  .collapsed .sidebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 68px;
+    z-index: 50;
+    flex-direction: row;
+    align-items: center;
+    border-right: 0;
+    border-top: 1px solid var(--border-glass);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .lightThemeLayout .sidebar {
+    border-right: 0;
+    border-top: 1px solid #eadcf1;
+  }
+
+  .sidebarTop,
+  .workspaceWrapper,
+  .newPostWrap,
+  .subChevron,
+  .subItems,
+  .navBadge {
+    display: none;
+  }
+
+  .sidebarBottom {
+    display: flex;
+    flex: 0 0 58px;
+    height: 100%;
+    padding: 6px;
+    border-top: 0;
+    border-left: 1px solid var(--border-glass);
+  }
+
+  .lightThemeLayout .sidebarBottom {
+    border-top: 0;
+    border-left: 1px solid #eadcf1;
+  }
+
+  .userTrigger {
+    justify-content: center;
+    min-height: 0;
+    height: 100%;
+    padding: 6px;
+  }
+
+  .userInfo,
+  .chevronDown {
+    display: none;
+  }
+
+  .nav {
+    width: 100%;
+    height: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navItem,
+  .subMenuBar {
+    flex: 0 0 64px;
+    height: 54px;
+    min-width: 64px;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
+    transform: none;
+  }
+
+  .navItem:hover,
+  .subNavItem:hover,
+  .lightThemeLayout .navItem:hover,
+  .lightThemeLayout .subNavItem:hover {
+    transform: none;
+  }
+
+  .navIcon {
+    justify-content: center;
+  }
+
+  .navLabel {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .subMenuContainer {
+    flex: 0 0 auto;
+  }
+
+  .main {
+    min-height: 100vh;
+    padding-bottom: 78px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar,
+  .collapsed .sidebar {
+    height: 64px;
+  }
+
+  .nav {
+    padding: 5px 6px;
+  }
+
+  .navItem,
+  .subMenuBar {
+    flex-basis: 58px;
+    min-width: 58px;
+    height: 52px;
+    font-size: 10px;
+  }
+
+  .main {
+    padding-bottom: 74px;
+  }
+}
+
