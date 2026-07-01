@@ -32,16 +32,16 @@ export default function RevenueAnalyticsV2() {
     <div>
       <PageHeader
         eyebrow="Revenue"
-        title="Phan tich doanh thu"
-        subtitle="Tach rieng subscription dang ky, MRR du kien va tien thuc thu tu payment thanh cong."
+        title="Phân tích doanh thu"
+        subtitle="Tách riêng subscription đăng ký, MRR dự kiến và tiền thực thu từ payment thành công."
         actions={
           <>
             <div className={styles.searchWrap}>
               <Search size={15} className={styles.searchIcon} />
-              <input className={styles.inputSearch} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tim workspace..." />
+              <input className={styles.inputSearch} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm workspace..." />
             </div>
             <select className={styles.select} value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="all">Tat ca goi</option>
+              <option value="all">Tất cả gói</option>
               {planNames.map((item) => <option key={item} value={String(item).toLowerCase()}>{String(item)}</option>)}
             </select>
           </>
@@ -51,26 +51,26 @@ export default function RevenueAnalyticsV2() {
       {isLoading ? <LoadingState /> : (
         <>
           <div className={styles.statsGrid}>
-            <StatCard label="Thuc thu thang nay" value={formatVnd(statById('actual_revenue')?.value ?? trends.currentMonthActualRevenue ?? trends.CurrentMonthActualRevenue)} hint="Tien da nhan tu SePay" icon={<WalletCards size={20} />} tone="#10b981" />
-            <StatCard label="MRR du kien" value={formatVnd(statById('mrr')?.value ?? trends.currentMonthRevenue ?? trends.CurrentMonthRevenue)} hint="Tinh theo goi active" icon={<CreditCard size={20} />} />
-            <StatCard label="Tong da thu" value={formatVnd(statById('total_collected')?.value ?? 0)} hint="Luy ke payment thanh cong" icon={<CheckCircle2 size={20} />} tone="#8b5cf6" />
-            <StatCard label="Tong subscription" value={statById('subscriptions')?.value ?? '0'} hint={statById('subscriptions')?.growth ?? 'Tat ca goi'} trendClassName={trendClass(statById('subscriptions')?.growth, styles)} icon={<CreditCard size={20} />} />
-            <StatCard label="Subscription active" value={statById('active')?.value ?? '0'} hint={statById('active')?.growth ?? 'Dang hieu luc'} trendClassName={trendClass(statById('active')?.growth, styles)} icon={<CheckCircle2 size={20} />} tone="#8b5cf6" />
-            <StatCard label="Workspace tra phi" value={statById('workspaces')?.value ?? '0'} hint={statById('workspaces')?.growth ?? 'Dang su dung'} trendClassName={trendClass(statById('workspaces')?.growth, styles)} icon={<Building2 size={20} />} tone="#06b6d4" />
+            <StatCard label="Thực thu tháng này" value={formatVnd(statById('actual_revenue')?.value ?? trends.currentMonthActualRevenue ?? trends.CurrentMonthActualRevenue)} hint="Tiền đã nhận từ SePay" icon={<WalletCards size={20} />} tone="#10b981" />
+            <StatCard label="MRR dự kiến" value={formatVnd(statById('mrr')?.value ?? trends.currentMonthRevenue ?? trends.CurrentMonthRevenue)} hint="Tính theo gói active" icon={<CreditCard size={20} />} />
+            <StatCard label="Tổng đã thu" value={formatVnd(statById('total_collected')?.value ?? 0)} hint="Lũy kế payment thành công" icon={<CheckCircle2 size={20} />} tone="#8b5cf6" />
+            <StatCard label="Tổng subscription" value={statById('subscriptions')?.value ?? '0'} hint={statById('subscriptions')?.growth ?? 'Tất cả gói'} trendClassName={trendClass(statById('subscriptions')?.growth, styles)} icon={<CreditCard size={20} />} />
+            <StatCard label="Subscription active" value={statById('active')?.value ?? '0'} hint={statById('active')?.growth ?? 'Đang hiệu lực'} trendClassName={trendClass(statById('active')?.growth, styles)} icon={<CheckCircle2 size={20} />} tone="#8b5cf6" />
+            <StatCard label="Workspace trả phí" value={statById('workspaces')?.value ?? '0'} hint={statById('workspaces')?.growth ?? 'Đang sử dụng'} trendClassName={trendClass(statById('workspaces')?.growth, styles)} icon={<Building2 size={20} />} tone="#06b6d4" />
           </div>
 
           <div className={styles.chartGrid}>
-            <Card title="Xu huong doanh thu" meta="Thuc thu va MRR du kien trong 12 thang gan nhat">
+            <Card title="Xu hướng doanh thu" meta="Thực thu và MRR dự kiến trong 12 tháng gần nhất">
               <ModernLineChart
                 labels={monthLabels}
                 datasets={[
-                  { label: 'Thuc thu', data: actualRevenue, color: '#10b981' },
-                  { label: 'MRR du kien', data: expectedRevenue, color: '#2563eb' },
+                  { label: 'Thực thu', data: actualRevenue, color: '#10b981' },
+                  { label: 'MRR dự kiến', data: expectedRevenue, color: '#2563eb' },
                 ]}
                 formatter={formatVnd}
               />
             </Card>
-            <Card title="Goi dang su dung" meta="Subscription, thuc thu va MRR theo goi">
+            <Card title="Gói đang sử dụng" meta="Subscription, thực thu và MRR theo gói">
               {plansByUsage.length === 0 ? <EmptyState /> : (
                 <div className={styles.list}>
                   {plansByUsage.map((item) => (
@@ -94,10 +94,10 @@ export default function RevenueAnalyticsV2() {
           </div>
 
           <div className={styles.grid2}>
-            <Card title="Subscription moi" meta="So luong dang ky moi theo thang">
+            <Card title="Subscription mới" meta="Số lượng đăng ký mới theo tháng">
               <ModernBarChart data={normalizeMonths(trends.newSubscriptions ?? trends.NewSubscriptions)} labels={monthLabels} colors={monthLabels.map((_, index) => index === 11 ? '#2563eb' : '#bfdbfe')} />
             </Card>
-            <Card title="Tang truong theo goi" meta="Chenh lech so luong subscription">
+            <Card title="Tăng trưởng theo gói" meta="Chênh lệch số lượng subscription">
               <ModernBarChart
                 data={planGrowth.map((item) => item.growth ?? 0)}
                 labels={planGrowth.map((item) => item.planName ?? '-')}
@@ -106,15 +106,15 @@ export default function RevenueAnalyticsV2() {
             </Card>
           </div>
 
-          <Card title="Subscription theo workspace" meta="Danh sach co the loc theo workspace va goi">
-            {filteredSubscriptions.length === 0 ? <EmptyState>Khong tim thay subscription phu hop.</EmptyState> : (
+          <Card title="Subscription theo workspace" meta="Danh sách có thể lọc theo workspace và gói">
+            {filteredSubscriptions.length === 0 ? <EmptyState>Không tìm thấy subscription phù hợp.</EmptyState> : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
                       <th>Workspace</th>
-                      <th>Goi</th>
-                      <th>Trang thai</th>
+                      <th>Gói</th>
+                      <th>Trạng thái</th>
                       <th>Workspace ID</th>
                     </tr>
                   </thead>

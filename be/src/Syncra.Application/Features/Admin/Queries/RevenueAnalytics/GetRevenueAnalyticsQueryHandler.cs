@@ -71,13 +71,13 @@ public sealed class GetRevenueAnalyticsQueryHandler
 
             dto.Metrics = new List<RevenueMetricDto>
             {
-                new() { Id = "actual_revenue", Title = "Doanh thu thuc thu", Value = $"{actualRevenueThisMonth:N0} VND", Growth = "+0", Trend = "up" },
-                new() { Id = "mrr", Title = "MRR du kien", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
-                new() { Id = "revenue", Title = "MRR du kien", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
-                new() { Id = "total_collected", Title = "Tong tien da thu", Value = $"{totalActualRevenue:N0} VND", Growth = "+0", Trend = "up" },
-                new() { Id = "subscriptions", Title = "Tong subscription", Value = totalSubscriptions.ToString("N0"), Growth = $"+{newSubscriptionsThisMonth:N0}", Trend = "up" },
+                new() { Id = "actual_revenue", Title = "Doanh thu thực thu", Value = $"{actualRevenueThisMonth:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "mrr", Title = "MRR dự kiến", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "revenue", Title = "MRR dự kiến", Value = $"{totalMonthlyRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "total_collected", Title = "Tổng tiền đã thu", Value = $"{totalActualRevenue:N0} VND", Growth = "+0", Trend = "up" },
+                new() { Id = "subscriptions", Title = "Tổng subscription", Value = totalSubscriptions.ToString("N0"), Growth = $"+{newSubscriptionsThisMonth:N0}", Trend = "up" },
                 new() { Id = "active", Title = "Subscription active", Value = activeSubscriptionsCount.ToString("N0"), Growth = "+0", Trend = "up" },
-                new() { Id = "workspaces", Title = "Workspace dang dung", Value = totalWorkspaces.ToString("N0"), Growth = "+0", Trend = "up" }
+                new() { Id = "workspaces", Title = "Workspace đang dùng", Value = totalWorkspaces.ToString("N0"), Growth = "+0", Trend = "up" }
             };
             // Plans by usage
             var planUsage = activeSubscriptions
