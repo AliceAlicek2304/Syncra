@@ -234,7 +234,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
         }
       } else if (initialPlatform) {
         const normPlatform = initialPlatform.toLowerCase()
-        const mappedPlatform = normPlatform === 'x' ? 'twitter' : normPlatform
+        const mappedPlatform = normPlatform === 'x' ? 'twitter' as const : normPlatform
         
         // Find active social accounts matching the initial platform
         const matchingAccounts = socialAccounts
@@ -362,7 +362,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [tiktokDraft, setTiktokDraft] = useState(false)
   const [tiktokPhotoDescription, setTiktokPhotoDescription] = useState('')
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
-    tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: ''
+    tiktok: '', facebook: '', linkedin: '', youtube: ''
   })
   const [platformTimeOverrides, setPlatformTimeOverrides] = useState<Record<string, string>>({})
   const [timezone, setTimezone] = useState('Bangkok')
@@ -371,7 +371,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [platformSpecificData, setPlatformSpecificData] = useState<AllPlatformData>({})
 
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
-    tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false
+    tiktok: false, facebook: false, linkedin: false, youtube: false
   })
 
   const [showPreview, setShowPreview] = useState(true)
@@ -492,7 +492,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
         if (initialPlatform) {
           const normPlatform = initialPlatform.toLowerCase();
           const mappedPlatform = normPlatform === 'x' ? 'twitter' : normPlatform;
-          if ((PLATFORMS as { id: string }[]).some(p => p.id === mappedPlatform)) {
+          if (['tiktok', 'facebook', 'linkedin', 'youtube'].includes(mappedPlatform)) {
             initPlatforms = [mappedPlatform as Platform]
           }
         }
@@ -501,7 +501,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setMainContent(nextContent)
       setCaptionsByPlatform(nextCaptions)
       setPlatformSpecificData(initialPlatformSpecificData)
-      setTouched({ tiktok: false, instagram: false, facebook: false, twitter: false, linkedin: false, youtube: false, pinterest: false })
+      setTouched({ tiktok: false, facebook: false, linkedin: false, youtube: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
       setPublishingTab(editPost?.status === 'draft' ? 'draft' : initSchMode ? 'schedule' : 'now')
@@ -510,7 +510,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       initialSnapshotRef.current = JSON.stringify({
         mainContent: nextContent,
-        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' },
+        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', facebook: '', linkedin: '', youtube: '' },
         media: mediaHook.media,
         activePlatforms: initPlatforms.length > 0 ? initPlatforms : [],
         scheduleMode: initSchMode,

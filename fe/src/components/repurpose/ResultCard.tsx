@@ -260,7 +260,6 @@ export default function ResultCard({ atom, index = 0, onCreatePostToolbar }: Pro
         <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
           <Type className="w-3 h-3" /> {editContent.length} ký tự
         </span>
-        <span className="text-[11px] text-[var(--text-dim)]">Click để chỉnh sửa & đăng</span>
       </div>
     </div>
   )
