@@ -58,7 +58,7 @@ function PlatformIcon({ platformKey }: { platformKey: PlatformKey; color: string
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SocialAccounts() {
-  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace();
+  const { activeWorkspace, activeProfile, isLoading: workspaceLoading } = useWorkspace();
   const [accounts, setAccounts] = useState<SocialAccountDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
@@ -125,12 +125,16 @@ export default function SocialAccounts() {
     setConnectingPlatform(platform);
     let isRedirecting = false;
     try {
-      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select`;
+      const activeProfileId = activeProfile?.id || '';
+      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select?syncraProfileId=${activeProfileId}`;
       const response = await api.get<{ connectUrl: string }>(
         `social-accounts/connect-url/${platform}`,
         {
           params: { redirectUrl: callbackUrl },
-          headers: { 'X-Workspace-Id': activeWorkspace.id },
+          headers: { 
+            'X-Workspace-Id': activeWorkspace.id,
+            'X-Profile-Id': activeProfileId
+          },
         }
       );
       isRedirecting = true;

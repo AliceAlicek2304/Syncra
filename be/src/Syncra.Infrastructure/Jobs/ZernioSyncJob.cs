@@ -43,7 +43,14 @@ public class ZernioSyncJob
 
             foreach (var profile in profiles)
             {
-                await SyncPostsForProfileAsync(profile.ZernioProfileId, cancellationToken);
+                try
+                {
+                    await SyncPostsForProfileAsync(profile.ZernioProfileId, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error synchronizing posts for Zernio profile {ProfileId}", profile.ZernioProfileId);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);

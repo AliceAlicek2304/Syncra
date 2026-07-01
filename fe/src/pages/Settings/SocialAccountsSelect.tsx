@@ -70,6 +70,7 @@ export default function SocialAccountsSelect() {
   const accountId = searchParams.get('accountId') ?? '';
   const username = searchParams.get('username') ?? '';
   const profileId = searchParams.get('profileId') ?? '';
+  const syncraProfileId = searchParams.get('syncraProfileId') ?? '';
   const userProfileParam = searchParams.get('userProfile') ?? '';
 
   // Decode and parse userProfile from URL (facebook redirects double-url encode this parameter)
@@ -119,7 +120,8 @@ export default function SocialAccountsSelect() {
           },
         }, {
           headers: {
-            'X-Workspace-Id': activeWorkspace.id
+            'X-Workspace-Id': activeWorkspace.id,
+            ...(syncraProfileId ? { 'X-Profile-Id': syncraProfileId } : {})
           }
         });
       } else {
@@ -130,7 +132,8 @@ export default function SocialAccountsSelect() {
           userProfile: userProfileObj || {},
         }, {
           headers: {
-            'X-Workspace-Id': activeWorkspace.id
+            'X-Workspace-Id': activeWorkspace.id,
+            ...(syncraProfileId ? { 'X-Profile-Id': syncraProfileId } : {})
           }
         });
       }
@@ -143,7 +146,7 @@ export default function SocialAccountsSelect() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [platform, profileId, tempToken, state, userProfileObj, selectedId, activeWorkspace, showSuccess, navigate, showError]);
+  }, [platform, profileId, syncraProfileId, tempToken, state, userProfileObj, selectedId, activeWorkspace, showSuccess, navigate, showError]);
 
   // ─ Handle direct connect or fetch pages ──────────────────────────────
 
@@ -215,7 +218,10 @@ export default function SocialAccountsSelect() {
             accountId,
             displayName: username,
           }, {
-            headers: { 'X-Workspace-Id': activeWorkspace.id }
+            headers: { 
+              'X-Workspace-Id': activeWorkspace.id,
+              ...(syncraProfileId ? { 'X-Profile-Id': syncraProfileId } : {})
+            }
           });
           showSuccess(`${platform} account connected successfully`);
           navigate('/app/connections', { replace: true });
@@ -254,7 +260,10 @@ export default function SocialAccountsSelect() {
             `connect/facebook/select-page`,
             {
               params: { profileId, tempToken },
-              headers: { 'X-Workspace-Id': activeWorkspace.id }
+              headers: { 
+                'X-Workspace-Id': activeWorkspace.id,
+                ...(syncraProfileId ? { 'X-Profile-Id': syncraProfileId } : {})
+              }
             }
           );
         } else {
@@ -262,7 +271,10 @@ export default function SocialAccountsSelect() {
             `social-accounts/${platform}/pages`,
             {
               params: { tempToken, state, userProfile: userProfileParam },
-              headers: { 'X-Workspace-Id': activeWorkspace.id }
+              headers: { 
+                'X-Workspace-Id': activeWorkspace.id,
+                ...(syncraProfileId ? { 'X-Profile-Id': syncraProfileId } : {})
+              }
             }
           );
         }

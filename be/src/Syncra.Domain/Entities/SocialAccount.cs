@@ -52,6 +52,15 @@ public sealed class SocialAccount : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void UpdateProfile(Guid zernioProfileId)
+    {
+        if (ZernioProfileId != zernioProfileId)
+        {
+            ZernioProfileId = zernioProfileId;
+            UpdatedAtUtc = DateTime.UtcNow;
+        }
+    }
+
     public void Deactivate()
     {
         if (!IsActive) return;

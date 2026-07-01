@@ -114,9 +114,10 @@ public sealed class SocialAccountsController : ControllerBase
             .AsNoTracking()
             .Where(sa => sa.WorkspaceId == workspaceId.Value && sa.IsActive);
 
-        if (zernioProfile != null)
+        var explicitProfileId = HttpContext.Items[Middleware.ProfileResolutionMiddleware.ProfileIdKey] as Guid?;
+        if (explicitProfileId != null)
         {
-            baseQuery = baseQuery.Where(sa => sa.ZernioProfileId == zernioProfile.Id);
+            baseQuery = baseQuery.Where(sa => sa.ZernioProfileId == explicitProfileId.Value);
         }
 
         var totalItems = await baseQuery.CountAsync(cancellationToken);
@@ -377,6 +378,8 @@ public sealed class SocialAccountsController : ControllerBase
         {
             await _cache.RemoveAsync($"{DisconnectGraceCacheKeyPrefix}{existing.Id}", cancellationToken);
 
+            existing.UpdateProfile(zernioProfile.Id);
+
             if (!existing.IsActive)
             {
                 existing.Reactivate();
@@ -474,6 +477,8 @@ public sealed class SocialAccountsController : ControllerBase
         if (existing is not null)
         {
             await _cache.RemoveAsync($"{DisconnectGraceCacheKeyPrefix}{existing.Id}", cancellationToken);
+
+            existing.UpdateProfile(zernioProfile.Id);
 
             if (!existing.IsActive)
             {

@@ -686,7 +686,7 @@ export default function ConnectionsPage() {
 
     setConnectingPlatform(platformId);
     try {
-      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select`;
+      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}social-accounts/select?syncraProfileId=${profileId}`;
       const response = await api.get<{ connectUrl: string }>(
         `social-accounts/connect-url/${platformId}`,
         {
@@ -845,8 +845,13 @@ export default function ConnectionsPage() {
               {account.displayName || account.externalAccountId} • {displayDate}
             </div>
             <div className={styles.handleBlock}>
-              <span className={styles.handleDot} style={{ backgroundColor: account.workspace.color || '#c084fc' }} />
-              <span className={styles.handleText}>{account.workspace.name}</span>
+              <span
+                className={styles.handleDot}
+                style={{ backgroundColor: profiles.find(p => p.id === account.zernioProfileId)?.color || '#c084fc' }}
+              />
+              <span className={styles.handleText}>
+                {profiles.find(p => p.id === account.zernioProfileId)?.name || 'Default'}
+              </span>
             </div>
           </div>
 

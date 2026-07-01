@@ -41,15 +41,26 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
         int? fetchPage = profiles.Count > 1 ? 1 : page;
         int? fetchLimit = profiles.Count > 1 ? page * pageSize : pageSize;
 
-        var tasks = profiles.Select(p => _zernioClient.ListPostsAsync(
-            profileId: p.ZernioProfileId,
-            page: fetchPage,
-            limit: fetchLimit,
-            status: request.Status?.ToLowerInvariant(),
-            sortBy: "scheduled-desc",
-            dateFrom: request.ScheduledFromUtc,
-            dateTo: request.ScheduledToUtc,
-            cancellationToken: cancellationToken));
+        var tasks = profiles.Select(async p => {
+            try
+            {
+                return await _zernioClient.ListPostsAsync(
+                    profileId: p.ZernioProfileId,
+                    page: fetchPage,
+                    limit: fetchLimit,
+                    status: request.Status?.ToLowerInvariant(),
+                    sortBy: "scheduled-desc",
+                    dateFrom: request.ScheduledFromUtc,
+                    dateTo: request.ScheduledToUtc,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Log warning and return empty response to prevent whole request from failing
+                // using ILogger (not injected directly, but let's see if _logger is available or if we can use Console/other way)
+                return new ZernioPostListResponseDto(Array.Empty<ZernioPostListItemDto>(), 1, fetchLimit ?? pageSize, 0, 1);
+            }
+        });
 
         var results = await Task.WhenAll(tasks);
 

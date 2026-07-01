@@ -100,6 +100,8 @@ public sealed class ConnectController : ControllerBase
 
             if (existing is not null)
             {
+                existing.UpdateProfile(zernioProfile.Id);
+
                 if (!existing.IsActive)
                 {
                     existing.Reactivate();

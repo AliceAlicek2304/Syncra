@@ -89,8 +89,10 @@ export const socialAccountsApi = {
     params?: { page?: number; pageSize?: number },
     profileId?: string
   ): Promise<PagedResult<SocialAccountDto>> => {
-    const headers: Record<string, string> = { 'X-Workspace-Id': workspaceId };
-    if (profileId) headers['X-Profile-Id'] = profileId;
+    const headers: Record<string, string> = { 
+      'X-Workspace-Id': workspaceId,
+      'X-Profile-Id': profileId ?? ''
+    };
     const response = await api.get<PagedResult<SocialAccountDto>>('social-accounts', {
       headers,
       params,

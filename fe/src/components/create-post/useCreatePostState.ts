@@ -418,14 +418,6 @@ export function useCreatePostState(props: CreatePostModalProps) {
       let initialPlatformSpecificData: AllPlatformData = {}
 
       if (editPost) {
-        if (editPost.isSplitVideoPost) {
-          onToast?.({
-            message: 'This post targets multiple platforms (split video post workaround) and cannot be edited. Please delete and recreate.',
-            type: 'error'
-          })
-          onClose()
-          return
-        }
         nextContent = editPost.caption
         nextCaptions = {
           tiktok: editPost.caption,
