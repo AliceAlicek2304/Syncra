@@ -25,6 +25,7 @@ public sealed class SePayTests
 {
     private readonly Mock<IWorkspaceRepository> _workspaceRepositoryMock = new();
     private readonly Mock<ISubscriptionRepository> _subscriptionRepositoryMock = new();
+    private readonly Mock<IBillingPaymentRepository> _billingPaymentRepositoryMock = new();
     private readonly Mock<IPlanRepository> _planRepositoryMock = new();
     private readonly Mock<IDistributedCache> _cacheMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
@@ -114,6 +115,7 @@ public sealed class SePayTests
 
         var handler = new SePaySubscriptionWebhookHandler(
             _subscriptionRepositoryMock.Object,
+            _billingPaymentRepositoryMock.Object,
             _unitOfWorkMock.Object,
             webhookLoggerMock.Object
         );

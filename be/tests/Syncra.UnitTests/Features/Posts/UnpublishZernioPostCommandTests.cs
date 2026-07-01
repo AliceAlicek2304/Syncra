@@ -139,7 +139,7 @@ public class UnpublishZernioPostCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task UnpublishHandler_ZernioApiFails_ReturnsFalseAndDoesNotDeletePostLocal()
+    public async Task UnpublishHandler_ZernioApiFails_ThrowsExceptionAndDoesNotDeletePostLocal()
     {
         // Arrange
         var post = Post.Create(_workspaceId, _userId, "Title", "Content");
@@ -160,11 +160,8 @@ public class UnpublishZernioPostCommandTests : IDisposable
 
         var cmd = new UnpublishZernioPostCommand(_workspaceId, post.ZernioPostId!, "facebook");
 
-        // Act
-        var result = await _handler.Handle(cmd, CancellationToken.None);
-
-        // Assert
-        Assert.False(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _handler.Handle(cmd, CancellationToken.None));
 
         var updatedPost = await _db.Posts.FirstAsync(p => p.Id == post.Id);
         Assert.False(updatedPost.IsDeleted);

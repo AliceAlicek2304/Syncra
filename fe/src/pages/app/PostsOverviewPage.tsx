@@ -411,8 +411,8 @@ export default function PostsOverviewPage() {
       setDeleteConfirmPost(null)
       setOpenMenuPostId(null)
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
-    } catch (err) {
-      showError('Failed to delete post')
+    } catch (err: any) {
+      showError(err?.response?.data?.message || 'Failed to delete post')
     } finally {
       setIsDeletingSingle(false)
     }
@@ -431,8 +431,8 @@ export default function PostsOverviewPage() {
       setDeleteConfirmPost(null)
       setOpenMenuPostId(null)
       queryClient.invalidateQueries({ queryKey: ['posts', workspaceId] })
-    } catch (err) {
-      showError('Failed to delete post')
+    } catch (err: any) {
+      showError(err?.response?.data?.message || 'Failed to delete post')
     } finally {
       setIsDeletingSyncraOnly(false)
     }
@@ -461,8 +461,8 @@ export default function PostsOverviewPage() {
         await postsApi.deletePost(workspaceId, post.id)
         showSuccess('Post deleted successfully')
       }
-    } catch (err) {
-      showError('Failed to delete post')
+    } catch (err: any) {
+      showError(err?.response?.data?.message || 'Failed to delete post')
     } finally {
       setDeleteConfirmPost(null)
       setOpenMenuPostId(null)

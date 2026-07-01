@@ -1021,7 +1021,11 @@ public sealed class ZernioClient : IZernioClient
         catch (ApiException ex)
         {
             _logger.LogError(ex, "Zernio API error unpublishing post {PostId}", zernioPostId);
-            throw new DomainException("zernio_unpublish_post_error", "Failed to unpublish Zernio post", ex);
+            var detailMessage = TryParseErrorMessage(ex.ErrorContent?.ToString());
+            var message = string.IsNullOrEmpty(detailMessage)
+                ? "Failed to unpublish Zernio post"
+                : $"Failed to unpublish Zernio post: {detailMessage}";
+            throw new DomainException("zernio_unpublish_post_error", message, ex);
         }
     }
 
@@ -1482,6 +1486,32 @@ public sealed class ZernioClient : IZernioClient
                 codeProp.ValueKind == JsonValueKind.String)
             {
                 return codeProp.GetString();
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? TryParseErrorMessage(string? errorContent)
+    {
+        if (string.IsNullOrEmpty(errorContent))
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(errorContent);
+            if (doc.RootElement.TryGetProperty("error", out var errorProp) &&
+                errorProp.ValueKind == JsonValueKind.String)
+            {
+                return errorProp.GetString();
+            }
+            if (doc.RootElement.TryGetProperty("message", out var msgProp) &&
+                msgProp.ValueKind == JsonValueKind.String)
+            {
+                return msgProp.GetString();
             }
             return null;
         }
