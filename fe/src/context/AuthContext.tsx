@@ -29,12 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Invalid user data from /auth/me:', userData)
           localStorage.removeItem('syncra_access_token')
           localStorage.removeItem('syncra_workspace_id')
+          localStorage.removeItem('syncra_profile_id')
           setUser(null)
         }
       } catch (error) {
         console.error('Failed to hydrate session:', error)
         localStorage.removeItem('syncra_access_token')
         localStorage.removeItem('syncra_workspace_id')
+        localStorage.removeItem('syncra_profile_id')
         setUser(null)
       }
     } else {

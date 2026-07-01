@@ -196,7 +196,11 @@
                     policy.RequireAuthenticatedUser();
                     policy.RequireAssertion(context =>
                     {
-                        var email = context.User.FindFirstValue(ClaimTypes.Email);
+                        var email =
+                            context.User.FindFirstValue(ClaimTypes.Email) ??
+                            context.User.FindFirstValue("email") ??
+                            context.User.FindFirstValue("preferred_username");
+
                         return !string.IsNullOrWhiteSpace(email) && adminEmails.Contains(email.Trim());
                     });
                 });

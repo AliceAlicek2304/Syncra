@@ -1,6 +1,6 @@
 .metricsRow{
   display:grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-lg);
 }
 .metricCard{
@@ -34,12 +34,30 @@
 }
 .salesReportRow{
   display:grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-lg);
 }
 
 .salesReportRow {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .metricsRow,
+  .salesReportRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .metricsRow,
+  .salesReportRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metricCard {
+    padding: 16px;
+  }
 }

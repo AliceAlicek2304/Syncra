@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Syncra.Domain.Entities;
-using Syncra.Infrastructure.Persistence.Seed;
 
 namespace Syncra.Infrastructure.Persistence;
 
@@ -20,6 +19,7 @@ public class AppDbContext : DbContext
     
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<BillingPayment> BillingPayments => Set<BillingPayment>();
     public DbSet<UsageCounter> UsageCounters => Set<UsageCounter>();
     
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
@@ -56,7 +56,6 @@ public class AppDbContext : DbContext
         
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         
-        PlanSeedData.Seed(modelBuilder);
         // User seed data is handled via SQL in migration (User entity has private setters)
     }
 }

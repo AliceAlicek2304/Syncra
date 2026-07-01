@@ -6,6 +6,18 @@ export function getAccessToken(): string | null {
   return localStorage.getItem("syncra_access_token");
 }
 
+export class ApiError extends Error {
+  code?: string;
+  status: number;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit & { workspaceId?: string } = {}
@@ -35,8 +47,12 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+    let errorCode: string | undefined;
     try {
       const errorData = await response.json();
+      if (errorData && errorData.code) {
+        errorCode = errorData.code;
+      }
       if (errorData && errorData.message) {
         errorMessage = errorData.message;
       } else if (errorData && errorData.error) {
@@ -45,7 +61,7 @@ export async function apiFetch<T>(
     } catch {
       // Ignore JSON parse error if response is not JSON
     }
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, response.status, errorCode);
   }
 
   // Handle empty responses

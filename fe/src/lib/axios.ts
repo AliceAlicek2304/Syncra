@@ -101,6 +101,8 @@ api.interceptors.response.use(
         // Do NOT redirect - allow form-level handling for bad passwords
       } else {
         localStorage.removeItem('syncra_access_token');
+        localStorage.removeItem('syncra_workspace_id');
+        localStorage.removeItem('syncra_profile_id');
         window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');
       }
     } else if (!(error.config as any)?.skipGlobalError) {

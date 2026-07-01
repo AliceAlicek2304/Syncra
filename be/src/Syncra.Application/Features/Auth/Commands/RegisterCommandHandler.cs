@@ -158,6 +158,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
                             PriceId: priceId,
                             SuccessUrl: successUrl,
                             CancelUrl: cancelUrl,
+                            Interval: "month",
                             SkipTrial: true),
                         cancellationToken);
 

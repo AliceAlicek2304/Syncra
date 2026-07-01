@@ -9,7 +9,10 @@ public sealed record StudentVerificationStatusDto(
 
 public sealed record RequestStudentVerificationResponse(
     string Message,
-    DateTime ExpiresAtUtc);
+    DateTime ExpiresAtUtc,
+    string? StudentEmail = null,
+    DateTime? VerifiedAtUtc = null,
+    bool IsVerified = false);
 
 public sealed record VerifyStudentEmailResponse(
     string StudentEmail,

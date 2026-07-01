@@ -94,8 +94,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
             var plan = await _planRepository.GetByCodeAsync(request.Plan.ToUpper(), cancellationToken);
             if (plan != null && plan.IsActive)
             {
-                if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase) &&
-                    !user.HasValidStudentVerification)
+                if (string.Equals(plan.Code, "STUDENT", StringComparison.OrdinalIgnoreCase))
                 {
                     plan = null;
                 }
@@ -135,6 +134,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
                                 PriceId: priceId,
                                 SuccessUrl: successUrl,
                                 CancelUrl: cancelUrl,
+                                Interval: "month",
                                 SkipTrial: true),
                             cancellationToken);
 

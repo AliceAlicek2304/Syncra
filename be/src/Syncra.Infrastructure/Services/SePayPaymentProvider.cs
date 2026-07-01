@@ -71,15 +71,19 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         }
 
         // 3. Paid upgrade flow: Generate custom checkout payment page
-        var isYearly = request.SuccessUrl.Contains("year") || request.CancelUrl.Contains("year");
+        var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
         var paymentCode = GeneratePaymentCode();
-        var amount = isYearly ? plan.PriceYearly : plan.PriceMonthly;
+        var originalAmount = isYearly ? plan.PriceYearly : plan.PriceMonthly;
+        var amount = ApplyDiscount(originalAmount, request.Discount);
 
         var pendingPayment = new SePayPendingCheckoutDto(
             WorkspaceId: request.WorkspaceId,
             PlanId: plan.Id,
             Amount: amount,
-            Interval: isYearly ? "year" : "month"
+            Interval: isYearly ? "year" : "month",
+            OriginalAmount: originalAmount,
+            DiscountCode: request.Discount?.Code,
+            DiscountPercentOff: request.Discount?.PercentOff
         );
 
         var cacheKey = $"sepay_pending:{paymentCode}";
@@ -96,7 +100,10 @@ public sealed class SePayPaymentProvider : IPaymentProvider
 
         var uri = new Uri(request.SuccessUrl);
         var origin = uri.GetLeftPart(UriPartial.Authority);
-        var checkoutUrl = $"{origin}/app/sepay-checkout?code={paymentCode}&amount={amount}&plan={plan.Code}&interval={(isYearly ? "year" : "month")}&accountNumber={_sePayOptions.AccountNumber}&bankCode={_sePayOptions.BankCode}&accountName={Uri.EscapeDataString(_sePayOptions.AccountName)}";
+        var discountQuery = request.Discount == null
+            ? string.Empty
+            : $"&originalAmount={originalAmount}&discountCode={Uri.EscapeDataString(request.Discount.Code)}&discountPercent={request.Discount.PercentOff}";
+        var checkoutUrl = $"{origin}/app/sepay-checkout?code={paymentCode}&amount={amount}&plan={plan.Code}&interval={(isYearly ? "year" : "month")}{discountQuery}&accountNumber={_sePayOptions.AccountNumber}&bankCode={_sePayOptions.BankCode}&accountName={Uri.EscapeDataString(_sePayOptions.AccountName)}";
 
         return new PaymentCheckoutSessionResult(
             SessionId: paymentCode,
@@ -181,6 +188,16 @@ public sealed class SePayPaymentProvider : IPaymentProvider
                 return new PaymentWebhookParseResult(false, "Invalid cache data", null);
             }
 
+            if (decimal.Round(amount, 0) != decimal.Round(pending.Amount, 0))
+            {
+                _logger.LogWarning(
+                    "SePay payment code {PaymentCode} amount mismatch. Expected {ExpectedAmount}, got {ActualAmount}",
+                    paymentCode,
+                    pending.Amount,
+                    amount);
+                return new PaymentWebhookParseResult(false, "Payment amount does not match pending checkout", null);
+            }
+
             // Clean up cache on success
             await _cache.RemoveAsync(cacheKey, cancellationToken);
 
@@ -198,7 +215,10 @@ public sealed class SePayPaymentProvider : IPaymentProvider
                 {
                     { "PlanId", pending.PlanId.ToString() },
                     { "Interval", pending.Interval },
-                    { "Amount", amount.ToString() }
+                    { "Amount", amount.ToString() },
+                    { "OriginalAmount", pending.OriginalAmount.ToString() },
+                    { "DiscountCode", pending.DiscountCode ?? string.Empty },
+                    { "DiscountPercentOff", pending.DiscountPercentOff?.ToString() ?? string.Empty }
                 }
             };
 
@@ -236,11 +256,25 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         }
         return $"SR{result}";
     }
+
+    private static decimal ApplyDiscount(decimal amount, PaymentDiscount? discount)
+    {
+        if (discount == null)
+        {
+            return amount;
+        }
+
+        var discountedAmount = amount * (100m - discount.PercentOff) / 100m;
+        return Math.Max(0m, decimal.Round(discountedAmount, 0, MidpointRounding.AwayFromZero));
+    }
 }
 
 public record SePayPendingCheckoutDto(
     Guid WorkspaceId,
     Guid PlanId,
     decimal Amount,
-    string Interval
+    string Interval,
+    decimal OriginalAmount,
+    string? DiscountCode,
+    decimal? DiscountPercentOff
 );

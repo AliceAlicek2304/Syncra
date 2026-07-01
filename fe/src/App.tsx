@@ -29,10 +29,10 @@ import IdeasPage from './pages/app/IdeasPage'
 import RepurposePage from './pages/app/RepurposePage'
 import AnalyticsPage from './pages/app/AnalyticsPage'
 import AdminLayout from './pages/admin/AdminLayout'
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminUserGrowth from './pages/admin/UserGrowth'
-import PostAnalytics from './pages/admin/PostAnalytics'
-import RevenueAnalytics from './pages/admin/RevenueAnalytics'
+import AdminDashboard from './pages/admin/DashboardV2'
+import AdminUserGrowth from './pages/admin/UserGrowthV2'
+import PostAnalytics from './pages/admin/PostAnalyticsV2'
+import RevenueAnalytics from './pages/admin/RevenueAnalyticsV2'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
 import LoginPage from './pages/LoginPage'
@@ -51,6 +51,7 @@ import MessagesPage from './pages/app/MessagesPage'
 import CommentsPage from './pages/app/CommentsPage'
 import SettingsPage from './pages/app/SettingsPage'
 import BillingPage from './pages/app/BillingPage'
+import StudentPage from './pages/app/StudentPage'
 import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 import { adminApi } from './api/admin'
 
@@ -216,6 +217,7 @@ function AnimatedRoutes() {
           <Route path="inbox/messages" element={<PageWrapper><MessagesPage /></PageWrapper>} />
           <Route path="inbox/comments" element={<PageWrapper><CommentsPage /></PageWrapper>} />
           <Route path="billing" element={<PageWrapper><BillingPage /></PageWrapper>} />
+          <Route path="student" element={<PageWrapper><StudentPage /></PageWrapper>} />
           <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
           <Route path="sepay-checkout" element={<PageWrapper><SePayCheckoutPage /></PageWrapper>} />
         </Route>

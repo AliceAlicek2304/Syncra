@@ -27,27 +27,6 @@ namespace Syncra.Infrastructure.Migrations
                 maxLength: 100,
                 nullable: true);
 
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000001"),
-                columns: new[] { "stripe_monthly_price_id", "stripe_yearly_price_id" },
-                values: new object[] { "price_placeholder_free", null });
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000002"),
-                columns: new[] { "stripe_monthly_price_id", "stripe_yearly_price_id" },
-                values: new object[] { "price_placeholder_pro", null });
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000003"),
-                columns: new[] { "stripe_monthly_price_id", "stripe_yearly_price_id" },
-                values: new object[] { "price_placeholder_team", null });
-
             migrationBuilder.CreateIndex(
                 name: "IX_plans_stripe_monthly_price_id",
                 table: "plans",
@@ -82,27 +61,6 @@ namespace Syncra.Infrastructure.Migrations
                 name: "stripe_yearly_price_id",
                 table: "plans",
                 newName: "stripe_price_id");
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000001"),
-                column: "stripe_price_id",
-                value: "price_placeholder_free");
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000002"),
-                column: "stripe_price_id",
-                value: "price_placeholder_pro");
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000003"),
-                column: "stripe_price_id",
-                value: "price_placeholder_team");
 
             migrationBuilder.CreateIndex(
                 name: "IX_plans_stripe_price_id",

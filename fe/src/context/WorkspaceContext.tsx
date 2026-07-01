@@ -19,8 +19,8 @@ const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(localStorage.getItem('syncra_workspace_id'));
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(localStorage.getItem('syncra_profile_id'));
+  const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
 
   const { data: workspaces = [], isLoading: workspacesLoading } = useQuery({
     queryKey: ['workspaces', user?.userId],
@@ -30,20 +30,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0] || null;
+
   const { data: profiles = [], isLoading: profilesLoading } = useQuery({
-    queryKey: ['profiles', activeWorkspaceId],
-    queryFn: workspacesApi.getProfiles,
-    enabled: !!user && !!activeWorkspaceId,
+    queryKey: ['profiles', user?.userId, activeWorkspace?.id],
+    queryFn: () => workspacesApi.getProfiles(activeWorkspace!.id),
+    enabled: !!user && !!activeWorkspace?.id,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
 
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0] || null;
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || null;
 
   const setActiveWorkspace = (workspace: Workspace) => {
     setActiveWorkspaceIdState(workspace.id);
+    setActiveProfileIdState(null);
     localStorage.setItem('syncra_workspace_id', workspace.id);
+    localStorage.removeItem('syncra_profile_id');
   };
 
   const setActiveProfile = (profile: Profile) => {
@@ -52,26 +55,57 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!workspacesLoading && workspaces.length > 0) {
-      const currentId = localStorage.getItem('syncra_workspace_id');
-      const exists = workspaces.some(w => w.id === currentId);
-      if (!currentId || !exists) {
-        localStorage.setItem('syncra_workspace_id', workspaces[0].id);
-        setActiveWorkspaceIdState(workspaces[0].id);
-      }
+    if (!user) {
+      setActiveWorkspaceIdState(null);
+      setActiveProfileIdState(null);
+      return;
     }
-  }, [workspaces, workspacesLoading]);
+
+    setActiveWorkspaceIdState(localStorage.getItem('syncra_workspace_id'));
+    setActiveProfileIdState(localStorage.getItem('syncra_profile_id'));
+  }, [user?.userId]);
 
   useEffect(() => {
-    if (!profilesLoading && profiles.length > 0) {
-      const currentId = localStorage.getItem('syncra_profile_id');
-      const exists = profiles.some(p => p.id === currentId);
-      if (!currentId || !exists) {
-        localStorage.setItem('syncra_profile_id', profiles[0].id);
-        setActiveProfileIdState(profiles[0].id);
-      }
+    if (workspacesLoading) return;
+
+    if (!user || workspaces.length === 0) {
+      localStorage.removeItem('syncra_workspace_id');
+      localStorage.removeItem('syncra_profile_id');
+      setActiveWorkspaceIdState(null);
+      setActiveProfileIdState(null);
+      return;
     }
-  }, [profiles, profilesLoading]);
+
+    const currentId = localStorage.getItem('syncra_workspace_id');
+    const exists = workspaces.some(w => w.id === currentId);
+    const nextWorkspaceId = exists && currentId ? currentId : workspaces[0].id;
+
+    if (activeWorkspaceId !== nextWorkspaceId) {
+      localStorage.setItem('syncra_workspace_id', nextWorkspaceId);
+      setActiveWorkspaceIdState(nextWorkspaceId);
+      setActiveProfileIdState(null);
+      localStorage.removeItem('syncra_profile_id');
+    }
+  }, [activeWorkspaceId, user, workspaces, workspacesLoading]);
+
+  useEffect(() => {
+    if (profilesLoading) return;
+
+    if (!user || profiles.length === 0) {
+      localStorage.removeItem('syncra_profile_id');
+      setActiveProfileIdState(null);
+      return;
+    }
+
+    const currentId = localStorage.getItem('syncra_profile_id');
+    const exists = profiles.some(p => p.id === currentId);
+    const nextProfileId = exists && currentId ? currentId : profiles[0].id;
+
+    if (activeProfileId !== nextProfileId) {
+      localStorage.setItem('syncra_profile_id', nextProfileId);
+      setActiveProfileIdState(nextProfileId);
+    }
+  }, [activeProfileId, user, profiles, profilesLoading]);
 
   return (
     <WorkspaceContext.Provider

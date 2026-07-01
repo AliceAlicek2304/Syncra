@@ -1,10 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Syncra.Application.DTOs.Students;
 using Syncra.Application.Features.Students;
-using Syncra.Application.Interfaces;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
 using Syncra.Domain.ValueObjects;
@@ -14,20 +11,18 @@ namespace Syncra.Application.Features.Students.Commands;
 public sealed class RequestStudentVerificationCommandHandler
     : IRequestHandler<RequestStudentVerificationCommand, RequestStudentVerificationResponse>
 {
-    private static readonly TimeSpan CodeTtl = TimeSpan.FromMinutes(15);
-
     private readonly IUserRepository _userRepository;
-    private readonly IEmailService _emailService;
     private readonly IDistributedCache _cache;
+    private readonly IUnitOfWork _unitOfWork;
 
     public RequestStudentVerificationCommandHandler(
         IUserRepository userRepository,
-        IEmailService emailService,
-        IDistributedCache cache)
+        IDistributedCache cache,
+        IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
-        _emailService = emailService;
         _cache = cache;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<RequestStudentVerificationResponse> Handle(
@@ -45,31 +40,30 @@ public sealed class RequestStudentVerificationCommandHandler
                 "Please use a valid student email ending with .edu or .edu.vn.");
         }
 
-        var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        var studentEmailOwner = await _userRepository.GetByStudentEmailAsync(studentEmail, cancellationToken);
+        if (studentEmailOwner != null && studentEmailOwner.Id != user.Id)
+        {
+            throw new DomainException(
+                "student_email_already_used",
+                "This student email is already linked to another account.");
+        }
+
         var cacheKey = BuildCacheKey(user.Id, studentEmail);
-        var codeHash = HashCode(code);
-        var expiresAtUtc = DateTime.UtcNow.Add(CodeTtl);
+        await _cache.RemoveAsync(cacheKey, cancellationToken);
 
-        await _cache.SetStringAsync(
-            cacheKey,
-            codeHash,
-            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CodeTtl },
-            cancellationToken);
-
-        await _emailService.SendStudentVerificationCodeAsync(studentEmail, code, cancellationToken);
+        var verifiedAtUtc = DateTime.UtcNow;
+        user.VerifyStudentEmail(studentEmail, verifiedAtUtc);
+        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new RequestStudentVerificationResponse(
-            "Verification code sent to your student email.",
-            expiresAtUtc);
+            "Student email verified.",
+            user.StudentVerificationExpiresAtUtc!.Value,
+            user.StudentEmail!,
+            user.StudentEmailVerifiedAtUtc!.Value,
+            user.HasValidStudentVerification);
     }
 
     internal static string BuildCacheKey(Guid userId, string studentEmail) =>
         $"student_verify:{userId:N}:{studentEmail.Trim().ToUpperInvariant()}";
-
-    internal static string HashCode(string code)
-    {
-        using var sha256 = SHA256.Create();
-        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
-        return Convert.ToBase64String(hashBytes);
-    }
 }

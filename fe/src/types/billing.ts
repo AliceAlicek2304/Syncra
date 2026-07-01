@@ -17,6 +17,7 @@ export type CreateCheckoutSessionByPlanRequest = {
   interval?: 'month' | 'year' | string;
   successUrl?: string;
   cancelUrl?: string;
+  discountCode?: string | null;
   skipTrial?: boolean;
 };
 
@@ -46,6 +47,9 @@ export type StudentVerificationStatusDto = {
 export type RequestStudentVerificationResponse = {
   message: string;
   expiresAtUtc: string;
+  studentEmail?: string | null;
+  verifiedAtUtc?: string | null;
+  isVerified?: boolean;
 };
 
 export type VerifyStudentEmailResponse = {

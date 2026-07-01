@@ -7,8 +7,10 @@ export const workspacesApi = {
     return response.data;
   },
 
-  getProfiles: async (): Promise<Profile[]> => {
-    const response = await api.get<Profile[]>('profiles');
+  getProfiles: async (workspaceId?: string): Promise<Profile[]> => {
+    const response = await api.get<Profile[]>('profiles', {
+      headers: workspaceId ? { 'X-Workspace-Id': workspaceId } : undefined,
+    });
     return response.data;
   },
 

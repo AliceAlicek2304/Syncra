@@ -16,6 +16,11 @@ public class UserRepository : Repository<User>, IUserRepository
         return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
     }
 
+    public async Task<User?> GetByStudentEmailAsync(string studentEmail, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.StudentEmail == studentEmail, cancellationToken);
+    }
+
     public async Task<User?> GetByEmailWithOrganizationsAsync(string email)
     {
         return await _dbSet

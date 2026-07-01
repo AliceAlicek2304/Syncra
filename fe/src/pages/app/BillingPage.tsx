@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useBilling } from '../../context/BillingContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { ApiError } from '../../utils/api';
 import styles from './BillingPage.module.css';
 
 const PLANS = [
@@ -21,6 +22,7 @@ const PLANS = [
     code: 'BASIC',
     name: 'Basic',
     price: { month: 99000, year: 79000 },
+    studentDiscountEligible: true,
     features: [
       '20 kết nối mạng xã hội',
       'Lên lịch bài đăng không giới hạn',
@@ -35,6 +37,7 @@ const PLANS = [
     code: 'PRO',
     name: 'Pro',
     price: { month: 149000, year: 119000 },
+    studentDiscountEligible: false,
     features: [
       'Tối đa 50 kết nối mạng xã hội',
       'Lên lịch bài đăng không giới hạn',
@@ -51,6 +54,7 @@ const PLANS = [
     code: 'MAX',
     name: 'Max',
     price: { month: 199000, year: 159000 },
+    studentDiscountEligible: true,
     features: [
       'Tất cả tính năng của Pro',
       'Tối đa 10 thành viên',
@@ -61,36 +65,38 @@ const PLANS = [
       'Tích hợp tuỳ chỉnh',
     ],
     icon: <Users size={20} />
-  },
-  {
-    code: 'STUDENT',
-    name: 'Student',
-    price: { month: 59000, year: 49000 },
-    features: [
-      'Dành cho email sinh viên .edu hoặc .edu.vn',
-      '20 kết nối mạng xã hội',
-      'Lên lịch bài đăng không giới hạn',
-      'Trình soạn nội dung',
-      'Trợ lý AI giới hạn',
-      'Xác thực lại sau 12 tháng',
-    ],
-    icon: <GraduationCap size={20} />,
-    studentOnly: true
   }
 ];
+
+const STUDENT_DISCOUNT_CODE = 'STUDENT50';
+const STUDENT_DISCOUNT_PERCENT = 50;
+
+const getStudentVerificationErrorMessage = (err: unknown) => {
+  if (err instanceof ApiError) {
+    if (err.code === 'student_email_already_used') {
+      return 'Email sinh viên này đã được liên kết với một tài khoản khác.';
+    }
+
+    if (err.code === 'invalid_student_email') {
+      return 'Vui lòng dùng email sinh viên hợp lệ có đuôi .edu hoặc .edu.vn.';
+    }
+  }
+
+  return err instanceof Error ? err.message : 'Không xác thực được email sinh viên.';
+};
 
 export default function BillingPage() {
   const {
     subscription, loading, error, redirecting, studentStatus,
     loadCurrentSubscription, loadStudentVerificationStatus,
-    requestStudentVerificationCode, verifyStudentEmailCode,
+    requestStudentVerificationCode,
     startCheckout, openPortal
   } = useBilling();
   const { activeWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const [yearly, setYearly] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
-  const [studentCode, setStudentCode] = useState('');
+  
   const [studentLoading, setStudentLoading] = useState(false);
   const [banner, setBanner] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
 
@@ -129,7 +135,7 @@ export default function BillingPage() {
   const currentPlanCode = subscription?.planCode || null;
   const displayStatus = (subscription?.status || 'inactive').toLowerCase();
   const isEligibleForTrial = subscription?.isDefault === true && !subscription?.trialEndsAtUtc;
-  const canBuyStudentPlan = studentStatus?.isVerified === true;
+  const hasStudentDiscount = studentStatus?.isVerified === true;
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return 'Chưa có';
@@ -139,12 +145,12 @@ export default function BillingPage() {
   };
 
   const handleCheckout = async (planCode: string) => {
-    if (planCode === 'STUDENT' && !canBuyStudentPlan) {
-      setBanner({ type: 'error', message: 'Vui lòng xác thực email sinh viên trước khi mua gói Student.' });
-      return;
-    }
-
-    await startCheckout(planCode, yearly ? 'year' : 'month', !isEligibleForTrial);
+    const plan = PLANS.find(item => item.code === planCode);
+    const discountCode = plan?.studentDiscountEligible && hasStudentDiscount
+      ? STUDENT_DISCOUNT_CODE
+      : null;
+    const skipTrial = !!discountCode || !isEligibleForTrial;
+    await startCheckout(planCode, yearly ? 'year' : 'month', skipTrial, discountCode);
   };
 
   const handleRequestStudentCode = async () => {
@@ -152,23 +158,9 @@ export default function BillingPage() {
     setBanner(null);
     try {
       await requestStudentVerificationCode(studentEmail);
-      setBanner({ type: 'success', message: 'Mã xác thực đã được gửi tới email sinh viên của bạn.' });
+      setBanner({ type: 'success', message: 'Email sinh viên đã được xác thực. Basic và Max đã được giảm 50%.' });
     } catch (err) {
-      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Không gửi được mã xác thực.' });
-    } finally {
-      setStudentLoading(false);
-    }
-  };
-
-  const handleVerifyStudentCode = async () => {
-    setStudentLoading(true);
-    setBanner(null);
-    try {
-      await verifyStudentEmailCode(studentEmail, studentCode);
-      setStudentCode('');
-      setBanner({ type: 'success', message: 'Email sinh viên đã được xác thực. Bạn có thể mua gói Student.' });
-    } catch (err) {
-      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Mã xác thực không hợp lệ.' });
+      setBanner({ type: 'error', message: getStudentVerificationErrorMessage(err) });
     } finally {
       setStudentLoading(false);
     }
@@ -248,12 +240,13 @@ export default function BillingPage() {
           </div>
         </div>
 
+        {studentStatus && !studentStatus.isVerified && (
         <div className={styles.studentPanel}>
           <div className={styles.studentCopy}>
             <span className={styles.studentIcon}><GraduationCap size={20} /></span>
             <div>
-              <h2>Ưu đãi sinh viên 59.000đ/tháng</h2>
-              <p>Xác thực bằng email .edu hoặc .edu.vn. Hiệu lực 12 tháng, sau đó cần xác thực lại.</p>
+              <h2>Ưu đãi sinh viên giảm 50%</h2>
+              <p>Xác thực bằng email .edu hoặc .edu.vn để giảm 50% cho Basic và Max. Pro giữ nguyên giá.</p>
             </div>
           </div>
           <div className={styles.studentControls}>
@@ -264,29 +257,19 @@ export default function BillingPage() {
               className={styles.studentInput}
               disabled={studentLoading}
             />
-            <button className={styles.secondaryBtn} onClick={handleRequestStudentCode} disabled={studentLoading || !studentEmail.trim()}>
-              Gửi mã
-            </button>
-            <input
-              value={studentCode}
-              onChange={e => setStudentCode(e.target.value)}
-              placeholder="Mã 6 số"
-              className={styles.codeInput}
-              maxLength={6}
-              disabled={studentLoading}
-            />
-            <button className={styles.actionBtnCompact} onClick={handleVerifyStudentCode} disabled={studentLoading || studentCode.trim().length !== 6}>
-              Xác thực
+            <button className={styles.actionBtnCompact} onClick={handleRequestStudentCode} disabled={studentLoading || !studentEmail.trim()}>
+              Xác thực email
             </button>
           </div>
           <div className={styles.studentStatus}>
             {studentStatus?.isVerified ? (
               <span><Check size={14} /> Đã xác thực đến {formatDate(studentStatus.expiresAtUtc)}</span>
             ) : (
-              <span><Sparkles size={14} /> Xác thực email sinh viên để mở khóa gói Student.</span>
+              <span><Sparkles size={14} /> Xác thực email sinh viên để mở khóa giảm giá Basic và Max.</span>
             )}
           </div>
         </div>
+        )}
 
         <div className={styles.toggleSection}>
           <span className={`${styles.toggleLabel} ${!yearly ? styles.toggleActive : ''}`}>Theo tháng</span>
@@ -305,18 +288,23 @@ export default function BillingPage() {
         <div className={styles.pricingGrid}>
           {PLANS.map(plan => {
             const isCurrent = currentPlanCode === plan.code;
-            const price = yearly ? plan.price.year : plan.price.month;
-            const studentLocked = plan.code === 'STUDENT' && !canBuyStudentPlan;
+            const basePrice = yearly ? plan.price.year : plan.price.month;
+            const studentLocked = false;
+            const discounted = plan.studentDiscountEligible && hasStudentDiscount;
+            const price = discounted
+              ? Math.round(basePrice * (100 - STUDENT_DISCOUNT_PERCENT) / 100)
+              : basePrice;
 
             return (
               <div key={plan.code} className={`${styles.planCard} ${plan.highlight ? styles.highlightPlanCard : ''} ${isCurrent ? styles.currentPlanCard : ''}`}>
                 {isCurrent && <span className={styles.currentBadge}>Gói hiện tại</span>}
-                {plan.studentOnly && <span className={styles.studentBadge}>Sinh viên</span>}
+                {discounted && <span className={styles.studentBadge}>-50% sinh viên</span>}
                 <div className={styles.planHeader}>
                   <span className={styles.planIcon}>{plan.icon}</span>
                   <span className={styles.planName}>{plan.name}</span>
                 </div>
                 <div className={styles.planPrice}>
+                  {discounted && <span className={styles.studentDiscountLine}>Đã áp dụng -50% sinh viên</span>}
                   <span className={styles.priceAmount}>{price.toLocaleString('vi-VN')}<span className={styles.priceCurrency}>đ</span></span>
                   <span className={styles.pricePeriod}>/tháng</span>
                 </div>
@@ -333,7 +321,13 @@ export default function BillingPage() {
                     <span className={styles.currentLabel}>Đang dùng</span>
                   ) : (
                     <button className={styles.actionBtn} onClick={() => handleCheckout(plan.code)} disabled={redirecting || studentLocked}>
-                      {redirecting ? 'Đang chuyển...' : studentLocked ? 'Cần xác thực sinh viên' : (isEligibleForTrial ? 'Dùng thử 14 ngày' : `Nâng cấp ${plan.name}`)}
+                      {redirecting
+                        ? 'Đang chuyển...'
+                          : discounted
+                            ? `Mua ưu đãi ${plan.name}`
+                          : studentLocked
+                            ? 'Cần xác thực sinh viên'
+                            : (isEligibleForTrial ? 'Dùng thử 14 ngày' : `Nâng cấp ${plan.name}`)}
                     </button>
                   )}
                 </div>

@@ -59,17 +59,38 @@ public sealed class GetAdminOverviewQueryHandler
             var allWorkspaces = await _workspaceRepository.GetAllAsync(cancellationToken);
             var totalWorkspaces = allWorkspaces.Count();
             
-            // Get posts count - need to sum from all workspaces
-            var totalPosts = 0;
+            // Get posts by platform first so we can use the sum as the main metric
+            var currentMonthStartEarly = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var twelveMonthsAgoEarly = currentMonthStartEarly.AddMonths(-11);
+            Dictionary<string, List<int>> postsByPlatformEarly;
+            try
+            {
+                postsByPlatformEarly = await _postRepository.GetPostsByPlatformMonthlyAsync(
+                    twelveMonthsAgoEarly,
+                    DateTime.UtcNow,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get posts by platform for admin overview");
+                postsByPlatformEarly = new Dictionary<string, List<int>>();
+            }
+
+            // Total published posts = sum of all platform publish counts
+            var totalPosts = postsByPlatformEarly.Any()
+                ? postsByPlatformEarly.Values.Sum(values => values.Sum())
+                : 0;
+
+            // Scheduled posts count - still needs a direct DB count
             var scheduledPosts = 0;
             foreach (var workspace in allWorkspaces)
             {
                 var posts = await _postRepository.GetByWorkspaceIdAsync(workspace.Id);
-                totalPosts += posts.Count(p => p.Status == PostStatus.Published);
-                scheduledPosts += posts.Count(p => p.Status == PostStatus.Scheduled);
+                scheduledPosts += posts.Where(p => p.Status == PostStatus.Scheduled)
+                    .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
             }
 
-            // Get social accounts count - need to sum from all workspaces
+            // Get social accounts count
             var totalAccounts = 0;
             foreach (var workspace in allWorkspaces)
             {
@@ -84,6 +105,9 @@ public sealed class GetAdminOverviewQueryHandler
                 new() { Id = "accounts", Title = "Tài khoản MXH", Value = totalAccounts },
                 new() { Id = "workspaces", Title = "Workspaces", Value = totalWorkspaces }
             };
+
+            if (postsByPlatformEarly.Any())
+                overview.PostsByPlatform = postsByPlatformEarly;
 
             // Get recent activities from posts
             var recentPosts = new List<RecentActivityDto>();
@@ -244,24 +268,6 @@ public sealed class GetAdminOverviewQueryHandler
             }
             overview.Errors = recentErrors.OrderByDescending(e => e.When).Take(5).ToList();
 
-            // Get posts by platform from database
-            try
-            {
-                var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
-                var postsByPlatform = await _postRepository.GetPostsByPlatformMonthlyAsync(
-                    twelveMonthsAgo,
-                    DateTime.UtcNow,
-                    cancellationToken);
-                
-                if (postsByPlatform.Any())
-                {
-                    overview.PostsByPlatform = postsByPlatform;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to get posts by platform for admin overview");
-            }
 
             // Get post status trends (published, scheduled, failed) from database
             try
@@ -283,25 +289,28 @@ public sealed class GetAdminOverviewQueryHandler
                     var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
                     var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-                    var publishedInMonth = allPosts.Count(p => 
+                    var publishedInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Published && 
                         p.PublishedAtUtc.HasValue &&
                         p.PublishedAtUtc.Value >= monthStart && 
-                        p.PublishedAtUtc.Value <= monthEnd);
+                        p.PublishedAtUtc.Value <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyPublished.Add(publishedInMonth);
 
-                    var scheduledInMonth = allPosts.Count(p => 
+                    var scheduledInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Scheduled && 
                         !p.ScheduledAt.IsNone &&
                         p.ScheduledAt.UtcValue >= monthStart && 
-                        p.ScheduledAt.UtcValue <= monthEnd);
+                        p.ScheduledAt.UtcValue <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyScheduled.Add(scheduledInMonth);
 
-                    var failedInMonth = allPosts.Count(p => 
+                    var failedInMonth = allPosts.Where(p => 
                         p.Status == PostStatus.Failed && 
                         p.PublishLastAttemptAtUtc.HasValue &&
                         p.PublishLastAttemptAtUtc.Value >= monthStart && 
-                        p.PublishLastAttemptAtUtc.Value <= monthEnd);
+                        p.PublishLastAttemptAtUtc.Value <= monthEnd)
+                        .Sum(p => p.PlatformTargets.Count > 0 ? p.PlatformTargets.Count : 1);
                     monthlyFailed.Add(failedInMonth);
                 }
 

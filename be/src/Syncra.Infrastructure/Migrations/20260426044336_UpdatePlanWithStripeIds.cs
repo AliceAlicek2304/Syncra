@@ -25,27 +25,6 @@ namespace Syncra.Infrastructure.Migrations
                 maxLength: 100,
                 nullable: true);
 
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000001"),
-                columns: new[] { "stripe_price_id", "stripe_product_id" },
-                values: new object[] { "price_placeholder_free", "prod_placeholder_free" });
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000002"),
-                columns: new[] { "stripe_price_id", "stripe_product_id" },
-                values: new object[] { "price_placeholder_pro", "prod_placeholder_pro" });
-
-            migrationBuilder.UpdateData(
-                table: "plans",
-                keyColumn: "id",
-                keyValue: new Guid("00000000-0000-0000-0000-000000000003"),
-                columns: new[] { "stripe_price_id", "stripe_product_id" },
-                values: new object[] { "price_placeholder_team", "prod_placeholder_team" });
-
             migrationBuilder.CreateIndex(
                 name: "IX_plans_stripe_price_id",
                 table: "plans",

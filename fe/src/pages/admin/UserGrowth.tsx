@@ -124,7 +124,7 @@ export default function UserGrowth() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className={styles.responsiveGrid2}>
         <div className={styles.card} style={{ background: '#fff' }}>
           <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 15, color: '#333' }}>Xu hướng tăng trưởng người dùng (12 tháng)</h3>
           <div style={{ height: 220 }}>
@@ -145,7 +145,7 @@ export default function UserGrowth() {
       {/* Workspace Statistics Section */}
       <div className={styles.card} style={{ background: '#fff' }}>
         <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 15, color: '#333' }}>Thống kê Workspace</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+        <div className={styles.responsiveGrid3} style={{ marginBottom: 20 }}>
           <div style={{ padding: 16, background: '#f8f8f8', borderRadius: 8 }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Tổng Workspace</div>
             <div style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{workspaceStats.totalWorkspaces}</div>
@@ -194,7 +194,7 @@ export default function UserGrowth() {
 
       <div style={{ height: 20 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className={styles.chartGrid}>
         <div className={styles.card}>
           <h3 style={{ marginTop: 0, marginBottom: 12 }}>Người dùng mới đăng ký gần đây</h3>
           {isLoading ? (

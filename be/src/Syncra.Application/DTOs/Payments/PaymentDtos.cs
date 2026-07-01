@@ -7,7 +7,15 @@ public sealed record PaymentCheckoutSessionRequest(
     string PriceId,
     string SuccessUrl,
     string CancelUrl,
+    string Interval = "month",
+    PaymentDiscount? Discount = null,
     bool SkipTrial = false);
+
+public sealed record PaymentDiscount(
+    string Code,
+    string Label,
+    decimal PercentOff,
+    string Source);
 
 public sealed record PaymentCheckoutSessionResult(
     string SessionId,
