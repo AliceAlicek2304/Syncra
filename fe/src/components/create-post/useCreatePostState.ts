@@ -410,7 +410,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     setTimeout(() => {
       let nextContent = ''
-      let nextCaptions = { tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' } as PlatformCaptionMap
+      let nextCaptions = { tiktok: '', facebook: '', linkedin: '', youtube: '' } as PlatformCaptionMap
       let initPlatforms: Platform[] = []
       let initSchMode = false
       let initSchTime = ''
@@ -421,12 +421,9 @@ export function useCreatePostState(props: CreatePostModalProps) {
         nextContent = editPost.caption
         nextCaptions = {
           tiktok: editPost.caption,
-          instagram: editPost.caption,
           facebook: editPost.caption,
-          twitter: editPost.caption,
           linkedin: editPost.caption,
-          youtube: editPost.caption,
-          pinterest: editPost.caption
+          youtube: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
 
@@ -568,7 +565,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowUnsavedDialog(false)
     setMainContent('')
     setFacebookFirstComment('')
-    setCaptionsByPlatform({ tiktok: '', instagram: '', facebook: '', twitter: '', linkedin: '', youtube: '', pinterest: '' })
+    setCaptionsByPlatform({ tiktok: '', facebook: '', linkedin: '', youtube: '' })
     setTiktokDraft(false)
     setTiktokPhotoDescription('')
     setPlatformTimeOverrides({})
