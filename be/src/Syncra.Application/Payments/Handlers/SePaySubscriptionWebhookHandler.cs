@@ -13,6 +13,7 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
 {
     private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IBillingPaymentRepository _billingPaymentRepository;
+    private readonly IBillingVoucherRepository _billingVoucherRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<SePaySubscriptionWebhookHandler> _logger;
 
@@ -24,11 +25,13 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
     public SePaySubscriptionWebhookHandler(
         ISubscriptionRepository subscriptionRepository,
         IBillingPaymentRepository billingPaymentRepository,
+        IBillingVoucherRepository billingVoucherRepository,
         IUnitOfWork unitOfWork,
         ILogger<SePaySubscriptionWebhookHandler> logger)
     {
         _subscriptionRepository = subscriptionRepository;
         _billingPaymentRepository = billingPaymentRepository;
+        _billingVoucherRepository = billingVoucherRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -53,6 +56,8 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
         var originalAmount = TryGetDecimal(webhookEvent.Metadata, "OriginalAmount");
         webhookEvent.Metadata.TryGetValue("DiscountCode", out var discountCode);
         var discountPercentOff = TryGetDecimal(webhookEvent.Metadata, "DiscountPercentOff");
+        var discountAmount = TryGetDecimal(webhookEvent.Metadata, "DiscountAmount");
+        var userId = TryGetGuid(webhookEvent.Metadata, "UserId");
 
         var existing = await _subscriptionRepository.GetByWorkspaceIdAsync(webhookEvent.WorkspaceId.Value);
         var now = DateTime.UtcNow;
@@ -102,7 +107,7 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
             && paidAmount.HasValue
             && !await _billingPaymentRepository.ExistsAsync(webhookEvent.Provider, webhookEvent.EventId, cancellationToken))
         {
-            await _billingPaymentRepository.AddAsync(new BillingPayment
+            var billingPayment = new BillingPayment
             {
                 WorkspaceId = webhookEvent.WorkspaceId.Value,
                 SubscriptionId = subscriptionForPayment.Id,
@@ -117,7 +122,40 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
                 DiscountCode = string.IsNullOrWhiteSpace(discountCode) ? null : discountCode,
                 DiscountPercentOff = discountPercentOff,
                 PaidAtUtc = webhookEvent.EventCreatedAtUtc ?? now
-            }, cancellationToken);
+            };
+
+            await _billingPaymentRepository.AddAsync(billingPayment, cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(discountCode)
+                && userId.HasValue
+                && originalAmount.HasValue)
+            {
+                var voucher = await _billingVoucherRepository.GetByCodeAsync(discountCode, cancellationToken);
+                if (voucher != null)
+                {
+                    var resolvedDiscountAmount = discountAmount
+                        ?? Math.Max(0m, originalAmount.Value - paidAmount.Value);
+
+                    await _billingVoucherRepository.AddRedemptionAsync(new BillingVoucherRedemption
+                    {
+                        WorkspaceId = webhookEvent.WorkspaceId.Value,
+                        VoucherId = voucher.Id,
+                        UserId = userId.Value,
+                        PlanId = planId,
+                        SubscriptionId = subscriptionForPayment.Id,
+                        BillingPaymentId = billingPayment.Id,
+                        VoucherCode = voucher.Code,
+                        Status = "redeemed",
+                        CheckoutSessionId = webhookEvent.ProviderSubscriptionId,
+                        PaymentProvider = webhookEvent.Provider,
+                        OriginalAmount = originalAmount.Value,
+                        DiscountAmount = resolvedDiscountAmount,
+                        FinalAmount = paidAmount.Value,
+                        Currency = "VND",
+                        RedeemedAtUtc = webhookEvent.EventCreatedAtUtc ?? now
+                    }, cancellationToken);
+                }
+            }
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -126,6 +164,13 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
     private static decimal? TryGetDecimal(IReadOnlyDictionary<string, string> metadata, string key)
     {
         return metadata.TryGetValue(key, out var value) && decimal.TryParse(value, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static Guid? TryGetGuid(IReadOnlyDictionary<string, string> metadata, string key)
+    {
+        return metadata.TryGetValue(key, out var value) && Guid.TryParse(value, out var parsed)
             ? parsed
             : null;
     }

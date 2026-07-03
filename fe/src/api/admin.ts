@@ -1,5 +1,65 @@
 import api from '../lib/axios'
 
+export type AdminVoucher = {
+  id: string
+  code: string
+  name: string
+  description?: string | null
+  discountType: 'percent' | 'amount' | string
+  percentOff?: number | null
+  amountOff?: number | null
+  currency: string
+  minimumAmount?: number | null
+  applicablePlanCodesJson?: string | null
+  applicableIntervalsJson?: string | null
+  maxRedemptions?: number | null
+  maxRedemptionsPerUser?: number | null
+  redeemedCount: number
+  startsAtUtc?: string | null
+  expiresAtUtc?: string | null
+  isActive: boolean
+  requiresStudentVerification: boolean
+  source: string
+  createdAtUtc: string
+  updatedAtUtc?: string | null
+  redemptionCount: number
+}
+
+export type UpsertAdminVoucherRequest = {
+  code: string
+  name: string
+  description?: string | null
+  discountType: 'percent' | 'amount'
+  percentOff?: number | null
+  amountOff?: number | null
+  minimumAmount?: number | null
+  applicablePlanCodes?: string[] | null
+  applicableIntervals?: string[] | null
+  maxRedemptions?: number | null
+  maxRedemptionsPerUser?: number | null
+  startsAtUtc?: string | null
+  expiresAtUtc?: string | null
+  isActive: boolean
+  requiresStudentVerification: boolean
+  source?: string | null
+}
+
+export type AdminVoucherRedemption = {
+  id: string
+  userId: string
+  userEmail: string
+  planId: string
+  planCode: string
+  status: string
+  originalAmount: number
+  discountAmount: number
+  finalAmount: number
+  currency: string
+  checkoutSessionId?: string | null
+  paymentProvider?: string | null
+  redeemedAtUtc: string
+}
+
 export const adminApi = {
   checkAccess: async (): Promise<{ allowed: boolean }> => {
     const res = await api.get('/admin/access', { skipGlobalError: true } as any)
@@ -19,6 +79,26 @@ export const adminApi = {
   },
   getRevenueAnalytics: async () => {
     const res = await api.get('/admin/revenue-analytics')
+    return res.data
+  },
+  listVouchers: async (): Promise<AdminVoucher[]> => {
+    const res = await api.get('/admin/vouchers')
+    return res.data
+  },
+  createVoucher: async (payload: UpsertAdminVoucherRequest): Promise<AdminVoucher> => {
+    const res = await api.post('/admin/vouchers', payload)
+    return res.data
+  },
+  updateVoucher: async (id: string, payload: UpsertAdminVoucherRequest): Promise<AdminVoucher> => {
+    const res = await api.put(`/admin/vouchers/${id}`, payload)
+    return res.data
+  },
+  updateVoucherStatus: async (id: string, isActive: boolean): Promise<AdminVoucher> => {
+    const res = await api.patch(`/admin/vouchers/${id}/status`, { isActive })
+    return res.data
+  },
+  listVoucherRedemptions: async (id: string): Promise<AdminVoucherRedemption[]> => {
+    const res = await api.get(`/admin/vouchers/${id}/redemptions`)
     return res.data
   },
   listJobs: async () => {

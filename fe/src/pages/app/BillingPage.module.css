@@ -328,6 +328,16 @@
   margin-left: 4px;
 }
 
+.originalPrice {
+  display: block;
+  margin-bottom: 2px;
+  color: #a998b4;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
 .studentDiscountLine {
   display: block;
   margin-bottom: 4px;
@@ -418,7 +428,25 @@
   margin-bottom: 28px;
 }
 
+.voucherPanel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 0.9fr);
+  gap: 14px 18px;
+  align-items: center;
+  background: #fffaff;
+  border: 1px solid #eadcf1;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 24px;
+}
+
 .studentCopy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.voucherCopy {
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -431,7 +459,21 @@
   color: #211329;
 }
 
+.voucherCopy h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #211329;
+}
+
 .studentCopy p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #675471;
+}
+
+.voucherCopy p {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
@@ -451,9 +493,29 @@
   border: 1px solid #eadcf1;
 }
 
+.voucherIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(20, 184, 166, 0.1);
+  color: #0f766e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(20, 184, 166, 0.18);
+}
+
 .studentControls {
   display: grid;
   grid-template-columns: minmax(170px, 1fr) auto 96px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.voucherControls {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -516,6 +578,30 @@
   font-size: 13px;
 }
 
+.voucherHint {
+  grid-column: 1 / -1;
+  color: #9a82a7;
+  font-size: 13px;
+}
+
+.voucherPreview {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.voucherPreviewOk {
+  background: rgba(16, 185, 129, 0.08);
+  color: #047857;
+}
+
+.voucherPreviewError {
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+
 .studentStatus span {
   display: inline-flex;
   gap: 6px;
@@ -570,7 +656,8 @@
   }
 
   .header,
-  .studentPanel {
+  .studentPanel,
+  .voucherPanel {
     grid-template-columns: 1fr;
   }
 
@@ -584,7 +671,8 @@
     grid-template-columns: 1fr;
   }
 
-  .studentControls {
+  .studentControls,
+  .voucherControls {
     grid-template-columns: 1fr;
   }
 }

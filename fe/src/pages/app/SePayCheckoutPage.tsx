@@ -14,12 +14,17 @@ export default function SePayCheckoutPage() {
   const originalAmountStr = searchParams.get('originalAmount') || '';
   const discountCode = searchParams.get('discountCode') || '';
   const discountPercent = searchParams.get('discountPercent') || '';
+  const discountAmountStr = searchParams.get('discountAmount') || '';
   const planCode = searchParams.get('plan') || '';
   const interval = searchParams.get('interval') || 'month';
 
   const amount = parseInt(amountStr, 10);
   const originalAmount = originalAmountStr ? parseInt(originalAmountStr, 10) : 0;
+  const discountAmount = discountAmountStr ? parseInt(discountAmountStr, 10) : Math.max(0, originalAmount - amount);
   const hasDiscount = !!discountCode && originalAmount > amount;
+  const discountLabel = discountPercent && discountPercent !== ''
+    ? `${discountCode} -${discountPercent}%`
+    : `${discountCode} -${discountAmount.toLocaleString('vi-VN')} đ`;
 
   const accountNumber = searchParams.get('accountNumber') || import.meta.env.VITE_SEPAY_ACCOUNT_NUMBER || '1017588888';
   const bankCode = searchParams.get('bankCode') || import.meta.env.VITE_SEPAY_BANK_CODE || 'Vietinbank';
@@ -116,7 +121,7 @@ export default function SePayCheckoutPage() {
               {hasDiscount && (
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryLabel}>Ưu đãi</span>
-                  <span className={styles.summaryValue}>{discountCode} -{discountPercent || '50'}%</span>
+                  <span className={styles.summaryValue}>{discountLabel}</span>
                 </div>
               )}
               {hasDiscount && (

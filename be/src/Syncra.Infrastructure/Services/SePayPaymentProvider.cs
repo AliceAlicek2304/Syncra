@@ -79,11 +79,13 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         var pendingPayment = new SePayPendingCheckoutDto(
             WorkspaceId: request.WorkspaceId,
             PlanId: plan.Id,
+            UserId: request.UserId,
             Amount: amount,
             Interval: isYearly ? "year" : "month",
             OriginalAmount: originalAmount,
             DiscountCode: request.Discount?.Code,
-            DiscountPercentOff: request.Discount?.PercentOff
+            DiscountPercentOff: request.Discount?.PercentOff,
+            DiscountAmount: request.Discount?.DiscountAmount
         );
 
         var cacheKey = $"sepay_pending:{paymentCode}";
@@ -102,7 +104,7 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         var origin = uri.GetLeftPart(UriPartial.Authority);
         var discountQuery = request.Discount == null
             ? string.Empty
-            : $"&originalAmount={originalAmount}&discountCode={Uri.EscapeDataString(request.Discount.Code)}&discountPercent={request.Discount.PercentOff}";
+            : $"&originalAmount={originalAmount}&discountCode={Uri.EscapeDataString(request.Discount.Code)}&discountPercent={request.Discount.PercentOff}&discountAmount={request.Discount.DiscountAmount}";
         var checkoutUrl = $"{origin}/app/sepay-checkout?code={paymentCode}&amount={amount}&plan={plan.Code}&interval={(isYearly ? "year" : "month")}{discountQuery}&accountNumber={_sePayOptions.AccountNumber}&bankCode={_sePayOptions.BankCode}&accountName={Uri.EscapeDataString(_sePayOptions.AccountName)}";
 
         return new PaymentCheckoutSessionResult(
@@ -218,7 +220,9 @@ public sealed class SePayPaymentProvider : IPaymentProvider
                     { "Amount", amount.ToString() },
                     { "OriginalAmount", pending.OriginalAmount.ToString() },
                     { "DiscountCode", pending.DiscountCode ?? string.Empty },
-                    { "DiscountPercentOff", pending.DiscountPercentOff?.ToString() ?? string.Empty }
+                    { "DiscountPercentOff", pending.DiscountPercentOff?.ToString() ?? string.Empty },
+                    { "DiscountAmount", pending.DiscountAmount?.ToString() ?? string.Empty },
+                    { "UserId", pending.UserId?.ToString() ?? string.Empty }
                 }
             };
 
@@ -264,17 +268,20 @@ public sealed class SePayPaymentProvider : IPaymentProvider
             return amount;
         }
 
-        var discountedAmount = amount * (100m - discount.PercentOff) / 100m;
-        return Math.Max(0m, decimal.Round(discountedAmount, 0, MidpointRounding.AwayFromZero));
+        var discountAmount = discount.AmountOff
+            ?? decimal.Round(amount * (discount.PercentOff ?? 0m) / 100m, 0, MidpointRounding.AwayFromZero);
+        return Math.Max(0m, amount - Math.Min(amount, Math.Max(0m, discountAmount)));
     }
 }
 
 public record SePayPendingCheckoutDto(
     Guid WorkspaceId,
     Guid PlanId,
+    Guid? UserId,
     decimal Amount,
     string Interval,
     decimal OriginalAmount,
     string? DiscountCode,
-    decimal? DiscountPercentOff
+    decimal? DiscountPercentOff,
+    decimal? DiscountAmount
 );

@@ -94,3 +94,95 @@ public class BillingPaymentConfiguration : BaseWorkspaceEntityConfiguration<Bill
             .OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+public class BillingVoucherConfiguration : BaseEntityConfiguration<BillingVoucher>
+{
+    public override void Configure(EntityTypeBuilder<BillingVoucher> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("billing_vouchers");
+
+        builder.Property(e => e.Code).IsRequired().HasMaxLength(100).HasColumnName("code");
+        builder.Property(e => e.Name).IsRequired().HasMaxLength(150).HasColumnName("name");
+        builder.Property(e => e.Description).HasMaxLength(500).HasColumnName("description");
+        builder.Property(e => e.DiscountType).IsRequired().HasMaxLength(20).HasColumnName("discount_type");
+        builder.Property(e => e.PercentOff).HasPrecision(5, 2).HasColumnName("percent_off");
+        builder.Property(e => e.AmountOff).HasPrecision(18, 2).HasColumnName("amount_off");
+        builder.Property(e => e.Currency).IsRequired().HasMaxLength(10).HasColumnName("currency");
+        builder.Property(e => e.MinimumAmount).HasPrecision(18, 2).HasColumnName("minimum_amount");
+        builder.Property(e => e.ApplicablePlanCodesJson).HasColumnType("jsonb").HasColumnName("applicable_plan_codes_json");
+        builder.Property(e => e.ApplicableIntervalsJson).HasColumnType("jsonb").HasColumnName("applicable_intervals_json");
+        builder.Property(e => e.MaxRedemptions).HasColumnName("max_redemptions");
+        builder.Property(e => e.MaxRedemptionsPerUser).HasColumnName("max_redemptions_per_user");
+        builder.Property(e => e.RedeemedCount).HasColumnName("redeemed_count");
+        builder.Property(e => e.StartsAtUtc).HasColumnName("starts_at_utc");
+        builder.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+        builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
+        builder.Property(e => e.RequiresStudentVerification).HasColumnName("requires_student_verification");
+        builder.Property(e => e.Source).IsRequired().HasMaxLength(50).HasColumnName("source");
+
+        builder.HasIndex(e => e.Code)
+            .IsUnique()
+            .HasDatabaseName("ix_billing_vouchers_code");
+        builder.HasIndex(e => e.IsActive).HasDatabaseName("ix_billing_vouchers_is_active");
+        builder.HasIndex(e => e.ExpiresAtUtc).HasDatabaseName("ix_billing_vouchers_expires_at_utc");
+    }
+}
+
+public class BillingVoucherRedemptionConfiguration : BaseWorkspaceEntityConfiguration<BillingVoucherRedemption>
+{
+    public override void Configure(EntityTypeBuilder<BillingVoucherRedemption> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("billing_voucher_redemptions");
+
+        builder.Property(e => e.VoucherId).HasColumnName("voucher_id");
+        builder.Property(e => e.UserId).HasColumnName("user_id");
+        builder.Property(e => e.PlanId).HasColumnName("plan_id");
+        builder.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+        builder.Property(e => e.BillingPaymentId).HasColumnName("billing_payment_id");
+        builder.Property(e => e.VoucherCode).IsRequired().HasMaxLength(100).HasColumnName("voucher_code");
+        builder.Property(e => e.Status).IsRequired().HasMaxLength(30).HasColumnName("status");
+        builder.Property(e => e.CheckoutSessionId).HasMaxLength(200).HasColumnName("checkout_session_id");
+        builder.Property(e => e.PaymentProvider).HasMaxLength(50).HasColumnName("payment_provider");
+        builder.Property(e => e.OriginalAmount).HasPrecision(18, 2).HasColumnName("original_amount");
+        builder.Property(e => e.DiscountAmount).HasPrecision(18, 2).HasColumnName("discount_amount");
+        builder.Property(e => e.FinalAmount).HasPrecision(18, 2).HasColumnName("final_amount");
+        builder.Property(e => e.Currency).IsRequired().HasMaxLength(10).HasColumnName("currency");
+        builder.Property(e => e.RedeemedAtUtc).HasColumnName("redeemed_at_utc");
+
+        builder.HasIndex(e => e.VoucherId).HasDatabaseName("ix_billing_voucher_redemptions_voucher_id");
+        builder.HasIndex(e => e.UserId).HasDatabaseName("ix_billing_voucher_redemptions_user_id");
+        builder.HasIndex(e => e.WorkspaceId).HasDatabaseName("ix_billing_voucher_redemptions_workspace_id");
+        builder.HasIndex(e => e.RedeemedAtUtc).HasDatabaseName("ix_billing_voucher_redemptions_redeemed_at_utc");
+        builder.HasIndex(e => e.CheckoutSessionId)
+            .IsUnique()
+            .HasFilter("checkout_session_id IS NOT NULL")
+            .HasDatabaseName("ix_billing_voucher_redemptions_checkout_session_id");
+
+        builder.HasOne(e => e.Voucher)
+            .WithMany()
+            .HasForeignKey(e => e.VoucherId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Plan)
+            .WithMany()
+            .HasForeignKey(e => e.PlanId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Subscription)
+            .WithMany()
+            .HasForeignKey(e => e.SubscriptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(e => e.BillingPayment)
+            .WithMany()
+            .HasForeignKey(e => e.BillingPaymentId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}

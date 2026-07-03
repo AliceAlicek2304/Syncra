@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BarChart3, LayoutDashboard, Newspaper, ReceiptText, UsersRound, Zap, LogOut } from 'lucide-react'
+import { BarChart3, LayoutDashboard, Newspaper, ReceiptText, TicketPercent, UsersRound, Zap, LogOut } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import styles from '../AdminModern.module.css'
 
@@ -8,6 +8,7 @@ const links = [
   { title: 'Người dùng', to: '/admin/users', icon: UsersRound },
   { title: 'Bài đăng', to: '/admin/posts', icon: Newspaper },
   { title: 'Doanh thu', to: '/admin/revenue', icon: ReceiptText },
+  { title: 'Mã giảm giá', to: '/admin/vouchers', icon: TicketPercent },
 ]
 
 export default function AdminSidebarV2() {

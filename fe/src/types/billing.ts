@@ -28,6 +28,25 @@ export type CreateCheckoutSessionResponse = {
   clientReferenceId?: string | null;
 };
 
+export type PreviewBillingVoucherRequest = {
+  planCode: string;
+  interval?: 'month' | 'year' | string;
+  voucherCode: string;
+};
+
+export type BillingVoucherPreviewResponse = {
+  code: string;
+  name: string;
+  discountType: string;
+  percentOff?: number | null;
+  amountOff?: number | null;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  currency: string;
+  message: string;
+};
+
 export type CreatePortalSessionRequest = {
   returnUrl?: string;
 };

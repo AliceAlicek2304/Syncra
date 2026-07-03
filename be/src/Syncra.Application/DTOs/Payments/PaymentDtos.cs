@@ -9,13 +9,16 @@ public sealed record PaymentCheckoutSessionRequest(
     string CancelUrl,
     string Interval = "month",
     PaymentDiscount? Discount = null,
-    bool SkipTrial = false);
+    bool SkipTrial = false,
+    Guid? UserId = null);
 
 public sealed record PaymentDiscount(
     string Code,
     string Label,
-    decimal PercentOff,
-    string Source);
+    decimal? PercentOff,
+    string Source,
+    decimal? AmountOff = null,
+    decimal DiscountAmount = 0m);
 
 public sealed record PaymentCheckoutSessionResult(
     string SessionId,

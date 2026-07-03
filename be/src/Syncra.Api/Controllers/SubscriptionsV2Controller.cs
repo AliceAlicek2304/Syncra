@@ -1,8 +1,10 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Syncra.Application.DTOs.Billing;
 using Syncra.Application.DTOs.Subscriptions;
 using Syncra.Application.Features.Subscriptions.Commands;
+using Syncra.Application.Features.Subscriptions.Queries;
 using Syncra.Api.Middleware;
 using Syncra.Shared.Extensions;
 
@@ -56,6 +58,42 @@ public class SubscriptionsV2Controller : ControllerBase
             request.SkipTrial);
 
         var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("vouchers/preview")]
+    [ProducesResponseType(typeof(BillingVoucherPreviewResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PreviewVoucher(
+        Guid workspaceId,
+        [FromBody] PreviewBillingVoucherRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!HttpContext.Items.TryGetValue(TenantResolutionMiddleware.WorkspaceIdKey, out var tenantId) || tenantId is not Guid validatedWorkspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id header is required." });
+        }
+
+        if (validatedWorkspaceId != workspaceId)
+        {
+            return BadRequest(new { statusCode = 400, message = "X-Workspace-Id must match route workspaceId." });
+        }
+
+        var userId = User.GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _mediator.Send(new PreviewBillingVoucherQuery(
+            workspaceId,
+            userId.Value,
+            request.PlanCode,
+            request.Interval,
+            request.VoucherCode),
+            cancellationToken);
+
         return Ok(result);
     }
 

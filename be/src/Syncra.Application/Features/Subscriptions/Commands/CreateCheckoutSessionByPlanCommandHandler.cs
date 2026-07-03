@@ -1,7 +1,6 @@
 using MediatR;
 using Syncra.Application.DTOs.Payments;
 using Syncra.Application.DTOs.Subscriptions;
-using Syncra.Application.Features.Subscriptions;
 using Syncra.Application.Interfaces;
 using Syncra.Domain.Exceptions;
 using Syncra.Domain.Interfaces;
@@ -14,21 +13,21 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly ISubscriptionRepository _subscriptionRepository;
     private readonly IPlanRepository _planRepository;
-    private readonly IUserRepository _userRepository;
     private readonly IPaymentProviderResolver _paymentProviderResolver;
+    private readonly IBillingVoucherService _billingVoucherService;
 
     public CreateCheckoutSessionByPlanCommandHandler(
         IWorkspaceRepository workspaceRepository,
         ISubscriptionRepository subscriptionRepository,
         IPlanRepository planRepository,
-        IUserRepository userRepository,
-        IPaymentProviderResolver paymentProviderResolver)
+        IPaymentProviderResolver paymentProviderResolver,
+        IBillingVoucherService billingVoucherService)
     {
         _workspaceRepository = workspaceRepository;
         _subscriptionRepository = subscriptionRepository;
         _planRepository = planRepository;
-        _userRepository = userRepository;
         _paymentProviderResolver = paymentProviderResolver;
+        _billingVoucherService = billingVoucherService;
     }
 
     public async Task<CreateCheckoutSessionResponse> Handle(
@@ -68,11 +67,14 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
                 "Student is no longer a standalone plan. Use the student discount on Basic or Max.");
         }
 
-        var user = string.IsNullOrWhiteSpace(request.DiscountCode)
-            ? null
-            : await _userRepository.GetByIdAsync(request.UserId)
-                ?? throw new DomainException("not_found", "User not found.");
-        var discount = BillingDiscountPolicy.Resolve(plan.Code, request.DiscountCode, user);
+        var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
+        var interval = isYearly ? "year" : "month";
+        var discount = await _billingVoucherService.ResolveDiscountAsync(
+            request.UserId,
+            plan,
+            interval,
+            request.DiscountCode,
+            cancellationToken);
 
         if (discount != null && !providerKey.Equals("sepay", StringComparison.OrdinalIgnoreCase))
         {
@@ -81,7 +83,6 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
                 $"Discount code '{discount.Code}' is not supported by provider '{providerKey}'.");
         }
 
-        var isYearly = string.Equals(request.Interval, "year", StringComparison.OrdinalIgnoreCase);
         var priceId = providerKey.Equals("stripe", StringComparison.OrdinalIgnoreCase)
             ? (isYearly ? plan.StripeYearlyPriceId : plan.StripeMonthlyPriceId)
             : plan.Id.ToString();
@@ -102,9 +103,10 @@ public sealed class CreateCheckoutSessionByPlanCommandHandler
                 PriceId: priceId,
                 SuccessUrl: request.SuccessUrl ?? string.Empty,
                 CancelUrl: request.CancelUrl ?? string.Empty,
-                Interval: isYearly ? "year" : "month",
+                Interval: interval,
                 Discount: discount,
-                SkipTrial: request.SkipTrial),
+                SkipTrial: request.SkipTrial,
+                UserId: request.UserId),
             cancellationToken);
 
         return new CreateCheckoutSessionResponse(

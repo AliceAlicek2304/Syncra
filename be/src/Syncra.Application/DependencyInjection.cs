@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly);
 
         services.AddScoped<Interfaces.IAnalyticsExportService, Services.AnalyticsExportService>();
+        services.AddScoped<Interfaces.IBillingVoucherService, Services.BillingVoucherService>();
         services.AddScoped<Interfaces.IZernioWorkspaceAnalyticsService, Services.ZernioWorkspaceAnalyticsService>();
         services.AddScoped<Interfaces.IInboxBackfillService, Services.InboxBackfillService>();
         services.AddScoped<Payments.IPaymentWebhookEventDispatcher, Payments.PaymentWebhookEventDispatcher>();

@@ -7,6 +7,8 @@ import type{
   CreateCheckoutSessionResponse,
   CreatePortalSessionRequest,
   CreatePortalSessionResponse,
+  BillingVoucherPreviewResponse,
+  PreviewBillingVoucherRequest,
   StudentVerificationStatusDto,
   RequestStudentVerificationResponse,
   VerifyStudentEmailResponse
@@ -22,6 +24,7 @@ interface BillingContextType {
   loadStudentVerificationStatus: () => Promise<void>;
   requestStudentVerificationCode: (studentEmail: string) => Promise<RequestStudentVerificationResponse>;
   verifyStudentEmailCode: (studentEmail: string, code: string) => Promise<VerifyStudentEmailResponse>;
+  previewBillingVoucher: (planCode: string, interval: 'month' | 'year', voucherCode: string) => Promise<BillingVoucherPreviewResponse>;
   startCheckout: (planCode: string, interval: 'month' | 'year', skipTrial?: boolean, discountCode?: string | null) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -158,6 +161,28 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     return response;
   }, []);
 
+  const previewBillingVoucher = useCallback(async (planCode: string, interval: 'month' | 'year', voucherCode: string) => {
+    if (!workspaceId) {
+      throw new Error('Workspace ID not found.');
+    }
+
+    setError(null);
+    const request: PreviewBillingVoucherRequest = {
+      planCode,
+      interval,
+      voucherCode
+    };
+
+    return await apiFetch<BillingVoucherPreviewResponse>(
+      `/api/v2/workspaces/${workspaceId}/subscription/vouchers/preview`,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+        workspaceId
+      }
+    );
+  }, [workspaceId]);
+
   const openPortal = useCallback(async () => {
     if (!workspaceId) {
       setError('Workspace ID not found.');
@@ -203,6 +228,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       loadStudentVerificationStatus,
       requestStudentVerificationCode,
       verifyStudentEmailCode,
+      previewBillingVoucher,
       startCheckout,
       openPortal
     }}>
