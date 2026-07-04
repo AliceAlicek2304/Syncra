@@ -231,7 +231,7 @@
   background: #fffaff;
   border: 1px solid #eadcf1;
   border-radius: 12px;
-  padding: 28px 24px;
+  padding: 34px 24px 28px;
   position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -244,6 +244,7 @@
 .currentPlanCard {
   border-color: rgba(168, 85, 247, 0.4);
   background: rgba(168, 85, 247, 0.02);
+  padding-top: 58px;
 }
 
 .highlightPlanCard {
@@ -273,6 +274,10 @@
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 9999px;
+}
+
+.currentPlanCard .studentBadge {
+  top: 34px;
 }
 
 /* ── Plan Header ── */
