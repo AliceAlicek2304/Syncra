@@ -43,8 +43,8 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
     /// <inheritdoc/>
     public async Task<StorageUploadResult> SaveAsync(Stream stream, string fileName, string mimeType)
     {
-        // Generate a unique storage key to avoid name collisions.
-        var storageKey = $"{Path.GetRandomFileName().Replace(".", "")}_{fileName}";
+        // Keep storage keys URL-safe; the original filename may contain spaces or Unicode.
+        var storageKey = $"{Guid.NewGuid():N}{GetSafeExtension(fileName, mimeType)}";
 
         try
         {
@@ -170,6 +170,8 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
             key = key[..queryIndex];
         }
 
+        key = Uri.UnescapeDataString(key);
+
         try
         {
             var request = new GetPreSignedUrlRequest
@@ -189,4 +191,26 @@ public sealed class WasabiStorageService : IStorageService, IDisposable
     }
 
     public void Dispose() => _s3Client.Dispose();
+
+    private static string GetSafeExtension(string fileName, string mimeType)
+    {
+        var extension = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(extension) || extension.Length > 16)
+        {
+            extension = mimeType.ToLowerInvariant() switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                "video/mp4" => ".mp4",
+                "video/quicktime" => ".mov",
+                "video/webm" => ".webm",
+                "application/pdf" => ".pdf",
+                _ => string.Empty
+            };
+        }
+
+        return extension.ToLowerInvariant();
+    }
 }

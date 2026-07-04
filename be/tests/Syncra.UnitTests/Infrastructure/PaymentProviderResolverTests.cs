@@ -36,7 +36,7 @@ public sealed class PaymentProviderResolverTests
     }
 
     [Fact]
-    public void GetDefaultProviderKey_returns_stripe_when_not_overridden()
+    public void GetDefaultProviderKey_returns_sepay_when_not_overridden()
     {
         var resolver = new PaymentProviderResolver(
             new[] { new FakeProvider("stripe") },
@@ -44,7 +44,7 @@ public sealed class PaymentProviderResolverTests
 
         var defaultProvider = resolver.GetDefaultProviderKey();
 
-        Assert.Equal("stripe", defaultProvider);
+        Assert.Equal("sepay", defaultProvider);
     }
 
     [Fact]

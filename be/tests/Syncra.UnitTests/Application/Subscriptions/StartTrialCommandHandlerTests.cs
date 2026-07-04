@@ -160,50 +160,36 @@ public sealed class StartTrialCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ThrowsStudentVerificationRequired_WhenStudentPlanIsNotVerified()
+    public async Task Handle_ThrowsPlanRemoved_WhenStudentPlanIsRequested()
     {
         // Arrange
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(ownerId, "Acme", "acme");
         var plan = new Plan { Id = Guid.NewGuid(), Code = "STUDENT", IsActive = true };
-        var user = User.Create("owner@example.com", "hash");
 
         _workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         _planRepositoryMock.Setup(x => x.GetByCodeAsync("STUDENT", It.IsAny<CancellationToken>())).ReturnsAsync(plan);
-        _userRepositoryMock.Setup(x => x.GetByIdAsync(ownerId)).ReturnsAsync(user);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             _sut.Handle(new StartTrialCommand(workspace.Id, ownerId, "STUDENT"), CancellationToken.None));
-        Assert.Equal("student_verification_required", exception.Code);
+        Assert.Equal("plan_removed", exception.Code);
     }
 
     [Fact]
-    public async Task Handle_SuccessfullyActivatesTrial_WhenStudentPlanIsVerified()
+    public async Task Handle_ThrowsPlanRemoved_WhenStudentEmailIsVerified()
     {
         // Arrange
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(ownerId, "Acme", "acme");
         var plan = new Plan { Id = Guid.NewGuid(), Code = "STUDENT", IsActive = true };
-        var user = User.Create("owner@example.com", "hash");
-        user.VerifyStudentEmail("owner@school.edu", DateTime.UtcNow);
-        var subscription = new Subscription
-        {
-            WorkspaceId = workspace.Id,
-            TrialEndsAtUtc = null
-        };
 
         _workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         _planRepositoryMock.Setup(x => x.GetByCodeAsync("STUDENT", It.IsAny<CancellationToken>())).ReturnsAsync(plan);
-        _userRepositoryMock.Setup(x => x.GetByIdAsync(ownerId)).ReturnsAsync(user);
-        _subscriptionRepositoryMock.Setup(x => x.GetByWorkspaceIdAsync(workspace.Id)).ReturnsAsync(subscription);
 
-        // Act
-        await _sut.Handle(new StartTrialCommand(workspace.Id, ownerId, "STUDENT"), CancellationToken.None);
-
-        // Assert
-        Assert.Equal(plan.Id, subscription.PlanId);
-        Assert.Equal(SubscriptionStatus.Trialing, subscription.Status);
-        Assert.NotNull(subscription.TrialEndsAtUtc);
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<DomainException>(() =>
+            _sut.Handle(new StartTrialCommand(workspace.Id, ownerId, "STUDENT"), CancellationToken.None));
+        Assert.Equal("plan_removed", exception.Code);
     }
 }

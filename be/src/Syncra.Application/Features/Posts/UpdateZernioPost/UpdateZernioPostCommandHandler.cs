@@ -222,6 +222,15 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
         {
             key = fileUrl[prefix.Length..];
         }
+        else if (Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
+        {
+            var path = uri.AbsolutePath.TrimStart('/');
+            var bucketPrefix = $"{_wasabiOptions.BucketName.TrimEnd('/')}/";
+            key = !string.IsNullOrWhiteSpace(_wasabiOptions.BucketName) &&
+                  path.StartsWith(bucketPrefix, StringComparison.OrdinalIgnoreCase)
+                ? path[bucketPrefix.Length..]
+                : System.IO.Path.GetFileName(path);
+        }
         else
         {
             key = System.IO.Path.GetFileName(fileUrl);
@@ -233,7 +242,7 @@ public sealed class UpdateZernioPostCommandHandler : IRequestHandler<UpdateZerni
             key = key[..queryIndex];
         }
 
-        return key;
+        return Uri.UnescapeDataString(key);
     }
 
     private static string GetMimeType(string filename, string? url, string? providedMimeType)

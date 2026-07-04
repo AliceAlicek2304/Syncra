@@ -17,8 +17,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
         var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
         var planRepositoryMock = new Mock<IPlanRepository>();
-        var userRepositoryMock = new Mock<IUserRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
+        var billingVoucherServiceMock = new Mock<IBillingVoucherService>();
         var providerMock = new Mock<IPaymentProvider>();
 
         var ownerId = Guid.NewGuid();
@@ -30,6 +30,9 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         planRepositoryMock.Setup(x => x.GetByCodeAsync("pro", It.IsAny<CancellationToken>())).ReturnsAsync(plan);
         resolverMock.Setup(x => x.GetDefaultProviderKey()).Returns("stripe");
         resolverMock.Setup(x => x.GetRequiredProvider("stripe")).Returns(providerMock.Object);
+        billingVoucherServiceMock
+            .Setup(x => x.ResolveDiscountAsync(ownerId, plan, "month", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PaymentDiscount?)null);
 
         PaymentCheckoutSessionRequest? capturedRequest = null;
         providerMock
@@ -41,8 +44,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             workspaceRepositoryMock.Object,
             subscriptionRepositoryMock.Object,
             planRepositoryMock.Object,
-            userRepositoryMock.Object,
-            resolverMock.Object);
+            resolverMock.Object,
+            billingVoucherServiceMock.Object);
 
         var result = await sut.Handle(
             new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "pro", "month", null, null),
@@ -59,8 +62,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
         var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
         var planRepositoryMock = new Mock<IPlanRepository>();
-        var userRepositoryMock = new Mock<IUserRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
+        var billingVoucherServiceMock = new Mock<IBillingVoucherService>();
 
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(ownerId, "Acme", "acme");
@@ -73,8 +76,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             workspaceRepositoryMock.Object,
             subscriptionRepositoryMock.Object,
             planRepositoryMock.Object,
-            userRepositoryMock.Object,
-            resolverMock.Object);
+            resolverMock.Object,
+            billingVoucherServiceMock.Object);
 
         await Assert.ThrowsAsync<DomainException>(() =>
             sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "missing", "month", null, null), CancellationToken.None));
@@ -86,8 +89,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
         var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
         var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
         var planRepositoryMock = new Mock<IPlanRepository>();
-        var userRepositoryMock = new Mock<IUserRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
+        var billingVoucherServiceMock = new Mock<IBillingVoucherService>();
 
         var ownerId = Guid.NewGuid();
         var nonOwnerId = Guid.NewGuid();
@@ -99,8 +102,8 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
             workspaceRepositoryMock.Object,
             subscriptionRepositoryMock.Object,
             planRepositoryMock.Object,
-            userRepositoryMock.Object,
-            resolverMock.Object);
+            resolverMock.Object,
+            billingVoucherServiceMock.Object);
 
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, nonOwnerId, "pro", "month", null, null), CancellationToken.None));
@@ -110,75 +113,64 @@ public sealed class CreateCheckoutSessionByPlanCommandHandlerTests
     }
 
     [Fact]
-    public async Task Throws_student_verification_required_when_student_plan_is_not_verified()
+    public async Task Throws_plan_removed_when_student_plan_is_requested()
     {
         var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
         var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
         var planRepositoryMock = new Mock<IPlanRepository>();
-        var userRepositoryMock = new Mock<IUserRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
+        var billingVoucherServiceMock = new Mock<IBillingVoucherService>();
 
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(ownerId, "Acme", "acme");
         var plan = new Plan { Id = Guid.NewGuid(), Code = "STUDENT", IsActive = true };
-        var user = User.Create("owner@example.com", "hash");
 
         workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         subscriptionRepositoryMock.Setup(x => x.GetByWorkspaceIdAsync(workspace.Id)).ReturnsAsync((Subscription?)null);
         planRepositoryMock.Setup(x => x.GetByCodeAsync("STUDENT", It.IsAny<CancellationToken>())).ReturnsAsync(plan);
-        userRepositoryMock.Setup(x => x.GetByIdAsync(ownerId)).ReturnsAsync(user);
         resolverMock.Setup(x => x.GetDefaultProviderKey()).Returns("sepay");
 
         var sut = new CreateCheckoutSessionByPlanCommandHandler(
             workspaceRepositoryMock.Object,
             subscriptionRepositoryMock.Object,
             planRepositoryMock.Object,
-            userRepositoryMock.Object,
-            resolverMock.Object);
+            resolverMock.Object,
+            billingVoucherServiceMock.Object);
 
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "STUDENT", "month", null, null), CancellationToken.None));
 
-        Assert.Equal("student_verification_required", exception.Code);
+        Assert.Equal("plan_removed", exception.Code);
     }
 
     [Fact]
-    public async Task Creates_checkout_when_student_plan_is_verified()
+    public async Task Throws_plan_removed_even_when_student_email_is_verified()
     {
         var workspaceRepositoryMock = new Mock<IWorkspaceRepository>();
         var subscriptionRepositoryMock = new Mock<ISubscriptionRepository>();
         var planRepositoryMock = new Mock<IPlanRepository>();
-        var userRepositoryMock = new Mock<IUserRepository>();
         var resolverMock = new Mock<IPaymentProviderResolver>();
-        var providerMock = new Mock<IPaymentProvider>();
+        var billingVoucherServiceMock = new Mock<IBillingVoucherService>();
 
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(ownerId, "Acme", "acme");
         var plan = new Plan { Id = Guid.NewGuid(), Code = "STUDENT", IsActive = true };
-        var user = User.Create("owner@example.com", "hash");
-        user.VerifyStudentEmail("owner@school.edu", DateTime.UtcNow);
 
         workspaceRepositoryMock.Setup(x => x.GetByIdAsync(workspace.Id)).ReturnsAsync(workspace);
         subscriptionRepositoryMock.Setup(x => x.GetByWorkspaceIdAsync(workspace.Id)).ReturnsAsync((Subscription?)null);
         planRepositoryMock.Setup(x => x.GetByCodeAsync("STUDENT", It.IsAny<CancellationToken>())).ReturnsAsync(plan);
-        userRepositoryMock.Setup(x => x.GetByIdAsync(ownerId)).ReturnsAsync(user);
         resolverMock.Setup(x => x.GetDefaultProviderKey()).Returns("sepay");
-        resolverMock.Setup(x => x.GetRequiredProvider("sepay")).Returns(providerMock.Object);
-        providerMock
-            .Setup(x => x.CreateCheckoutSessionAsync(It.IsAny<PaymentCheckoutSessionRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PaymentCheckoutSessionResult("sess_1", "https://checkout", "cus_1", workspace.Id.ToString()));
 
         var sut = new CreateCheckoutSessionByPlanCommandHandler(
             workspaceRepositoryMock.Object,
             subscriptionRepositoryMock.Object,
             planRepositoryMock.Object,
-            userRepositoryMock.Object,
-            resolverMock.Object);
+            resolverMock.Object,
+            billingVoucherServiceMock.Object);
 
-        var result = await sut.Handle(
-            new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "STUDENT", "month", null, null),
-            CancellationToken.None);
+        var exception = await Assert.ThrowsAsync<DomainException>(() =>
+            sut.Handle(new CreateCheckoutSessionByPlanCommand(workspace.Id, ownerId, "STUDENT", "month", null, null), CancellationToken.None));
 
-        Assert.Equal("https://checkout", result.CheckoutUrl);
+        Assert.Equal("plan_removed", exception.Code);
     }
 }
