@@ -37,7 +37,7 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'threads', label: 'Threads', color: '#211329', isSupported: false },
   { id: 'bluesky', label: 'Bluesky', color: '#0085ff', isSupported: false },
   { id: 'pinterest', label: 'Pinterest', color: '#e60023', isSupported: false },
-  { id: 'reddit', label: 'Reddit', color: '#ff4500', isSupported: false },
+  { id: 'reddit', label: 'Reddit', color: '#ff4500', isSupported: true },
   { id: 'googlebusiness', label: 'Google Business', color: '#4285f4', isSupported: false },
   { id: 'telegram', label: 'Telegram', color: '#0088cc', isSupported: false },
   { id: 'discord', label: 'Discord', color: '#5865f2', isSupported: false },

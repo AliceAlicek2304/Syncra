@@ -190,6 +190,34 @@ export const socialAccountsApi = {
       { defaultPlaylistId, defaultPlaylistName },
       { headers: { 'X-Workspace-Id': workspaceId } }
     );
+  },
+
+  // ── Reddit API methods ──────────────────────────────────────────────────
+
+  getRedditSubreddits: async (
+    workspaceId: string,
+    accountId: string
+  ): Promise<RedditSubredditsResponse> => {
+    const response = await api.get<RedditSubredditsResponse>(
+      `social-accounts/${accountId}/reddit/subreddits`,
+      { headers: { 'X-Workspace-Id': workspaceId } }
+    );
+    return response.data;
+  },
+
+  getRedditFlairs: async (
+    workspaceId: string,
+    accountId: string,
+    subreddit: string
+  ): Promise<RedditFlairsResponse> => {
+    const response = await api.get<RedditFlairsResponse>(
+      `social-accounts/${accountId}/reddit/flairs`,
+      {
+        headers: { 'X-Workspace-Id': workspaceId },
+        params: { subreddit }
+      }
+    );
+    return response.data;
   }
 };
 
@@ -225,4 +253,30 @@ export interface YouTubePlaylistDto {
 export interface YouTubePlaylistsResponseDto {
   playlists: YouTubePlaylistDto[];
   defaultPlaylistId: string | null;
+}
+
+// ── Reddit types ──────────────────────────────────────────────────────────
+
+export interface RedditSubredditItem {
+  id: string
+  name: string
+  title: string
+  url: string
+  over18: boolean
+}
+
+export interface RedditSubredditsResponse {
+  subreddits: RedditSubredditItem[]
+  defaultSubreddit?: string
+}
+
+export interface RedditFlairItem {
+  id: string
+  text: string
+  textColor: string
+  backgroundColor: string
+}
+
+export interface RedditFlairsResponse {
+  flairs: RedditFlairItem[]
 }

@@ -1024,6 +1024,34 @@ public sealed record ZernioWebhookResponseDto(
     bool Success,
     ZernioWebhookSettingsDto? Webhook);
 
+// ── Reddit Subreddits DTOs ────────────────────────────────────
+
+public sealed record ZernioRedditSubredditItemDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("url")] string Url,
+    [property: JsonPropertyName("over18")] bool Over18
+);
+
+public sealed record ZernioRedditSubredditsResponseDto(
+    [property: JsonPropertyName("subreddits")] IReadOnlyList<ZernioRedditSubredditItemDto> Subreddits,
+    [property: JsonPropertyName("defaultSubreddit")] string? DefaultSubreddit
+);
+
+// ── Reddit Flairs DTOs ────────────────────────────────────────
+
+public sealed record ZernioRedditFlairItemDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("text")] string Text,
+    [property: JsonPropertyName("textColor")] string TextColor,
+    [property: JsonPropertyName("backgroundColor")] string BackgroundColor
+);
+
+public sealed record ZernioRedditFlairsResponseDto(
+    [property: JsonPropertyName("flairs")] IReadOnlyList<ZernioRedditFlairItemDto> Flairs
+);
+
 // ── YouTube Playlist DTOs ─────────────────────────────────────
 
 public sealed record ZernioYouTubePlaylistDto(

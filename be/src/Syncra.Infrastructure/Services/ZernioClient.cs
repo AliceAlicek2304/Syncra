@@ -4232,6 +4232,58 @@ public sealed class ZernioClient : IZernioClient
         }
     }
 
+    // ── Reddit Subreddits & Flairs ─────────────────────────────────────────
+
+    public async Task<ZernioRedditSubredditsResponseDto> GetRedditSubredditsAsync(
+        string accountId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _connectApi.GetRedditSubredditsAsync(accountId, cancellationToken);
+
+            var subreddits = response.Subreddits.Select(s => new ZernioRedditSubredditItemDto(
+                Id: s.Id,
+                Name: s.Name,
+                Title: s.Title,
+                Url: s.Url,
+                Over18: s.Over18
+            )).ToList();
+
+            return new ZernioRedditSubredditsResponseDto(subreddits, response.DefaultSubreddit);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching Reddit subreddits for account {AccountId}", accountId);
+            throw new DomainException("zernio_reddit_subreddits_error", "Failed to fetch Reddit subreddits via Zernio", ex);
+        }
+    }
+
+    public async Task<ZernioRedditFlairsResponseDto> GetRedditFlairsAsync(
+        string accountId,
+        string subreddit,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _connectApi.GetRedditFlairsAsync(accountId, subreddit, cancellationToken);
+
+            var flairs = response.Flairs.Select(f => new ZernioRedditFlairItemDto(
+                Id: f.Id,
+                Text: f.Text,
+                TextColor: f.TextColor,
+                BackgroundColor: f.BackgroundColor
+            )).ToList();
+
+            return new ZernioRedditFlairsResponseDto(flairs);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogError(ex, "Zernio API error fetching Reddit flairs for subreddit {Subreddit} on account {AccountId}", subreddit, accountId);
+            throw new DomainException("zernio_reddit_flairs_error", "Failed to fetch Reddit flairs via Zernio", ex);
+        }
+    }
+
     // ── Inbox DM methods ────────────────────────────────────────────────────
 
     public async Task<ZernioInboxConversationsPageDto> ListInboxConversationsAsync(

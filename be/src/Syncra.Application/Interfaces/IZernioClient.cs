@@ -641,4 +641,15 @@ public interface IZernioClient
         string defaultPlaylistId,
         string? defaultPlaylistName,
         CancellationToken cancellationToken = default);
+
+    // ── Reddit Subreddit & Flair methods ───────────────────────
+
+    Task<ZernioRedditSubredditsResponseDto> GetRedditSubredditsAsync(
+        string accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<ZernioRedditFlairsResponseDto> GetRedditFlairsAsync(
+        string accountId,
+        string subreddit,
+        CancellationToken cancellationToken = default);
 }

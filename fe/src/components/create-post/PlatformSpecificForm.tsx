@@ -2031,30 +2031,111 @@ function SnapchatForm({ value, onChange }: {
 }
 
 // Reddit
-function RedditForm({ value, onChange }: {
+function RedditForm({
+  value,
+  onChange,
+  socialAccounts = [],
+  selectedSocialAccountIds = [],
+}: {
   value: RedditPlatformData
   onChange: (v: RedditPlatformData) => void
+  socialAccounts?: SocialAccountDto[]
+  selectedSocialAccountIds?: string[]
 }) {
   const set = <K extends keyof RedditPlatformData>(k: K, v: RedditPlatformData[K]) =>
     onChange({ ...value, [k]: v })
 
+  const { activeWorkspace } = useWorkspace()
+  const workspaceId = activeWorkspace?.id
+
+  const redditAccount = socialAccounts.find(
+    sa => sa.platform === 'reddit' && selectedSocialAccountIds.includes(sa.id)
+  ) ?? socialAccounts.find(sa => sa.platform === 'reddit')
+
+  const { data: subredditsData, isLoading: subredditsLoading } = useQuery({
+    queryKey: ['reddit-subreddits', workspaceId, redditAccount?.id],
+    queryFn: () => socialAccountsApi.getRedditSubreddits(workspaceId!, redditAccount!.id),
+    enabled: !!workspaceId && !!redditAccount?.id,
+  })
+
+  useEffect(() => {
+    if (subredditsData?.defaultSubreddit && !value.subreddit) {
+      set('subreddit', subredditsData.defaultSubreddit)
+    }
+  }, [subredditsData, value.subreddit])
+
+  const selectedSubreddit = value.subreddit
+  const { data: flairsData, isLoading: flairsLoading } = useQuery({
+    queryKey: ['reddit-flairs', workspaceId, redditAccount?.id, selectedSubreddit],
+    queryFn: () => socialAccountsApi.getRedditFlairs(workspaceId!, redditAccount!.id, selectedSubreddit!),
+    enabled: !!workspaceId && !!redditAccount?.id && !!selectedSubreddit,
+  })
+
   return (
     <>
       <div className={styles.fieldRow}>
-        <TodoSelect label="subreddit" placeholder="// TODO: Fetch subreddits from API" />
-        <TodoSelect label="flair ID" placeholder="// TODO: Fetch flairs from API" />
+        <div className={styles.field}>
+          <FieldLabel>subreddit *</FieldLabel>
+          <select
+            className={styles.select}
+            value={value.subreddit ?? ''}
+            onChange={e => {
+              set('subreddit', e.target.value || undefined)
+              set('flairId', undefined)
+            }}
+            disabled={!redditAccount || subredditsLoading}
+          >
+            <option value="">
+              {!redditAccount
+                ? 'Connect a Reddit account first'
+                : subredditsLoading
+                  ? 'Loading subreddits...'
+                  : 'Select a subreddit'}
+            </option>
+            {subredditsData?.subreddits?.map(sub => (
+              <option key={sub.id} value={sub.name}>
+                r/{sub.name} {sub.over18 ? '(NSFW)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {selectedSubreddit && (
+          <div className={styles.field}>
+            <FieldLabel>post flair</FieldLabel>
+            <select
+              className={styles.select}
+              value={value.flairId ?? ''}
+              onChange={e => set('flairId', e.target.value || undefined)}
+              disabled={flairsLoading || !flairsData?.flairs?.length}
+            >
+              <option value="">
+                {flairsLoading
+                  ? 'Loading flairs...'
+                  : !flairsData?.flairs?.length
+                    ? 'No flairs available'
+                    : 'Select a flair'}
+              </option>
+              {flairsData?.flairs?.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.text}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className={styles.field}>
-        <FieldLabel>post title</FieldLabel>
+        <FieldLabel>post title *</FieldLabel>
         <input
           className={styles.input}
-          placeholder="Post title (max 300 chars)"
+          placeholder="Reddit requires a title (max 300 chars)"
           maxLength={300}
           value={value.title ?? ''}
           onChange={e => set('title', e.target.value || undefined)}
         />
-        <p className={styles.hint}>Defaults to first line of content if omitted</p>
+        <p className={styles.hint}>Required. Enter a compelling title for your post.</p>
       </div>
 
       <div className={styles.field}>
@@ -2695,6 +2776,8 @@ export default function PlatformSpecificForm(props: PlatformSpecificFormProps) {
             <RedditForm
               value={value.reddit ?? {}}
               onChange={d => updatePlatform('reddit', d)}
+              socialAccounts={socialAccounts}
+              selectedSocialAccountIds={selectedSocialAccountIds}
             />
             <CustomCaptionTextarea
               value={customCaptions.reddit ?? ''}

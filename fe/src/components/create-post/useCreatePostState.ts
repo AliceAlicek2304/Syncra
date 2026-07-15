@@ -526,7 +526,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       }
     }
     const override = captionsByPlatform[platform]
-    return override.trim() ? override : mainContent
+    return override?.trim() ? override : mainContent
   }, [mainContent, tiktokPhotoDescription, captionsByPlatform, mediaHook.media])
 
   const caption = useMemo(() => {

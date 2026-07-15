@@ -967,6 +967,74 @@ public sealed class SocialAccountsController : ControllerBase
         return Ok(new { message = "Default YouTube playlist updated successfully." });
     }
 
+    // ── GET /api/v1/social-accounts/{accountId}/reddit/subreddits ─────────
+
+    /// <summary>
+    /// Returns all subreddits the connected Reddit account has joined.
+    /// </summary>
+    [HttpGet("{accountId:guid}/reddit/subreddits")]
+    public async Task<IActionResult> GetRedditSubreddits(
+        Guid accountId,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null || !account.Platform.Equals("reddit", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { code = "not_found", message = "Reddit account not found." });
+        }
+
+        var result = await _zernioClient.GetRedditSubredditsAsync(account.ExternalAccountId, cancellationToken);
+        return Ok(result);
+    }
+
+    // ── GET /api/v1/social-accounts/{accountId}/reddit/flairs ─────────────
+
+    /// <summary>
+    /// Returns the list of flairs (post labels) available for a given subreddit.
+    /// </summary>
+    [HttpGet("{accountId:guid}/reddit/flairs")]
+    public async Task<IActionResult> GetRedditFlairs(
+        Guid accountId,
+        [FromQuery] string subreddit,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = HttpContext.Items[Middleware.TenantResolutionMiddleware.WorkspaceIdKey] as Guid?;
+        if (workspaceId is null)
+        {
+            return BadRequest(new { code = "missing_workspace", message = "X-Workspace-Id header is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(subreddit))
+        {
+            return BadRequest(new { code = "missing_subreddit", message = "Subreddit parameter is required." });
+        }
+
+        var account = await _db.SocialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                sa => sa.Id == accountId && sa.WorkspaceId == workspaceId.Value && sa.IsActive,
+                cancellationToken);
+
+        if (account is null || !account.Platform.Equals("reddit", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { code = "not_found", message = "Reddit account not found." });
+        }
+
+        var result = await _zernioClient.GetRedditFlairsAsync(account.ExternalAccountId, subreddit, cancellationToken);
+        return Ok(result);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private async Task<ZernioProfile> GetOrProvisionZernioProfileAsync(
