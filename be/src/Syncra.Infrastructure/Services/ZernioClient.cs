@@ -1155,8 +1155,7 @@ public sealed class ZernioClient : IZernioClient
             "threads" => request.PlatformSpecificData?.Threads,
             "facebook" => request.PlatformSpecificData?.Facebook
                 ?? new FacebookPlatformDataDto(Draft: request.IsDraft ?? false),
-            "instagram" => request.PlatformSpecificData?.Instagram
-                ?? new InstagramPlatformDataDto(),
+            "instagram" => BuildSdkInstagramSettings(request),
             "linkedin" => request.PlatformSpecificData?.LinkedIn
                 ?? new LinkedInPlatformDataDto(),
             "pinterest" => request.PlatformSpecificData?.Pinterest
@@ -1353,6 +1352,39 @@ public sealed class ZernioClient : IZernioClient
             cards,
             fbData.CarouselLink
         );
+     }
+
+    private static object? BuildSdkInstagramSettings(ZernioCreatePostRequest request)
+    {
+        var instaData = request.PlatformSpecificData?.Instagram;
+        if (instaData == null) return null;
+
+        var contentType = instaData.ContentType;
+        if (!string.IsNullOrEmpty(instaData.PublishAs))
+        {
+            contentType = instaData.PublishAs.ToLowerInvariant() switch
+            {
+                "story" => "story",
+                "reel" or "reels" => "reels",
+                _ => null
+            };
+        }
+
+        return new
+        {
+            contentType = contentType,
+            shareToFeed = instaData.ShareToFeed,
+            collaborators = instaData.Collaborators,
+            firstComment = instaData.FirstComment,
+            locationId = instaData.LocationId,
+            altText = instaData.AltText,
+            trialParams = instaData.TrialParams,
+            userTags = instaData.UserTags,
+            audioName = instaData.AudioName,
+            thumbOffset = instaData.ThumbOffset,
+            instagramThumbnail = instaData.InstagramThumbnail,
+            reelCover = instaData.ReelCover
+        };
     }
 
     private static MediaItem.TypeEnum? ParseMediaTypeEnum(string? type)

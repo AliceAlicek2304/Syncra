@@ -4,7 +4,7 @@ import { ZERNIO_PLATFORMS } from '../../data/platforms'
 import type { ZernioPlatform } from '../../data/platforms'
 
 /** Post-capable platforms in Zernio – those available for create-post */
-export type Platform = 'tiktok' | 'facebook' | 'linkedin' | 'youtube'
+export type Platform = 'tiktok' | 'facebook' | 'linkedin' | 'youtube' | 'instagram'
 export type Tone = 'default' | 'professional' | 'casual'
 
 export interface MediaFile {
@@ -35,13 +35,14 @@ const PLATFORM_MAX_CHARS: Record<string, number> = {
   facebook: 2200,
   linkedin: 3000,
   youtube: 5000,
+  instagram: 2200,
 }
 
 /** Post-capable platforms derived from the centralized Zernio platform registry */
 export const PLATFORMS: { id: Platform; label: string; maxChars: number }[] =
   ZERNIO_PLATFORMS
     .filter((p): p is ZernioPlatform & { id: Platform } =>
-      ['tiktok', 'facebook', 'linkedin', 'youtube'].includes(p.id)
+      ['tiktok', 'facebook', 'linkedin', 'youtube', 'instagram'].includes(p.id)
     )
     .map(p => ({
       id: p.id,
@@ -54,6 +55,7 @@ export const PLATFORM_ICONS: Record<Platform, string> = {
   facebook: 'f',
   linkedin: 'in',
   youtube: '▶',
+  instagram: '📷',
 }
 export const COMMON_EMOJIS = [
   '😊', '🔥', '💡', '🚀', '✅', '💬', '👇', '❤️', '🎯', '💪',

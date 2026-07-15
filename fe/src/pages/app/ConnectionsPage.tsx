@@ -32,7 +32,7 @@ const ALL_PLATFORMS: PlatformConfig[] = [
   { id: 'facebook', label: 'Facebook', color: '#1877f2', isSupported: true },
   { id: 'youtube', label: 'YouTube', color: '#ff0000', isSupported: true },
   { id: 'linkedin', label: 'LinkedIn', color: '#0a66c2', isSupported: true },
-  { id: 'instagram', label: 'Instagram', color: '#e4405f', isSupported: false },
+  { id: 'instagram', label: 'Instagram', color: '#e4405f', isSupported: true },
   { id: 'twitter', label: 'Twitter / X', color: '#211329', isSupported: false },
   { id: 'threads', label: 'Threads', color: '#211329', isSupported: false },
   { id: 'bluesky', label: 'Bluesky', color: '#0085ff', isSupported: false },

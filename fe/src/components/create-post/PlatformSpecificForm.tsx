@@ -60,10 +60,13 @@ export interface FacebookPlatformData {
 
 // Instagram
 export interface InstagramPlatformData {
-  contentType?: 'story'
+  publishAs?: 'post' | 'reel' | 'story'
+  contentType?: 'story' | 'reels'
   shareToFeed?: boolean
   collaborators?: string[]
   firstComment?: string
+  locationId?: string
+  altText?: string
   trialParams?: { graduationStrategy?: 'MANUAL' | 'SS_PERFORMANCE' }
   userTags?: Array<{ username: string; x: number; y: number; mediaIndex?: number }>
   audioName?: string
@@ -931,18 +934,26 @@ function InstagramForm({ value, onChange }: {
   return (
     <>
       <div className={styles.field}>
-        <FieldLabel>content type</FieldLabel>
+        <FieldLabel>publish as</FieldLabel>
         <select
           className={styles.select}
-          value={value.contentType ?? ''}
-          onChange={e => set('contentType', (e.target.value || undefined) as any)}
+          value={value.publishAs ?? 'post'}
+          onChange={e => {
+            const val = e.target.value as 'post' | 'reel' | 'story';
+            onChange({
+              ...value,
+              publishAs: val,
+              contentType: val === 'story' ? 'story' : val === 'reel' ? 'reels' : undefined
+            });
+          }}
         >
-          <option value="">Default (Reel / Feed)</option>
+          <option value="post">Post</option>
+          <option value="reel">Reel</option>
           <option value="story">Story</option>
         </select>
       </div>
 
-      {value.contentType !== 'story' && (
+      {value.publishAs === 'reel' && (
         <Switch
           on={value.shareToFeed ?? true}
           onChange={v => set('shareToFeed', v)}
@@ -959,6 +970,28 @@ function InstagramForm({ value, onChange }: {
           placeholder="Optional first comment (not applied to Stories)"
           value={value.firstComment ?? ''}
           onChange={e => set('firstComment', e.target.value || undefined)}
+        />
+      </div>
+
+      <div className={styles.field}>
+        <FieldLabel>location ID</FieldLabel>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="e.g. locations/12345"
+          value={value.locationId ?? ''}
+          onChange={e => set('locationId', e.target.value || undefined)}
+        />
+      </div>
+
+      <div className={styles.field}>
+        <FieldLabel>alt text</FieldLabel>
+        <textarea
+          className={styles.textarea}
+          rows={2}
+          placeholder="Describe your media for accessibility..."
+          value={value.altText ?? ''}
+          onChange={e => set('altText', e.target.value || undefined)}
         />
       </div>
 
@@ -994,7 +1027,7 @@ function InstagramForm({ value, onChange }: {
       </div>
 
       {/* Trial Reels */}
-      {value.contentType !== 'story' && (
+      {value.publishAs !== 'story' && (
         <div className={styles.subFormBox}>
           <div className={styles.subFormTitle}>Trial Reels (optional)</div>
           <p className={styles.hint}>Shared to non-followers first; can be graduated to a regular Reel</p>
@@ -1020,7 +1053,7 @@ function InstagramForm({ value, onChange }: {
       )}
 
       {/* Reel cover */}
-      {value.contentType !== 'story' && (
+      {value.publishAs !== 'story' && (
         <div className={styles.subFormBox}>
           <div className={styles.subFormTitle}>Reel Cover</div>
           <div className={styles.field}>
@@ -1058,7 +1091,7 @@ function InstagramForm({ value, onChange }: {
       )}
 
       {/* User Tags */}
-      {value.contentType !== 'story' && (
+      {value.publishAs !== 'story' && (
         <div className={styles.subFormBox}>
           <div className={styles.arrayHeader}>
             <div className={styles.subFormTitle}>User Tags in photos</div>

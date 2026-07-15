@@ -40,6 +40,11 @@ export function getPlatformValidationError(platform: Platform, media: any[]): st
       return 'TikTok requires at least one media file (image or video).'
     }
   }
+  if (platform === 'instagram') {
+    if (media.length === 0) {
+      return 'Instagram requires at least one media file (image or video).'
+    }
+  }
   if (platform === 'youtube') {
     const hasVideo = media.some(m => m.type === 'video')
     if (media.length === 0 || !hasVideo) {
@@ -362,7 +367,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [tiktokDraft, setTiktokDraft] = useState(false)
   const [tiktokPhotoDescription, setTiktokPhotoDescription] = useState('')
   const [captionsByPlatform, setCaptionsByPlatform] = useState<PlatformCaptionMap>({
-    tiktok: '', facebook: '', linkedin: '', youtube: ''
+    tiktok: '', facebook: '', linkedin: '', youtube: '', instagram: ''
   })
   const [platformTimeOverrides, setPlatformTimeOverrides] = useState<Record<string, string>>({})
   const [timezone, setTimezone] = useState('Bangkok')
@@ -371,7 +376,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
   const [platformSpecificData, setPlatformSpecificData] = useState<AllPlatformData>({})
 
   const [touched, setTouched] = useState<Record<Platform, boolean>>({
-    tiktok: false, facebook: false, linkedin: false, youtube: false
+    tiktok: false, facebook: false, linkedin: false, youtube: false, instagram: false
   })
 
   const [showPreview, setShowPreview] = useState(true)
@@ -410,7 +415,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
     setTimeout(() => {
       let nextContent = ''
-      let nextCaptions = { tiktok: '', facebook: '', linkedin: '', youtube: '' } as PlatformCaptionMap
+      let nextCaptions = { tiktok: '', facebook: '', linkedin: '', youtube: '', instagram: '' } as PlatformCaptionMap
       let initPlatforms: Platform[] = []
       let initSchMode = false
       let initSchTime = ''
@@ -423,7 +428,8 @@ export function useCreatePostState(props: CreatePostModalProps) {
           tiktok: editPost.caption,
           facebook: editPost.caption,
           linkedin: editPost.caption,
-          youtube: editPost.caption
+          youtube: editPost.caption,
+          instagram: editPost.caption
         }
         initPlatforms = [editPost.platform as Platform]
 
@@ -489,7 +495,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
         if (initialPlatform) {
           const normPlatform = initialPlatform.toLowerCase();
           const mappedPlatform = normPlatform === 'x' ? 'twitter' : normPlatform;
-          if (['tiktok', 'facebook', 'linkedin', 'youtube'].includes(mappedPlatform)) {
+          if (['tiktok', 'facebook', 'linkedin', 'youtube', 'instagram'].includes(mappedPlatform)) {
             initPlatforms = [mappedPlatform as Platform]
           }
         }
@@ -498,7 +504,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
       setMainContent(nextContent)
       setCaptionsByPlatform(nextCaptions)
       setPlatformSpecificData(initialPlatformSpecificData)
-      setTouched({ tiktok: false, facebook: false, linkedin: false, youtube: false })
+      setTouched({ tiktok: false, facebook: false, linkedin: false, youtube: false, instagram: false })
       setScheduleMode(initSchMode)
       setScheduleTime(initSchTime)
       setPublishingTab(editPost?.status === 'draft' ? 'draft' : initSchMode ? 'schedule' : 'now')
@@ -507,7 +513,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
 
       initialSnapshotRef.current = JSON.stringify({
         mainContent: nextContent,
-        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', facebook: '', linkedin: '', youtube: '' },
+        captionsByPlatform: loadedFromDraft || editPost ? nextCaptions : { tiktok: '', facebook: '', linkedin: '', youtube: '', instagram: '' },
         media: mediaHook.media,
         activePlatforms: initPlatforms.length > 0 ? initPlatforms : [],
         scheduleMode: initSchMode,
@@ -565,7 +571,7 @@ export function useCreatePostState(props: CreatePostModalProps) {
     setShowUnsavedDialog(false)
     setMainContent('')
     setFacebookFirstComment('')
-    setCaptionsByPlatform({ tiktok: '', facebook: '', linkedin: '', youtube: '' })
+    setCaptionsByPlatform({ tiktok: '', facebook: '', linkedin: '', youtube: '', instagram: '' })
     setTiktokDraft(false)
     setTiktokPhotoDescription('')
     setPlatformTimeOverrides({})

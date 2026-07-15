@@ -110,10 +110,13 @@ public sealed record FacebookCarouselCardDto(
 
 // 4. Instagram
 public sealed record InstagramPlatformDataDto(
+    [property: JsonPropertyName("publishAs")] string? PublishAs = null,
     [property: JsonPropertyName("contentType")] string? ContentType = null,
     [property: JsonPropertyName("shareToFeed")] bool? ShareToFeed = null,
     [property: JsonPropertyName("collaborators")] IReadOnlyList<string>? Collaborators = null,
     [property: JsonPropertyName("firstComment")] string? FirstComment = null,
+    [property: JsonPropertyName("locationId")] string? LocationId = null,
+    [property: JsonPropertyName("altText")] string? AltText = null,
     [property: JsonPropertyName("trialParams")] InstagramTrialParamsDto? TrialParams = null,
     [property: JsonPropertyName("userTags")] IReadOnlyList<InstagramUserTagDto>? UserTags = null,
     [property: JsonPropertyName("audioName")] string? AudioName = null,
