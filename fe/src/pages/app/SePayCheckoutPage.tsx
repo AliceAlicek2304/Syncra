@@ -32,7 +32,9 @@ export default function SePayCheckoutPage() {
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(900);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const isSuccess = !!subscription &&
+    subscription.planCode?.toUpperCase() === planCode.toUpperCase() &&
+    subscription.status?.toLowerCase() === 'active';
 
   useEffect(() => {
     if (isSuccess) return;
@@ -45,17 +47,14 @@ export default function SePayCheckoutPage() {
   }, [loadCurrentSubscription, isSuccess]);
 
   useEffect(() => {
-    if (
-      subscription &&
-      subscription.planCode?.toUpperCase() === planCode.toUpperCase() &&
-      subscription.status?.toLowerCase() === 'active'
-    ) {
-      setIsSuccess(true);
-      setTimeout(() => {
-        navigate(`/app/connections?billing=success`);
-      }, 3000);
-    }
-  }, [subscription, planCode, navigate]);
+    if (!isSuccess) return;
+
+    const timeoutId = setTimeout(() => {
+      navigate(`/app/connections?billing=success`);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [isSuccess, navigate]);
 
   useEffect(() => {
     if (timeLeft <= 0 || isSuccess) return;

@@ -23,7 +23,7 @@ public sealed class CreateZernioPostCommandValidator : AbstractValidator<CreateZ
         RuleFor(x => x.SocialAccountIds)
             .NotNull()
             .WithMessage("Social account IDs are required.")
-            .Must(ids => ids.Count > 0)
+            .Must(ids => ids is not null && ids.Count > 0)
             .When(x => x.PublishNow || x.ScheduledAtUtc.HasValue)
             .WithMessage("At least one social account is required for scheduled or immediate publishing.");
 

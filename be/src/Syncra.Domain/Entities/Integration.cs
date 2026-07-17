@@ -14,7 +14,7 @@ public sealed class Integration : WorkspaceEntityBase
     public string? RefreshToken { get; private set; }
     public DateTime? ExpiresAtUtc { get; private set; }
     public bool IsActive { get; private set; } = true;
-    public string? Metadata { get; private set; }
+    public new string? Metadata { get; private set; }
 
     // Token refresh tracking
     public DateTime? TokenRefreshLastAttemptAtUtc { get; private set; }
@@ -94,7 +94,7 @@ public sealed class Integration : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    public void SetMetadata(string? metadata)
+    public new void SetMetadata(string? metadata)
     {
         Metadata = string.IsNullOrWhiteSpace(metadata) ? null : metadata;
         UpdatedAtUtc = DateTime.UtcNow;

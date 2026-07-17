@@ -13,7 +13,7 @@ public sealed class ZernioProfile : WorkspaceEntityBase
     public string Platform { get; private set; } = string.Empty;
     public string? AvatarUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
-    public string? Metadata { get; private set; }
+    public new string? Metadata { get; private set; }
 
     public Workspace Workspace { get; set; } = null!;
     public ICollection<SocialAccount> SocialAccounts { get; set; } = new List<SocialAccount>();

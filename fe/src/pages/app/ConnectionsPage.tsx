@@ -47,6 +47,17 @@ const ALL_PLATFORMS: PlatformConfig[] = [
 
 const SUB_ENTITY_PLATFORMS = ['facebook', 'linkedin', 'pinterest', 'googlebusiness', 'whatsapp', 'snapchat'];
 
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  (error as ApiErrorLike).response?.data?.message || fallback;
+
 const getManageButtonLabel = (platform: string): string => {
   const p = platform.toLowerCase();
   switch (p) {
@@ -137,6 +148,7 @@ function HealthModal({ account, workspaceId, onClose }: {
     queryFn: () => socialAccountsApi.getAccountHealth(workspaceId, account.id),
     enabled: !!workspaceId,
   });
+  const [renderedAt] = useState(() => Date.now());
 
   const s = health?.status.toLowerCase() ?? '';
 
@@ -190,7 +202,7 @@ function HealthModal({ account, workspaceId, onClose }: {
                       <span className={styles.metaLabel}>Expires in</span>
                       <span className={styles.metaValue}>
                         {health.tokenStatus.expiresIn ?? (health.tokenStatus.expiresAt
-                          ? `${Math.max(0, Math.ceil((new Date(health.tokenStatus.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days`
+                          ? `${Math.max(0, Math.ceil((new Date(health.tokenStatus.expiresAt).getTime() - renderedAt) / (1000 * 60 * 60 * 24)))} days`
                           : 'Unknown')}
                       </span>
                     </div>
@@ -303,7 +315,7 @@ function HealthModal({ account, workspaceId, onClose }: {
 
 
 // ── Disconnect Confirm Modal ─────────────────────────────────────────────────
-function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPending, scheduledPostsCount, isCheckingScheduledPosts }: {
+function DisconnectConfirmModal({ account, onClose, onConfirm, isPending, scheduledPostsCount, isCheckingScheduledPosts }: {
   account: SocialAccountDto & { workspace: { name: string } };
   onClose: () => void;
   onConfirm: () => void;
@@ -314,6 +326,7 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
   const scheduledPostsText = typeof scheduledPostsCount === 'number' && scheduledPostsCount > 0
     ? `You have ${scheduledPostsCount} scheduled ${scheduledPostsCount === 1 ? 'post' : 'posts'} for this account. Your posts will be preserved for 1 hour. Reconnect the same account within that time to keep them, otherwise they will be cancelled.`
     : null;
+  const accountLabel = account.displayName || account.handle || 'this account';
 
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
@@ -329,7 +342,7 @@ function DisconnectConfirmModal({ account: _account, onClose, onConfirm, isPendi
             </button>
           </div>
           <div className={styles.disconnectModalBody}>
-            <p className={styles.disconnectText}>Are you sure you want to disconnect this account?</p>
+            <p className={styles.disconnectText}>Are you sure you want to disconnect {accountLabel}?</p>
             {isCheckingScheduledPosts ? (
               <p className={styles.disconnectScheduledCheck}>Checking scheduled posts…</p>
             ) : scheduledPostsText ? (
@@ -455,7 +468,7 @@ export default function ConnectionsPage() {
     if (!subscription && !billingLoading) {
       loadCurrentSubscription();
     }
-  }, []);
+  }, [billingLoading, loadCurrentSubscription, subscription]);
 
   // Reset expanded platform when drawer closes or profile changes
   useEffect(() => {
@@ -495,8 +508,8 @@ export default function ConnectionsPage() {
       void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
       closeProfileDrawer();
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to create profile';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to create profile');
       showError(msg);
     }
   });
@@ -524,8 +537,8 @@ export default function ConnectionsPage() {
       closeEditProfileDrawer();
       void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to update profile';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to update profile');
       showError(msg);
     }
   });
@@ -540,8 +553,8 @@ export default function ConnectionsPage() {
       closeDeleteProfileModal();
       void queryClient.invalidateQueries({ queryKey: ['profiles', activeWorkspace?.id] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to delete profile';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to delete profile');
       showError(msg);
     }
   });
@@ -577,8 +590,8 @@ export default function ConnectionsPage() {
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard-integrations'] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to disconnect social account';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to disconnect social account');
       showError(msg);
       setAccountToDisconnect(null);
     }
@@ -612,8 +625,8 @@ export default function ConnectionsPage() {
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
       void queryClient.invalidateQueries({ queryKey: ['facebook-pages', variables.accountId] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to switch Facebook page';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to switch Facebook page');
       showError(msg);
     }
   });
@@ -643,8 +656,8 @@ export default function ConnectionsPage() {
       void queryClient.invalidateQueries({ queryKey: ['connections-list'] });
       void queryClient.invalidateQueries({ queryKey: ['linkedin-organizations', variables.accountId] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || 'Failed to switch LinkedIn organization';
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, 'Failed to switch LinkedIn organization');
       showError(msg);
     }
   });
@@ -699,9 +712,9 @@ export default function ConnectionsPage() {
       );
       setIsNewConnectionOpen(false);
       window.location.href = response.data.connectUrl;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setConnectingPlatform(null);
-      const msg = err?.response?.data?.message || `Failed to connect ${platformId}`;
+      const msg = getErrorMessage(err, `Failed to connect ${platformId}`);
       setConnectionError(msg);
     }
   };

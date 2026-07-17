@@ -56,7 +56,7 @@ public sealed class User : EntityBase
     public bool IsActive => Status == "active";
     public bool IsPending => Status == "pending";
     public bool IsSuspended => Status == "suspended";
-    public bool IsDeleted => Status == "deleted";
+    public new bool IsDeleted => Status == "deleted";
 
     public bool IsEmailVerified => EmailVerifiedAtUtc.HasValue;
     public bool HasValidStudentVerification =>
@@ -147,7 +147,7 @@ public sealed class User : EntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    public void MarkAsDeleted()
+    public new void MarkAsDeleted()
     {
         Status = "deleted";
         EmailVerifiedAtUtc = null;

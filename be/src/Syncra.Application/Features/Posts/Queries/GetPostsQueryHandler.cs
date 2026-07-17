@@ -54,7 +54,7 @@ public sealed class GetPostsQueryHandler : IRequestHandler<GetPostsQuery, Pagina
                     dateTo: request.ScheduledToUtc,
                     cancellationToken: cancellationToken);
             }
-            catch (Exception ex)
+            catch
             {
                 // Log warning and return empty response to prevent whole request from failing
                 // using ILogger (not injected directly, but let's see if _logger is available or if we can use Console/other way)

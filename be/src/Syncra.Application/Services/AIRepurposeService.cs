@@ -239,7 +239,7 @@ public sealed class AIRepurposeService : IRepurposeService
                 RepurposeStreamEvent item;
                 try
                 {
-                    if (!await enumerator.MoveNextAsync())
+                    if (!await enumerator!.MoveNextAsync())
                         break;
                     item = enumerator.Current;
                 }

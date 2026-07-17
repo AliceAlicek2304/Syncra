@@ -68,8 +68,6 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
         var externalLogin = await _externalLoginRepository.GetByProviderAndUserIdAsync(request.ProviderName, callbackResult.ProviderUserId);
 
         User user;
-        var isNewUser = false;
-
         if (externalLogin != null)
         {
             user = await _userRepository.GetByIdAsync(externalLogin.UserId)
@@ -93,7 +91,6 @@ public sealed class OAuthLoginCommandHandler : IRequestHandler<OAuthLoginCommand
             }
 
             user = await CreateNewUserAsync(request.ProviderName, callbackResult, cancellationToken);
-            isNewUser = true;
         }
 
         var token = _tokenService.GenerateJwtToken(user);

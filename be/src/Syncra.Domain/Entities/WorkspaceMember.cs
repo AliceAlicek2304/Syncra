@@ -71,7 +71,7 @@ public sealed class WorkspaceMember : WorkspaceEntityBase
     public bool CanBeRemoved() =>
         Role != WorkspaceMemberRole.Owner && Status != WorkspaceMemberStatus.Inactive;
 
-    public void MarkAsDeleted()
+    public new void MarkAsDeleted()
     {
         if (!CanBeRemoved())
         {

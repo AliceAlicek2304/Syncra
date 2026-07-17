@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncra.Infrastructure.Persistence;
 using Syncra.Infrastructure.Persistence.Interceptors;
@@ -96,11 +97,11 @@ public static class DependencyInjection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
                 ConnectionMultiplexer.Connect(redisOptions.ConnectionString));
         }
-        else
+        services.AddScoped<IDistributedLockService>(sp =>
         {
-            services.AddSingleton<IConnectionMultiplexer?>(sp => null);
-        }
-        services.AddScoped<IDistributedLockService, RedisDistributedLockService>();
+            var logger = sp.GetRequiredService<ILogger<RedisDistributedLockService>>();
+            return new RedisDistributedLockService(sp.GetService<IConnectionMultiplexer>(), logger);
+        });
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IRepurposeCache, RepurposeCacheService>();

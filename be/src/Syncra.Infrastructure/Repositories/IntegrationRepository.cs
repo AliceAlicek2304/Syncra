@@ -24,7 +24,7 @@ public class IntegrationRepository : Repository<Integration>, IIntegrationReposi
             .FirstOrDefaultAsync(i => i.WorkspaceId == workspaceId && i.Platform == platform);
     }
 
-    public async Task<IReadOnlyList<Integration>> GetAllAsync()
+    public new async Task<IReadOnlyList<Integration>> GetAllAsync()
     {
         return await _dbSet.ToListAsync();
     }

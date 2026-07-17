@@ -24,7 +24,7 @@ public class IdeaRepository : Repository<Idea>, IIdeaRepository
             .FirstOrDefaultAsync(i => i.Id == id && i.WorkspaceId == workspaceId);
     }
 
-    public async Task<IReadOnlyList<Idea>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
+    public override async Task<IReadOnlyList<Idea>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
     {
         return await _dbSet
             .Where(i => ids.Contains(i.Id))

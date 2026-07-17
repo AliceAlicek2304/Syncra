@@ -24,7 +24,7 @@ public class GroupRepository : Repository<Group>, IGroupRepository
             .FirstOrDefaultAsync(g => g.Id == id && g.WorkspaceId == workspaceId);
     }
 
-    public async Task<IReadOnlyList<Group>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
+    public override async Task<IReadOnlyList<Group>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
     {
         return await _dbSet
             .Where(g => ids.Contains(g.Id))

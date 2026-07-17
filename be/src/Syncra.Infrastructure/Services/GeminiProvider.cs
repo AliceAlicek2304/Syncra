@@ -188,7 +188,11 @@ public sealed class GeminiProvider : IAIProvider
                 throw new Exception("No images generated from Gemini image model");
             }
 
-            var imageBytes = response.GeneratedImages.First().Image.ImageBytes;
+            var imageBytes = response.GeneratedImages.First().Image?.ImageBytes;
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                throw new Exception("Gemini image model returned an empty image payload");
+            }
             
             using var imageStream = new MemoryStream(imageBytes);
             var uploadResult = await _storageService.SaveAsync(imageStream, $"repurpose-{Guid.NewGuid()}.png", "image/png");

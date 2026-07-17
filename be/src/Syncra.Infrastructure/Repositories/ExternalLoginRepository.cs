@@ -26,12 +26,12 @@ public class ExternalLoginRepository : Repository<ExternalLogin>, IExternalLogin
             .ToListAsync();
     }
 
-    public async Task AddAsync(ExternalLogin entity)
+    public override async Task AddAsync(ExternalLogin entity)
     {
         await _dbSet.AddAsync(entity);
     }
 
-    public Task UpdateAsync(ExternalLogin entity)
+    public override Task UpdateAsync(ExternalLogin entity)
     {
         _dbSet.Update(entity);
         return Task.CompletedTask;

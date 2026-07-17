@@ -40,19 +40,21 @@ public class UnpublishZernioPostCommandHandler : IRequestHandler<UnpublishZernio
             if (post.WorkspaceId != request.WorkspaceId)
                 return false;
 
+            var zernioPostId = post.ZernioPostId ?? request.ZernioPostId;
+
             // Unpublish from live platform
-            await _zernioClient.UnpublishPostAsync(post.ZernioPostId, request.Platform, cancellationToken);
+            await _zernioClient.UnpublishPostAsync(zernioPostId, request.Platform, cancellationToken);
 
             if (request.DeleteFromDb)
             {
                 // Delete from Zernio
                 try
                 {
-                    await _zernioClient.DeletePostAsync(post.ZernioPostId, cancellationToken);
+                    await _zernioClient.DeletePostAsync(zernioPostId, cancellationToken);
                 }
                 catch (Exception deleteEx)
                 {
-                    _logger.LogWarning(deleteEx, "Failed to delete post {PostId} from Zernio after successful unpublish.", post.ZernioPostId);
+                    _logger.LogWarning(deleteEx, "Failed to delete post {PostId} from Zernio after successful unpublish.", zernioPostId);
                 }
 
                 // Hard delete from Syncra database

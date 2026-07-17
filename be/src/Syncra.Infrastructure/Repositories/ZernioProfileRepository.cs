@@ -11,7 +11,7 @@ public class ZernioProfileRepository : Repository<ZernioProfile>, IZernioProfile
     {
     }
 
-    public new async Task<ZernioProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ZernioProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }

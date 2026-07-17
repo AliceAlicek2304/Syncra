@@ -50,7 +50,7 @@ public class ProfileResolutionMiddleware
         // 3. Parse ProfileId
         if (!Guid.TryParse(headerValue, out var profileId))
         {
-            _logger.LogWarning("Invalid X-Profile-Id format: {HeaderValue}", headerValue);
+            _logger.LogWarning("Invalid X-Profile-Id format: {HeaderValue}", headerValue.ToString());
             context.Response.StatusCode = 400;
             await context.Response.WriteAsJsonAsync(new { code = "invalid_profile_id", message = "X-Profile-Id must be a valid GUID." });
             return;

@@ -56,6 +56,11 @@ import StudentPage from './pages/app/StudentPage'
 import SePayCheckoutPage from './pages/app/SePayCheckoutPage'
 import { adminApi } from './api/admin'
 
+type HttpErrorLike = {
+  response?: {
+    status?: number
+  }
+}
 
 interface AdminGuardProps {
   children: ReactNode
@@ -99,25 +104,23 @@ function Homepage() {
 
 const AdminGuard = ({ children }: AdminGuardProps) => {
   const { user, loading } = useAuth()
-  const [allowed, setAllowed] = useState<boolean | null>(null)
+  const [accessCheck, setAccessCheck] = useState<{ userId: string; allowed: boolean } | null>(null)
 
   useEffect(() => {
     if (loading) return
 
     if (!user) {
-      setAllowed(false)
       return
     }
 
     let cancelled = false
-    setAllowed(null)
     adminApi
       .checkAccess()
       .then(() => {
-        if (!cancelled) setAllowed(true)
+        if (!cancelled) setAccessCheck({ userId: user.userId, allowed: true })
       })
       .catch(() => {
-        if (!cancelled) setAllowed(false)
+        if (!cancelled) setAccessCheck({ userId: user.userId, allowed: false })
       })
 
     return () => {
@@ -125,34 +128,34 @@ const AdminGuard = ({ children }: AdminGuardProps) => {
     }
   }, [loading, user])
 
-  if (loading || (user && allowed === null)) return null
+  const currentAccess = user && accessCheck && accessCheck.userId === user.userId ? accessCheck.allowed : null
+
+  if (loading || (user && currentAccess === null)) return null
   if (!user) return <Navigate to="/login" replace />
-  if (!allowed) return <Navigate to="/app/connections" replace />
+  if (!currentAccess) return <Navigate to="/app/connections" replace />
 
   return <>{children}</>
 }
 
 const UserAppGuard = ({ children }: UserAppGuardProps) => {
   const { user, loading } = useAuth()
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [adminCheck, setAdminCheck] = useState<{ userId: string; isAdmin: boolean } | null>(null)
 
   useEffect(() => {
     if (loading) return
 
     if (!user) {
-      setIsAdmin(false)
       return
     }
 
     let cancelled = false
-    setIsAdmin(null)
     adminApi
       .checkAccess()
       .then(() => {
-        if (!cancelled) setIsAdmin(true)
+        if (!cancelled) setAdminCheck({ userId: user.userId, isAdmin: true })
       })
       .catch(() => {
-        if (!cancelled) setIsAdmin(false)
+        if (!cancelled) setAdminCheck({ userId: user.userId, isAdmin: false })
       })
 
     return () => {
@@ -160,9 +163,11 @@ const UserAppGuard = ({ children }: UserAppGuardProps) => {
     }
   }, [loading, user])
 
-  if (loading || (user && isAdmin === null)) return null
+  const currentIsAdmin = user && adminCheck && adminCheck.userId === user.userId ? adminCheck.isAdmin : null
+
+  if (loading || (user && currentIsAdmin === null)) return null
   if (!user) return <Navigate to="/login" replace />
-  if (isAdmin) return <Navigate to="/admin" replace />
+  if (currentIsAdmin) return <Navigate to="/admin" replace />
 
   return <>{children}</>
 }
@@ -232,9 +237,9 @@ function AnimatedRoutes() {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: (failureCount, error: any) => {
-        const status = error?.response?.status;
-        if (status >= 400 && status < 500) return false;
+      retry: (failureCount, error: Error) => {
+        const status = (error as HttpErrorLike).response?.status;
+        if (typeof status === 'number' && status >= 400 && status < 500) return false;
         return failureCount < 1;
       },
       staleTime: 60_000,

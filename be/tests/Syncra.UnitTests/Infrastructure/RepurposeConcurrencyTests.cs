@@ -72,7 +72,12 @@ public class RepurposeConcurrencyTests : IDisposable
     [Fact]
     public async Task QueryRealPostgres_PrintLastSessionAndAtoms()
     {
-        var connStr = "Host=db.mtavzywyzhsucatheqsp.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=@HieuTai@/DepTrai@;SSL Mode=Require;Trust Server Certificate=true";
+        var connStr = Environment.GetEnvironmentVariable("SYNCRA_TEST_POSTGRES_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connStr))
+        {
+            return;
+        }
+
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(connStr)
             .Options;

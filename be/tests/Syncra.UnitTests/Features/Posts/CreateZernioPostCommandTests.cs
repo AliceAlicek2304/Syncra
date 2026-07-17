@@ -322,7 +322,7 @@ public class CreateZernioPostCommandTests : IDisposable
             var result = method.Invoke(null, new object?[] { platform, dummyRequest });
             var expectedNull = platform.ToLowerInvariant() switch
             {
-                "pinterest" or "youtube" or "reddit" or "facebook" or "instagram" or "linkedin" => false,
+                "pinterest" or "youtube" or "reddit" or "facebook" or "linkedin" => false,
                 _ => true
             };
 

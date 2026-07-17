@@ -519,7 +519,7 @@ public class InboxController : ControllerBase
     /// Enqueues a Hangfire job and returns 202 Accepted if queued.
     /// </summary>
     [HttpPost("sync")]
-    public async Task<IActionResult> TriggerSync(
+    public IActionResult TriggerSync(
         Guid workspaceId,
         CancellationToken cancellationToken)
     {

@@ -28,14 +28,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     }
     
     if (onClick) {
-      const result = onClick(e) as any;
+      const result = onClick(e) as unknown;
       if (result instanceof Promise) {
         setLocalLoading(true);
         try {
           await result;
-        } catch (error) {
-          // Re-throw to allow component-level catch if needed
-          throw error;
         } finally {
           setLocalLoading(false);
         }
