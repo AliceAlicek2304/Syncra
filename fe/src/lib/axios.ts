@@ -8,6 +8,10 @@ const api = axios.create({
 });
 
 type RequestListener = (pendingCount: number, activeUrls: string[]) => void;
+type RequestConfigWithGlobalError = {
+  skipGlobalError?: boolean;
+};
+
 const listeners = new Set<RequestListener>();
 let activeCount = 0;
 const activeUrls: string[] = [];
@@ -35,9 +39,6 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('syncra_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    if (config.url?.includes('/auth/me')) {
-      console.log('[Axios] GET /auth/me with token:', token.substring(0, 20) + '...');
-    }
   }
 
   const lowercaseUrl = config.url?.toLowerCase() || '';
@@ -105,7 +106,7 @@ api.interceptors.response.use(
         localStorage.removeItem('syncra_profile_id');
         window.location.href = `${import.meta.env.BASE_URL || '/'}login`.replace(/\/+$/, '/').replace(/\/+/, '/');
       }
-    } else if (!(error.config as any)?.skipGlobalError) {
+    } else if (!(error.config as RequestConfigWithGlobalError | undefined)?.skipGlobalError) {
       // We'll handle global errors via a callback registered from ToastContext
       if (globalErrorHandler) {
         globalErrorHandler(error.response?.data?.message || error.message || 'An error occurred');

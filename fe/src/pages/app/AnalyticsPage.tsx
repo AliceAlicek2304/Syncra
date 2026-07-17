@@ -149,6 +149,13 @@ function FollowerTooltip({ active, payload, label }: any) {
   )
 }
 
+function renderSortIcon(colKey: string, sortKey: string, sortDir: 'asc' | 'desc') {
+  if (sortKey !== colKey) return <ArrowUpDown size={10} className="opacity-30" />
+  return sortDir === 'asc'
+    ? <ArrowUp size={10} className="text-brand-primary" />
+    : <ArrowDown size={10} className="text-brand-primary" />
+}
+
 interface FilterOption {
   value: string
   label: string
@@ -677,7 +684,6 @@ const toLocalSlot = (dayOfWeek: number, hourUtc: number) => {
 }
 
 export default function AnalyticsPage() {
-  console.log('AnalyticsPage render')
   const { activeWorkspace, profiles, setActiveProfile } = useWorkspace()
   const heatmapContainerRef = useRef<HTMLDivElement>(null)
 
@@ -690,7 +696,9 @@ export default function AnalyticsPage() {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length > 0) return new Set<string>(parsed)
       }
-    } catch { }
+    } catch {
+      // Ignore invalid saved metric preferences and fall back to defaults.
+    }
     return new Set<string>(['likes', 'comments', 'impressions'])
   })
 
@@ -698,7 +706,9 @@ export default function AnalyticsPage() {
   useEffect(() => {
     try {
       localStorage.setItem('syncra_engagement_metrics', JSON.stringify(Array.from(selectedEngagementMetrics)))
-    } catch { }
+    } catch {
+      // Ignore storage failures; metric selection can still work in memory.
+    }
   }, [selectedEngagementMetrics])
   const [showMetricDropdown, setShowMetricDropdown] = useState(false)
   const [dismissedBilling, setDismissedBilling] = useState(false)
@@ -888,13 +898,6 @@ export default function AnalyticsPage() {
     return rows
   }, [platformRows, platformSortKey, platformSortDir])
 
-  const SortIcon = ({ colKey }: { colKey: string }) => {
-    if (platformSortKey !== colKey) return <ArrowUpDown size={10} className="opacity-30" />
-    return platformSortDir === 'asc'
-      ? <ArrowUp size={10} className="text-brand-primary" />
-      : <ArrowDown size={10} className="text-brand-primary" />
-  }
-
   const [topPostSortKey, setTopPostSortKey] = useState<string>('reach')
   const [topPostSortDir, setTopPostSortDir] = useState<'asc' | 'desc'>('desc')
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
@@ -923,13 +926,6 @@ export default function AnalyticsPage() {
     })
     return rows
   }, [topPosts, topPostSortKey, topPostSortDir])
-
-  const SortIconTop = ({ colKey }: { colKey: string }) => {
-    if (topPostSortKey !== colKey) return <ArrowUpDown size={10} className="opacity-30" />
-    return topPostSortDir === 'asc'
-      ? <ArrowUp size={10} className="text-brand-primary" />
-      : <ArrowDown size={10} className="text-brand-primary" />
-  }
 
   const bestTimeSlots = useMemo(() => {
     const slots = hookBestTime?.slots ?? []
@@ -2010,37 +2006,37 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                   <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('platform')}>
-                        <span className="flex items-center gap-1">Platform <SortIcon colKey="platform" /></span>
+                        <span className="flex items-center gap-1">Platform {renderSortIcon('platform', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('postCount')}>
-                        <span className="flex items-center justify-end gap-1">Posts <SortIcon colKey="postCount" /></span>
+                        <span className="flex items-center justify-end gap-1">Posts {renderSortIcon('postCount', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('likes')}>
-                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes <SortIcon colKey="likes" /></span>
+                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes {renderSortIcon('likes', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('comments')}>
-                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments <SortIcon colKey="comments" /></span>
+                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments {renderSortIcon('comments', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('shares')}>
-                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares <SortIcon colKey="shares" /></span>
+                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares {renderSortIcon('shares', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('saves')}>
-                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves <SortIcon colKey="saves" /></span>
+                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves {renderSortIcon('saves', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('clicks')}>
-                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks <SortIcon colKey="clicks" /></span>
+                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks {renderSortIcon('clicks', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('views')}>
-                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views <SortIcon colKey="views" /></span>
+                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views {renderSortIcon('views', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('impressions')}>
-                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. <SortIcon colKey="impressions" /></span>
+                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. {renderSortIcon('impressions', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('reach')}>
-                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach <SortIcon colKey="reach" /></span>
+                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach {renderSortIcon('reach', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handlePlatformSort('engagement')}>
-                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER <SortIcon colKey="engagement" /></span>
+                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER {renderSortIcon('engagement', platformSortKey, platformSortDir)}</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2099,34 +2095,34 @@ const PLATFORM_CHART_COLORS: Record<string, string> = {
                   <TableHeader className="bg-brand-canvas-soft border-b border-brand-border">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('post')}>
-                        <span className="flex items-center gap-1">Post <SortIconTop colKey="post" /></span>
+                        <span className="flex items-center gap-1">Post {renderSortIcon('post', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('likes')}>
-                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes <SortIconTop colKey="likes" /></span>
+                        <span className="flex items-center justify-end gap-1"><Heart size={10} className="text-rose-500" /> Likes {renderSortIcon('likes', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('comments')}>
-                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments <SortIconTop colKey="comments" /></span>
+                        <span className="flex items-center justify-end gap-1"><MessageSquare size={10} className="text-blue-500" /> Comments {renderSortIcon('comments', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('shares')}>
-                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares <SortIconTop colKey="shares" /></span>
+                        <span className="flex items-center justify-end gap-1"><Share2 size={10} className="text-emerald-500" /> Shares {renderSortIcon('shares', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('saves')}>
-                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves <SortIconTop colKey="saves" /></span>
+                        <span className="flex items-center justify-end gap-1"><Bookmark size={10} className="text-amber-500" /> Saves {renderSortIcon('saves', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('clicks')}>
-                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks <SortIconTop colKey="clicks" /></span>
+                        <span className="flex items-center justify-end gap-1"><MousePointerClick size={10} className="text-violet-500" /> Clicks {renderSortIcon('clicks', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('views')}>
-                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views <SortIconTop colKey="views" /></span>
+                        <span className="flex items-center justify-end gap-1"><Eye size={10} className="text-purple-500" /> Views {renderSortIcon('views', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('impressions')}>
-                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. <SortIconTop colKey="impressions" /></span>
+                        <span className="flex items-center justify-end gap-1"><BarChart3 size={10} className="text-teal-500" /> Impr. {renderSortIcon('impressions', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('reach')}>
-                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach <SortIconTop colKey="reach" /></span>
+                        <span className="flex items-center justify-end gap-1"><Users size={10} className="text-teal-600" /> Reach {renderSortIcon('reach', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                       <TableHead className="font-bold text-brand-ink h-8 px-3 text-[9px] uppercase tracking-wider text-right cursor-pointer select-none hover:bg-brand-canvas-soft/60 transition-colors" onClick={() => handleTopPostSort('engagementRate')}>
-                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER <SortIconTop colKey="engagementRate" /></span>
+                        <span className="flex items-center justify-end gap-1"><Percent size={10} className="text-emerald-600" /> ER {renderSortIcon('engagementRate', topPostSortKey, topPostSortDir)}</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>

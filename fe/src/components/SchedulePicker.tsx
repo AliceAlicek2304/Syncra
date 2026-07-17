@@ -105,7 +105,7 @@ export default function SchedulePicker({ value, onChange, onClear, align = 'star
       const parentRect = popoverRef.current.parentElement?.getBoundingClientRect()
       if (!parentRect) return
 
-      let style: React.CSSProperties = {}
+      const style: React.CSSProperties = {}
 
       if (align === 'end') {
         const projectedLeft = parentRect.right - rect.width
