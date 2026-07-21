@@ -161,7 +161,7 @@ public sealed class SePayPaymentProvider : IPaymentProvider
             var root = doc.RootElement;
 
             var transactionId = root.GetProperty("id").GetInt64().ToString();
-            var paymentCode = root.GetProperty("code").GetString()?.Trim().ToUpperInvariant() ?? string.Empty;
+            var paymentCode = ResolvePaymentCode(root);
             var amount = root.GetProperty("transferAmount").GetDecimal();
             var transferType = root.GetProperty("transferType").GetString() ?? "in";
 
@@ -247,6 +247,26 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         var calculatedSignature = Convert.ToHexString(hashBytes).ToLowerInvariant();
 
         return string.Equals(cleanSignature, calculatedSignature, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ResolvePaymentCode(JsonElement root)
+    {
+        var explicitCode = GetString(root, "code")?.Trim().ToUpperInvariant();
+        if (!string.IsNullOrWhiteSpace(explicitCode))
+        {
+            return explicitCode;
+        }
+
+        var searchableText = $"{GetString(root, "content")} {GetString(root, "description")}".ToUpperInvariant();
+        var match = System.Text.RegularExpressions.Regex.Match(searchableText, @"\bSR[A-Z0-9]{6,8}\b");
+        return match.Success ? match.Value : string.Empty;
+    }
+
+    private static string? GetString(JsonElement root, string propertyName)
+    {
+        return root.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
     }
 
     private static string GeneratePaymentCode()
