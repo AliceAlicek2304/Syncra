@@ -146,6 +146,7 @@ public sealed class RepurposeController : ControllerBase
         HttpContext.Response.ContentType = "text/event-stream";
         HttpContext.Response.Headers.CacheControl = "no-cache";
         HttpContext.Response.Headers.Connection = "keep-alive";
+        HttpContext.Items["RepurposeGenerationSucceeded"] = false;
 
         var aiRequest = new RepurposeRequest(
             SourceText: request.SourceText ?? string.Empty,
@@ -163,6 +164,15 @@ public sealed class RepurposeController : ControllerBase
         {
             await foreach (var sseEvent in aiService.GenerateStreamAsync(workspaceId, aiRequest, cancellationToken))
             {
+                if (string.Equals(sseEvent.Type, "complete", StringComparison.OrdinalIgnoreCase))
+                {
+                    HttpContext.Items["RepurposeGenerationSucceeded"] = true;
+                }
+                else if (string.Equals(sseEvent.Type, "error", StringComparison.OrdinalIgnoreCase))
+                {
+                    HttpContext.Items["RepurposeGenerationSucceeded"] = false;
+                }
+
                 await HttpContext.Response.WriteAsync($"event: {sseEvent.Type}\n", cancellationToken);
                 await HttpContext.Response.WriteAsync(
                     $"data: {JsonSerializer.Serialize(sseEvent.Data, _jsonOptions)}\n\n", cancellationToken);

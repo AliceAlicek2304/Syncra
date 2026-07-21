@@ -94,6 +94,7 @@ export interface RepurposeContextValue {
     activeSessionId: string | null
     switchSession: (sessionId: string) => Promise<void>
     deleteSession: (sessionId: string) => Promise<void>
+    resetCurrentWork: () => void
     addSource: (source: SupportingSource) => void
     removeSource: (id: string) => void
     updateSource: (id: string, updates: Partial<SupportingSource>) => void

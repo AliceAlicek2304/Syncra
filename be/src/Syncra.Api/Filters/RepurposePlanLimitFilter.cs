@@ -12,6 +12,8 @@ namespace Syncra.Api.Filters;
 
 public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
 {
+    private const string UsageMetricCode = "repurpose_generations";
+
     private readonly AppDbContext _db;
     private readonly ILogger<RepurposePlanLimitFilter> _logger;
 
@@ -103,7 +105,7 @@ public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
             return;
         }
 
-        var usageCount = workspace.GetUsageCount("repurpose_generations");
+        var usageCount = workspace.GetUsageCount(UsageMetricCode);
         if (usageCount >= plan.MaxRepurposeGenerationsPerMonth)
         {
             _logger.LogWarning(
@@ -122,9 +124,14 @@ public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
             return;
         }
 
-        await next();
+        var executedContext = await next();
 
-        workspace.IncrementUsage("repurpose_generations");
+        if (!ShouldCountUsage(context, executedContext))
+        {
+            return;
+        }
+
+        workspace.IncrementUsage(UsageMetricCode);
 
         foreach (var entry in _db.ChangeTracker.Entries<UsageCounter>())
         {
@@ -139,5 +146,30 @@ public sealed class RepurposePlanLimitFilter : IAsyncActionFilter
         }
 
         await _db.SaveChangesAsync();
+    }
+
+    private static bool ShouldCountUsage(ActionExecutingContext context, ActionExecutedContext executedContext)
+    {
+        var actionName = context.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
+            ? action
+            : null;
+
+        if (!string.Equals(actionName, "Generate", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (executedContext.Exception is not null && !executedContext.ExceptionHandled)
+        {
+            return false;
+        }
+
+        if (context.HttpContext.Items.TryGetValue("RepurposeGenerationSucceeded", out var streamSucceeded))
+        {
+            return streamSucceeded is true;
+        }
+
+        var statusCode = context.HttpContext.Response.StatusCode;
+        return statusCode >= StatusCodes.Status200OK && statusCode < StatusCodes.Status300MultipleChoices;
     }
 }

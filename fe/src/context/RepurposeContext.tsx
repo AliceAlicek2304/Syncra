@@ -214,6 +214,7 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                             }))
 
                             if (data.key === 'session_id') {
+                                setActiveSessionId(data.value)
                                 const url = new URL(window.location.href)
                                 url.searchParams.set('sessionId', data.value)
                                 window.history.replaceState({}, '', url)
@@ -347,6 +348,25 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
         }
     }, [activeWorkspace, activeSessionId])
 
+    const resetCurrentWork = useCallback(() => {
+        abortRef.current?.abort()
+        abortRef.current = null
+        setIsGenerating(false)
+        setResults([])
+        setError(null)
+        setActiveSessionId(null)
+        setStreamState(INITIAL_STREAM_STATE)
+        setConfig(prev => ({
+            ...prev,
+            sourceText: '',
+            sources: [],
+        }))
+
+        const url = new URL(window.location.href)
+        url.searchParams.delete('sessionId')
+        window.history.replaceState({}, '', url)
+    }, [])
+
     const addSource = useCallback((source: SupportingSource) => {
         setConfig(prev => ({
             ...prev,
@@ -381,6 +401,7 @@ export function RepurposeProvider({ children }: { children: ReactNode }) {
                 activeSessionId,
                 switchSession,
                 deleteSession,
+                resetCurrentWork,
                 addSource,
                 removeSource,
                 updateSource,

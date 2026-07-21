@@ -24,7 +24,7 @@ import { ExtendedPlatformIcon } from '../../components/create-post/platformIcons
 
 
 export default function RepurposePage() {
-  const { config, setConfig, addSource, removeSource, updateSource, generate, error, setError, sessions, activeSessionId, switchSession, deleteSession, results } = useRepurpose()
+  const { config, setConfig, addSource, removeSource, updateSource, generate, error, setError, sessions, activeSessionId, switchSession, deleteSession, resetCurrentWork, results } = useRepurpose()
   const { openCreatePost } = useCreatePostModal()
   const { subscription, loading: billingLoading, loadCurrentSubscription } = useBilling()
   const { activeWorkspace } = useWorkspace()
@@ -194,8 +194,24 @@ export default function RepurposePage() {
     if (deleteTargetId) {
       await deleteSession(deleteTargetId)
       setDeleteTargetId(null)
+      goToStep(1)
       showToast('Đã xoá phiên làm việc.')
     }
+  }
+
+  const handleClearCurrentResults = () => {
+    if (activeSessionId) {
+      setDeleteTargetId(activeSessionId)
+      return
+    }
+
+    resetCurrentWork()
+    goToStep(1)
+  }
+
+  const handleStartNewRepurpose = () => {
+    resetCurrentWork()
+    goToStep(1)
   }
 
   const handleCreatePost = (content: string, platform: string, mediaUrl?: string, mediaType?: 'image' | 'video' | null) => {
@@ -1091,7 +1107,12 @@ export default function RepurposePage() {
                 <button className="btn-ghost" onClick={() => goToStep(2)}>
                   <Settings size={14} className="mr-1.5" /> Chỉnh sửa cài đặt
                 </button>
-                <button className="btn-primary" onClick={() => { setConfig(prev => ({ ...prev, sourceText: '' })); goToStep(1); }}>
+                {results.length > 0 && (
+                  <button className="btn-ghost" onClick={handleClearCurrentResults}>
+                    <Trash2 size={14} className="mr-1.5" /> Xóa kết quả
+                  </button>
+                )}
+                <button className="btn-primary" onClick={handleStartNewRepurpose}>
                   <Plus className="w-4 h-4 mr-1.5" /> Tạo mới
                 </button>
               </div>
