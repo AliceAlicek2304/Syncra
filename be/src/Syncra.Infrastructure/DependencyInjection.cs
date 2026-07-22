@@ -105,6 +105,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAnalyticsCache, AnalyticsCacheService>();
         services.AddScoped<IRepurposeCache, RepurposeCacheService>();
+        services.AddScoped<IActivityEventService, ActivityEventService>();
 
         // Wasabi S3-compatible media storage.
         // WasabiStorageService wraps AmazonS3Client which is thread-safe — registered as singleton.

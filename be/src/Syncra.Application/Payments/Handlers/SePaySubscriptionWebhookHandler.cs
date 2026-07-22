@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Syncra.Application.DTOs.Payments;
+using Syncra.Application.Interfaces;
 using Syncra.Domain.Entities;
 using Syncra.Domain.Enums;
 using Syncra.Domain.Interfaces;
@@ -15,6 +16,7 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
     private readonly IBillingPaymentRepository _billingPaymentRepository;
     private readonly IBillingVoucherRepository _billingVoucherRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IActivityEventService _activityEventService;
     private readonly ILogger<SePaySubscriptionWebhookHandler> _logger;
 
     public string[] SupportedEvents => new[]
@@ -27,12 +29,14 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
         IBillingPaymentRepository billingPaymentRepository,
         IBillingVoucherRepository billingVoucherRepository,
         IUnitOfWork unitOfWork,
+        IActivityEventService activityEventService,
         ILogger<SePaySubscriptionWebhookHandler> logger)
     {
         _subscriptionRepository = subscriptionRepository;
         _billingPaymentRepository = billingPaymentRepository;
         _billingVoucherRepository = billingVoucherRepository;
         _unitOfWork = unitOfWork;
+        _activityEventService = activityEventService;
         _logger = logger;
     }
 
@@ -159,6 +163,42 @@ public sealed class SePaySubscriptionWebhookHandler : IPaymentWebhookHandler
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: "billing.payment_succeeded",
+            EventGroup: "billing",
+            Status: "success",
+            Title: "Payment succeeded",
+            Description: paidAmount.HasValue ? $"{paidAmount.Value:N0} VND" : webhookEvent.EventId,
+            WorkspaceId: webhookEvent.WorkspaceId.Value,
+            UserId: userId,
+            SubjectType: "Subscription",
+            SubjectId: subscriptionForPayment.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["eventId"] = webhookEvent.EventId,
+                ["planId"] = planId.ToString(),
+                ["interval"] = isYearly ? "year" : "month",
+                ["amount"] = paidAmount?.ToString("0"),
+                ["discountCode"] = discountCode
+            }), cancellationToken);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: "subscription.changed",
+            EventGroup: "billing",
+            Status: "success",
+            Title: "Subscription activated",
+            Description: isYearly ? "Annual subscription" : "Monthly subscription",
+            WorkspaceId: webhookEvent.WorkspaceId.Value,
+            UserId: userId,
+            SubjectType: "Subscription",
+            SubjectId: subscriptionForPayment.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["planId"] = planId.ToString(),
+                ["subscriptionId"] = subscriptionForPayment.Id.ToString(),
+                ["endsAtUtc"] = periodEnd.ToString("O")
+            }), cancellationToken);
     }
 
     private static decimal? TryGetDecimal(IReadOnlyDictionary<string, string> metadata, string key)

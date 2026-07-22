@@ -12,6 +12,7 @@ public class ZernioSyncJob
     private readonly IPostRepository _postRepository;
     private readonly IZernioProfileRepository _zernioProfileRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IActivityEventService _activityEventService;
     private readonly ILogger<ZernioSyncJob> _logger;
 
     public ZernioSyncJob(
@@ -19,12 +20,14 @@ public class ZernioSyncJob
         IPostRepository postRepository,
         IZernioProfileRepository zernioProfileRepository,
         IUnitOfWork unitOfWork,
+        IActivityEventService activityEventService,
         ILogger<ZernioSyncJob> logger)
     {
         _zernioClient = zernioClient;
         _postRepository = postRepository;
         _zernioProfileRepository = zernioProfileRepository;
         _unitOfWork = unitOfWork;
+        _activityEventService = activityEventService;
         _logger = logger;
     }
 
@@ -91,12 +94,14 @@ public class ZernioSyncJob
                 {
                     _logger.LogInformation("Post {PostId} status changed to Published on Zernio. Updating local DB.", localPost.Id);
                     localPost.MarkZernioPublished(zernioPost.PublishedAt ?? now);
+                    await RecordPostStatusActivityAsync(localPost, "post.published", "success", "Post published", null, cancellationToken);
                     hasChanges = true;
                 }
                 else if (zernioStatus == "failed" && localPost.Status != PostStatus.Failed)
                 {
                     _logger.LogInformation("Post {PostId} status changed to Failed on Zernio. Updating local DB.", localPost.Id);
                     localPost.MarkZernioFailed(zernioPost.PublishedAt ?? now, "Marked as failed via sync job.");
+                    await RecordPostStatusActivityAsync(localPost, "post.failed", "failed", "Post failed", "Marked as failed via sync job.", cancellationToken);
                     hasChanges = true;
                 }
                 else if (zernioStatus == "scheduled" && localPost.Status != PostStatus.Scheduled)
@@ -139,5 +144,32 @@ public class ZernioSyncJob
                     await _postRepository.UpdateAsync(localPost);
                 }
             }
+    }
+
+    private async Task RecordPostStatusActivityAsync(
+        Post post,
+        string eventType,
+        string status,
+        string title,
+        string? description,
+        CancellationToken cancellationToken)
+    {
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: eventType,
+            EventGroup: "post",
+            Status: status,
+            Title: title,
+            Description: description ?? post.Title.Value,
+            WorkspaceId: post.WorkspaceId,
+            UserId: post.UserId,
+            SubjectType: "Post",
+            SubjectId: post.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["postId"] = post.Id.ToString(),
+                ["zernioPostId"] = post.ZernioPostId,
+                ["publishedAtUtc"] = post.PublishedAtUtc?.ToString("O"),
+                ["error"] = post.PublishLastError
+            }), cancellationToken);
     }
 }

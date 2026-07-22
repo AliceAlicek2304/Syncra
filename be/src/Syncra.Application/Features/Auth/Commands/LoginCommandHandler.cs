@@ -25,6 +25,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
     private readonly ITokenService _tokenService;
     private readonly IJwtOptions _jwtOptions;
     private readonly IMediator _mediator;
+    private readonly IActivityEventService _activityEventService;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
@@ -37,7 +38,8 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
         IJwtOptions jwtOptions,
-        IMediator mediator)
+        IMediator mediator,
+        IActivityEventService activityEventService)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -50,6 +52,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
         _tokenService = tokenService;
         _jwtOptions = jwtOptions;
         _mediator = mediator;
+        _activityEventService = activityEventService;
     }
 
     public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -148,6 +151,23 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
         await _userRepository.UpdateAsync(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: "auth.login",
+            EventGroup: "auth",
+            Status: "success",
+            Title: "User signed in",
+            Description: user.Email.Value,
+            WorkspaceId: workspace?.Id,
+            UserId: user.Id,
+            SubjectType: "User",
+            SubjectId: user.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["email"] = user.Email.Value,
+                ["flow"] = request.Flow,
+                ["plan"] = request.Plan
+            }), cancellationToken);
 
         return new AuthResponseDto(token, refreshToken, session.ExpiresAtUtc, checkoutUrl);
     }

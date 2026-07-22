@@ -34,6 +34,7 @@ import AdminUserGrowth from './pages/admin/UserGrowthV2'
 import PostAnalytics from './pages/admin/PostAnalyticsV2'
 import RevenueAnalytics from './pages/admin/RevenueAnalyticsV2'
 import VoucherManagement from './pages/admin/VoucherManagement'
+import RealtimeMetrics from './pages/admin/RealtimeMetrics'
 import TrendRadarPage from './pages/app/TrendRadarPage'
 import HelpPage from './pages/app/HelpPage'
 import LoginPage from './pages/LoginPage'
@@ -187,6 +188,7 @@ function AnimatedRoutes() {
           <Route path="posts" element={<PostAnalytics />} />
           <Route path="revenue" element={<RevenueAnalytics />} />
           <Route path="vouchers" element={<VoucherManagement />} />
+          <Route path="realtime" element={<RealtimeMetrics />} />
         </Route>
         <Route path="/" element={<PageWrapper><Homepage /></PageWrapper>} />
         <Route path="/login" element={<LoginPage />} />

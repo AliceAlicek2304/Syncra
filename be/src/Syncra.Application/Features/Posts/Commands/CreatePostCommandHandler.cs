@@ -18,19 +18,22 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
     private readonly IUnitOfWork _unitOfWork;
     private readonly IStorageService _storageService;
     private readonly ISubscriptionRepository _subscriptionRepository;
+    private readonly IActivityEventService _activityEventService;
 
     public CreatePostCommandHandler(
         IPostRepository postRepository,
         IMediaRepository mediaRepository,
         IUnitOfWork unitOfWork,
         IStorageService storageService,
-        ISubscriptionRepository subscriptionRepository)
+        ISubscriptionRepository subscriptionRepository,
+        IActivityEventService activityEventService)
     {
         _postRepository = postRepository;
         _mediaRepository = mediaRepository;
         _unitOfWork = unitOfWork;
         _storageService = storageService;
         _subscriptionRepository = subscriptionRepository;
+        _activityEventService = activityEventService;
     }
 
     public async Task<PostDto> Handle(CreatePostCommand request, CancellationToken cancellationToken)
@@ -84,6 +87,22 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
 
         await _postRepository.AddAsync(post);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: request.ScheduledAtUtc.HasValue ? "post.scheduled" : "post.created",
+            EventGroup: "post",
+            Status: "success",
+            Title: request.ScheduledAtUtc.HasValue ? "Post scheduled" : "Post created",
+            Description: request.Title,
+            WorkspaceId: request.WorkspaceId,
+            UserId: request.UserId,
+            SubjectType: "Post",
+            SubjectId: post.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["postId"] = post.Id.ToString(),
+                ["scheduledAtUtc"] = request.ScheduledAtUtc?.ToString("O")
+            }), cancellationToken);
 
         return PostMapper.ToDto(post, _storageService);
     }

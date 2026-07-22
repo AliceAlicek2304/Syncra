@@ -60,6 +60,36 @@ export type AdminVoucherRedemption = {
   redeemedAtUtc: string
 }
 
+export type ActivityMetric = {
+  key: string
+  count: number
+}
+
+export type ActivityEvent = {
+  id: string
+  workspaceId?: string | null
+  workspaceName?: string | null
+  userId?: string | null
+  userEmail?: string | null
+  eventType: string
+  eventGroup: string
+  status: string
+  title: string
+  description?: string | null
+  subjectType?: string | null
+  subjectId?: string | null
+  metadata?: string | null
+  createdAtUtc: string
+}
+
+export type ActivityEventsResponse = {
+  retentionDays: number
+  generatedAtUtc: string
+  groupCounts24h: ActivityMetric[]
+  statusCounts24h: ActivityMetric[]
+  events: ActivityEvent[]
+}
+
 export const adminApi = {
   checkAccess: async (): Promise<{ allowed: boolean }> => {
     const res = await api.get('/admin/access', { skipGlobalError: true } as any)
@@ -99,6 +129,10 @@ export const adminApi = {
   },
   listVoucherRedemptions: async (id: string): Promise<AdminVoucherRedemption[]> => {
     const res = await api.get(`/admin/vouchers/${id}/redemptions`)
+    return res.data
+  },
+  listActivityEvents: async (params?: { group?: string; status?: string; limit?: number }): Promise<ActivityEventsResponse> => {
+    const res = await api.get('/admin/activity-events', { params })
     return res.data
   },
   listJobs: async () => {

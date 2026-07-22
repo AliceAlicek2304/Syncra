@@ -28,6 +28,7 @@ public sealed class SePayPaymentProvider : IPaymentProvider
     private readonly IPlanRepository _planRepository;
     private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IActivityEventService _activityEventService;
     private readonly ILogger<SePayPaymentProvider> _logger;
 
     public SePayPaymentProvider(
@@ -37,6 +38,7 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         IPlanRepository planRepository,
         IDistributedCache cache,
         IUnitOfWork unitOfWork,
+        IActivityEventService activityEventService,
         ILogger<SePayPaymentProvider> logger)
     {
         _sePayOptions = sePayOptions.Value;
@@ -45,6 +47,7 @@ public sealed class SePayPaymentProvider : IPaymentProvider
         _planRepository = planRepository;
         _cache = cache;
         _unitOfWork = unitOfWork;
+        _activityEventService = activityEventService;
         _logger = logger;
     }
 
@@ -99,6 +102,25 @@ public sealed class SePayPaymentProvider : IPaymentProvider
 
         _logger.LogInformation("Generated SePay pending payment {PaymentCode} of {Amount} VND for workspace {WorkspaceId}",
             paymentCode, amount, request.WorkspaceId);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: "billing.checkout_created",
+            EventGroup: "billing",
+            Status: "info",
+            Title: "Checkout created",
+            Description: $"{plan.Code} {(isYearly ? "year" : "month")} - {amount:N0} VND",
+            WorkspaceId: request.WorkspaceId,
+            UserId: request.UserId,
+            SubjectType: "Checkout",
+            SubjectId: paymentCode,
+            Metadata: new Dictionary<string, string?>
+            {
+                ["paymentCode"] = paymentCode,
+                ["planCode"] = plan.Code,
+                ["interval"] = isYearly ? "year" : "month",
+                ["amount"] = amount.ToString("0"),
+                ["discountCode"] = request.Discount?.Code
+            }), cancellationToken);
 
         var uri = new Uri(request.SuccessUrl);
         var origin = uri.GetLeftPart(UriPartial.Authority);

@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<UsageCounter> UsageCounters => Set<UsageCounter>();
     
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     
     public DbSet<Integration> Integrations => Set<Integration>();

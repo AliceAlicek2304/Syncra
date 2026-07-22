@@ -19,6 +19,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
     private readonly IPostRepository _postRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IStorageService _storageService;
+    private readonly IActivityEventService _activityEventService;
     private readonly WasabiOptions _wasabiOptions;
 
     public CreateZernioPostCommandHandler(
@@ -28,7 +29,8 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         IPostRepository postRepository,
         IUnitOfWork unitOfWork,
         IStorageService storageService,
-        IOptions<WasabiOptions> wasabiOptions)
+        IOptions<WasabiOptions> wasabiOptions,
+        IActivityEventService activityEventService)
     {
         _zernioClient = zernioClient;
         _socialAccountRepository = socialAccountRepository;
@@ -37,6 +39,7 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         _unitOfWork = unitOfWork;
         _storageService = storageService;
         _wasabiOptions = wasabiOptions.Value;
+        _activityEventService = activityEventService;
     }
 
     public async Task<PostDto> Handle(CreateZernioPostCommand request, CancellationToken cancellationToken)
@@ -244,6 +247,24 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            await _activityEventService.RecordAsync(new ActivityEventRequest(
+                EventType: request.PublishNow ? "post.publish_requested" : "post.created",
+                EventGroup: "post",
+                Status: "success",
+                Title: request.PublishNow ? "Post sent to publish" : "Post created",
+                Description: request.Title,
+                WorkspaceId: request.WorkspaceId,
+                UserId: request.UserId,
+                SubjectType: "Post",
+                SubjectId: post2.Id.ToString(),
+                Metadata: new Dictionary<string, string?>
+                {
+                    ["postId"] = post2.Id.ToString(),
+                    ["zernioPostId"] = post2.ZernioPostId,
+                    ["publishNow"] = request.PublishNow.ToString(),
+                    ["platformCount"] = activeAccounts.Count.ToString()
+                }), cancellationToken);
+
             return PostMapper.ToDto(post2, _storageService);
         }
 
@@ -308,6 +329,24 @@ public sealed class CreateZernioPostCommandHandler : IRequestHandler<CreateZerni
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _activityEventService.RecordAsync(new ActivityEventRequest(
+            EventType: request.PublishNow ? "post.publish_requested" : "post.created",
+            EventGroup: "post",
+            Status: "success",
+            Title: request.PublishNow ? "Post sent to publish" : "Post created",
+            Description: request.Title,
+            WorkspaceId: request.WorkspaceId,
+            UserId: request.UserId,
+            SubjectType: "Post",
+            SubjectId: post.Id.ToString(),
+            Metadata: new Dictionary<string, string?>
+            {
+                ["postId"] = post.Id.ToString(),
+                ["zernioPostId"] = post.ZernioPostId,
+                ["publishNow"] = request.PublishNow.ToString(),
+                ["platformCount"] = activeAccounts.Count.ToString()
+            }), cancellationToken);
 
         return PostMapper.ToDto(post, _storageService);
     }

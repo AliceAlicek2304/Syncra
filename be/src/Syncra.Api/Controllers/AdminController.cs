@@ -57,6 +57,103 @@ public class AdminController : ControllerBase
         return result.ToActionResult();
     }
 
+    [HttpGet("activity-events")]
+    public async Task<IActionResult> GetActivityEvents(
+        [FromQuery] string? group,
+        [FromQuery] string? status,
+        [FromQuery] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var retentionCutoff = now.AddDays(-7);
+        var dayCutoff = now.AddHours(-24);
+        var pageSize = Math.Clamp(limit, 10, 200);
+
+        var query = _dbContext.ActivityEvents
+            .AsNoTracking()
+            .Where(item => item.CreatedAtUtc >= retentionCutoff);
+
+        if (!string.IsNullOrWhiteSpace(group) && !string.Equals(group, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            var normalizedGroup = group.Trim().ToLowerInvariant();
+            query = query.Where(item => item.EventGroup == normalizedGroup);
+        }
+
+        if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            var normalizedStatus = status.Trim().ToLowerInvariant();
+            query = query.Where(item => item.Status == normalizedStatus);
+        }
+
+        var events = await query
+            .OrderByDescending(item => item.CreatedAtUtc)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var userIds = events
+            .Where(item => item.UserId.HasValue)
+            .Select(item => item.UserId!.Value)
+            .Distinct()
+            .ToArray();
+
+        var workspaceIds = events
+            .Where(item => item.WorkspaceId.HasValue)
+            .Select(item => item.WorkspaceId!.Value)
+            .Distinct()
+            .ToArray();
+
+        var userEmails = userIds.Length == 0
+            ? new Dictionary<Guid, string>()
+            : await _dbContext.Users
+                .AsNoTracking()
+                .Where(user => userIds.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id, user => user.Email.Value, cancellationToken);
+
+        var workspaceNames = workspaceIds.Length == 0
+            ? new Dictionary<Guid, string>()
+            : await _dbContext.Workspaces
+                .AsNoTracking()
+                .Where(workspace => workspaceIds.Contains(workspace.Id))
+                .ToDictionaryAsync(workspace => workspace.Id, workspace => workspace.Name.Value, cancellationToken);
+
+        var groupCounts = await _dbContext.ActivityEvents
+            .AsNoTracking()
+            .Where(item => item.CreatedAtUtc >= dayCutoff)
+            .GroupBy(item => item.EventGroup)
+            .Select(item => new ActivityMetricDto(item.Key, item.Count()))
+            .ToListAsync(cancellationToken);
+
+        var statusCounts = await _dbContext.ActivityEvents
+            .AsNoTracking()
+            .Where(item => item.CreatedAtUtc >= dayCutoff)
+            .GroupBy(item => item.Status)
+            .Select(item => new ActivityMetricDto(item.Key, item.Count()))
+            .ToListAsync(cancellationToken);
+
+        var response = new ActivityEventsResponseDto(
+            RetentionDays: 7,
+            GeneratedAtUtc: now,
+            GroupCounts24h: groupCounts,
+            StatusCounts24h: statusCounts,
+            Events: events.Select(item => new ActivityEventDto(
+                item.Id,
+                item.WorkspaceId,
+                item.WorkspaceId.HasValue && workspaceNames.TryGetValue(item.WorkspaceId.Value, out var workspaceName) ? workspaceName : null,
+                item.UserId,
+                item.UserId.HasValue && userEmails.TryGetValue(item.UserId.Value, out var userEmail) ? userEmail : null,
+                item.EventType,
+                item.EventGroup,
+                item.Status,
+                item.Title,
+                item.Description,
+                item.SubjectType,
+                item.SubjectId,
+                item.Metadata,
+                item.CreatedAtUtc)).ToList());
+
+        return Ok(response);
+    }
+
     [HttpGet("vouchers")]
     public async Task<IActionResult> GetVouchers(CancellationToken cancellationToken)
     {

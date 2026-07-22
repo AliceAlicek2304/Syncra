@@ -11,6 +11,10 @@ const links = [
   { title: 'Mã giảm giá', to: '/admin/vouchers', icon: TicketPercent },
 ]
 
+const monitorLinks = [
+  { title: 'Realtime metrics', to: '/admin/realtime', icon: BarChart3 },
+]
+
 export default function AdminSidebarV2() {
   const { logout } = useAuth()
   const navigate = useNavigate()
@@ -46,10 +50,21 @@ export default function AdminSidebarV2() {
       </nav>
 
       <div className={styles.navGroupLabel}>Theo dõi</div>
-      <div className={styles.navItem} aria-hidden>
-        <BarChart3 size={18} />
-        <span>Realtime metrics</span>
-      </div>
+      <nav className={styles.navScroll} aria-label="Admin monitoring navigation">
+        {monitorLinks.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+            >
+              <Icon size={18} />
+              <span>{item.title}</span>
+            </NavLink>
+          )
+        })}
+      </nav>
 
       <div style={{ flex: 1 }} />
       <div 
