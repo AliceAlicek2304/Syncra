@@ -1,10 +1,15 @@
 using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Syncra.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace Syncra.Infrastructure.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260722093000_AddActivityEvents")]
     public partial class AddActivityEvents : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

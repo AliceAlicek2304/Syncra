@@ -1,9 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Syncra.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace Syncra.Infrastructure.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260721123000_UpdateRepurposePlanLimits")]
     public partial class UpdateRepurposePlanLimits : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
