@@ -49,6 +49,14 @@ public sealed class ZernioProfile : WorkspaceEntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void ReplaceRemoteProfile(string zernioProfileId, string displayName)
+    {
+        ZernioProfileId = zernioProfileId;
+        DisplayName = displayName;
+        IsActive = true;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void Deactivate()
     {
         if (!IsActive) return;

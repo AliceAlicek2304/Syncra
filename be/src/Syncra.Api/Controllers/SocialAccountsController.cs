@@ -265,13 +265,35 @@ public sealed class SocialAccountsController : ControllerBase
         var separator = redirectUrl.Contains('?') ? '&' : '?';
         var redirectWithState = $"{redirectUrl}{separator}state={stateToken}";
 
-        // 4. Get headless connect URL from Zernio
-        var connectUrlResult = await _zernioClient.GetConnectUrlAsync(
-            profileId: zernioProfile.ZernioProfileId,
-            platform: platform,
-            redirectUrl: redirectWithState,
-            headless: true,
-            cancellationToken: cancellationToken);
+        // 4. Get headless connect URL from Zernio. If the remote profile was
+        // deleted in Zernio, recreate it and retry once while keeping Syncra's
+        // local profile id stable.
+        ZernioConnectUrlResult connectUrlResult;
+        try
+        {
+            connectUrlResult = await _zernioClient.GetConnectUrlAsync(
+                profileId: zernioProfile.ZernioProfileId,
+                platform: platform,
+                redirectUrl: redirectWithState,
+                headless: true,
+                cancellationToken: cancellationToken);
+        }
+        catch (DomainException ex) when (ex.Code == "zernio_profile_not_found")
+        {
+            _logger.LogWarning(
+                ex,
+                "Zernio profile {ZernioProfileId} for local profile {ProfileId} was missing remotely. Reprovisioning before retry.",
+                zernioProfile.ZernioProfileId,
+                zernioProfile.Id);
+
+            zernioProfile = await ReprovisionRemoteZernioProfileAsync(zernioProfile, cancellationToken);
+            connectUrlResult = await _zernioClient.GetConnectUrlAsync(
+                profileId: zernioProfile.ZernioProfileId,
+                platform: platform,
+                redirectUrl: redirectWithState,
+                headless: true,
+                cancellationToken: cancellationToken);
+        }
 
         return Ok(new { connectUrl = connectUrlResult.ConnectUrl, state = stateToken });
     }
@@ -1052,23 +1074,7 @@ public sealed class SocialAccountsController : ControllerBase
             "No Zernio profile found for workspace {WorkspaceId}. This should not happen after workspace-profile sync migration. Falling back to provisioning.",
             workspaceId);
 
-        // Fallback: fetch workspace name and provision
-        var workspace = await _db.Workspaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Id == workspaceId, cancellationToken);
-
-        var profileName = workspace?.Name.Value ?? workspaceId.ToString("N");
-
-        var provisioned = await _zernioClient.ProvisionProfileAsync(
-            workspaceId: workspaceId.ToString(),
-            name: profileName,
-            cancellationToken: cancellationToken);
-
-        var newProfile = ZernioProfile.Create(
-            workspaceId: workspaceId,
-            zernioProfileId: provisioned.Id,
-            displayName: provisioned.Name,
-            platform: "zernio");
+        var newProfile = await ProvisionZernioProfileAsync(workspaceId, cancellationToken);
 
         _db.ZernioProfiles.Add(newProfile);
         await _db.SaveChangesAsync(cancellationToken);
@@ -1078,6 +1084,61 @@ public sealed class SocialAccountsController : ControllerBase
             provisioned.Id, workspaceId);
 
         return newProfile;
+    }
+
+    private async Task<ZernioProfile> ReprovisionRemoteZernioProfileAsync(
+        ZernioProfile staleProfile,
+        CancellationToken cancellationToken)
+    {
+        var profile = await _db.ZernioProfiles
+            .FirstOrDefaultAsync(
+                item => item.Id == staleProfile.Id && item.WorkspaceId == staleProfile.WorkspaceId,
+                cancellationToken);
+
+        if (profile is null)
+        {
+            return await GetOrProvisionZernioProfileAsync(staleProfile.WorkspaceId, cancellationToken);
+        }
+
+        var provisioned = await ProvisionRemoteProfileAsync(profile.WorkspaceId, profile.DisplayName, cancellationToken);
+        profile.ReplaceRemoteProfile(provisioned.Id, provisioned.Name);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Reprovisioned missing Zernio profile for local profile {ProfileId}. New remote profile {ZernioProfileId}",
+            profile.Id,
+            provisioned.Id);
+
+        return profile;
+    }
+
+    private async Task<ZernioProfile> ProvisionZernioProfileAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var workspace = await _db.Workspaces
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == workspaceId, cancellationToken);
+
+        var profileName = workspace?.Name.Value ?? workspaceId.ToString("N");
+        var provisioned = await ProvisionRemoteProfileAsync(workspaceId, profileName, cancellationToken);
+
+        return ZernioProfile.Create(
+            workspaceId: workspaceId,
+            zernioProfileId: provisioned.Id,
+            displayName: provisioned.Name,
+            platform: "zernio");
+    }
+
+    private Task<ZernioProfileDto> ProvisionRemoteProfileAsync(
+        Guid workspaceId,
+        string profileName,
+        CancellationToken cancellationToken)
+    {
+        return _zernioClient.ProvisionProfileAsync(
+            workspaceId: workspaceId.ToString(),
+            name: profileName,
+            cancellationToken: cancellationToken);
     }
 
     private async Task<ZernioProfile?> ResolveZernioProfileAsync(

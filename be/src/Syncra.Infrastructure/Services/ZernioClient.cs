@@ -85,6 +85,20 @@ public sealed class ZernioClient : IZernioClient
                 dashboardUrl: "https://zernio.com/dashboard/billing",
                 details: new { platform, profileId });
         }
+        catch (ApiException ex) when (ex.ErrorCode == 404)
+        {
+            var errorContent = ex.ErrorContent?.ToString();
+            var detailMessage = TryParseErrorMessage(errorContent) ?? "Profile not found";
+
+            _logger.LogWarning(
+                ex,
+                "Zernio profile not found while getting connect URL for platform {Platform}, profile {ProfileId}. Content: {Content}",
+                platform,
+                profileId,
+                errorContent);
+
+            throw new DomainException("zernio_profile_not_found", detailMessage, ex);
+        }
         catch (ApiException ex)
         {
             var errorContent = ex.ErrorContent?.ToString();
