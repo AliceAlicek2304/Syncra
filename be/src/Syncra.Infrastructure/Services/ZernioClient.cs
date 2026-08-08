@@ -87,8 +87,22 @@ public sealed class ZernioClient : IZernioClient
         }
         catch (ApiException ex)
         {
-            _logger.LogError(ex, "Zernio API error getting connect URL for profile {ProfileId}", profileId);
-            throw new DomainException("zernio_connect_error", "Failed to get connect URL from Zernio", ex);
+            var errorContent = ex.ErrorContent?.ToString();
+            var detailMessage = TryParseErrorMessage(errorContent);
+
+            _logger.LogError(
+                ex,
+                "Zernio API error getting connect URL for platform {Platform}, profile {ProfileId}. Status: {Status}. Content: {Content}",
+                platform,
+                profileId,
+                ex.ErrorCode,
+                errorContent);
+
+            var message = string.IsNullOrWhiteSpace(detailMessage)
+                ? $"Failed to get connect URL from Zernio. Status: {ex.ErrorCode}."
+                : $"Failed to get connect URL from Zernio. Status: {ex.ErrorCode}. Error: {detailMessage}";
+
+            throw new DomainException("zernio_connect_error", message, ex);
         }
     }
 
