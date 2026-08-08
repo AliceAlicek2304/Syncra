@@ -1081,7 +1081,7 @@ public sealed class SocialAccountsController : ControllerBase
 
         _logger.LogInformation(
             "Fallback: Provisioned Zernio profile {ProfileId} for workspace {WorkspaceId}",
-            provisioned.Id, workspaceId);
+            newProfile.Id, workspaceId);
 
         return newProfile;
     }
