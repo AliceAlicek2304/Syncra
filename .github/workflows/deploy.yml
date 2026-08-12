@@ -13,7 +13,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: fe/package-lock.json
 
@@ -32,7 +32,7 @@ jobs:
 
       - name: Copy frontend
         run: |
-          set -e
+          set -euo pipefail
           for attempt in 1 2 3 4 5; do
             if tar -C fe/dist -czf - . | ssh \
               -i ~/.ssh/syncra_deploy_key \
@@ -41,7 +41,7 @@ jobs:
               -o ServerAliveInterval=15 \
               -o ServerAliveCountMax=4 \
               "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-              'mkdir -p /var/www/Syncra/frontend && rm -rf /var/www/Syncra/frontend/* && tar -xzf - -C /var/www/Syncra/frontend'; then
+              'set -e; tmp_dir=$(mktemp -d /tmp/syncra-frontend.XXXXXX); trap "rm -rf \"$tmp_dir\"" EXIT; tar -xzf - -C "$tmp_dir"; mkdir -p /var/www/Syncra/frontend; rm -rf /var/www/Syncra/frontend/*; cp -a "$tmp_dir"/. /var/www/Syncra/frontend/'; then
               exit 0
             fi
             echo "Frontend copy attempt ${attempt}/5 failed; retrying..."
