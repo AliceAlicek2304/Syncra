@@ -32,6 +32,7 @@ public class PlanUsageDto
     public string PlanName { get; set; } = string.Empty;
     public string PlanCode { get; set; } = string.Empty;
     public int WorkspaceCount { get; set; }
+    public int UserCount { get; set; }
     public int SubscriptionCount { get; set; }
     public decimal MonthlyRevenue { get; set; }
     public decimal ActualRevenue { get; set; }

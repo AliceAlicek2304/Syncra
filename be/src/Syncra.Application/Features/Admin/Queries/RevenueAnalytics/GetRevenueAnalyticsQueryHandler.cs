@@ -86,6 +86,7 @@ public sealed class GetRevenueAnalyticsQueryHandler
                 {
                     PlanId = g.Key,
                     Count = g.Count(),
+                    WorkspaceIds = g.Select(subscription => subscription.WorkspaceId).ToList(),
                     Revenue = g.Sum(s => {
                         var plan = plans.FirstOrDefault(p => p.Id == s.PlanId);
                         return plan?.PriceMonthly ?? 0m;
@@ -104,6 +105,11 @@ public sealed class GetRevenueAnalyticsQueryHandler
                         PlanName = plan.Name,
                         PlanCode = plan.Code,
                         WorkspaceCount = item.Count,
+                        UserCount = allWorkspaces
+                            .Where(workspace => item.WorkspaceIds.Contains(workspace.Id))
+                            .Select(workspace => workspace.OwnerUserId)
+                            .Distinct()
+                            .Count(),
                         SubscriptionCount = item.Count,
                         MonthlyRevenue = item.Revenue,
                         ActualRevenue = allPayments.Where(payment => payment.PlanId == item.PlanId).Sum(payment => payment.Amount),
@@ -172,10 +178,10 @@ public sealed class GetRevenueAnalyticsQueryHandler
             foreach (var plan in uniquePlans)
             {
                 var currentCount = activeSubscriptions.Count(s => s.PlanId == plan.Id);
-                var previousCount = allSubscriptions.Count(s => 
+                var previousCount = activeSubscriptions.Count(s =>
                     s.PlanId == plan.Id && 
-                    s.StartsAtUtc >= previousMonthStart && 
-                    s.StartsAtUtc < currentMonthStart);
+                    s.StartsAtUtc < currentMonthStart &&
+                    (!s.EndsAtUtc.HasValue || s.EndsAtUtc.Value >= previousMonthStart));
                 var growth = currentCount - previousCount;
                 
                 planGrowth.Add(new PlanGrowthDto

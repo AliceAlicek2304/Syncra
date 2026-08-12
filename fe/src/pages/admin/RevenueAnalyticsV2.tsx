@@ -77,7 +77,7 @@ export default function RevenueAnalyticsV2() {
                     <div className={styles.listItem} key={item.planCode ?? item.planName}>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div className={styles.itemTitle}>{item.planName}</div>
-                        <div className={styles.itemMeta}>{formatNumber(item.workspaceCount)} workspace - {item.percentage ?? 0}%</div>
+                        <div className={styles.itemMeta}>{formatNumber(item.workspaceCount)} workspace · {formatNumber(item.userCount ?? 0)} user - {item.percentage ?? 0}%</div>
                         <div className={styles.progress}>
                           <div className={styles.progressFill} style={{ width: `${Math.min(100, item.percentage ?? 0)}%`, background: '#10b981' }} />
                         </div>
@@ -97,7 +97,7 @@ export default function RevenueAnalyticsV2() {
             <Card title="Subscription mới" meta="Số lượng đăng ký mới theo tháng">
               <ModernBarChart data={normalizeMonths(trends.newSubscriptions ?? trends.NewSubscriptions)} labels={monthLabels} colors={monthLabels.map((_, index) => index === 11 ? '#2563eb' : '#bfdbfe')} />
             </Card>
-            <Card title="Tăng trưởng theo gói" meta="Chênh lệch số lượng subscription">
+            <Card title="Tăng trưởng theo gói" meta="Chênh lệch subscription active so với đầu tháng">
               <ModernBarChart
                 data={planGrowth.map((item) => item.growth ?? 0)}
                 labels={planGrowth.map((item) => item.planName ?? '-')}
