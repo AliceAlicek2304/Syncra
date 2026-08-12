@@ -90,6 +90,32 @@ export type ActivityEventsResponse = {
   events: ActivityEvent[]
 }
 
+export type AdminUserPlan = {
+  code: string
+  name: string
+  status: string
+  endsAtUtc?: string | null
+}
+
+export type AdminUser = {
+  id: string
+  email: string
+  displayName?: string | null
+  status: string
+  createdAtUtc: string
+  lastLoginAtUtc?: string | null
+  plans: AdminUserPlan[]
+  hasActiveSubscription: boolean
+}
+
+export type AdminUsersResponse = {
+  users: AdminUser[]
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+}
+
 export const adminApi = {
   checkAccess: async (): Promise<{ allowed: boolean }> => {
     const res = await api.get('/admin/access', { skipGlobalError: true } as any)
@@ -129,6 +155,10 @@ export const adminApi = {
   },
   listVoucherRedemptions: async (id: string): Promise<AdminVoucherRedemption[]> => {
     const res = await api.get(`/admin/vouchers/${id}/redemptions`)
+    return res.data
+  },
+  listUsers: async (params?: { page?: number; pageSize?: number; search?: string }): Promise<AdminUsersResponse> => {
+    const res = await api.get('/admin/users', { params })
     return res.data
   },
   listActivityEvents: async (params?: { group?: string; status?: string; limit?: number }): Promise<ActivityEventsResponse> => {

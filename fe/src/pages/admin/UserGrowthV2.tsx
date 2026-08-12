@@ -1,5 +1,6 @@
-import { Building2, Link2, Search, UserCheck, UsersRound } from 'lucide-react'
+import { Building2, ChevronLeft, ChevronRight, Link2, Search, UserCheck, UsersRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useAdminUsers } from '../../hooks/useAdminUsers'
 import { useUserGrowth } from '../../hooks/useUserGrowth'
 import styles from './AdminModern.module.css'
 import { Card, EmptyState, LoadingState, PageHeader, Pill, StatCard } from './components/AdminPrimitives'
@@ -9,6 +10,9 @@ import { formatNumber, monthLabels, normalizeMonths, pick, trendClass } from './
 export default function UserGrowthV2() {
   const { data, isLoading, isError } = useUserGrowth()
   const [query, setQuery] = useState('')
+  const [usersPage, setUsersPage] = useState(1)
+  const usersPageSize = 20
+  const { data: usersData, isLoading: isUsersLoading, isError: isUsersError } = useAdminUsers(usersPage, usersPageSize, query)
 
   const metrics = useMemo(() => pick<any[]>(data, 'Metrics', 'metrics', []), [data])
   const recentUsers = useMemo(() => pick<any[]>(data, 'RecentUsers', 'recentUsers', []), [data])
@@ -27,6 +31,11 @@ export default function UserGrowthV2() {
     const haystack = `${user.name ?? ''} ${user.email ?? ''} ${user.plan ?? ''}`.toLowerCase()
     return haystack.includes(query.toLowerCase())
   })
+  const allUsers = usersData?.users ?? []
+  const totalPages = usersData?.totalPages ?? 0
+  const formatDate = (value?: string | null) => value
+    ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(value))
+    : '-'
 
   return (
     <div>
@@ -132,6 +141,62 @@ export default function UserGrowthV2() {
                 </table>
               </div>
             ) : <EmptyState>Chưa có workspace nào trong hệ thống.</EmptyState>}
+          </Card>
+
+          <Card
+            title="Toàn bộ người dùng"
+            meta={`${usersData?.totalCount ?? 0} người dùng trong hệ thống`}
+            actions={<span className={styles.itemMeta}>Trang {usersPage}/{Math.max(totalPages, 1)}</span>}
+          >
+            {isUsersLoading && !usersData ? <LoadingState /> : isUsersError ? <EmptyState>Không thể tải danh sách người dùng.</EmptyState> : allUsers.length === 0 ? <EmptyState>Không tìm thấy người dùng.</EmptyState> : (
+              <>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Người dùng</th>
+                        <th>Trạng thái</th>
+                        <th>Gói đang dùng</th>
+                        <th>Ngày đăng ký</th>
+                        <th>Lần đăng nhập</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td>
+                            <strong>{user.displayName || 'Người dùng'}</strong>
+                            <div className={styles.itemMeta}>{user.email}</div>
+                          </td>
+                          <td><Pill tone={user.status === 'active' ? 'green' : user.status === 'suspended' ? 'rose' : 'blue'}>{user.status}</Pill></td>
+                          <td>
+                            {user.hasActiveSubscription && user.plans.length > 0 ? (
+                              <div className={styles.planList}>
+                                {user.plans.map((plan) => <Pill key={`${user.id}-${plan.code}`} tone="green">{plan.name}</Pill>)}
+                              </div>
+                            ) : <span className={styles.itemMeta}>Chưa sub</span>}
+                          </td>
+                          <td>{formatDate(user.createdAtUtc)}</td>
+                          <td>{formatDate(user.lastLoginAtUtc)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className={styles.pagination}>
+                  <span className={styles.itemMeta}>Hiển thị {allUsers.length} / {usersData?.totalCount ?? 0}</span>
+                  <div className={styles.paginationActions}>
+                    <button className={styles.iconAction} type="button" aria-label="Trang trước" title="Trang trước" disabled={usersPage <= 1 || isUsersLoading} onClick={() => setUsersPage((page) => Math.max(1, page - 1))}>
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className={styles.pageNumber}>{usersPage}</span>
+                    <button className={styles.iconAction} type="button" aria-label="Trang sau" title="Trang sau" disabled={usersPage >= totalPages || isUsersLoading} onClick={() => setUsersPage((page) => Math.min(totalPages, page + 1))}>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
         </>
       )}

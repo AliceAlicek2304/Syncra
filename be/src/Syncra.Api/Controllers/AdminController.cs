@@ -57,6 +57,124 @@ public class AdminController : ControllerBase
         return result.ToActionResult();
     }
 
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 10, 100);
+
+        var query = _dbContext.Users
+            .AsNoTracking()
+            .Include(user => user.Profile)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLowerInvariant();
+            query = query.Where(user =>
+                user.Email.Value.ToLower().Contains(normalizedSearch) ||
+                (user.Profile != null && user.Profile.DisplayName != null &&
+                 user.Profile.DisplayName.ToLower().Contains(normalizedSearch)));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var userRows = await query
+            .OrderByDescending(user => user.CreatedAtUtc)
+            .ThenBy(user => user.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(user => new
+            {
+                user.Id,
+                Email = user.Email.Value,
+                DisplayName = user.Profile != null ? user.Profile.DisplayName : null,
+                user.Status,
+                user.CreatedAtUtc,
+                user.LastLoginAtUtc,
+            })
+            .ToListAsync(cancellationToken);
+
+        var users = userRows
+            .Select(user => new AdminUserDto(
+                user.Id,
+                user.Email,
+                user.DisplayName,
+                user.Status,
+                user.CreatedAtUtc,
+                user.LastLoginAtUtc,
+                Array.Empty<AdminUserPlanDto>(),
+                false))
+            .ToList();
+
+        var userIds = users.Select(user => user.Id).ToArray();
+        var planRows = await _dbContext.WorkspaceMembers
+            .AsNoTracking()
+            .Where(member => userIds.Contains(member.UserId))
+            .Join(
+                _dbContext.Subscriptions
+                    .AsNoTracking()
+                    .Where(subscription =>
+                        subscription.Status == Syncra.Domain.Enums.SubscriptionStatus.Active &&
+                        (!subscription.EndsAtUtc.HasValue || subscription.EndsAtUtc.Value > DateTime.UtcNow)),
+                member => member.WorkspaceId,
+                subscription => subscription.WorkspaceId,
+                (member, subscription) => new { member.UserId, subscription })
+            .Join(
+                _dbContext.Plans.AsNoTracking(),
+                item => item.subscription.PlanId,
+                plan => plan.Id,
+                (item, plan) => new
+                {
+                    item.UserId,
+                    plan.Code,
+                    plan.Name,
+                    Status = item.subscription.Status,
+                    EndsAtUtc = item.subscription.EndsAtUtc,
+                })
+            .ToListAsync(cancellationToken);
+
+        var plansByUser = planRows
+            .GroupBy(item => item.UserId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(item => new AdminUserPlanDto(
+                        item.Code,
+                        item.Name,
+                        item.Status.ToString(),
+                        item.EndsAtUtc))
+                    .OrderBy(plan => plan.Name)
+                    .ToList());
+
+        var resultUsers = users
+            .Select(user =>
+            {
+                plansByUser.TryGetValue(user.Id, out var plans);
+                plans ??= new List<AdminUserPlanDto>();
+                var activeSubscription = plans.Any(plan =>
+                    string.Equals(plan.Status, "Active", StringComparison.OrdinalIgnoreCase) &&
+                    (!plan.EndsAtUtc.HasValue || plan.EndsAtUtc.Value > DateTime.UtcNow));
+
+                return user with
+                {
+                    Plans = plans,
+                    HasActiveSubscription = activeSubscription,
+                };
+            })
+            .ToList();
+
+        return Ok(new AdminUsersResponseDto(
+            resultUsers,
+            page,
+            pageSize,
+            totalCount,
+            (int)Math.Ceiling(totalCount / (double)pageSize)));
+    }
+
     [HttpGet("activity-events")]
     public async Task<IActionResult> GetActivityEvents(
         [FromQuery] string? group,

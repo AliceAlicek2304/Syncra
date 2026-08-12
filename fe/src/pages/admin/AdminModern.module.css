@@ -492,6 +492,34 @@
   border-bottom: 0;
 }
 
+.planList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.paginationActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageNumber {
+  min-width: 28px;
+  text-align: center;
+  color: var(--admin-body);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
