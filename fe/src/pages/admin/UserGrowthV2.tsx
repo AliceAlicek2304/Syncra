@@ -11,7 +11,7 @@ export default function UserGrowthV2() {
   const { data, isLoading, isError } = useUserGrowth()
   const [query, setQuery] = useState('')
   const [usersPage, setUsersPage] = useState(1)
-  const usersPageSize = 20
+  const usersPageSize = 10
   const { data: usersData, isLoading: isUsersLoading, isError: isUsersError } = useAdminUsers(usersPage, usersPageSize, query)
 
   const metrics = useMemo(() => pick<any[]>(data, 'Metrics', 'metrics', []), [data])
